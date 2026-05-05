@@ -332,6 +332,14 @@ export default function Index() {
     setStudyNowFollowupInput("");
   }, []);
 
+  const handleVoiceSettings = () => {
+    navigate("/settings?tab=voice");
+  };
+
+  const handleAulao = () => {
+    navigate("/aulao");
+  };
+
   const handlePrimaryAction = async () => {
     setTab("revisao");
 
@@ -441,6 +449,8 @@ export default function Index() {
           comebackMode={momentum.comebackMode}
           onPrimaryAction={handlePrimaryAction}
           primaryLabel={primaryLabel}
+          onVoiceSettings={user ? handleVoiceSettings : undefined}
+          onAulao={user ? handleAulao : undefined}
         />
 
         {/* Flora: confirmações pendentes */}

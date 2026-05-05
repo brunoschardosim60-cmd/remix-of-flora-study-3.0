@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Flame, Target, TrendingUp } from "lucide-react";
+import { Flame, Target, TrendingUp, Volume2, BookOpen } from "lucide-react";
 
 interface DailyGoalCard {
   id: "minutes" | "revisions" | "quiz";
@@ -24,6 +24,8 @@ interface DashboardHeroProps {
   comebackMode: boolean;
   onPrimaryAction: () => void;
   primaryLabel: string;
+  onVoiceSettings?: () => void;
+  onAulao?: () => void;
 }
 
 function greetingLabel(firstName: string | undefined, isLoggedIn: boolean) {
@@ -44,6 +46,8 @@ export function DashboardHero({
   comebackMode,
   onPrimaryAction,
   primaryLabel,
+  onVoiceSettings,
+  onAulao,
 }: DashboardHeroProps) {
   return (
     <section className="relative overflow-hidden rounded-[28px] border border-border/60 bg-gradient-to-br from-primary/12 via-card to-accent/10 p-5 sm:p-7">
@@ -66,6 +70,18 @@ export function DashboardHero({
               <Button size="lg" className="w-full sm:w-auto sm:min-w-[180px]" onClick={onPrimaryAction}>
                 {primaryLabel}
               </Button>
+              {onVoiceSettings && (
+                <Button size="lg" variant="outline" className="w-full sm:w-auto" onClick={onVoiceSettings}>
+                  <Volume2 className="w-4 h-4 mr-2" />
+                  Modo Voz
+                </Button>
+              )}
+              {onAulao && (
+                <Button size="lg" variant="outline" className="w-full sm:w-auto" onClick={onAulao}>
+                  <BookOpen className="w-4 h-4 mr-2" />
+                  Aulão
+                </Button>
+              )}
               <div className="w-full sm:w-auto rounded-2xl border border-border/70 bg-background/70 px-4 py-3">
                 <p className="text-xs text-muted-foreground">Resumo de hoje</p>
                 <p className="font-medium">
