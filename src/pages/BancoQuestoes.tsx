@@ -1,0 +1,1060 @@
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import {
+  AlertTriangle, ArrowLeft, BookOpen, Check, ChevronLeft, Filter, ImageIcon,
+  Loader2, RotateCcw, Search, Sparkles, Star, Timer, X, ChevronRight
+} from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
+import { BottomNav } from "@/components/BottomNav";
+import { MathText } from "@/components/MathText";
+import { ShareExamResult } from "@/components/ShareExamResult";
+import { getCachedExplanation, setCachedExplanation } from "@/lib/explainCache";
+
+type Question = {
+  id: string;
+  ano: number | null;
+  numero: number | null;
+  area: string;
+  disciplina: string;
+  tema: string;
+  enunciado: string;
+  correta: string;
+  imagem_urls: string[];
+  alternativas: { letra: string; texto: string; imagem?: string | null }[];
+  incomplete?: boolean;
+};
+
+type Attempt = { question_id: string; alternativa_marcada: string; acertou: boolean };
+type Stat = { total: number; acertos: number };
+
+const FAVORITES_KEY = "banco-favorites-v1";
+function loadFavorites(): Set<string> {
+  try {
+    const raw = localStorage.getItem(FAVORITES_KEY);
+    return new Set(raw ? (JSON.parse(raw) as string[]) : []);
+  } catch {
+    return new Set();
+  }
+}
+function saveFavorites(s: Set<string>) {
+  try { localStorage.setItem(FAVORITES_KEY, JSON.stringify(Array.from(s))); } catch { /* ignore */ }
+}
+
+const AREAS = ["Todas", "Linguagens", "Ciências Humanas", "Ciências da Natureza", "Matemática"];
+
+function getAlternativas(q: Question) {
+  return Array.isArray(q.alternativas) ? q.alternativas : [];
+}
+
+/**
+ * Limpeza profunda de texto extraído de PDF do ENEM.
+ * Remove artefatos comuns: caracteres de controle, símbolos Unicode inválidos,
+ * espaços invisíveis, ligatures mal codificadas, marcadores de coluna dupla, etc.
+ */
+function cleanPdfArtifacts(raw: string): string {
+  if (!raw) return "";
+  let t = raw;
+
+  // Remove marcadores [[placeholder]] que vazam do banco quando há imagem no enunciado
+  t = t.replace(/\[\[placeholder\]\]/gi, "").trim();
+
+  // Remove headings Markdown (## ## ###) que às vezes vazam do PDF
+  t = t.replace(/^#{1,6}\s+/gm, "");
+
+  // Normaliza quebras de linha
+  t = t.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+
+  // Remove caracteres de controle exceto \n e \t
+  // eslint-disable-next-line no-control-regex
+  t = t.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
+
+  // Remove caracteres Unicode de uso privado (PUA) — lixo comum de fontes de PDF
+  t = t.replace(/[\uE000-\uF8FF]/g, "");
+
+  // Remove marcas de formatação Unicode invisíveis
+  t = t.replace(/[\u200B-\u200F\u202A-\u202E\u2060-\u2064\uFEFF]/g, "");
+
+  // Corrige ligatures tipográficas que não são reconhecidas
+  t = t.replace(/\uFB00/g, "ff").replace(/\uFB01/g, "fi").replace(/\uFB02/g, "fl")
+       .replace(/\uFB03/g, "ffi").replace(/\uFB04/g, "ffl");
+
+  // Substitui aspas tipográficas por padrão
+  t = t.replace(/[\u201C\u201D]/g, '"').replace(/[\u2018\u2019]/g, "'");
+
+  // Corrige hifenização de fim de linha (palavras quebradas pelo PDF)
+  t = t.replace(/(\w)-\n(\w)/g, "$1$2");
+
+  // Colapsa espaços horizontais múltiplos
+  t = t.replace(/[ \t]+/g, " ");
+
+  // Remove espaço antes/depois de quebra de linha
+  t = t.replace(/ *\n */g, "\n");
+
+  // Colapsa 3+ quebras em parágrafo duplo
+  t = t.replace(/\n{3,}/g, "\n\n");
+
+  // Remove repetições adjacentes de frases (artefato de PDF 2 colunas)
+  t = t.replace(/(\b.{20,80}?\b)\n?\s*\1/g, "$1");
+
+  // Remove caixas de seleção e símbolos sem sentido isolados que não são LaTeX
+  // (quadrados, círculos, triângulos soltos que vieram de fontes especiais)
+  t = t.replace(/(?<!\$)[\u25A0-\u25FF](?!\$)/g, "□");
+
+  return t.trim();
+}
+
+/**
+ * Remove o bloco de alternativas A) B) C) D) E) que vazou para dentro do enunciado
+ * quando as alternativas já vêm estruturadas em q.alternativas.
+ * Só corta se realmente houver um bloco A..E sequencial — evita falso positivo
+ * com frases narrativas tipo "A) proposta..." no meio do texto.
+ */
+function stripTrailingAlternativas(t: string): string {
+  // Procura por A)...B)...C)...D)...E) (ou variações com . ) na cauda do texto.
+  // Exige A,B,C,D,E em ordem dentro do trecho final pra ter certeza de que é bloco.
+  const re = /\n\s*A\s*[\).]\s[\s\S]+?\n\s*B\s*[\).]\s[\s\S]+?\n\s*C\s*[\).]\s[\s\S]+?\n\s*D\s*[\).]\s[\s\S]+?\n\s*E\s*[\).]\s/;
+  const m = t.match(re);
+  if (m && m.index !== undefined) {
+    return t.slice(0, m.index).trimEnd();
+  }
+  return t;
+}
+
+function normalizeEnunciado(raw: string, hasStructuredAlts: boolean): string {
+  let t = cleanPdfArtifacts(raw);
+  if (hasStructuredAlts) {
+    t = stripTrailingAlternativas(t);
+  }
+  return t;
+}
+
+function normalizeAlternativaTexto(raw: string): string {
+  if (!raw) return "";
+  let t = cleanPdfArtifacts(raw);
+  // Remove "A) " duplicado no início (já exibimos a letra separado)
+  t = t.replace(/^\s*[A-Ea-e]\s*[\).]\s*/u, "");
+  // Junta quebras internas de linha (alternativa deve ser 1 parágrafo)
+  t = t.replace(/\n+/g, " ");
+  // Numa alternativa nunca queremos blocos LaTeX em display ($$...$$ ou \[...\])
+  // — convertemos pra inline pra evitar <div> dentro de <span>.
+  t = t.replace(/\$\$([\s\S]+?)\$\$/g, (_m, x) => `$${String(x).trim()}$`);
+  t = t.replace(/\\\[([\s\S]+?)\\\]/g, (_m, x) => `\\(${String(x).trim()}\\)`);
+  return t.trim();
+}
+
+/** Texto puro sem LaTeX para o preview do card (sem renderização KaTeX) */
+function plainPreview(raw: string, hasStructuredAlts: boolean): string {
+  const t = normalizeEnunciado(raw, hasStructuredAlts);
+  // Remove delimitadores LaTeX para preview legível
+  return t
+    .replace(/\[\[placeholder\]\]/gi, "")
+    .replace(/□/g, "")
+    .replace(/\$\$([\s\S]+?)\$\$/g, "[fórmula]")
+    .replace(/\\\[([\s\S]+?)\\\]/g, "[fórmula]")
+    .replace(/\$([^\n$]+?)\$/g, "[fórmula]")
+    .replace(/\\\(([\s\S]+?)\\\)/g, "[fórmula]")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 240);
+}
+
+// Sub-componente: imagens colapsáveis
+function QuestionImages({ urls, label }: { urls: string[]; label: string }) {
+  const [show, setShow] = useState(false);
+  if (!urls?.length) return null;
+  return (
+    <div className="rounded-xl border border-border bg-muted/30 overflow-hidden">
+      <button
+        onClick={() => setShow((v) => !v)}
+        className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+      >
+        <ImageIcon className="w-4 h-4 shrink-0" />
+        <span className="font-medium">{show ? "Ocultar" : "Ver"} imagem da prova</span>
+        <ChevronRight className={`w-4 h-4 ml-auto transition-transform ${show ? "rotate-90" : ""}`} />
+      </button>
+      {show && (
+        <div className="border-t border-border bg-white dark:bg-zinc-900 p-3 space-y-3">
+          {urls.map((url, i) => (
+            <img
+              key={i}
+              src={url}
+              alt={`${label} — imagem ${i + 1}`}
+              className="w-full h-auto rounded-lg object-contain max-h-[420px]"
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Sub-componente: painel de alternativas
+function AlternativasPanel({
+  q,
+  chosen,
+  onAnswer,
+  disabled,
+}: {
+  q: Question;
+  chosen?: string;
+  onAnswer: (letter: string) => void;
+  disabled?: boolean;
+}) {
+  const alts = getAlternativas(q);
+  const letters = ["A", "B", "C", "D", "E"];
+
+  if (alts.length === 5) {
+    return (
+      <div className="space-y-2">
+        {alts.map((alt) => {
+          const isChosen = chosen === alt.letra;
+          const isCorrect = !!chosen && alt.letra === q.correta;
+          const isWrong = isChosen && alt.letra !== q.correta;
+          return (
+            <button
+              key={alt.letra}
+              onClick={() => onAnswer(alt.letra)}
+              disabled={!!chosen || disabled}
+              className={`w-full text-left flex gap-3 rounded-xl border-2 p-3.5 transition-all duration-150 ${
+                isCorrect
+                  ? "border-emerald-500 bg-emerald-500/10"
+                  : isWrong
+                  ? "border-destructive bg-destructive/10"
+                  : isChosen
+                  ? "border-primary bg-primary/5"
+                  : "border-border hover:border-primary/50 hover:bg-muted/50"
+              } ${chosen ? "cursor-default" : "cursor-pointer"}`}
+            >
+              <span className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold leading-none ${
+                isCorrect
+                  ? "bg-emerald-500 text-white"
+                  : isWrong
+                  ? "bg-destructive text-destructive-foreground"
+                  : isChosen
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-foreground"
+              }`}>{alt.letra}</span>
+              <div className="flex-1 min-w-0 space-y-2">
+                {alt.texto && (
+                  <MathText className="text-sm leading-relaxed" inline>
+                    {normalizeAlternativaTexto(alt.texto)}
+                  </MathText>
+                )}
+                {alt.imagem && (
+                  <img
+                    src={alt.imagem}
+                    alt={`Alternativa ${alt.letra}`}
+                    className="rounded-lg border border-border bg-white dark:bg-zinc-900 max-h-48 object-contain"
+                  />
+                )}
+              </div>
+              {isCorrect && <Check className="shrink-0 w-4 h-4 text-emerald-600 self-center" />}
+              {isWrong && <X className="shrink-0 w-4 h-4 text-destructive self-center" />}
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-5 gap-2">
+      {letters.map((letter) => {
+        const isCorrect = !!chosen && letter === q.correta;
+        const isWrong = chosen === letter && letter !== q.correta;
+        return (
+          <Button
+            key={letter}
+            variant={chosen ? (isCorrect ? "default" : isWrong ? "destructive" : "outline") : "outline"}
+            className="h-11 text-base font-semibold rounded-xl"
+            onClick={() => onAnswer(letter)}
+            disabled={!!chosen || disabled}
+          >{letter}</Button>
+        );
+      })}
+    </div>
+  );
+}
+
+export default function BancoQuestoes() {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [searchParams] = useSearchParams();
+  const [search, setSearch] = useState(() => searchParams.get("q") ?? "");
+  const [debouncedSearch, setDebouncedSearch] = useState(() => searchParams.get("q") ?? "");
+  const [area, setArea] = useState("Todas");
+  const [ano, setAno] = useState("Todos");
+  const [disciplina, setDisciplina] = useState(() => searchParams.get("disciplina") ?? "Todas");
+  const [opened, setOpened] = useState<Question | null>(null);
+  const [revealed, setRevealed] = useState<Record<string, string>>({});
+  const [attempts, setAttempts] = useState<Record<string, Attempt>>({});
+  const [onlyErrors, setOnlyErrors] = useState(false);
+  const [explanation, setExplanation] = useState("");
+  const [explaining, setExplaining] = useState(false);
+  const [examMode, setExamMode] = useState(false);
+  const [examQueue, setExamQueue] = useState<Question[]>([]);
+  const [examIndex, setExamIndex] = useState(0);
+  const [examStartedAt, setExamStartedAt] = useState<number | null>(null);
+  const [examElapsed, setExamElapsed] = useState(0);
+  const [examFinished, setExamFinished] = useState(false);
+  const [examAnswers, setExamAnswers] = useState<Record<string, string>>({});
+  const [favorites, setFavorites] = useState<Set<string>>(() => loadFavorites());
+  const [onlyFavorites, setOnlyFavorites] = useState(false);
+  const [showIncomplete, setShowIncomplete] = useState(false);
+  const [globalStats, setGlobalStats] = useState<Record<string, Stat>>({});
+
+  useEffect(() => {
+    (async () => {
+      // Paginar para trazer TODAS as questões (Supabase limita 1000 por request)
+      const PAGE = 1000;
+      const fetchAllQuestions = async () => {
+        const all: any[] = [];
+        for (let from = 0; ; from += PAGE) {
+          const { data, error } = await supabase
+            .from("questions")
+            .select("id,ano,numero,area,disciplina,tema,enunciado,correta,imagem_urls,alternativas,incomplete")
+            .order("ano", { ascending: false })
+            .order("numero", { ascending: true })
+            .range(from, from + PAGE - 1);
+          if (error) throw error;
+          if (!data || data.length === 0) break;
+          all.push(...data);
+          if (data.length < PAGE) break;
+        }
+        return all;
+      };
+
+      let questionsData: any[] = [];
+      let loadError: any = null;
+      try {
+        questionsData = await fetchAllQuestions();
+      } catch (e) {
+        loadError = e;
+      }
+      const { data: attemptsData } = await supabase
+        .from("question_attempts")
+        .select("question_id,alternativa_marcada,acertou")
+        .order("created_at", { ascending: false })
+        .limit(1000);
+
+      if (loadError) toast.error("Erro ao carregar questões");
+      else {
+        // Deduplica por id (banco pode ter espelhamento de cadernos)
+        const seen = new Set<string>();
+        const unique = (questionsData as Question[]).filter((q) => {
+          if (seen.has(q.id)) return false;
+          seen.add(q.id);
+          return true;
+        });
+        setQuestions(unique);
+      }
+      const map: Record<string, Attempt> = {};
+      (attemptsData || []).forEach((a: any) => {
+        if (!map[a.question_id]) map[a.question_id] = a as Attempt;
+      });
+      setAttempts(map);
+      setLoading(false);
+
+      // Estatísticas globais (não-bloqueante)
+      (supabase.rpc as any)("question_stats").then(({ data: sData }: any) => {
+        if (!sData) return;
+        const sMap: Record<string, Stat> = {};
+        (sData as Array<{ question_id: string; total: number; acertos: number }>).forEach((r) => {
+          sMap[r.question_id] = { total: Number(r.total), acertos: Number(r.acertos) };
+        });
+        setGlobalStats(sMap);
+      });
+    })();
+  }, []);
+
+  // Persiste favoritos no localStorage
+  useEffect(() => { saveFavorites(favorites); }, [favorites]);
+  function toggleFavorite(id: string) {
+    setFavorites((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  // Debounce do campo de busca: filtro só roda 300ms depois da última tecla.
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  const disciplinas = useMemo(() => {
+    const set = new Set(questions.map((q) => q.disciplina).filter(Boolean));
+    return ["Todas", ...Array.from(set).sort()];
+  }, [questions]);
+
+  // Pré-computa enunciado limpo, preview e haystack de busca por questão.
+  // Evita rodar cleanPdfArtifacts toda hora durante render/filter.
+  const cleanedById = useMemo(() => {
+    const map = new Map<
+      string,
+      { cleaned: string; preview: string; haystack: string; tema: string }
+    >();
+    for (const q of questions) {
+      const hasAlts = getAlternativas(q).length === 5;
+      const cleaned = normalizeEnunciado(q.enunciado, hasAlts);
+      const preview = plainPreview(q.enunciado, hasAlts);
+      const tema = (q.tema || "").toLowerCase();
+      // Haystack = texto sem LaTeX e sem lixo, em minúsculas, pra busca confiável.
+      const haystack = (
+        cleaned
+          .replace(/\$\$([\s\S]+?)\$\$/g, " ")
+          .replace(/\\\[([\s\S]+?)\\\]/g, " ")
+          .replace(/\$([^\n$]+?)\$/g, " ")
+          .replace(/\\\(([\s\S]+?)\\\)/g, " ") +
+        " " +
+        tema
+      ).toLowerCase();
+      map.set(q.id, { cleaned, preview, haystack, tema });
+    }
+    return map;
+  }, [questions]);
+
+  // Lista de anos gerada dinamicamente a partir do banco
+  const anos = useMemo(() => {
+    const set = new Set<string>();
+    for (const q of questions) {
+      if (q.ano != null) set.add(String(q.ano));
+    }
+    return ["Todos", ...Array.from(set).sort((a, b) => Number(b) - Number(a))];
+  }, [questions]);
+
+  // Fecha o modal de forma segura: pede confirmação se houver explicação não revisada.
+  function closeModal() {
+    if (explanation && !confirm("Fechar e descartar a explicação da Flora?")) return;
+    setOpened(null);
+    setExplanation("");
+  }
+
+  const filtered = useMemo(() => {
+    const s = debouncedSearch.trim().toLowerCase();
+    return questions.filter((q) => {
+      if (area !== "Todas" && q.area !== area) return false;
+      if (ano !== "Todos" && String(q.ano) !== ano) return false;
+      if (disciplina !== "Todas" && q.disciplina !== disciplina) return false;
+      if (s) {
+        const hay = cleanedById.get(q.id)?.haystack ?? "";
+        if (!hay.includes(s)) return false;
+      }
+      if (onlyErrors && attempts[q.id]?.acertou !== false) return false;
+      if (onlyFavorites && !favorites.has(q.id)) return false;
+      if (q.incomplete && !showIncomplete) return false;
+      return true;
+    });
+  }, [questions, debouncedSearch, area, ano, disciplina, onlyErrors, onlyFavorites, showIncomplete, favorites, attempts, cleanedById]);
+
+  // Índice da questão aberta dentro da lista filtrada → navegação ←/→.
+  const openedIndex = useMemo(
+    () => (opened ? filtered.findIndex((q) => q.id === opened.id) : -1),
+    [opened, filtered],
+  );
+  function navigateModal(dir: -1 | 1) {
+    if (openedIndex < 0) return;
+    const next = filtered[openedIndex + dir];
+    if (!next) return;
+    setOpened(next);
+    setExplanation("");
+  }
+
+  // Atalhos de teclado do modal: ESC fecha, ←/→ navega.
+  useEffect(() => {
+    if (!opened || examMode) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeModal();
+      else if (e.key === "ArrowLeft") navigateModal(-1);
+      else if (e.key === "ArrowRight") navigateModal(1);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [opened, examMode, openedIndex, filtered, explanation]);
+
+  const stats = useMemo(() => {
+    const arr = Object.values(attempts);
+    return { total: arr.length, acertos: arr.filter((a) => a.acertou).length, erros: arr.filter((a) => !a.acertou).length };
+  }, [attempts]);
+
+  async function recordAttempt(q: Question, letter: string, modo: "livre" | "prova" | "revisao") {
+    const acertou = letter === q.correta;
+    setAttempts((p) => ({ ...p, [q.id]: { question_id: q.id, alternativa_marcada: letter, acertou } }));
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    await supabase.from("question_attempts").insert({ user_id: user.id, question_id: q.id, alternativa_marcada: letter, acertou, modo });
+  }
+
+  function handleAnswer(q: Question, letter: string) {
+    if (revealed[q.id]) return;
+    setRevealed((r) => ({ ...r, [q.id]: letter }));
+    recordAttempt(q, letter, "livre");
+  }
+
+  async function explainWithFlora(q: Question) {
+    setExplaining(true);
+    setExplanation("");
+    const altMarcada = revealed[q.id] || attempts[q.id]?.alternativa_marcada || "";
+    // Cache local: evita chamada à IA quando reabrimos a mesma questão
+    const cached = getCachedExplanation(q.id, altMarcada);
+    if (cached) {
+      setExplanation(cached);
+      setExplaining(false);
+      return;
+    }
+    try {
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/explain-question`;
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
+      if (!accessToken) { toast.error("Faça login para usar a Flora"); setExplaining(false); return; }
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({ enunciado: q.enunciado, alternativaMarcada: altMarcada, correta: q.correta, ano: q.ano, numero: q.numero, disciplina: q.disciplina, tema: q.tema }),
+      });
+      if (resp.status === 429) { toast.error("Muitas requisições. Aguarde."); setExplaining(false); return; }
+      if (resp.status === 402) { toast.error("Créditos da IA esgotados."); setExplaining(false); return; }
+      if (!resp.ok || !resp.body) { toast.error("Erro ao gerar explicação"); setExplaining(false); return; }
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let done = false;
+      let acc = "";
+      while (!done) {
+        const { done: d, value } = await reader.read();
+        if (d) break;
+        buffer += decoder.decode(value, { stream: true });
+        let idx: number;
+        while ((idx = buffer.indexOf("\n")) !== -1) {
+          let line = buffer.slice(0, idx);
+          buffer = buffer.slice(idx + 1);
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (!line.startsWith("data: ")) continue;
+          const json = line.slice(6).trim();
+          if (json === "[DONE]") { done = true; break; }
+          try {
+            const parsed = JSON.parse(json);
+            const c = parsed.choices?.[0]?.delta?.content;
+            if (c) { acc += c; setExplanation((prev) => prev + c); }
+          } catch { buffer = line + "\n" + buffer; break; }
+        }
+      }
+      // Persiste no cache local após o stream
+      if (acc.trim()) setCachedExplanation(q.id, altMarcada, acc);
+    } catch (e) {
+      console.error(e);
+      toast.error("Erro ao conectar com Flora");
+    } finally {
+      setExplaining(false);
+    }
+  }
+
+  function startExam() {
+    const pool = filtered.length >= 10 ? filtered : questions;
+    const shuffled = [...pool].sort(() => Math.random() - 0.5).slice(0, 10);
+    setExamQueue(shuffled);
+    setExamAnswers({});
+    setExamIndex(0);
+    setExamStartedAt(Date.now());
+    setExamElapsed(0);
+    setExamFinished(false);
+    setExamMode(true);
+  }
+
+  useEffect(() => {
+    if (!examMode || examFinished || !examStartedAt) return;
+    const t = setInterval(() => setExamElapsed(Math.floor((Date.now() - examStartedAt) / 1000)), 1000);
+    return () => clearInterval(t);
+  }, [examMode, examFinished, examStartedAt]);
+
+  function answerExam(letter: string) {
+    const q = examQueue[examIndex];
+    if (!q || examAnswers[q.id]) return;
+    setExamAnswers((a) => ({ ...a, [q.id]: letter }));
+    recordAttempt(q, letter, "prova");
+  }
+
+  function nextExam() {
+    if (examIndex < examQueue.length - 1) setExamIndex((i) => i + 1);
+    else setExamFinished(true);
+  }
+
+  function closeExam() {
+    setExamMode(false);
+    setExamFinished(false);
+    setExamQueue([]);
+    setExamAnswers({});
+    setExamStartedAt(null);
+  }
+
+  const examScore = useMemo(() => {
+    let acertos = 0;
+    examQueue.forEach((q) => { if (examAnswers[q.id] === q.correta) acertos++; });
+    return acertos;
+  }, [examQueue, examAnswers]);
+
+  const pct = stats.total > 0 ? Math.round((stats.acertos / stats.total) * 100) : 0;
+
+  return (
+    <div className="min-h-screen bg-background pb-20 md:pb-6">
+
+      {/* Header */}
+      <div className="border-b border-border bg-card sticky top-0 z-10 shadow-sm">
+        <div className="container max-w-7xl mx-auto px-3 sm:px-4 py-3 flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+            <BookOpen className="w-5 h-5 text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-lg font-semibold leading-tight">Banco de Questões</h1>
+            <p className="text-xs text-muted-foreground">{questions.length} questões oficiais do ENEM</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="container max-w-7xl mx-auto px-3 sm:px-4 py-4 space-y-4">
+
+        {/* Stats */}
+        {stats.total > 0 ? (
+          <Card className="p-4 flex flex-wrap items-center gap-4">
+            <div className="flex-1 min-w-[160px] space-y-1.5">
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>{stats.total} respondidas</span>
+                <span className="font-medium text-foreground">{pct}% de acerto</span>
+              </div>
+              <div className="h-2 rounded-full bg-muted overflow-hidden">
+                <div className="h-full rounded-full bg-emerald-500 transition-all duration-500" style={{ width: `${pct}%` }} />
+              </div>
+              <div className="flex gap-3 text-xs">
+                <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                  <Check className="w-3 h-3" />{stats.acertos} certas
+                </span>
+                <span className="flex items-center gap-1 text-destructive">
+                  <X className="w-3 h-3" />{stats.erros} erradas
+                </span>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 ml-auto">
+              <Button size="sm" variant={onlyErrors ? "default" : "outline"} onClick={() => setOnlyErrors((v) => !v)} disabled={stats.erros === 0}>
+                <RotateCcw className="w-4 h-4 mr-1.5" /> Refazer erros
+              </Button>
+              <Button size="sm" onClick={startExam}>
+                <Timer className="w-4 h-4 mr-1.5" /> Simular prova
+              </Button>
+            </div>
+          </Card>
+        ) : (
+          <Card className="p-4 flex flex-wrap items-center gap-3">
+            <p className="text-sm text-muted-foreground flex-1">Resolva questões para acompanhar seu progresso.</p>
+            <Button size="sm" onClick={startExam}>
+              <Timer className="w-4 h-4 mr-1.5" /> Simular prova ENEM
+            </Button>
+          </Card>
+        )}
+
+        {/* Filtros */}
+        <Card className="p-3 sm:p-4 space-y-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+            <Input placeholder="Buscar por enunciado ou tema…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <Select value={ano} onValueChange={setAno}>
+              <SelectTrigger><SelectValue placeholder="Ano" /></SelectTrigger>
+              <SelectContent>{anos.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent>
+            </Select>
+            <Select value={area} onValueChange={(v) => { setArea(v); setDisciplina("Todas"); }}>
+              <SelectTrigger><SelectValue placeholder="Área" /></SelectTrigger>
+              <SelectContent>{AREAS.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent>
+            </Select>
+            <Select value={disciplina} onValueChange={setDisciplina}>
+              <SelectTrigger><SelectValue placeholder="Disciplina" /></SelectTrigger>
+              <SelectContent>{disciplinas.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            <Filter className="w-3.5 h-3.5" />
+            <span>{filtered.length} resultado{filtered.length !== 1 && "s"}</span>
+            {onlyErrors && <Badge variant="destructive" className="ml-1">só erros</Badge>}
+            {onlyFavorites && <Badge variant="secondary" className="ml-1">só favoritas</Badge>}
+            {showIncomplete && <Badge variant="outline" className="ml-1 border-amber-500/50 text-amber-600">incluindo incompletas</Badge>}
+            <Button
+              size="sm"
+              variant={onlyFavorites ? "default" : "ghost"}
+              className="ml-auto h-7 px-2 text-xs"
+              onClick={() => setOnlyFavorites((v) => !v)}
+              aria-pressed={onlyFavorites}
+            >
+              <Star className={`w-3.5 h-3.5 mr-1 ${onlyFavorites ? "fill-current" : ""}`} />
+              Favoritas ({favorites.size})
+            </Button>
+            <Button
+              size="sm"
+              variant={showIncomplete ? "default" : "ghost"}
+              className="h-7 px-2 text-xs"
+              onClick={() => setShowIncomplete((v) => !v)}
+              aria-pressed={showIncomplete}
+              title="Mostrar questões marcadas como incompletas"
+            >
+              <AlertTriangle className="w-3.5 h-3.5 mr-1" />
+              Incompletas
+            </Button>
+          </div>
+        </Card>
+
+        {/* Lista */}
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="w-7 h-7 animate-spin text-primary" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {filtered.slice(0, 200).map((q) => {
+              const att = attempts[q.id];
+              const hasImg = !!q.imagem_urls?.[0];
+              const enunciado = cleanedById.get(q.id)?.preview ?? "";
+              const stat = globalStats[q.id];
+              const erroPct = stat && stat.total > 0 ? Math.round(((stat.total - stat.acertos) / stat.total) * 100) : null;
+              const isFav = favorites.has(q.id);
+              const ariaLabel = `Questão ${q.numero ?? "?"} do ENEM ${q.ano ?? ""}, ${q.disciplina || "sem disciplina"}${att ? (att.acertou ? ", já acertou" : ", já errou") : ""}${isFav ? ", favorita" : ""}`;
+              return (
+                <button
+                  key={q.id}
+                  onClick={() => { setOpened(q); setExplanation(""); }}
+                  className="text-left group"
+                  aria-label={ariaLabel}
+                >
+                  <Card className={`p-4 hover:border-primary/60 transition-all duration-150 h-full flex flex-col gap-3 relative ${
+                    att?.acertou ? "border-emerald-500/40 bg-emerald-500/[0.03]" : att && !att.acertou ? "border-destructive/40 bg-destructive/[0.03]" : ""
+                  }`}>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <Badge variant="secondary" className="text-[11px] px-2 py-0.5">ENEM {q.ano}</Badge>
+                      <Badge variant="outline" className="text-[11px] px-2 py-0.5">Q{q.numero}</Badge>
+                      {q.disciplina && (
+                        <Badge variant="outline" className="text-[11px] px-2 py-0.5 truncate max-w-[120px]">{q.disciplina}</Badge>
+                      )}
+                      {q.incomplete && (
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-amber-500/50 text-amber-600 gap-0.5">
+                          <AlertTriangle className="w-2.5 h-2.5" /> incompleta
+                        </Badge>
+                      )}
+                      {att && (
+                        <span className={`ml-auto shrink-0 w-5 h-5 rounded-full flex items-center justify-center ${att.acertou ? "bg-emerald-500" : "bg-destructive"}`}>
+                          {att.acertou ? <Check className="w-3 h-3 text-white" /> : <X className="w-3 h-3 text-white" />}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-foreground/85 line-clamp-4 leading-relaxed flex-1">
+                      {enunciado ? (
+                        <>{enunciado}{enunciado.length >= 240 ? "…" : ""}</>
+                      ) : (
+                        <span className="text-muted-foreground italic flex items-center gap-1.5">
+                          <ImageIcon className="w-3.5 h-3.5" /> Questão com imagem
+                        </span>
+                      )}
+                    </p>
+                    <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-auto pt-1 border-t border-border/50">
+                      {hasImg && <span className="flex items-center gap-1"><ImageIcon className="w-3 h-3" /> imagem</span>}
+                      {erroPct != null && (
+                        <span
+                          className={`flex items-center gap-1 ${erroPct >= 60 ? "text-destructive" : erroPct >= 30 ? "text-amber-500" : "text-emerald-600"}`}
+                          title={`${stat.total} respostas no total`}
+                        >
+                          {erroPct}% erram
+                        </span>
+                      )}
+                      <span className="ml-auto text-primary/70 group-hover:text-primary font-medium transition-colors">Ver questão →</span>
+                    </div>
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      onClick={(e) => { e.stopPropagation(); e.preventDefault(); toggleFavorite(q.id); }}
+                      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); e.preventDefault(); toggleFavorite(q.id); } }}
+                      className={`absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center transition-colors ${isFav ? "text-amber-500" : "text-muted-foreground/40 hover:text-amber-500"}`}
+                      aria-label={isFav ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+                      aria-pressed={isFav}
+                    >
+                      <Star className={`w-4 h-4 ${isFav ? "fill-current" : ""}`} />
+                    </span>
+                  </Card>
+                </button>
+              );
+            })}
+            {filtered.length === 0 && (
+              <div className="col-span-full text-center text-sm text-muted-foreground py-16">
+                Nenhuma questão encontrada com esses filtros.
+              </div>
+            )}
+          </div>
+        )}
+        {filtered.length > 200 && (
+          <p className="text-xs text-center text-muted-foreground">Mostrando 200 de {filtered.length}. Refine os filtros para ver mais.</p>
+        )}
+      </div>
+
+      {/* Modal questão */}
+      {opened && !examMode && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-start justify-center p-3 sm:p-6 overflow-y-auto"
+          onClick={closeModal}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="question-modal-title"
+        >
+          <div
+            className="max-w-2xl w-full my-4 sm:my-8 rounded-2xl border border-border bg-card shadow-2xl flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Cabeçalho */}
+            <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-border bg-muted/40">
+              <div className="flex flex-wrap items-center gap-2 min-w-0">
+                <Badge variant="secondary" id="question-modal-title">ENEM {opened.ano} · Q{opened.numero}</Badge>
+                {opened.disciplina && <Badge variant="outline">{opened.disciplina}</Badge>}
+                {opened.tema && (
+                  <span className="text-xs text-muted-foreground truncate max-w-full sm:max-w-[200px] basis-full sm:basis-auto">
+                    {opened.tema}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-1 shrink-0 -mr-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={`rounded-full ${favorites.has(opened.id) ? "text-amber-500" : ""}`}
+                  onClick={() => toggleFavorite(opened.id)}
+                  title={favorites.has(opened.id) ? "Remover dos favoritos" : "Favoritar"}
+                  aria-label={favorites.has(opened.id) ? "Remover dos favoritos" : "Favoritar"}
+                  aria-pressed={favorites.has(opened.id)}
+                >
+                  <Star className={`w-4 h-4 ${favorites.has(opened.id) ? "fill-current" : ""}`} />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full"
+                  onClick={() => navigateModal(-1)}
+                  disabled={openedIndex <= 0}
+                  title="Anterior (←)"
+                  aria-label="Questão anterior"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <span className="text-[11px] text-muted-foreground tabular-nums px-1">
+                  {openedIndex >= 0 ? `${openedIndex + 1}/${filtered.length}` : ""}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full"
+                  onClick={() => navigateModal(1)}
+                  disabled={openedIndex < 0 || openedIndex >= filtered.length - 1}
+                  title="Próxima (→)"
+                  aria-label="Próxima questão"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+                <Button variant="ghost" size="icon" className="rounded-full" onClick={closeModal} title="Fechar (Esc)" aria-label="Fechar">
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Corpo */}
+            <div className="p-5 sm:p-6 space-y-5 overflow-y-auto">
+
+              {/* Aviso de incompleta */}
+              {opened.incomplete && (
+                <div className="rounded-xl px-4 py-3 flex items-start gap-3 bg-amber-500/10 border border-amber-500/30">
+                  <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="text-sm">
+                    <p className="font-semibold text-amber-700 dark:text-amber-400">Questão marcada como incompleta</p>
+                    <p className="text-xs text-foreground/70 mt-0.5">
+                      Esta questão pode ter alternativas faltando, enunciado quebrado ou outro problema de extração. Use com cautela ou pule para a próxima.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* 1. Enunciado */}
+              <MathText className="text-[15px] leading-relaxed text-foreground select-text">
+                {cleanedById.get(opened.id)?.cleaned ?? normalizeEnunciado(opened.enunciado, getAlternativas(opened).length === 5)}
+              </MathText>
+
+              {/* 2. Imagens — entre enunciado e alternativas */}
+              <QuestionImages urls={opened.imagem_urls || []} label={`Questão ${opened.numero} ENEM ${opened.ano}`} />
+
+              {/* 3. Alternativas */}
+              <AlternativasPanel
+                q={opened}
+                chosen={revealed[opened.id] || attempts[opened.id]?.alternativa_marcada}
+                onAnswer={(letter) => handleAnswer(opened, letter)}
+              />
+
+              {/* 4. Resultado */}
+              {(revealed[opened.id] || attempts[opened.id]) && (() => {
+                const chosen = revealed[opened.id] || attempts[opened.id]?.alternativa_marcada;
+                const acertou = chosen === opened.correta;
+                return (
+                  <div className={`rounded-xl px-4 py-3 flex items-center gap-3 ${acertou ? "bg-emerald-500/10 border border-emerald-500/30" : "bg-destructive/10 border border-destructive/30"}`}>
+                    <span className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${acertou ? "bg-emerald-500" : "bg-destructive"}`}>
+                      {acertou ? <Check className="w-4 h-4 text-white" /> : <X className="w-4 h-4 text-white" />}
+                    </span>
+                    <p className={`text-sm font-medium ${acertou ? "text-emerald-700 dark:text-emerald-400" : "text-destructive"}`}>
+                      {acertou ? "Correto! Resposta: " : "Resposta correta: "}
+                      <span className="font-bold">{opened.correta}</span>
+                    </p>
+                  </div>
+                );
+              })()}
+
+              {/* 5. Flora explica */}
+              <div className="flex flex-wrap gap-2">
+                <Button variant="secondary" size="sm" onClick={() => explainWithFlora(opened)} disabled={explaining}>
+                  {explaining ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <Sparkles className="w-4 h-4 mr-1.5" />}
+                  Flora explica
+                </Button>
+              </div>
+
+              {(explanation || explaining) && (
+                <div className="rounded-xl border border-primary/25 bg-primary/5 p-4 space-y-2">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-primary">
+                    <Sparkles className="w-3.5 h-3.5" /> Flora
+                  </div>
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap text-foreground/90">
+                    {explanation || "Pensando…"}
+                    {explaining && <span className="inline-block w-2 h-[1em] ml-1 bg-primary/60 animate-pulse align-middle rounded-sm" />}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modo Prova */}
+      {examMode && (
+        <div className="fixed inset-0 z-50 bg-background overflow-y-auto">
+          <div className="border-b border-border bg-card sticky top-0 z-10 shadow-sm">
+            <div className="container max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                <Timer className="w-4 h-4 text-primary" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-semibold leading-tight">Simulado ENEM · 10 questões</p>
+                <p className="text-xs text-muted-foreground">
+                  Questão {Math.min(examIndex + 1, examQueue.length)} de {examQueue.length} · {String(Math.floor(examElapsed / 60)).padStart(2, "0")}:{String(examElapsed % 60).padStart(2, "0")}
+                </p>
+              </div>
+              <div className="hidden sm:flex gap-1 items-center">
+                {examQueue.map((q, i) => (
+                  <div key={q.id} className={`h-1.5 w-5 rounded-full transition-colors ${
+                    i < examIndex
+                      ? examAnswers[q.id] === q.correta ? "bg-emerald-500" : "bg-destructive"
+                      : i === examIndex ? "bg-primary" : "bg-muted"
+                  }`} />
+                ))}
+              </div>
+              <Button variant="ghost" size="sm" onClick={closeExam}>Sair</Button>
+            </div>
+          </div>
+
+          <div className="container max-w-2xl mx-auto px-4 py-6 space-y-5">
+            {!examFinished && examQueue[examIndex] && (() => {
+              const q = examQueue[examIndex];
+              const chosen = examAnswers[q.id];
+              return (
+                <>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant="secondary">ENEM {q.ano}</Badge>
+                    <Badge variant="outline">Q{q.numero}</Badge>
+                    <Badge variant="outline">{q.disciplina}</Badge>
+                  </div>
+
+                  {/* Enunciado */}
+                  <MathText className="text-[15px] leading-relaxed text-foreground select-text">
+                    {cleanedById.get(q.id)?.cleaned ?? normalizeEnunciado(q.enunciado, getAlternativas(q).length === 5)}
+                  </MathText>
+
+                  {/* Imagens — antes das alternativas */}
+                  <QuestionImages urls={q.imagem_urls || []} label={`Questão ${q.numero} ENEM ${q.ano}`} />
+
+                  {/* Alternativas */}
+                  <AlternativasPanel q={q} chosen={chosen} onAnswer={answerExam} />
+
+                  {/* Resultado */}
+                  {chosen && (
+                    <div className={`rounded-xl px-4 py-3 flex items-center gap-3 ${chosen === q.correta ? "bg-emerald-500/10 border border-emerald-500/30" : "bg-destructive/10 border border-destructive/30"}`}>
+                      <span className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${chosen === q.correta ? "bg-emerald-500" : "bg-destructive"}`}>
+                        {chosen === q.correta ? <Check className="w-4 h-4 text-white" /> : <X className="w-4 h-4 text-white" />}
+                      </span>
+                      <p className={`text-sm font-medium ${chosen === q.correta ? "text-emerald-700 dark:text-emerald-400" : "text-destructive"}`}>
+                        {chosen === q.correta ? "Correto!" : "Resposta correta: "}
+                        {chosen !== q.correta && <span className="font-bold">{q.correta}</span>}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="flex justify-end">
+                    <Button onClick={nextExam} disabled={!chosen} className="rounded-xl px-6">
+                      {examIndex < examQueue.length - 1 ? "Próxima" : "Finalizar"}
+                    </Button>
+                  </div>
+                </>
+              );
+            })()}
+
+            {examFinished && (
+              <div className="text-center space-y-6 py-8">
+                <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+                  <BookOpen className="w-9 h-9 text-primary" />
+                </div>
+                <div className="space-y-1">
+                  <h2 className="text-2xl font-bold">Simulado finalizado!</h2>
+                  <p className="text-muted-foreground text-sm">Tempo: {String(Math.floor(examElapsed / 60)).padStart(2, "0")}:{String(examElapsed % 60).padStart(2, "0")}</p>
+                </div>
+                <div className="flex items-end justify-center gap-2">
+                  <span className="text-6xl font-black text-primary">{examScore}</span>
+                  <span className="text-2xl text-muted-foreground mb-2">/ {examQueue.length}</span>
+                </div>
+                <div className="flex gap-4 justify-center text-sm">
+                  <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400"><Check className="w-4 h-4" />{examScore} certas</span>
+                  <span className="flex items-center gap-1.5 text-destructive"><X className="w-4 h-4" />{examQueue.length - examScore} erradas</span>
+                </div>
+                <div className="flex flex-wrap gap-3 justify-center">
+                  <Button variant="outline" onClick={startExam}><Timer className="w-4 h-4 mr-1.5" /> Novo simulado</Button>
+                  <Button onClick={closeExam}>Voltar ao banco</Button>
+                </div>
+                <div className="pt-2">
+                  <ShareExamResult
+                    score={examScore}
+                    total={examQueue.length}
+                    elapsedSeconds={examElapsed}
+                    disciplina={disciplina !== "Todas" ? disciplina : undefined}
+                    ano={ano !== "Todos" ? Number(ano) : undefined}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      <BottomNav />
+    </div>
+  );
+}
