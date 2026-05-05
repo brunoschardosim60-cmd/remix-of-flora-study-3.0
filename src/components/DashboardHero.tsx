@@ -70,18 +70,14 @@ export function DashboardHero({
               <Button size="lg" className="w-full sm:w-auto sm:min-w-[180px]" onClick={onPrimaryAction}>
                 {primaryLabel}
               </Button>
-              {onVoiceSettings && (
-                <Button size="lg" variant="outline" className="w-full sm:w-auto" onClick={onVoiceSettings}>
-                  <Volume2 className="w-4 h-4 mr-2" />
-                  Modo Voz
-                </Button>
-              )}
-              {onAulao && (
-                <Button size="lg" variant="outline" className="w-full sm:w-auto" onClick={onAulao}>
-                  <BookOpen className="w-4 h-4 mr-2" />
-                  Aulão
-                </Button>
-              )}
+              <Button size="lg" variant="outline" className="w-full sm:w-auto" onClick={onVoiceSettings || (() => window.location.href='/settings?tab=voice')}>
+                <Volume2 className="w-4 h-4 mr-2" />
+                Modo Voz
+              </Button>
+              <Button size="lg" variant="outline" className="w-full sm:w-auto" onClick={onAulao || (() => window.location.href='/aulao')}>
+                <BookOpen className="w-4 h-4 mr-2" />
+                Aulão
+              </Button>
               <div className="w-full sm:w-auto rounded-2xl border border-border/70 bg-background/70 px-4 py-3">
                 <p className="text-xs text-muted-foreground">Resumo de hoje</p>
                 <p className="font-medium">
