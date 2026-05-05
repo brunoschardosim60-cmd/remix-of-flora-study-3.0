@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, BookOpen, Lightbulb, PenTool, Volume2, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { floraGenerateLesson } from "@/lib/floraClient";
+import { Lesson } from "@/lib/types"; // Assuming Lesson type is defined here or needs to be created
 import { InteractiveLessonPlayer } from "@/components/InteractiveLessonPlayer";
 import { EssayTutorMode } from "@/components/EssayTutorMode";
 import "./Aulao.css";
@@ -15,6 +17,8 @@ interface AulaoTopic {
   description: string;
   icon: React.ReactNode;
   mode: "lesson" | "essay" | "search";
+  defaultLevel?: 'enem' | 'concurso' | 'basico';
+  defaultDidacticStyle?: 'macetes' | 'aprofundado' | 'normal';
 }
 
 const AULAO_TOPICS: AulaoTopic[] = [
@@ -24,6 +28,8 @@ const AULAO_TOPICS: AulaoTopic[] = [
     description: "Aprenda com a Flora explicando como se fosse uma professora particular. Inclui macetes e dicas de prova.",
     icon: <BookOpen size={24} />,
     mode: "lesson",
+    defaultLevel: "enem",
+    defaultDidacticStyle: "macetes",
   },
   {
     id: "essay-enem",
@@ -38,6 +44,8 @@ const AULAO_TOPICS: AulaoTopic[] = [
     description: "A Flora lê a aula para você enquanto estuda. Perfeito para estudar em movimento ou com as mãos ocupadas.",
     icon: <Volume2 size={24} />,
     mode: "lesson",
+    defaultLevel: "enem",
+    defaultDidacticStyle: "normal",
   },
   {
     id: "search-content",
@@ -54,10 +62,43 @@ export default function Aulao() {
   const [selectedTopic, setSelectedTopic] = useState<AulaoTopic | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [essayTheme, setEssayTheme] = useState("");
+  const [loadingLesson, setLoadingLesson] = useState(false);
+  const [generatedLesson, setGeneratedLesson] = useState<Lesson | null>(null);
 
-  const handleTopicSelect = (topic: AulaoTopic) => {
+  const handleTopicSelect = async (topic: AulaoTopic) => {
     setSelectedTopic(topic);
     setMode(topic.mode);
+
+    if (topic.mode === "lesson") {
+      setLoadingLesson(true);
+      setGeneratedLesson(null);
+      try {
+        // TODO: Get actual content, materia, level, didacticStyle from user input or context
+        const dummyContent = "Conteúdo base para a aula. Pode ser uma transcrição de vídeo, um texto de artigo, etc.";
+        const dummyMateria = "História";
+        const dummyLevel = "enem";
+        const dummyDidacticStyle = "normal";
+
+        const result = await floraGenerateLesson(
+          topic.title,
+          dummyMateria,
+          dummyLevel,
+          dummyDidacticStyle,
+          dummyContent
+        );
+        if (result?.lesson) {
+          setGeneratedLesson(result.lesson);
+        } else {
+          console.error("Failed to generate lesson:", result);
+          // Handle error, maybe show a message to the user
+        }
+      } catch (error) {
+        console.error("Error generating lesson:", error);
+        // Handle error
+      } finally {
+        setLoadingLesson(false);
+      }
+    }
   };
 
   const handleBack = () => {
@@ -66,6 +107,7 @@ export default function Aulao() {
       setSelectedTopic(null);
       setSearchQuery("");
       setEssayTheme("");
+      setGeneratedLesson(null);
     } else {
       navigate("/");
     }
@@ -115,27 +157,15 @@ export default function Aulao() {
         )}
 
         {mode === "lesson" && selectedTopic && (
-          <InteractiveLessonPlayer
-            lesson={{
-              titulo: selectedTopic.title,
-              introducao: `Bem-vindo ao Aulão de ${selectedTopic.title}. Vamos começar explorando os conceitos fundamentais.`,
-              blocos: [
-                {
-                  titulo: "Conceitos Iniciais",
-                  conteudo: "Aqui a Flora vai carregar o conteúdo baseado no seu material ou tema escolhido.",
-                  checkpoint: "O que você entendeu sobre esse início?"
-                }
-              ],
-              resumo: "Resumo dos pontos principais da aula.",
-              exercicio_final: {
-                pergunta: "Pergunta final para testar seu conhecimento.",
-                opcoes: ["Opção A", "Opção B", "Opção C", "Opção D"],
-                correta: 0,
-                explicacao: "Explicação detalhada da resposta."
-              }
-            }}
-            enableVoice={selectedTopic.id === "lesson-voice"}
-          />
+          <>
+            {loadingLesson && <p>Gerando sua aula com a Flora...</p>}
+            {!loadingLesson && generatedLesson && (
+              <InteractiveLessonPlayer
+                lesson={generatedLesson}
+                enableVoice={selectedTopic.id === "lesson-voice"}
+              />
+            )}
+          </>
         )}
 
         {mode === "essay" && selectedTopic && (

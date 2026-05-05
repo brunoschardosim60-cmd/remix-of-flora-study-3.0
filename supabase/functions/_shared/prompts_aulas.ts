@@ -49,23 +49,6 @@ Responda SOMENTE com JSON:
     "pergunta": "Enunciado da questão...",
     "alternativas": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."],
     "correta": 0,
-    "explicacao": "Explicação detalhada da respostanda SOMENTE com JSON:
-{
-  "titulo": "Título da Aula",
-  "introducao": "Texto da introdução...",
-  "blocos": [
-    {
-      "titulo": "Título do Bloco",
-      "conteudo": "Explicação detalhada em Markdown...",
-      "checkpoint": "Pergunta rápida de reflexão"
-    }
-  ],
-  "resumo": ["Ponto 1", "Ponto 2", "Ponto 3"],
-  "exercicio_final": {
-    "pergunta": "Enunciado da questão...",
-    "alternativas": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."],
-    "correta": 0,
     "explicacao": "Explicação detalhada da resposta"
   }
-}`;
-}
+}`

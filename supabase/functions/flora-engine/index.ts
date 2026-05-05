@@ -49,6 +49,7 @@ const QUOTA_ACTION_MAP: Record<string, string> = {
   generate_flashcards: "generate_flashcards",
   generate_initial_plan: "decide_next_topic",
   analyze_and_suggest: "decide_next_topic",
+  generate_lesson: "generate_lesson",
 };
 
 // Constrói bloco de ADAPTAÇÃO REAL pra incluir no system prompt do Flora.
@@ -778,6 +779,39 @@ Responda SOMENTE com JSON: {"questions":[{"pergunta":"TEXTO-BASE COMPLETO\\n\\nC
         if (result?.questions) result.questions = sanitizeQuizQuestions(result.questions);
         await supabase.from("user_actions").insert({ user_id: userId, action: "flora_generate_quiz", materia, metadata: { tema, difficulty, questionCount: result.questions?.length || 0 } });
         return jsonResponse({ ok: true, type: "quiz", materia, tema, ...result });
+      }
+
+      if (actionType === "FLASHCARDS" && data?.payload) {
+        // ... (existing flashcards logic)
+      }
+
+      if (actionType === "GENERATE_LESSON" && data?.payload) {
+        const qChk = await checkQuota(supabase, userId, "generate_lesson");
+        if (!qChk.allowed) return quotaExceededResponse(qChk, corsHeaders);
+
+        const { topic, materia, level, didacticStyle, content } = data.payload;
+        const { LESSON_SYSTEM_PROMPT, buildLessonPrompt } = await import("../_shared/prompts_aulas.ts");
+
+        const systemPrompt = getSystemPromptWithPersona(
+          personality as FloraPersonality,
+          explanationStyle as ExplanationStyle,
+          LESSON_SYSTEM_PROMPT,
+          context,
+        );
+
+        const userPrompt = buildLessonPrompt(content, materia, topic, level, didacticStyle);
+
+        const lessonJson = await runTaskChain(
+          { messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt }] },
+          "generate_lesson",
+          "aulao_lesson_generation",
+          { supabase, userId, actionType: "generate_lesson" },
+        );
+
+        const parsedLesson = parseAIJSON(lessonJson);
+        if (!parsedLesson) throw new Error("Failed to parse lesson JSON from AI.");
+
+        return jsonResponse({ ok: true, lesson: parsedLesson });
       }
 
       if (actionType === "FLASHCARDS" && data?.payload) {

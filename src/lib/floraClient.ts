@@ -67,7 +67,16 @@ export async function logUserAction(
   }
 }
 
-export async function getFloraRecommendation() {
+export async function getFloraRecommendation(opts: { action: string; data: Record<string, unknown> }, tag: string) {
+  const { action, data } = opts;
+  const { data: res, error } = await supabase.functions.invoke("flora-engine", {
+    body: { action, data },
+  });
+  if (error) throw error;
+  return res;
+}
+
+export async function floraStudyNow() {
   try {
     const { data, error } = await supabase.functions.invoke("flora-engine", {
       body: { action: "decide_next_topic" },
@@ -220,4 +229,11 @@ export async function checkOnboardingComplete(userId: string): Promise<boolean> 
   } catch {
     return false;
   }
+}
+
+export async function floraGenerateLesson(topic: string, materia: string, level: 'enem' | 'concurso' | 'basico', didacticStyle: 'macetes' | 'aprofundado' | 'normal', content: string) {
+  return getFloraRecommendation(
+    { action: "generate_lesson", data: { topic, materia, level, didacticStyle, content } },
+    "generate_lesson",
+  );
 }
