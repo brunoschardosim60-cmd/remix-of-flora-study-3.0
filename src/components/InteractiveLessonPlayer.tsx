@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import { Play, Pause, Volume2, VolumeX, MessageCircle, SkipForward, SkipBack, Loader2, Send } from "lucide-react";
 import "./InteractiveLessonPlayer.css";
 
@@ -12,10 +12,10 @@ interface Lesson {
   titulo: string;
   introducao: string;
   blocos: LessonBlock[];
-  resumo: string[];
+  resumo: string;
   exercicio_final: {
     pergunta: string;
-    alternativas: string[];
+    opcoes: string[];
     correta: number;
     explicacao: string;
   };
@@ -35,26 +35,21 @@ export const InteractiveLessonPlayer: React.FC<InteractiveLessonPlayerProps> = (
   personality = "amiga",
 }) => {
   const [currentBlockIndex, setCurrentBlockIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [showDuvidaPanel, setShowDuvidaPanel] = useState(false);
   const [duvidaText, setDuvidaText] = useState("");
   const [duvidaResponse, setDuvidaResponse] = useState("");
   const [isLoadingResponse, setIsLoadingResponse] = useState(false);
   const [showCheckpoint, setShowCheckpoint] = useState(false);
-  const audioRef = useRef<HTMLAudioElement>(null);
 
   const currentBlock = lesson.blocos[currentBlockIndex];
   const isLastBlock = currentBlockIndex === lesson.blocos.length - 1;
 
-  // Simular fala com TTS
   const handleSpeak = async (text: string) => {
     if (!enableVoice) return;
-
     setIsSpeaking(true);
     try {
-      // Aqui você chamaria a API de TTS (flora-tts)
-      // Por enquanto, apenas simulamos
+      // Simulação de chamada de API de TTS
       await new Promise((resolve) => setTimeout(resolve, 2000));
     } catch (error) {
       console.error("Erro ao falar:", error);
@@ -63,44 +58,32 @@ export const InteractiveLessonPlayer: React.FC<InteractiveLessonPlayerProps> = (
     }
   };
 
-  // Processar dúvida do aluno
   const handleDuvidaSubmit = async () => {
     if (!duvidaText.trim()) return;
-
     setIsLoadingResponse(true);
     try {
-      // Aqui você chamaria a API para processar a dúvida
-      // Por enquanto, apenas simulamos uma resposta
-      const mockResponse = `Ótima pergunta! Deixa eu esclarecer isso para você...
-      
-      [A Flora responderia aqui de forma personalizada baseada na dúvida]
-      
-      Ficou claro? Podemos continuar de onde paramos?`;
-
-      setDuvidaResponse(mockResponse);
-      
-      // Falar a resposta se voz estiver ativada
-      if (enableVoice) {
-        await handleSpeak(mockResponse);
-      }
+      setTimeout(() => {
+        const mockResponse = `Ótima pergunta! Sobre sua dúvida, o ponto principal é que a Flora está aqui para simplificar. No contexto desta aula, lembre-se que o mais importante é focar na base do conceito. Podemos continuar?`;
+        setDuvidaResponse(mockResponse);
+        setIsLoadingResponse(false);
+      }, 1500);
     } catch (error) {
       console.error("Erro ao processar dúvida:", error);
-    } finally {
       setIsLoadingResponse(false);
     }
   };
 
-  // Avançar para próximo bloco
   const handleNextBlock = () => {
     if (!isLastBlock) {
       setCurrentBlockIndex(currentBlockIndex + 1);
       setShowCheckpoint(false);
       setDuvidaText("");
       setDuvidaResponse("");
+    } else if (onComplete) {
+      onComplete();
     }
   };
 
-  // Voltar para bloco anterior
   const handlePrevBlock = () => {
     if (currentBlockIndex > 0) {
       setCurrentBlockIndex(currentBlockIndex - 1);
@@ -112,7 +95,6 @@ export const InteractiveLessonPlayer: React.FC<InteractiveLessonPlayerProps> = (
 
   return (
     <div className="interactive-lesson-player">
-      {/* Cabeçalho */}
       <div className="lesson-header">
         <h1 className="lesson-title">{lesson.titulo}</h1>
         <div className="lesson-progress">
@@ -128,66 +110,106 @@ export const InteractiveLessonPlayer: React.FC<InteractiveLessonPlayerProps> = (
         </div>
       </div>
 
-      {/* Conteúdo Principal */}
       <div className="lesson-content">
-        {currentBlockIndex === 0 ? (
-          <div className="introduction-section">
-            <h2>Introdução</h2>
-            <p className="introduction-text">{lesson.introducao}</p>
-            <button
-              className="start-button"
-              onClick={() => {
-                setCurrentBlockIndex(0);
-                handleSpeak(lesson.introducao);
-              }}
-            >
-              {enableVoice && isSpeaking ? (
-                <>
-                  <Loader2 size={18} className="spinner" /> Ouvindo...
-                </>
-              ) : (
-                <>
-                  <Play size={18} /> Começar Aula
-                </>
-              )}
-            </button>
+        <div className="block-section">
+          <h2 className="block-title">{currentBlock.titulo}</h2>
+          <div className="block-content">
+            {currentBlock.conteudo}
           </div>
-        ) : (
-          <div className="block-section">
-            <h2 className="block-title">{currentBlock.titulo}</h2>
-            <div
-              className="block-content"
-              dangerouslySetInnerHTML={{ __html: currentBlock.conteudo }}
-            />
 
-            {/* Checkpoint */}
-            {!showCheckpoint ? (
-              <button
-                className="checkpoint-button"
-                onClick={() => setShowCheckpoint(true)}
-              >
-                📝 Responder Checkpoint
-              </button>
-            ) : (
-              <div className="checkpoint-panel">
-                <p className="checkpoint-question">{currentBlock.checkpoint}</p>
-                <textarea
-                  className="checkpoint-input"
-                  placeholder="Digite sua resposta aqui..."
-                  rows={3}
-                />
-                <button className="submit-checkpoint">Enviar Resposta</button>
-              </div>
-            )}
-          </div>
-        )}
+          {!showCheckpoint ? (
+            <button
+              className="checkpoint-button"
+              onClick={() => setShowCheckpoint(true)}
+            >
+              📝 Responder Checkpoint
+            </button>
+          ) : (
+            <div className="checkpoint-panel">
+              <p className="checkpoint-question">{currentBlock.checkpoint}</p>
+              <textarea
+                className="checkpoint-input"
+                placeholder="Digite sua resposta aqui..."
+                rows={3}
+              />
+              <button className="submit-checkpoint" onClick={() => setShowCheckpoint(false)}>Enviar Resposta</button>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Controles de Reprodução */}
       <div className="lesson-controls">
         <button
           className="control-btn prev"
           onClick={handlePrevBlock}
           disabled={currentBlockIndex === 0}
-          title="Bloco Anterior"
-        >\n          <SkipBack size={20} />\n        </button>\n\n        <button\n          className="control-btn play"\n          onClick={() => {\n            setIsPlaying(!isPlaying);\n            if (!isPlaying && currentBlock) {\n              handleSpeak(currentBlock.conteudo);\n            }\n          }}\n          title={isPlaying ? \"Pausar\" : \"Reproduzir\"}\n        >\n          {isSpeaking ? (\n            <Pause size={20} />\n          ) : (\n            <Play size={20} />\n          )}\n        </button>\n\n        <button\n          className=\"control-btn voice\"\n          onClick={() => setShowDuvidaPanel(!showDuvidaPanel)}\n          title=\"Fazer Dúvida\"\n        >\n          <MessageCircle size={20} />\n        </button>\n\n        <button\n          className=\"control-btn next\"\n          onClick={handleNextBlock}\n          disabled={isLastBlock}\n          title=\"Próximo Bloco\"\n        >\n          <SkipForward size={20} />\n        </button>\n      </div>\n\n      {/* Painel de Dúvida Rápida */}\n      {showDuvidaPanel && (\n        <div className=\"duvida-panel\">\n          <div className=\"duvida-header\">\n            <h3>Dúvida Rápida</h3>\n            <button\n              className=\"close-btn\"\n              onClick={() => setShowDuvidaPanel(false)}\n            >\n              ✕\n            </button>\n          </div>\n\n          {duvidaResponse ? (\n            <div className=\"duvida-response\">\n              <p className=\"response-text\">{duvidaResponse}</p>\n              <button\n                className=\"continue-button\"\n                onClick={() => {\n                  setDuvidaResponse(\"\");\n                  setDuvidaText(\"\");\n                  handleNextBlock();\n                }}\n              >\n                Continuar Aula\n              </button>\n            </div>\n          ) : (\n            <div className=\"duvida-input-area\">\n              <textarea\n                className=\"duvida-input\"\n                placeholder=\"Qual é sua dúvida? A Flora vai responder...\"\n                value={duvidaText}\n                onChange={(e) => setDuvidaText(e.target.value)}\n                rows={3}\n              />\n              <button\n                className=\"send-duvida-btn\"\n                onClick={handleDuvidaSubmit}\n                disabled={isLoadingResponse || !duvidaText.trim()}\n              >\n                {isLoadingResponse ? (\n                  <>\n                    <Loader2 size={16} className=\"spinner\" /> Respondendo...\n                  </>\n                ) : (\n                  <>\n                    <Send size={16} /> Enviar\n                  </>\n                )}\n              </button>\n            </div>\n          )}\n        </div>\n      )}\n    </div>\n  );\n};\n
+        >
+          <SkipBack size={20} />
+        </button>
+
+        <button
+          className="control-btn play"
+          onClick={() => handleSpeak(currentBlock.conteudo)}
+        >
+          {isSpeaking ? <Pause size={20} /> : <Play size={20} />}
+        </button>
+
+        <button
+          className="control-btn voice"
+          onClick={() => setShowDuvidaPanel(!showDuvidaPanel)}
+        >
+          <MessageCircle size={20} />
+        </button>
+
+        <button
+          className="control-btn next"
+          onClick={handleNextBlock}
+        >
+          <SkipForward size={20} />
+        </button>
+      </div>
+
+      {showDuvidaPanel && (
+        <div className="duvida-panel">
+          <div className="duvida-header">
+            <h3>Dúvida Rápida</h3>
+            <button className="close-btn" onClick={() => setShowDuvidaPanel(false)}>✕</button>
+          </div>
+
+          {duvidaResponse ? (
+            <div className="duvida-response">
+              <p className="response-text">{duvidaResponse}</p>
+              <button
+                className="continue-button"
+                onClick={() => {
+                  setDuvidaResponse("");
+                  setDuvidaText("");
+                  setShowDuvidaPanel(false);
+                }}
+              >
+                Entendi, continuar!
+              </button>
+            </div>
+          ) : (
+            <div className="duvida-input-area">
+              <textarea
+                className="duvida-input"
+                placeholder="Qual é sua dúvida?"
+                value={duvidaText}
+                onChange={(e) => setDuvidaText(e.target.value)}
+                rows={3}
+              />
+              <button
+                className="send-duvida-btn"
+                onClick={handleDuvidaSubmit}
+                disabled={isLoadingResponse || !duvidaText.trim()}
+              >
+                {isLoadingResponse ? <Loader2 size={16} className="spinner" /> : <Send size={16} />}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};

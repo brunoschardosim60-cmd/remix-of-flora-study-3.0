@@ -1,4 +1,120 @@
-import React, { useState } from "react";\nimport { useNavigate } from "react-router-dom";\nimport { ArrowLeft, BookOpen, Lightbulb, PenTool, Volume2, Search } from "lucide-react\";\nimport { Button } from \"@/components/ui/button\";\nimport { Input } from \"@/components/ui/input\";\nimport { InteractiveLessonPlayer } from \"@/components/InteractiveLessonPlayer\";\nimport { EssayTutorMode } from \"@/components/EssayTutorMode\";\nimport \"./Aulao.css\";\n\ntype AulaoMode = \"selection\" | \"lesson\" | \"essay\" | \"search\";\n\ninterface AulaoTopic {\n  id: string;\n  title: string;\n  description: string;\n  icon: React.ReactNode;\n  mode: \"lesson\" | \"essay\" | \"search\";\n}\n\nconst AULAO_TOPICS: AulaoTopic[] = [\n  {\n    id: \"lesson-enem\",\n    title: \"Aula Dinâmica ENEM\",\n    description: \"Aprenda com a Flora explicando como se fosse uma professora particular. Inclui macetes e dicas de prova.\",\n    icon: <BookOpen size={24} />,\n    mode: \"lesson\",\n  },\n  {\n    id: \"essay-enem\",\n    title: \"Tutor de Redação ENEM\",\n    description: \"Escreva sua redação e receba feedback em tempo real da Flora sobre estrutura, argumentação e pontuação.\",\n    icon: <PenTool size={24} />,\n    mode: \"essay\",\n  },\n  {\n    id: \"lesson-voice\",\n    title: \"Aula com Voz (Modo Áudio)\",\n    description: \"A Flora lê a aula para você enquanto estuda. Perfeito para estudar em movimento ou com as mãos ocupadas.\",\n    icon: <Volume2 size={24} />,\n    mode: \"lesson\",\n  },\n  {\n    id: \"search-content\",\n    title: \"Buscar por Assunto\",\n    description: \"Digite um tema ou matéria e a Flora vai buscar questões, vídeos e recursos relacionados.\",\n    icon: <Search size={24} />,\n    mode: \"search\",\n  },\n];\n\nexport default function Aulao() {\n  const navigate = useNavigate();\n  const [mode, setMode] = useState<AulaoMode>(\"selection\");\n  const [selectedTopic, setSelectedTopic] = useState<AulaoTopic | null>(null);\n  const [searchQuery, setSearchQuery] = useState(\"\");\n  const [essayTheme, setEssayTheme] = useState(\"\");\n\n  const handleTopicSelect = (topic: AulaoTopic) => {\n    setSelectedTopic(topic);\n    if (topic.mode === \"lesson\") {\n      setMode(\"lesson\");\n    } else if (topic.mode === \"essay\") {\n      setMode(\"essay\");\n    } else if (topic.mode === \"search\") {\n      setMode(\"search\");\n    }\n  };\n\n  const handleBack = () => {\n    if (mode !== \"selection\") {\n      setMode(\"selection\");\n      setSelectedTopic(null);\n      setSearchQuery(\"\");\n      setEssayTheme(\"\");\n    } else {\n      navigate(\"/\");\n    }\n  };\n\n  return (\n    <div className=\"aulao-page\">\n      {/* Header */}\n      <header className=\"aulao-header\">\n        <div className=\"aulao-header-content\">\n          <Button\n            variant=\"ghost\"\n            size=\"icon\"\n            onClick={handleBack}\n            className=\"aulao-back-btn\"\n          >\n            <ArrowLeft size={20} />\n          </Button>\n          <h1 className=\"aulao-title\">Aulão com a Flora</h1>\n          <div className=\"aulao-header-spacer\" />\n        </div>\n      </header>\n\n      {/* Conteúdo Principal */}\n      <main className=\"aulao-main\">\n        {mode === \"selection\" && (\n          <div className=\"aulao-selection\">\n            <div className=\"selection-intro\">\n              <Lightbulb size={32} className=\"intro-icon\" />\n              <h2>Como você quer estudar hoje?</h2>\n              <p>Escolha uma opção abaixo para começar sua aula com a Flora.</p>\n            </div>\n\n            <div className=\"topics-grid\">\n              {AULAO_TOPICS.map((topic) => (\n                <button\n                  key={topic.id}\n                  className=\"topic-card\"\n                  onClick={() => handleTopicSelect(topic)}\n                >\n                  <div className=\"topic-icon\">{topic.icon}</div>\n                  <h3 className=\"topic-title\">{topic.title}</h3>\n                  <p className=\"topic-description\">{topic.description}</p>\n                  <div className=\"topic-cta\">Começar →</div>\n                </button>\n              ))}\n            </div>\n          </div>\n        )}\n\n                {mode === "lesson" && selectedTopic && (
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft, BookOpen, Lightbulb, PenTool, Volume2, Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { InteractiveLessonPlayer } from "@/components/InteractiveLessonPlayer";
+import { EssayTutorMode } from "@/components/EssayTutorMode";
+import "./Aulao.css";
+
+type AulaoMode = "selection" | "lesson" | "essay" | "search";
+
+interface AulaoTopic {
+  id: string;
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  mode: "lesson" | "essay" | "search";
+}
+
+const AULAO_TOPICS: AulaoTopic[] = [
+  {
+    id: "lesson-enem",
+    title: "Aula Dinâmica ENEM",
+    description: "Aprenda com a Flora explicando como se fosse uma professora particular. Inclui macetes e dicas de prova.",
+    icon: <BookOpen size={24} />,
+    mode: "lesson",
+  },
+  {
+    id: "essay-enem",
+    title: "Tutor de Redação ENEM",
+    description: "Escreva sua redação e receba feedback em tempo real da Flora sobre estrutura, argumentação e pontuação.",
+    icon: <PenTool size={24} />,
+    mode: "essay",
+  },
+  {
+    id: "lesson-voice",
+    title: "Aula com Voz (Modo Áudio)",
+    description: "A Flora lê a aula para você enquanto estuda. Perfeito para estudar em movimento ou com as mãos ocupadas.",
+    icon: <Volume2 size={24} />,
+    mode: "lesson",
+  },
+  {
+    id: "search-content",
+    title: "Buscar por Assunto",
+    description: "Digite um tema ou matéria e a Flora vai buscar questões, vídeos e recursos relacionados.",
+    icon: <Search size={24} />,
+    mode: "search",
+  },
+];
+
+export default function Aulao() {
+  const navigate = useNavigate();
+  const [mode, setMode] = useState<AulaoMode>("selection");
+  const [selectedTopic, setSelectedTopic] = useState<AulaoTopic | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [essayTheme, setEssayTheme] = useState("");
+
+  const handleTopicSelect = (topic: AulaoTopic) => {
+    setSelectedTopic(topic);
+    setMode(topic.mode);
+  };
+
+  const handleBack = () => {
+    if (mode !== "selection") {
+      setMode("selection");
+      setSelectedTopic(null);
+      setSearchQuery("");
+      setEssayTheme("");
+    } else {
+      navigate("/");
+    }
+  };
+
+  return (
+    <div className="aulao-page">
+      <header className="aulao-header">
+        <div className="aulao-header-content">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleBack}
+            className="aulao-back-btn"
+          >
+            <ArrowLeft size={20} />
+          </Button>
+          <h1 className="aulao-title">Aulão com a Flora</h1>
+          <div className="aulao-header-spacer" />
+        </div>
+      </header>
+
+      <main className="aulao-main">
+        {mode === "selection" && (
+          <div className="aulao-selection">
+            <div className="selection-intro">
+              <Lightbulb size={32} className="intro-icon" />
+              <h2>Como você quer estudar hoje?</h2>
+              <p>Escolha uma opção abaixo para começar sua aula com a Flora.</p>
+            </div>
+
+            <div className="topics-grid">
+              {AULAO_TOPICS.map((topic) => (
+                <button
+                  key={topic.id}
+                  className="topic-card"
+                  onClick={() => handleTopicSelect(topic)}
+                >
+                  <div className="topic-icon">{topic.icon}</div>
+                  <h3 className="topic-title">{topic.title}</h3>
+                  <p className="topic-description">{topic.description}</p>
+                  <div className="topic-cta">Começar →</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {mode === "lesson" && selectedTopic && (
           <InteractiveLessonPlayer
             lesson={{
               titulo: selectedTopic.title,
@@ -20,4 +136,73 @@ import React, { useState } from "react";\nimport { useNavigate } from "react-rou
             }}
             enableVoice={selectedTopic.id === "lesson-voice"}
           />
-        )}}\n\n        {mode === \"essay\" && selectedTopic && (\n          <div className=\"essay-container\">\n            {!essayTheme ? (\n              <div className=\"essay-theme-selection\">\n                <h2>Escolha um tema para sua redação</h2>\n                <p>Digite o tema ou deixe a Flora sugerir um aleatório.</p>\n                <div className=\"theme-input-group\">\n                  <Input\n                    placeholder=\"Ex: Impacto das redes sociais na educação\"\n                    value={essayTheme}\n                    onChange={(e) => setEssayTheme(e.target.value)}\n                    className=\"theme-input\"\n                  />\n                  <Button\n                    onClick={() => {\n                      if (!essayTheme.trim()) {\n                        setEssayTheme(\"Tema sugerido pela Flora\");\n                      }\n                    }}\n                    className=\"theme-submit-btn\"\n                  >\n                    Começar\n                  </Button>\n                </div>\n              </div>\n            ) : (\n              <EssayTutorMode\n                theme={essayTheme}\n                essayType=\"enem\"\n                onComplete={() => {\n                  alert(\"Redação enviada com sucesso!\");\n                  setEssayTheme(\"\");\n                  setMode(\"selection\");\n                }}\n              />\n            )}\n          </div>\n        )}\n\n        {mode === \"search\" && selectedTopic && (\n          <div className=\"search-container\">\n            <h2>Buscar por Assunto</h2>\n            <p>Digite o tema ou matéria que você quer estudar.</p>\n            <div className=\"search-input-group\">\n              <Input\n                placeholder=\"Ex: Fotossíntese, Revolução Francesa, Funções Quadráticas...\"\n                value={searchQuery}\n                onChange={(e) => setSearchQuery(e.target.value)}\n                className=\"search-input\"\n              />\n              <Button className=\"search-submit-btn\">\n                <Search size={18} /> Buscar\n              </Button>\n            </div>\n            {searchQuery && (\n              <div className=\"search-results\">\n                <p>Buscando conteúdo sobre \"{searchQuery}\"...</p>\n                <div className=\"results-placeholder\">\n                  <p>Questões, vídeos e recursos aparecerão aqui.</p>\n                </div>\n              </div>\n            )}\n          </div>\n        )}\n      </main>\n    </div>\n  );\n}\n
+        )}
+
+        {mode === "essay" && selectedTopic && (
+          <div className="essay-container">
+            {!essayTheme ? (
+              <div className="essay-theme-selection">
+                <h2>Escolha um tema para sua redação</h2>
+                <p>Digite o tema ou deixe a Flora sugerir um aleatório.</p>
+                <div className="theme-input-group">
+                  <Input
+                    placeholder="Ex: Impacto das redes sociais na educação"
+                    value={essayTheme}
+                    onChange={(e) => setEssayTheme(e.target.value)}
+                    className="theme-input"
+                  />
+                  <Button
+                    onClick={() => {
+                      if (!essayTheme.trim()) {
+                        setEssayTheme("Tema sugerido pela Flora");
+                      }
+                    }}
+                    className="theme-submit-btn"
+                  >
+                    Começar
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <EssayTutorMode
+                theme={essayTheme}
+                essayType="enem"
+                onComplete={() => {
+                  alert("Redação enviada com sucesso!");
+                  setEssayTheme("");
+                  setMode("selection");
+                }}
+              />
+            )}
+          </div>
+        )}
+
+        {mode === "search" && selectedTopic && (
+          <div className="search-container">
+            <h2>Buscar por Assunto</h2>
+            <p>Digite o tema ou matéria que você quer estudar.</p>
+            <div className="search-input-group">
+              <Input
+                placeholder="Ex: Fotossíntese, Revolução Francesa, Funções Quadráticas..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="search-input"
+              />
+              <Button className="search-submit-btn">
+                <Search size={18} /> Buscar
+              </Button>
+            </div>
+            {searchQuery && (
+              <div className="search-results">
+                <p>Buscando conteúdo sobre "{searchQuery}"...</p>
+                <div className="results-placeholder">
+                  <p>Questões, vídeos e recursos aparecerão aqui.</p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
