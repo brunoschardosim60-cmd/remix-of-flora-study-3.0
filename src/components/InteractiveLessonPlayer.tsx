@@ -1,11 +1,14 @@
-import React, { useState, useRef } from "react";
-import { Play, Pause, Volume2, VolumeX, MessageCircle, SkipForward, SkipBack, Loader2, Send } from "lucide-react";
+import React, { useState, useRef, useEffect } from "react";
+import { Play, Pause, Volume2, VolumeX, MessageCircle, SkipForward, SkipBack, Loader2, Send, Image as ImageIcon } from "lucide-react";
+import { generateDidacticImage } from "@/lib/floraImages";
 import "./InteractiveLessonPlayer.css";
 
 interface LessonBlock {
   titulo: string;
   conteudo: string;
   checkpoint: string;
+  imagemConceitoChave?: string;
+  imagemDescricao?: string;
 }
 
 interface Lesson {
@@ -41,6 +44,8 @@ export const InteractiveLessonPlayer: React.FC<InteractiveLessonPlayerProps> = (
   const [duvidaResponse, setDuvidaResponse] = useState("");
   const [isLoadingResponse, setIsLoadingResponse] = useState(false);
   const [showCheckpoint, setShowCheckpoint] = useState(false);
+  const [blockImage, setBlockImage] = useState<string | null>(null);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
 
   const currentBlock = lesson.blocos[currentBlockIndex];
   const isLastBlock = currentBlockIndex === lesson.blocos.length - 1;
@@ -90,6 +95,27 @@ export const InteractiveLessonPlayer: React.FC<InteractiveLessonPlayerProps> = (
       setShowCheckpoint(false);
       setDuvidaText("");
       setDuvidaResponse("");
+      setBlockImage(null);
+    }
+  };
+
+  const handleGenerateImage = async () => {
+    if (!currentBlock || isGeneratingImage) return;
+    setIsGeneratingImage(true);
+    try {
+      const result = await generateDidacticImage({
+        concept: currentBlock.titulo,
+        context: currentBlock.conteudo,
+        style: "educational",
+        userId: "user-123", // Substituir com ID real do usuário
+      });
+      if (result.success) {
+        setBlockImage(result.imageUrl);
+      }
+    } catch (error) {
+      console.error("Error generating image:", error);
+    } finally {
+      setIsGeneratingImage(false);
     }
   };
 
@@ -116,6 +142,20 @@ export const InteractiveLessonPlayer: React.FC<InteractiveLessonPlayerProps> = (
           <div className="block-content">
             {currentBlock.conteudo}
           </div>
+          {blockImage && (
+            <div className="block-image-container">
+              <img src={blockImage} alt={currentBlock.titulo} className="block-image" />
+            </div>
+          )}
+          {!blockImage && (
+            <button
+              className="generate-image-btn"
+              onClick={handleGenerateImage}
+              disabled={isGeneratingImage}
+            >
+              {isGeneratingImage ? "Gerando imagem..." : <><ImageIcon size={16} /> Gerar Ilustração</> }
+            </button>
+          )}
 
           {!showCheckpoint ? (
             <button
