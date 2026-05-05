@@ -29,6 +29,7 @@ const SharedNotebook = lazy(() => import("./pages/SharedNotebook"));
 const BancoQuestoes = lazy(() => import("./pages/BancoQuestoes"));
 const BancoConcurso = lazy(() => import("./pages/BancoConcurso"));
 const RedacaoTemas = lazy(() => import("./pages/RedacaoTemas"));
+const Aulao = lazy(() => import("./pages/Aulao"));
 
 
 const queryClient = new QueryClient();
@@ -169,6 +170,7 @@ const App = () => (
                 <Route path="/analise" element={<ProtectedRoute><Analise /></ProtectedRoute>} />
                 <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                 <Route path="/shared/notebook/:token" element={<Suspense fallback={<RouteFallback />}><SharedNotebook /></Suspense>} />
+                <Route path="/aulao" element={<ProtectedRoute><Aulao /></ProtectedRoute>} />
                 
                 <Route path="*" element={<NotFound />} />
               </Routes>
