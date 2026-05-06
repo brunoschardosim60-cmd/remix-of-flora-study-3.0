@@ -231,51 +231,96 @@ export async function checkOnboardingComplete(userId: string): Promise<boolean> 
   }
 }
 
-export async function floraGenerateLesson(topic: string, materia: string, level: 'enem' | 'concurso' | 'basico', didacticStyle: 'macetes' | 'aprofundado' | 'normal', content: string) {
-  return getFloraRecommendation(
-    { action: "generate_lesson", data: { topic, materia, level, didacticStyle, content } },
-    "generate_lesson",
-  );
+export async function floraGenerateLesson(topic: string, materia: string, level: 'enem' | 'concurso' | 'basico', didacticStyle: 'macetes' | 'aprofundado' | 'normal', content: string, options?: { force?: boolean }) {
+  const cacheK = clientCacheKey("lesson", topic, materia, level, didacticStyle, content.slice(0, 50));
+
+  if (!options?.force) {
+    const cached = clientCacheGet(cacheK);
+    if (cached) { if (import.meta.env.DEV) console.log("[floraClient] lesson: cache HIT"); return cached; }
+  }
+
+  return withDedup(cacheK, async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke("flora-engine", {
+        body: {
+          action: "GENERATE_LESSON",
+          data: { topic, materia, level, didacticStyle, content },
+        },
+      });
+
+      if (error) throw error;
+      if (!options?.force) clientCacheSet(cacheK, data);
+      return data;
+    } catch (err) {
+      await handleQuotaError(err, { feature: "generate_lesson" });
+      console.warn("Failed to generate lesson:", err);
+      return null;
+    }
+  });
 }
 
 import { SentimentAnalysisResult } from "./types";
 
-export async function floraAnalyzeSentiment(lastMessage: string, chatHistory: { role: string; content: string }[]): Promise<SentimentAnalysisResult | null> {
-  const { data, error } = await supabase.functions.invoke("flora-engine", {
-    body: {
-      action: "SENTIMENT_ANALYSIS",
-      data: {
-        lastMessage,
-        chatHistory,
-      },
-    },
-  });
+export async function floraAnalyzeSentiment(lastMessage: string, chatHistory: { role: string; content: string }[], options?: { force?: boolean }): Promise<SentimentAnalysisResult | null> {
+  const cacheK = clientCacheKey("sentiment", lastMessage, chatHistory.map(m => m.content).join("|"));
 
-  if (error) {
-    console.error("Erro ao analisar sentimento:", error);
-    return null;
+  if (!options?.force) {
+    const cached = clientCacheGet(cacheK);
+    if (cached) { if (import.meta.env.DEV) console.log("[floraClient] sentiment: cache HIT"); return cached; }
   }
 
-  return data.sentiment as SentimentAnalysisResult;
+  return withDedup(cacheK, async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke("flora-engine", {
+        body: {
+          action: "SENTIMENT_ANALYSIS",
+          data: {
+            lastMessage,
+            chatHistory,
+          },
+        },
+      });
+
+      if (error) throw error;
+      if (!options?.force) clientCacheSet(cacheK, data);
+      return data.sentiment as SentimentAnalysisResult;
+    } catch (err) {
+      await handleQuotaError(err, { feature: "sentiment_analysis" });
+      console.warn("Erro ao analisar sentimento:", err);
+      return null;
+    }
+  });
 }
 
 import { Draft } from "./types";
 
-export async function floraGenerateDraft(topic: string, requirements: string): Promise<Draft | null> {
-  const { data, error } = await supabase.functions.invoke("flora-engine", {
-    body: {
-      action: "GENERATE_DRAFT",
-      data: {
-        topic,
-        requirements,
-      },
-    },
-  });
+export async function floraGenerateDraft(topic: string, requirements: string, options?: { force?: boolean }): Promise<Draft | null> {
+  const cacheK = clientCacheKey("draft", topic, requirements);
 
-  if (error) {
-    console.error("Erro ao gerar rascunho:", error);
-    return null;
+  if (!options?.force) {
+    const cached = clientCacheGet(cacheK);
+    if (cached) { if (import.meta.env.DEV) console.log("[floraClient] draft: cache HIT"); return cached; }
   }
 
-  return data.draft as Draft;
+  return withDedup(cacheK, async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke("flora-engine", {
+        body: {
+          action: "GENERATE_DRAFT",
+          data: {
+            topic,
+            requirements,
+          },
+        },
+      });
+
+      if (error) throw error;
+      if (!options?.force) clientCacheSet(cacheK, data);
+      return data.draft as Draft;
+    } catch (err) {
+      await handleQuotaError(err, { feature: "draft" });
+      console.warn("Failed to generate draft:", err);
+      return null;
+    }
+  });
 }

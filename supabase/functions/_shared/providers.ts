@@ -274,6 +274,16 @@ export async function callWithTaskFallback(opts: CallOptions, task: TaskType, ta
         ["gemini",   () => callGemini(opts, key1, "gemini-2.0-flash")],
         ["gemini_2", () => callGemini(opts, key2, "gemini-2.0-flash")],
       ); break;
+    case "sentiment_analysis":
+      taskPrimaries.push(
+        ["lovable", () => callLovable(opts)],
+        ["gemini",   () => callGemini(opts, key1, "gemini-2.0-flash")],
+      ); break;
+    case "drafting":
+      taskPrimaries.push(
+        ["gemini",   () => callGemini(opts, key1, "gemini-2.0-flash")],
+        ["lovable", () => callLovable(opts)],
+      ); break;
     default: // flashcard, default
       taskPrimaries.push(
         ["gemini",   () => callGemini(opts, key1, "gemini-2.0-flash")],
