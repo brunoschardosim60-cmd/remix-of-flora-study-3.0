@@ -324,3 +324,18 @@ export async function floraGenerateDraft(topic: string, requirements: string, op
     }
   });
 }
+
+export async function floraExtractPdfText(fileUrl: string): Promise<string | null> {
+  const { data, error } = await supabase.functions.invoke("pdf-extractor", {
+    body: {
+      fileUrl,
+    },
+  });
+
+  if (error) {
+    console.error("Erro ao extrair texto do PDF:", error);
+    return null;
+  }
+
+  return data.extractedText as string;
+}

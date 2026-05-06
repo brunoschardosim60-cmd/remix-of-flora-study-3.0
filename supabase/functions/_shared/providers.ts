@@ -220,7 +220,8 @@ export type TaskType =
   | "redacao" | "quiz" | "flashcard" | "exatas"
   | "humanas" | "explicacao" | "plano" | "chat" | "default"
   | "sentiment_analysis"
-  | "drafting";
+  | "drafting"
+  | "pdf_processing";
 
 /**
  * callWithTaskFallback — provider primário por tarefa + cache + dedup + fallback

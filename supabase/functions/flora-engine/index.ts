@@ -52,6 +52,7 @@ const QUOTA_ACTION_MAP: Record<string, string> = {
   generate_lesson: "generate_lesson",
   sentiment_analysis: "sentiment_analysis",
   generate_draft: "generate_draft",
+  process_pdf: "process_pdf",
 };
 
 // Constrói bloco de ADAPTAÇÃO REAL pra incluir no system prompt do Flora.
@@ -891,6 +892,27 @@ Responda SOMENTE com JSON: {"resumo":"...","flashcards":[{"frente":"...","verso"
         if (!parsedDraft) throw new Error("Failed to parse draft JSON from AI.");
 
         return jsonResponse({ ok: true, draft: parsedDraft });
+      }
+
+      if (actionType === "PROCESS_PDF" && data?.payload) {
+        const qChk = await checkQuota(supabase, userId, "process_pdf");
+        if (!qChk.allowed) return quotaExceededResponse(qChk, corsHeaders);
+
+        const { fileUrl } = data.payload;
+
+        const { data: pdfData, error: pdfError } = await supabase.functions.invoke("pdf-extractor", {
+          body: { fileUrl },
+        });
+
+        if (pdfError) {
+          console.error("Erro ao extrair texto do PDF:", pdfError);
+          return new Response(JSON.stringify({ error: pdfError.message }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 500,
+          });
+        }
+
+        return jsonResponse({ ok: true, extractedText: pdfData.extractedText });
       }
 
       return jsonResponse({ error: "Ação desconhecida" }, 400);

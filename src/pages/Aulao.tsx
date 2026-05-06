@@ -1,22 +1,22 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, BookOpen, Lightbulb, PenTool, Volume2, Search } from "lucide-react";
+import { ArrowLeft, BookOpen, Lightbulb, PenTool, Volume2, Search, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { floraGenerateLesson } from "@/lib/floraClient";
+import { floraGenerateLesson, floraExtractPdfText } from "@/lib/floraClient";
 import { Lesson } from "@/lib/types"; // Assuming Lesson type is defined here or needs to be created
 import { InteractiveLessonPlayer } from "@/components/InteractiveLessonPlayer";
 import { EssayTutorMode } from "@/components/EssayTutorMode";
 import "./Aulao.css";
 
-type AulaoMode = "selection" | "lesson" | "essay" | "search";
+type AulaoMode = "selection" | "lesson" | "essay" | "search" | "import";
 
 interface AulaoTopic {
   id: string;
   title: string;
   description: string;
   icon: React.ReactNode;
-  mode: "lesson" | "essay" | "search";
+  mode: "lesson" | "essay" | "search" | "import";
   defaultLevel?: 'enem' | 'concurso' | 'basico';
   defaultDidacticStyle?: 'macetes' | 'aprofundado' | 'normal';
 }
@@ -54,6 +54,13 @@ const AULAO_TOPICS: AulaoTopic[] = [
     icon: <Search size={24} />,
     mode: "search",
   },
+  {
+    id: "import-pdf",
+    title: "Importar PDF/Artigo",
+    description: "Faça upload de um PDF ou cole o link de um artigo para a Flora criar uma aula baseada nele.",
+    icon: <FileText size={24} />,
+    mode: "import",
+  },
 ];
 
 export default function Aulao() {
@@ -61,6 +68,8 @@ export default function Aulao() {
   const [mode, setMode] = useState<AulaoMode>("selection");
   const [selectedTopic, setSelectedTopic] = useState<AulaoTopic | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [pdfUrl, setPdfUrl] = useState("");
+  const [isExtractingPdf, setIsExtractingPdf] = useState(false);
   const [essayTheme, setEssayTheme] = useState("");
   const [loadingLesson, setLoadingLesson] = useState(false);
   const [generatedLesson, setGeneratedLesson] = useState<Lesson | null>(null);
@@ -230,6 +239,60 @@ export default function Aulao() {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {mode === "import" && selectedTopic && (
+          <div className="import-container p-6 bg-card rounded-xl border border-border shadow-sm max-w-2xl mx-auto mt-8">
+            <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
+              <FileText className="text-primary" /> Importar Documento
+            </h2>
+            <p className="text-muted-foreground mb-6">Cole o link de um PDF público para a Flora extrair o conteúdo e gerar uma aula.</p>
+            
+            <div className="flex flex-col gap-4">
+              <Input
+                placeholder="https://exemplo.com/documento.pdf"
+                value={pdfUrl}
+                onChange={(e) => setPdfUrl(e.target.value)}
+                disabled={isExtractingPdf || loadingLesson}
+              />
+              
+              <Button 
+                onClick={async () => {
+                  if (!pdfUrl) return;
+                  setIsExtractingPdf(true);
+                  try {
+                    const extractedText = await floraExtractPdfText(pdfUrl);
+                    if (extractedText) {
+                      setLoadingLesson(true);
+                      setMode("lesson");
+                      const result = await floraGenerateLesson(
+                        "Aula baseada em Documento",
+                        "Geral",
+                        "enem",
+                        "normal",
+                        extractedText
+                      );
+                      if (result?.lesson) {
+                        setGeneratedLesson(result.lesson);
+                      }
+                    } else {
+                      alert("Não foi possível extrair o texto do PDF.");
+                    }
+                  } catch (error) {
+                    console.error("Erro ao processar PDF:", error);
+                    alert("Erro ao processar o PDF.");
+                  } finally {
+                    setIsExtractingPdf(false);
+                    setLoadingLesson(false);
+                  }
+                }}
+                disabled={!pdfUrl || isExtractingPdf || loadingLesson}
+                className="w-full"
+              >
+                {isExtractingPdf ? "Extraindo texto..." : loadingLesson ? "Gerando aula..." : "Processar e Gerar Aula"}
+              </Button>
+            </div>
           </div>
         )}
       </main>
