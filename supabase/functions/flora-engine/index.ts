@@ -1168,69 +1168,109 @@ SEMPRE responda em português brasileiro.` },
       const reviews = context.pendingReviews ?? [];
       const onb = context.onboarding;
       const essays = (context as any).recentEssays ?? [];
-      const studyTopics = (context as any).studyTopics ?? [];
       const dificeisOnb: string[] = onb?.materias_dificeis ?? [];
+      const qBankStats = (context as any).questionBankStats || [];
+      const concursoStats = (context as any).concursoBankStats || [];
 
-      // Threshold relaxado: aceita usuários novos se houver QUALQUER sinal:
-      // perf, sessões, redações, OU matérias declaradas como difíceis no onboarding.
       const hasAnySignal =
-        perf.length >= 1 ||
-        sessions.length >= 1 ||
-        essays.length >= 1 ||
-        ((context as any).questionBankTotal || 0) >= 1 ||
-        dificeisOnb.length >= 1;
+        perf.length >= 1 || sessions.length >= 1 || essays.length >= 1 ||
+        qBankStats.length >= 1 || concursoStats.length >= 1 || dificeisOnb.length >= 1;
       if (!hasAnySignal) return jsonResponse({ ok: true, suggestions: 0 });
 
-      // Verifica se já tem sugestão pendente (não respondida)
+      // Não cria novo insight se já tem um pendente
       const { data: existingPending } = await supabase
-        .from("flora_decisions")
-        .select("id")
-        .eq("user_id", userId)
-        .is("accepted", null)
+        .from("flora_decisions").select("id,decision_type,reasoning,recommendation")
+        .eq("user_id", userId).is("accepted", null)
         .in("decision_type", ["increase_difficulty", "reduce_load", "adjust_plan", "proactive_suggestion"])
-        .limit(1);
-      if (existingPending && existingPending.length > 0) return jsonResponse({ ok: true, suggestions: 0, reason: "pending_exists" });
+        .order("created_at", { ascending: false }).limit(1);
+
+      if (existingPending && existingPending.length > 0) {
+        const p = existingPending[0] as any;
+        return jsonResponse({
+          ok: true, suggestions: 1,
+          suggestion: {
+            type: p.decision_type,
+            reasoning: p.reasoning,
+            details: p.recommendation?.details,
+            changes: p.recommendation?.changes,
+            decisionId: p.id,
+          },
+        });
+      }
+
+      // Calcula dias sem estudar
+      const lastSession = sessions[0] as any;
+      const daysSinceStudy = lastSession
+        ? Math.floor((Date.now() - new Date(lastSession.created_at).getTime()) / 86400000)
+        : 99;
+
+      const weakTopics = qBankStats
+        .filter((s: any) => s.total >= 5 && s.accuracy < 50)
+        .slice(0, 3).map((s: any) => `${s.disciplina} (${s.accuracy}%)`);
+      const strongTopics = qBankStats
+        .filter((s: any) => s.total >= 5 && s.accuracy >= 80)
+        .slice(0, 3).map((s: any) => `${s.disciplina} (${s.accuracy}%)`);
 
       const opts: CallOptions = {
         messages: [
-          { role: "system", content: `Você é Flora, o motor de decisão do StudyFlow. Analise os dados do aluno e decida se alguma mudança significativa é necessária.
+          { role: "system", content: `Você é Flora, tutora adaptativa do StudyFlow. Gere insights ESPECÍFICOS e PESSOAIS — nunca genéricos.
 
 DADOS DO ALUNO:
-- Performance: ${JSON.stringify(perf.slice(0, 10))}
-- Sessões recentes: ${JSON.stringify(sessions.slice(0, 5))}
-- Revisões pendentes: ${reviews.length}
-- Temas estudados (até 10): ${JSON.stringify(studyTopics.slice(0, 10).map((t: any) => ({ materia: t.materia, tema: t.tema, score: t.quiz_last_score })))}
-- Redações (até 5): ${JSON.stringify(essays.slice(0, 5).map((e: any) => ({ tema: e.tema, status: e.status, nota: e.nota_total })))}
-- Banco de questões (top 6 disciplinas): ${JSON.stringify(((context as any).questionBankStats || []).slice(0, 6))}
-- Onboarding: ${JSON.stringify(onb)}
+- Objetivo: ${onb?.objetivo || "não definido"} | Banca: ${onb?.banca || "não definida"}
+- Dias sem estudar: ${daysSinceStudy}
+- Revisões atrasadas: ${reviews.length}
+- Desempenho por matéria: ${JSON.stringify(perf.slice(0, 8).map((p: any) => ({ materia: p.materia, accuracy: p.accuracy, total: p.total_attempts })))}
+- Tópicos fracos (< 50% acerto, 5+ questões): ${weakTopics.length ? weakTopics.join(", ") : "nenhum"}
+- Tópicos fortes (>= 80% acerto): ${strongTopics.length ? strongTopics.join(", ") : "nenhum"}
+- Questões concurso por disciplina: ${JSON.stringify(concursoStats.slice(0, 6))}
+- Redações recentes: ${JSON.stringify(essays.slice(0, 3).map((e: any) => ({ nota: e.nota_total, c1: e.competencia_1, c2: e.competencia_2, c3: e.competencia_3 })))}
+- Matérias difíceis declaradas: ${dificeisOnb.join(", ") || "nenhuma"}
 
-TIPOS DE SUGESTÃO (escolha UM ou "nenhuma"):
-1. increase_difficulty — accuracy média > 80% em 3+ matérias → sugira aumentar dificuldade
-2. reduce_load — aluno sumiu 3+ dias OU revisões atrasadas > 10 → sugira reduzir carga
-3. adjust_plan — padrão de estudo muito diferente do cronograma → sugira ajustar horários
-4. proactive_suggestion — usuário novo/com poucos dados: sugira primeira ação concreta usando matérias difíceis do onboarding ou tema de redação fraca
-5. nenhuma — sem sinais claros de mudança necessária
+REGRAS:
+- Cite dados concretos: matéria, percentual, número de dias
+- Tom direto, como tutora que CONHECE o aluno
+- Máximo 2 frases no reasoning
+- BOM: "Você errou 7/10 questões de Interpretação FGV nas últimas 2 semanas. Isso costuma custar 3-4 pontos na prova."
+- RUIM: "Continue estudando!", "Você está indo bem!"
 
-Responda SOMENTE JSON: {"type":"increase_difficulty|reduce_load|adjust_plan|proactive_suggestion|nenhuma","reasoning":"frase curta e motivadora explicando POR QUE (dirigida ao aluno)","details":"contexto extra curto","changes":{"description":"o que muda concretamente"}}
+TIPOS (escolha UM):
+1. increase_difficulty — acerto > 80% em 3+ matérias com >= 10 questões cada
+2. reduce_load — ${daysSinceStudy} >= 4 dias sem estudar OU revisões atrasadas > 8
+3. adjust_plan — erros concentrados em área específica da banca alvo
+4. proactive_suggestion — qualquer insight valioso com dados reais
+5. nenhuma — sem padrão relevante identificado
+
+Responda SOMENTE JSON válido:
+{"type":"...","reasoning":"frase impactante (máx 2 frases)","details":"contexto técnico curto","changes":{"description":"ação concreta sugerida"}}
 SEMPRE em português brasileiro.` },
-          { role: "user", content: "Analise se o aluno precisa de algum ajuste no plano." },
+          { role: "user", content: "Analise meus dados." },
         ],
-        maxTokens: 500, temperature: 0.4, jsonMode: true,
+        maxTokens: 600, temperature: 0.35, jsonMode: true,
       };
+
       const content = await runTaskChain(opts, "plano", "flora:analyze_suggest", { supabase, userId, actionType: "decide_next_topic" });
       const result = parseAIJSON(content as string) as any;
 
       if (!result?.type || result.type === "nenhuma") return jsonResponse({ ok: true, suggestions: 0 });
 
-      await supabase.from("flora_decisions").insert({
+      const { data: inserted } = await supabase.from("flora_decisions").insert({
         user_id: userId,
         decision_type: result.type,
         reasoning: result.reasoning || "",
         recommendation: { details: result.details, changes: result.changes },
         accepted: null,
-      });
+      }).select("id").single();
 
-      return jsonResponse({ ok: true, suggestions: 1, type: result.type });
+      return jsonResponse({
+        ok: true, suggestions: 1,
+        suggestion: {
+          type: result.type,
+          reasoning: result.reasoning,
+          details: result.details,
+          changes: result.changes,
+          decisionId: inserted?.id,
+        },
+      });
     }
 
     // ─── APPLY_DECISION: executa uma decisão aceita pelo aluno ───

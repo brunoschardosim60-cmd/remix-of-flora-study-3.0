@@ -24,6 +24,8 @@ import { floraStudyNow, floraStudyNowFollowup } from "@/lib/floraClient";
 import { toast } from "sonner";
 import { FloraConfirmationBanner } from "@/components/FloraConfirmationBanner";
 import { FloraFirstAction } from "@/components/FloraFirstAction";
+import { FloraInsightBanner } from "@/components/FloraInsightBanner";
+import { useFloraProativa } from "@/hooks/useFloraProativa";
 import { FloraIcon } from "@/components/FloraIcon";
 import { toLocalDateStr } from "@/lib/dateUtils";
 import { prefetchRoute, startIdlePrefetch, prefetchForContext } from "@/lib/prefetch";
@@ -106,18 +108,12 @@ export default function Index() {
     prefetchForContext("dashboard");
   }, []);
 
-  // Flora: trigger proactive analysis on dashboard load (once per session)
-  useEffect(() => {
-    if (!user) return;
-    const key = `flora-analyze-${user.id}-${new Date().toISOString().split("T")[0]}`;
-    if (sessionStorage.getItem(key)) return;
-    sessionStorage.setItem(key, "1");
-    supabase.functions.invoke("flora-engine", {
-      body: { action: "analyze_and_suggest" },
-    }).then(() => {
-      window.dispatchEvent(new Event("flora-decisions-updated"));
-    }).catch(() => {});
-  }, [user]);
+
+  // Flora proativa — analisa padrões e exibe insights contextuais
+  const { insight: floraInsight, dismiss: dismissInsight, accept: acceptInsight } = useFloraProativa(user?.id);
+  const [floraOpen, setFloraOpen] = useState(false);
+
+
 
   // Force onboarding for logged-in users who haven't completed it (admins skip)
   const onboardingChecked = useOnboardingGuard(user, isAdmin);
@@ -450,6 +446,16 @@ export default function Index() {
 
         {/* Flora: primeira ação recomendada (pós-onboarding) */}
         {user && <FloraFirstAction onStartStudy={handlePrimaryAction} />}
+
+        {/* Flora proativa: insight contextual */}
+        {user && floraInsight && (
+          <FloraInsightBanner
+            insight={floraInsight}
+            onDismiss={dismissInsight}
+            onAccept={acceptInsight}
+            onOpenChat={() => { dismissInsight(); setFloraOpen(true); }}
+          />
+        )}
 
         {/* Sync agora é automático e silencioso em segundo plano */}
 

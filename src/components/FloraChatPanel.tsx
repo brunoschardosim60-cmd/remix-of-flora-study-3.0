@@ -55,8 +55,9 @@ function extractBalancedJSON(text: string, startIdx: number): { json: string; en
 }
 
 function parseFloraActions(text: string): { cleanText: string; actions: FloraAction[] } {
-  const actions: FloraAction[] = [];\n  let cleanText = text;
-  const actionTokenRegex = /\[AÇÃO:(CRONOGRAMA|REMOVER_CRONOGRAMA|QUIZ|FLASHCARDS|POMODORO|CADERNO|META_DIA)\]\s*/g;
+  const actions: FloraAction[] = [];
+  let cleanText = text;
+  const actionTokenRegex = /\[AÇÃO:(CRONOGRAMA|REMOVER_CRONOGRAMA|QUIZ|FLASHCARDS|POMODORO|CADERNO|META_DIA|GENERATE_DRAFT|GENERATE_LESSON|SENTIMENT_ANALYSIS)\]\s*/g;
   let match;
   const removals: { start: number; end: number }[] = [];
   while ((match = actionTokenRegex.exec(text)) !== null) {

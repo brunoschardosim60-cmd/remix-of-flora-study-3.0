@@ -4,4 +4,414 @@
   height: 100vh;
   background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-}\n\n/* Cabeçalho */\n.lesson-header {\n  padding: 20px 24px;\n  background: linear-gradient(135deg, #ffffff 0%, #f9f9f9 100%);\n  border-bottom: 1px solid #e0e0e0;\n  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);\n}\n\n.lesson-title {\n  margin: 0 0 12px 0;\n  font-size: 24px;\n  font-weight: 700;\n  color: #1a1a1a;\n}\n\n.lesson-progress {\n  display: flex;\n  flex-direction: column;\n  gap: 8px;\n}\n\n.lesson-progress > span {\n  font-size: 12px;\n  color: #999;\n  font-weight: 500;\n}\n\n.progress-bar {\n  width: 100%;\n  height: 6px;\n  background: #e0e0e0;\n  border-radius: 3px;\n  overflow: hidden;\n}\n\n.progress-fill {\n  height: 100%;\n  background: linear-gradient(90deg, #6366f1 0%, #4f46e5 100%);\n  transition: width 0.3s ease;\n}\n\n/* Conteúdo */\n.lesson-content {\n  flex: 1;\n  overflow-y: auto;\n  padding: 24px;\n  display: flex;\n  justify-content: center;\n}\n\n.introduction-section,\n.block-section {\n  width: 100%;\n  max-width: 800px;\n  background: white;\n  border-radius: 12px;\n  padding: 32px;\n  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);\n}\n\n.introduction-text {\n  font-size: 16px;\n  line-height: 1.6;\n  color: #333;\n  margin: 0 0 24px 0;\n}\n\n.start-button {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  padding: 12px 24px;\n  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);\n  color: white;\n  border: none;\n  border-radius: 8px;\n  font-size: 14px;\n  font-weight: 600;\n  cursor: pointer;\n  transition: all 0.2s ease;\n}\n\n.start-button:hover {\n  transform: translateY(-2px);\n  box-shadow: 0 8px 16px rgba(99, 102, 241, 0.3);\n}\n\n.start-button:active {\n  transform: translateY(0);\n}\n\n.block-title {\n  margin: 0 0 16px 0;\n  font-size: 20px;\n  font-weight: 700;\n  color: #1a1a1a;\n}\n\n.block-content {\n  font-size: 15px;\n  line-height: 1.7;\n  color: #333;\n  margin-bottom: 24px;\n}\n\n.block-content h3 {\n  margin: 16px 0 8px 0;\n  font-size: 16px;\n  font-weight: 600;\n  color: #1a1a1a;\n}\n\n.block-content ul,\n.block-content ol {\n  margin: 12px 0;\n  padding-left: 20px;\n}\n\n.block-content li {\n  margin: 6px 0;\n}\n\n.block-content strong {\n  color: #6366f1;\n  font-weight: 600;\n}\n\n.checkpoint-button {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  padding: 10px 16px;\n  background: rgba(99, 102, 241, 0.1);\n  color: #6366f1;\n  border: 1px solid #e0e7ff;\n  border-radius: 8px;\n  font-size: 13px;\n  font-weight: 600;\n  cursor: pointer;\n  transition: all 0.2s ease;\n}\n\n.checkpoint-button:hover {\n  background: rgba(99, 102, 241, 0.15);\n  border-color: #c7d2fe;\n}\n\n.checkpoint-panel {\n  background: #f0f4ff;\n  border: 1px solid #e0e7ff;\n  border-radius: 8px;\n  padding: 16px;\n  margin-top: 16px;\n}\n\n.checkpoint-question {\n  margin: 0 0 12px 0;\n  font-size: 14px;\n  font-weight: 600;\n  color: #1a1a1a;\n}\n\n.checkpoint-input {\n  width: 100%;\n  padding: 10px 12px;\n  border: 1px solid #d0d0d0;\n  border-radius: 6px;\n  font-size: 13px;\n  font-family: inherit;\n  resize: vertical;\n  margin-bottom: 12px;\n}\n\n.checkpoint-input:focus {\n  outline: none;\n  border-color: #6366f1;\n  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);\n}\n\n.submit-checkpoint {\n  padding: 8px 16px;\n  background: #6366f1;\n  color: white;\n  border: none;\n  border-radius: 6px;\n  font-size: 13px;\n  font-weight: 600;\n  cursor: pointer;\n  transition: all 0.2s ease;\n}\n\n.submit-checkpoint:hover {\n  background: #4f46e5;\n}\n\n/* Controles */\n.lesson-controls {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  gap: 12px;\n  padding: 16px 24px;\n  background: white;\n  border-top: 1px solid #e0e0e0;\n  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08);\n}\n\n.control-btn {\n  width: 44px;\n  height: 44px;\n  border-radius: 50%;\n  border: none;\n  background: #f5f5f5;\n  cursor: pointer;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  color: #666;\n  transition: all 0.2s ease;\n}\n\n.control-btn:hover:not(:disabled) {\n  background: #e0e0e0;\n  color: #1a1a1a;\n}\n\n.control-btn:active:not(:disabled) {\n  transform: scale(0.95);\n}\n\n.control-btn:disabled {\n  opacity: 0.3;\n  cursor: not-allowed;\n}\n\n.control-btn.play {\n  width: 52px;\n  height: 52px;\n  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);\n  color: white;\n  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);\n}\n\n.control-btn.play:hover {\n  background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);\n  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);\n}\n\n.spinner {\n  animation: spin 1s linear infinite;\n}\n\n@keyframes spin {\n  from {\n    transform: rotate(0deg);\n  }\n  to {\n    transform: rotate(360deg);\n  }\n}\n\n/* Painel de Dúvida */\n.duvida-panel {\n  position: fixed;\n  bottom: 80px;\n  right: 20px;\n  width: 320px;\n  background: white;\n  border-radius: 12px;\n  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);\n  z-index: 200;\n  animation: slideUp 0.3s ease;\n}\n\n.duvida-header {\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n  padding: 16px;\n  border-bottom: 1px solid #e0e0e0;\n}\n\n.duvida-header h3 {\n  margin: 0;\n  font-size: 14px;\n  font-weight: 600;\n  color: #1a1a1a;\n}\n\n.close-btn {\n  width: 24px;\n  height: 24px;\n  border: none;\n  background: transparent;\n  cursor: pointer;\n  color: #999;\n  font-size: 18px;\n  transition: color 0.2s ease;\n}\n\n.close-btn:hover {\n  color: #333;\n}\n\n.duvida-input-area {\n  padding: 16px;\n  display: flex;\n  flex-direction: column;\n  gap: 12px;\n}\n\n.duvida-input {\n  width: 100%;\n  padding: 10px 12px;\n  border: 1px solid #d0d0d0;\n  border-radius: 6px;\n  font-size: 13px;\n  font-family: inherit;\n  resize: vertical;\n}\n\n.duvida-input:focus {\n  outline: none;\n  border-color: #6366f1;\n  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);\n}\n\n.send-duvida-btn {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  gap: 8px;\n  padding: 10px 16px;\n  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);\n  color: white;\n  border: none;\n  border-radius: 6px;\n  font-size: 13px;\n  font-weight: 600;\n  cursor: pointer;\n  transition: all 0.2s ease;\n}\n\n.send-duvida-btn:hover:not(:disabled) {\n  transform: translateY(-2px);\n  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);\n}\n\n.send-duvida-btn:disabled {\n  opacity: 0.5;\n  cursor: not-allowed;\n}\n\n.duvida-response {\n  padding: 16px;\n}\n\n.response-text {\n  margin: 0 0 16px 0;\n  font-size: 13px;\n  line-height: 1.6;\n  color: #333;\n}\n\n.continue-button {\n  width: 100%;\n  padding: 10px 16px;\n  background: #16a34a;\n  color: white;\n  border: none;\n  border-radius: 6px;\n  font-size: 13px;\n  font-weight: 600;\n  cursor: pointer;\n  transition: all 0.2s ease;\n}\n\n.continue-button:hover {\n  background: #15803d;\n}\n\n@keyframes slideUp {\n  from {\n    opacity: 0;\n    transform: translateY(20px);\n  }\n  to {\n    opacity: 1;\n    transform: translateY(0);\n  }\n}\n\n@media (max-width: 768px) {\n  .lesson-content {\n    padding: 12px;\n  }\n\n  .introduction-section,\n  .block-section {\n    padding: 16px;\n  }\n\n  .duvida-panel {\n    width: calc(100% - 40px);\n    right: 20px;\n    left: 20px;\n  }\n}\n
+}
+
+/* Cabeçalho */
+.lesson-header {
+  padding: 20px 24px;
+  background: linear-gradient(135deg, #ffffff 0%, #f9f9f9 100%);
+  border-bottom: 1px solid #e0e0e0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.lesson-title {
+  margin: 0 0 12px 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.lesson-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lesson-progress > span {
+  font-size: 12px;
+  color: #999;
+  font-weight: 500;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 6px;
+  background: #e0e0e0;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #6366f1 0%, #4f46e5 100%);
+  transition: width 0.3s ease;
+}
+
+/* Conteúdo */
+.lesson-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  display: flex;
+  justify-content: center;
+}
+
+.introduction-section,
+.block-section {
+  width: 100%;
+  max-width: 800px;
+  background: white;
+  border-radius: 12px;
+  padding: 32px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.introduction-text {
+  font-size: 16px;
+  line-height: 1.6;
+  color: #333;
+  margin: 0 0 24px 0;
+}
+
+.start-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.start-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(99, 102, 241, 0.3);
+}
+
+.start-button:active {
+  transform: translateY(0);
+}
+
+.block-title {
+  margin: 0 0 16px 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.block-content {
+  font-size: 15px;
+  line-height: 1.7;
+  color: #333;
+  margin-bottom: 24px;
+}
+
+.block-content h3 {
+  margin: 16px 0 8px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.block-content ul,
+.block-content ol {
+  margin: 12px 0;
+  padding-left: 20px;
+}
+
+.block-content li {
+  margin: 6px 0;
+}
+
+.block-content strong {
+  color: #6366f1;
+  font-weight: 600;
+}
+
+.checkpoint-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: rgba(99, 102, 241, 0.1);
+  color: #6366f1;
+  border: 1px solid #e0e7ff;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.checkpoint-button:hover {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: #c7d2fe;
+}
+
+.checkpoint-panel {
+  background: #f0f4ff;
+  border: 1px solid #e0e7ff;
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 16px;
+}
+
+.checkpoint-question {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.checkpoint-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+  resize: vertical;
+  margin-bottom: 12px;
+}
+
+.checkpoint-input:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.submit-checkpoint {
+  padding: 8px 16px;
+  background: #6366f1;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.submit-checkpoint:hover {
+  background: #4f46e5;
+}
+
+/* Controles */
+.lesson-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px 24px;
+  background: white;
+  border-top: 1px solid #e0e0e0;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.control-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: #f5f5f5;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  transition: all 0.2s ease;
+}
+
+.control-btn:hover:not(:disabled) {
+  background: #e0e0e0;
+  color: #1a1a1a;
+}
+
+.control-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.control-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.control-btn.play {
+  width: 52px;
+  height: 52px;
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.control-btn.play:hover {
+  background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Painel de Dúvida */
+.duvida-panel {
+  position: fixed;
+  bottom: 80px;
+  right: 20px;
+  width: 320px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+  z-index: 200;
+  animation: slideUp 0.3s ease;
+}
+
+.duvida-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.duvida-header h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.close-btn {
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: #999;
+  font-size: 18px;
+  transition: color 0.2s ease;
+}
+
+.close-btn:hover {
+  color: #333;
+}
+
+.duvida-input-area {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.duvida-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.duvida-input:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.send-duvida-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.send-duvida-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.send-duvida-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.duvida-response {
+  padding: 16px;
+}
+
+.response-text {
+  margin: 0 0 16px 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #333;
+}
+
+.continue-button {
+  width: 100%;
+  padding: 10px 16px;
+  background: #16a34a;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.continue-button:hover {
+  background: #15803d;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .lesson-content {
+    padding: 12px;
+  }
+
+  .introduction-section,
+  .block-section {
+    padding: 16px;
+  }
+
+  .duvida-panel {
+    width: calc(100% - 40px);
+    right: 20px;
+    left: 20px;
+  }
+}
+
