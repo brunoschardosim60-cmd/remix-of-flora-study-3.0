@@ -1,0 +1,3 @@
+ALTER TABLE public.student_onboarding
+ADD COLUMN IF NOT EXISTS cargo text NOT NULL DEFAULT '',
+ADD COLUMN IF NOT EXISTS orgao text NOT NULL DEFAULT '';

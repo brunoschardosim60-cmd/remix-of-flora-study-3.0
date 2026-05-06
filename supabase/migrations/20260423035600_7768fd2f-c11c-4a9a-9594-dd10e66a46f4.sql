@@ -1,0 +1,1 @@
+ALTER TABLE public.flora_chat_messages ADD COLUMN seq integer NOT NULL DEFAULT 0;
