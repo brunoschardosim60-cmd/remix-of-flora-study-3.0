@@ -237,3 +237,45 @@ export async function floraGenerateLesson(topic: string, materia: string, level:
     "generate_lesson",
   );
 }
+
+import { SentimentAnalysisResult } from "./types";
+
+export async function floraAnalyzeSentiment(lastMessage: string, chatHistory: { role: string; content: string }[]): Promise<SentimentAnalysisResult | null> {
+  const { data, error } = await supabase.functions.invoke("flora-engine", {
+    body: {
+      action: "SENTIMENT_ANALYSIS",
+      data: {
+        lastMessage,
+        chatHistory,
+      },
+    },
+  });
+
+  if (error) {
+    console.error("Erro ao analisar sentimento:", error);
+    return null;
+  }
+
+  return data.sentiment as SentimentAnalysisResult;
+}
+
+import { Draft } from "./types";
+
+export async function floraGenerateDraft(topic: string, requirements: string): Promise<Draft | null> {
+  const { data, error } = await supabase.functions.invoke("flora-engine", {
+    body: {
+      action: "GENERATE_DRAFT",
+      data: {
+        topic,
+        requirements,
+      },
+    },
+  });
+
+  if (error) {
+    console.error("Erro ao gerar rascunho:", error);
+    return null;
+  }
+
+  return data.draft as Draft;
+}

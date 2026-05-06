@@ -18,3 +18,16 @@ export interface Lesson {
   resumo: string[];
   exercicio_final: ExerciseQuestion;
 }
+
+export interface SentimentAnalysisResult {
+  sentimento: "positivo" | "negativo" | "neutro" | "frustrado" | "confuso" | "motivado" | "desmotivado";
+  justificativa: string;
+  acao_sugerida: string;
+}
+
+export interface Draft {
+  titulo: string;
+  introducao: string;
+  desenvolvimento: string[];
+  conclusao: string;
+}

@@ -9,6 +9,8 @@ import { FloraIcon } from "@/components/FloraIcon";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { floraAnalyzeSentiment } from "@/lib/floraClient";
+import { SentimentAnalysisResult } from "@/lib/types";
 
 interface Message {
   role: "user" | "assistant";
@@ -57,7 +59,7 @@ function extractBalancedJSON(text: string, startIdx: number): { json: string; en
 function parseFloraActions(text: string): { cleanText: string; actions: FloraAction[] } {
   const actions: FloraAction[] = [];
   let cleanText = text;
-  const actionTokenRegex = /\[AÇÃO:(CRONOGRAMA|REMOVER_CRONOGRAMA|QUIZ|FLASHCARDS|POMODORO|CADERNO|META_DIA)\]\s*/g;
+  const actionTokenRegex = /\[AÇÃO:(CRONOGRAMA|REMOVER_CRONOGRAMA|QUIZ|FLASHCARDS|POMODORO|CADERNO|META_DIA|GENERATE_DRAFT)\]\s*/g;
   let match;
   const removals: { start: number; end: number }[] = [];
   while ((match = actionTokenRegex.exec(text)) !== null) {
@@ -320,6 +322,13 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
       } else if (data?.type === "meta_dia") {
         window.dispatchEvent(new CustomEvent("flora-meta-dia", { detail: data }));
         toast.success("Meta do dia atualizada!");
+      } else if (data?.type === "draft" && data.draft) {
+        // Aqui você pode decidir como exibir o rascunho. Por exemplo, abrir um modal ou navegar para uma página de edição.
+        // Por enquanto, vamos apenas exibir um toast e logar o rascunho.
+        toast.success("Rascunho gerado com sucesso!");
+        console.log("Rascunho gerado:", data.draft);
+        // Poderíamos também navegar para uma página de edição de redação com o rascunho pré-preenchido.
+        // navigate(`/redacao/nova?draft=${encodeURIComponent(JSON.stringify(data.draft))}`);
       }
     } catch (err) {
       console.error("Action error:", err);
@@ -402,6 +411,26 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
           return [...prev, { role: "assistant", content: cleanText }];
         });
         for (const action of actions) executeAction(action);
+      }
+
+      // Análise de sentimento após a resposta da Flora
+      const sentimentResult = await floraAnalyzeSentiment(messageToSend, messages);
+      if (sentimentResult) {
+        console.log("Análise de Sentimento:", sentimentResult);
+        // Implementar lógica de tutoria ativa ou adaptação da resposta com base no sentimento
+        // Por exemplo, se o sentimento for 'frustrado' ou 'confuso', a Flora pode oferecer ajuda proativa.
+        // Ou se for 'motivado', pode sugerir um desafio.
+        if (sentimentResult.sentimento === "frustrado" || sentimentResult.sentimento === "confuso") {
+          setMessages((prev) => [
+            ...prev,
+            { role: "assistant", content: `Percebi que você pode estar ${sentimentResult.sentimento}. ${sentimentResult.acao_sugerida}` },
+          ]);
+        } else if (sentimentResult.sentimento === "motivado") {
+          setMessages((prev) => [
+            ...prev,
+            { role: "assistant", content: `Que bom ver você motivado! ${sentimentResult.acao_sugerida}` },
+          ]);
+        }
       }
 
       if (!assistantContent) {

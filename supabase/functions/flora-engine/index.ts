@@ -50,57 +50,13 @@ const QUOTA_ACTION_MAP: Record<string, string> = {
   generate_initial_plan: "decide_next_topic",
   analyze_and_suggest: "decide_next_topic",
   generate_lesson: "generate_lesson",
+  sentiment_analysis: "sentiment_analysis",
+  generate_draft: "generate_draft",
 };
 
 // Constrói bloco de ADAPTAÇÃO REAL pra incluir no system prompt do Flora.
 // A IA deve USAR esses sinais pra decidir comportamento (não só listar).
-function buildAdaptiveBlock(context: {
-  performance: any[];
-  recentSessions: any[];
-  pendingReviews: any[];
-  onboarding: any;
-}): string {
-  const perf = context.performance ?? [];
-  const sessions = context.recentSessions ?? [];
-  const reviews = context.pendingReviews ?? [];
-  const onb = context.onboarding;
 
-  // Erros recorrentes (>=3 erros ou accuracy<60)
-  const fracos = perf
-    .filter((p: any) => p.erro_recorrente || p.accuracy < 60)
-    .sort((a: any, b: any) => (b.prioridade ?? 0) - (a.prioridade ?? 0))
-    .slice(0, 5);
-
-  // Domínio (accuracy>=80)
-  const fortes = perf.filter((p: any) => p.accuracy >= 80).slice(0, 5);
-
-  // Última sessão — detecta sumiço
-  const ultimaSessao = sessions[0]?.start_at ? new Date(sessions[0].start_at) : null;
-  const diasSemEstudar = ultimaSessao
-    ? Math.floor((Date.now() - ultimaSessao.getTime()) / (1000 * 60 * 60 * 24))
-    : null;
-
-  // Revisões atrasadas
-  const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
-  const atrasadas = reviews.filter((r: any) => new Date(r.scheduled_date) < hoje).length;
-
-  // Matérias difíceis declaradas no onboarding
-  const dificeisOnb: string[] = onb?.materias_dificeis ?? [];
-
-  // Decisão sugerida (a IA deve seguir):
-  const decisoes: string[] = [];
-  if (typeof diasSemEstudar === "number" && diasSemEstudar >= 3) decisoes.push(`SUMIU ${diasSemEstudar} dias → reduza carga, sugira 1 ação curta e motive sem cobrar`);
-  if (atrasadas >= 5) decisoes.push(`${atrasadas} revisões atrasadas → priorize REVISÃO antes de conteúdo novo`);
-  if (fracos.length > 0) decisoes.push(`PRIORIZAR estes erros recorrentes: ${fracos.map((f: any) => `${f.materia} (${f.accuracy}%)`).join(", ")}`);
-  if (fortes.length > 0 && fracos.length === 0) decisoes.push(`Aluno dominando: ${fortes.map((f: any) => f.materia).join(", ")} → SOBE dificuldade dos quizzes pra "dificil"`);
-  if (dificeisOnb.length > 0) decisoes.push(`Matérias declaradas difíceis no onboarding: ${dificeisOnb.join(", ")} → dê atenção extra`);
-
-  return `
-ADAPTAÇÃO REAL (use ATIVAMENTE pra decidir comportamento, não só citar):
-${decisoes.length > 0 ? decisoes.map(d => `- ${d}`).join("\n") : "- Sem sinais fortes ainda → mantenha curso normal"}
-
-QUANDO ABRIR O CARD "POR QUE DECIDI ISSO": ao sugerir um quiz/tópico/foco específico, inclua na resposta uma frase tipo "Notei que você ${fracos[0] ? `errou bastante em ${fracos[0].materia}` : typeof diasSemEstudar === "number" && diasSemEstudar >= 3 ? `ficou ${diasSemEstudar} dias sem estudar` : `está começando agora`}, então vamos ${fracos[0] ? `focar nisso` : `continuar firme`}." — natural, sem parecer técnica.`;
-}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -547,7 +503,7 @@ CONTEXTO (silencioso):
 ${essayInfo}
 ${qbInfo}
 ${concursoInfo}
-${buildAdaptiveBlock(context)}
+
 ${olderSummary}${recentChatSummary}`;
       return systemPrompt;
 }
@@ -592,7 +548,7 @@ CONTEXTO (silencioso):
 ${essayInfo}
 ${qbInfo}
 ${concursoInfo}
-${buildAdaptiveBlock(context)}
+
 ${olderSummary}${recentChatSummary}`;
     }
 
@@ -601,7 +557,13 @@ ${olderSummary}${recentChatSummary}`;
     // Chat principal
     if (action === "recommend") {
       const context = await getStudentContext(userId);
-      const systemPrompt = buildSystemPrompt(context);
+      const systemPrompt = getSystemPromptWithPersona(
+          personality as FloraPersonality,
+          explanationStyle as ExplanationStyle,
+          // Base prompt for the main chat interaction
+          `Você é Flora, uma assistente de estudos inteligente e prestativa.`, // This will be replaced by the actual base prompt for chat
+          context,
+        );
       const userPrompt = data?.message || "Me ajuda a organizar meus estudos?";
 
       const normalizedPrompt = (userPrompt || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[.!?,;:]+/g, " ").replace(/\s+/g, " ").trim();
@@ -755,7 +717,10 @@ ${olderSummary}${recentChatSummary}`;
 
         const opts: CallOptions = {
           messages: [
-            { role: "system", content: `Você é Flora, professora especialista em ${objCtx.label}. Gere 8 questões NO PADRÃO REAL ${objCtx.label} sobre "${tema}" (${materia}). NÍVEL: ${accuracyMedia}% de acerto. Dificuldade: ${difficulty || "medio"}. ERROS RECORRENTES: ${errosRecorrentes.join(", ") || "nenhum"}. ESTILO: ${objCtx.quizStyle}.${bancaInstrucao}
+            { role: "system", content: getSystemPromptWithPersona(
+              personality as FloraPersonality,
+              explanationStyle as ExplanationStyle,
+              `Você é Flora, professora especialista em ${objCtx.label}. Gere 8 questões NO PADRÃO REAL ${objCtx.label} sobre "${tema}" (${materia}). NÍVEL: ${accuracyMedia}% de acerto. Dificuldade: ${difficulty || "medio"}. ERROS RECORRENTES: ${errosRecorrentes.join(", ") || "nenhum"}. ESTILO: ${objCtx.quizStyle}.${bancaInstrucao}
 
 REGRAS OBRIGATÓRIAS DE CADA QUESTÃO (estilo ${objCtx.label} REAL — NÃO aceitar pergunta seca):
 1) TEXTO-BASE rico e contextualizado (mínimo 4 linhas): situação real, trecho de notícia/artigo/livro, dado científico, tabela descrita em texto, gráfico descrito ("O gráfico mostra que..."), charge descrita, citação de autor, contexto histórico/social/cotidiano. NUNCA comece direto com a pergunta.
@@ -769,7 +734,10 @@ REGRAS OBRIGATÓRIAS DE CADA QUESTÃO (estilo ${objCtx.label} REAL — NÃO acei
 
 PROIBIDO: pergunta solta sem contexto, "qual é a definição de X?", "marque a alternativa correta sobre Y" sem texto-base, alternativas óbvias ou de tamanhos muito diferentes, explicação curta de 1 linha, DUAS ALTERNATIVAS CORRETAS, ambiguidade entre alternativas, comandos vagos ("a melhor opção" sem critério claro).
 
-Responda SOMENTE com JSON: {"questions":[{"pergunta":"TEXTO-BASE COMPLETO\\n\\nCOMANDO DA QUESTÃO","alternativas":["A) ...","B) ...","C) ...","D) ..."${objetivo === "concurso" ? "" : ","E) ...""}],"correta":0,"explicacao":"...","feedbackErro":"...","dificuldade":"facil|medio|dificil"}]}\nSEMPRE responda em português brasileiro.`      { role: "user", content: `Gere um quiz de ${materia} sobre ${tema}.` },
+Responda SOMENTE com JSON: {"questions":[{"pergunta":"TEXTO-BASE COMPLETO\\n\\nCOMANDO DA QUESTÃO","alternativas":["A) ...","B) ...","C) ...","D) ..."${objetivo === "concurso" ? "" : `,"E) ..."`}],"correta":0,"explicacao":"...","feedbackErro":"...","dificuldade":"facil|medio|dificil"}]}\nSEMPRE responda em português brasileiro.`,
+              context
+            ) },
+            { role: "user", content: `Gere um quiz de ${materia} sobre ${tema}.` },
           ],
           maxTokens: 1500, temperature: 0.5, jsonMode: true,
         };
@@ -826,10 +794,15 @@ Responda SOMENTE com JSON: {"questions":[{"pergunta":"TEXTO-BASE COMPLETO\\n\\nC
 
         const opts: CallOptions = {
           messages: [
-            { role: "system", content: `Você é Flora, professora especialista em ${objCtx.label}. Gere 8-12 flashcards de "${tema}" (${materia}). NÍVEL: ${accuracyMedia}% de acerto.
+            { role: "system", content: getSystemPromptWithPersona(
+              personality as FloraPersonality,
+              explanationStyle as ExplanationStyle,
+              `Você é Flora, professora especialista em ${objCtx.label}. Gere 8-12 flashcards de "${tema}" (${materia}). NÍVEL: ${accuracyMedia}% de acerto.
 Regras: frente variada (cotidiano, comparação, causa-efeito, aplicação); verso = resposta completa + mecanismo + exemplo + pegadinha do ${objCtx.label}. Mínimo 2 cotidiano, 1 comparação. Resumo 6+ linhas. Fórmulas em LaTeX.
 UNICIDADE (CRÍTICO): cada flashcard deve ter UMA resposta correta, objetiva e sem ambiguidade. Frente não pode admitir múltiplas interpretações. Verso deve ser factualmente único e justificável (citar regra/lei/definição quando cabível). PROIBIDO frente vaga ("fale sobre X") ou verso aberto.
-Responda SOMENTE com JSON: {"resumo":"...","flashcards":[{"frente":"...","verso":"...","tipo":"definição|aplicação|comparação|cotidiano|causa-efeito"}]}\nSEMPRE responda em português brasileiro.` },
+Responda SOMENTE com JSON: {"resumo":"...","flashcards":[{"frente":"...","verso":"...","tipo":"definição|aplicação|comparação|cotidiano|causa-efeito"}]}\nSEMPRE responda em português brasileiro.`,
+              context
+            ) },
             { role: "user", content: `Gere flashcards de ${materia} sobre ${tema}.` },
           ],
           maxTokens: 1200, temperature: 0.5, jsonMode: true,
@@ -859,9 +832,65 @@ Responda SOMENTE com JSON: {"resumo":"...","flashcards":[{"frente":"...","verso"
         const { studyMinutes, revisions, quizCount } = data.payload;
         const { data: existing } = await supabase.from("gamification_profiles").select("state").eq("user_id", userId).maybeSingle();
         const currentState = (existing?.state as Record<string, unknown>) || {};
-        const newState = { ...currentState, dailyGoals: { studyMinutes: studyMinutes ?? (currentState as any)?.dailyGoals?.studyMinutes ?? 30, revisions: revisions ?? (currentState as any)?.dailyGoals?.revisions ?? 5, quizCount: quizCount ?? (currentState as any)?.dailyGoals?.quizCount ?? 1 } };
+        const newState = { ...currentState, dailyGoals: { studyMinutes: studyMinutes ?? (currentState as any)?.dailyGoals?.studyMinutes ?? 30, revisions: revisions ?? (currentState as any)?.dailyGoals?.quizCount ?? 1 } };
         await supabase.from("gamification_profiles").upsert({ user_id: userId, state: newState }, { onConflict: "user_id" });
         return jsonResponse({ ok: true, type: "meta_dia", studyMinutes, revisions, quizCount });
+      }
+
+      if (actionType === "SENTIMENT_ANALYSIS" && data?.payload) {
+        const qChk = await checkQuota(supabase, userId, "sentiment_analysis");
+        if (!qChk.allowed) return quotaExceededResponse(qChk, corsHeaders);
+
+        const { lastMessage, chatHistory } = data.payload;
+        const { SENTIMENT_ANALYSIS_SYSTEM_PROMPT, buildSentimentAnalysisPrompt } = await import("../_shared/prompts_sentiment.ts");
+
+        const opts: CallOptions = {
+          messages: [
+            { role: "system", content: SENTIMENT_ANALYSIS_SYSTEM_PROMPT },
+            { role: "user", content: buildSentimentAnalysisPrompt(lastMessage, chatHistory) },
+          ],
+          maxTokens: 500, temperature: 0.2, jsonMode: true,
+        };
+
+        const sentimentJson = await runTaskChain(
+          opts,
+          "sentiment_analysis",
+          "flora:sentiment_analysis",
+          { supabase, userId, actionType: "sentiment_analysis" },
+        );
+
+        const parsedSentiment = parseAIJSON(sentimentJson);
+        if (!parsedSentiment) throw new Error("Failed to parse sentiment JSON from AI.");
+
+        return jsonResponse({ ok: true, sentiment: parsedSentiment });
+      }
+
+      if (actionType === "GENERATE_DRAFT" && data?.payload) {
+        const qChk = await checkQuota(supabase, userId, "generate_draft");
+        if (!qChk.allowed) return quotaExceededResponse(qChk, corsHeaders);
+
+        const { topic, requirements } = data.payload;
+        const { DRAFTING_SYSTEM_PROMPT, buildDraftingPrompt } = await import("../_shared/prompts_drafting.ts");
+
+        const opts: CallOptions = {
+          messages: [
+            { role: "system", content: DRAFTING_SYSTEM_PROMPT },
+            { role: "user", content: buildDraftingPrompt(topic, requirements) },
+          ],
+          maxTokens: 1500, temperature: 0.7, jsonMode: true,
+        };
+
+        const draftJson = await runTaskChain(
+          opts,
+          "drafting",
+          "flora:generate_draft",
+          { supabase, userId, actionType: "generate_draft" },
+        );
+
+        const parsedDraft = parseAIJSON(draftJson);
+        if (!parsedDraft) throw new Error("Failed to parse draft JSON from AI.");
+
+        return jsonResponse({ ok: true, draft: parsedDraft });
       }
 
       return jsonResponse({ error: "Ação desconhecida" }, 400);

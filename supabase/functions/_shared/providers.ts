@@ -218,7 +218,9 @@ export async function chatWithFallback(opts: CallOptions, tag = "ai"): Promise<s
 // ─── Task types ───────────────────────────────────────────────────────────────
 export type TaskType =
   | "redacao" | "quiz" | "flashcard" | "exatas"
-  | "humanas" | "explicacao" | "plano" | "chat" | "default";
+  | "humanas" | "explicacao" | "plano" | "chat" | "default"
+  | "sentiment_analysis"
+  | "drafting";
 
 /**
  * callWithTaskFallback — provider primário por tarefa + cache + dedup + fallback
