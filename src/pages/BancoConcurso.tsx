@@ -110,7 +110,7 @@ async function saveIaSessionRemote(snap: IaSessionSnapshot): Promise<void> {
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    await supabase.from("concurso_ia_sessions").upsert(
+    await (supabase as any).from("concurso_ia_sessions").upsert(
       {
         id: snap.id,
         user_id: user.id,
@@ -136,7 +136,7 @@ async function loadIaSessionRemote(): Promise<IaSessionSnapshot | null> {
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
-    const { data } = await supabase
+    const { data } = await (supabase as any)
       .from("concurso_ia_sessions")
       .select("*")
       .eq("user_id", user.id)
@@ -164,7 +164,7 @@ async function loadIaSessionRemote(): Promise<IaSessionSnapshot | null> {
 
 async function deleteIaSessionRemote(id: string): Promise<void> {
   try {
-    await supabase.from("concurso_ia_sessions").delete().eq("id", id);
+    await (supabase as any).from("concurso_ia_sessions").delete().eq("id", id);
   } catch { /* ignora */ }
 }
 

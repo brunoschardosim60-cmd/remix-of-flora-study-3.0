@@ -560,50 +560,6 @@ ${buildAdaptiveBlock(context)}
 ${olderSummary}${recentChatSummary}`;
       return systemPrompt;
 }
-- SEM AMBIGUIDADE: enunciados claros, sem duplo sentido, sem termos vagos ("o melhor", "o mais adequado") sem critério objetivo.
-- JUSTIFICÁVEL: a correta deve ser sustentada por regra, lei, definição ou dado verificável; cada distrator deve ter erro factual/lógico apontável.
-- Antes de finalizar, RELEIA e confirme: "só uma está certa, e consigo provar por quê".
-
-QUANDO EXPLICAR UM CONCEITO RÁPIDO (até 5 linhas, dúvida pontual): responda inline.
-QUANDO O ALUNO PEDE EXPLICAÇÃO COMPLETA / RESUMO / MATERIAL DE ESTUDO: SEMPRE use [AÇÃO:CADERNO] — proibido escrever inline.
-
-FLUXO DE AÇÃO: Toda ação = 2 mensagens do aluno. 1ª: sugerir + perguntar curto. 2ª (confirmação): incluir [AÇÃO:...] + frase curta confirmando.
-NUNCA inclua [AÇÃO:...] na mesma resposta que pergunta. NUNCA gere ação sem confirmação clara (sim/ok/pode/manda/bora/faz).
-
-CORREÇÃO DE REDAÇÕES (do aluno): ${objetivo === "enem" || objetivo === "vestibular"
-  ? "5 competências ENEM (C1-C5, 0-200 cada). Para cada: bom + ruim + trecho + sugestão de reescrita. Use [AÇÃO:CADERNO] com tudo formatado em HTML."
-  : "Clareza, argumentação, norma culta, estrutura. Nota 0-10. Use [AÇÃO:CADERNO]."}
-
-AÇÕES (no FINAL, APÓS CONFIRMAÇÃO):
-[AÇÃO:CRONOGRAMA]{"slots":[{"dia":0,"horario":"14:00","materia":"Matemática","descricao":"..."}]}
-[AÇÃO:QUIZ]{"materia":"...","tema":"...","difficulty":"medio"}    ← usa para quiz/teste/simulado/prova
-[AÇÃO:FLASHCARDS]{"materia":"...","tema":"..."}
-[AÇÃO:POMODORO]{"workMin":25,"restMin":5}
-[AÇÃO:CADERNO]{"titulo":"...","materia":"...","conteudo":"<h2>...</h2><p>...</p>"}    ← usa para resumo/explicação longa/redação completa/correção de redação
-[AÇÃO:META_DIA]{"studyMinutes":60,"revisions":5,"quizCount":2}
-[AÇÃO:REMOVER_CRONOGRAMA]{"materia":"..."}
-
-EXEMPLOS DO COMPORTAMENTO CERTO:
-Aluno: "me faz um resumo de mitose" → "Boa. Resumo completo no caderno?"
-Aluno: "sim" → "Vou colocar no caderno." [AÇÃO:CADERNO]{"titulo":"Mitose","materia":"Biologia","conteudo":"<h2>Mitose</h2><p>...</p>..."}
-Aluno: "quiz de funções" → "Quantas questões? 10 padrão?"
-Aluno: "manda" → "Abrindo o quiz." [AÇÃO:QUIZ]{"materia":"Matemática","tema":"Funções","difficulty":"medio"}
-
-O nome do aluno é ${nome}. Responda SEMPRE em português brasileiro.
-${onboardingInfo}
-${hasData ? `
-CONTEXTO (silencioso):
-- Tempo estudado: ${totalStudyMin} min
-- Dificuldades: ${weakSubjects.join(", ") || "nenhuma"}
-- Temas fracos específicos: ${weakTopics.join("; ") || "—"}
-- Revisões atrasadas: ${overdueReviews}
-- Desempenho: ${context.performance.map((p: any) => `${p.materia}: ${p.accuracy}%${p.erro_recorrente ? " RECORRENTE" : ""}`).join("; ") || "sem dados"}` : `O aluno "${nome}" é novo. Sugira primeira ação concreta.`}
-${essayInfo}
-${qbInfo}
-${concursoInfo}
-${buildAdaptiveBlock(context)}
-${olderSummary}${recentChatSummary}`;
-    }
 
     // ─── ACTIONS ───────────────────────────────────────────────────────────
 
@@ -774,11 +730,12 @@ REGRAS OBRIGATÓRIAS DE CADA QUESTÃO (estilo ${objCtx.label} REAL — NÃO acei
 5) ${objetivo === "concurso" ? "4 alternativas (A-D)" : "5 alternativas (A-E)"}, todas do MESMO tamanho aproximado, todas plausíveis, sem "todas/nenhuma das anteriores".
 6) EXPLICAÇÃO completa: por que a correta está certa + por que CADA um dos 2 distratores mais plausíveis está errado + dica de p7) UNICIDADE DA RESPOSTA (CRÍTICO): APENAS UMA alternativa pode estar 100% correta. As demais DEVEM conter erro factual, conceitual ou lógico claro e demonstrável. PROIBIDO ter duas alternativas que possam ser defendidas como corretas. PROIBIDO ambiguidade, sinônimos que digam a mesma coisa, ou afirmações parcialmente certas sem erro objetivo. Antes de finalizar, RELEIA cada distrator e confirme: "este tem um erro específico que posso apontar". Se houver QUALQUER dúvida sobre unicidade, reescreva o distrator.
 8) JUSTIFICATIVA ÚNICA: na explicação, deixe explícito o critério objetivo que torna a correta a ÚNICA possível (regra, lei, dado, definição) — não apenas "é a mais adequada".
-9) FEEDBACK DE ERRO: Para cada alternativa incorreta, crie um `feedbackErro` curto (1-2 frases) explicando POR QUE aquela alternativa está errada e reforçando o conceito correto. Isso ajuda o aluno a aprender com o erro.
+9) FEEDBACK DE ERRO: Para cada alternativa incorreta, crie um "feedbackErro" curto (1-2 frases) explicando POR QUE aquela alternativa está errada e reforçando o conceito correto. Isso ajuda o aluno a aprender com o erro.
 
 PROIBIDO: pergunta solta sem contexto, "qual é a definição de X?", "marque a alternativa correta sobre Y" sem texto-base, alternativas óbvias ou de tamanhos muito diferentes, explicação curta de 1 linha, DUAS ALTERNATIVAS CORRETAS, ambiguidade entre alternativas, comandos vagos ("a melhor opção" sem critério claro).
 
-Responda SOMENTE com JSON: {"questions":[{"pergunta":"TEXTO-BASE COMPLETO\\n\\nCOMANDO DA QUESTÃO","alternativas":["A) ...","B) ...","C) ...","D) ..."${objetivo === "concurso" ? "" : ","E) ...""}],"correta":0,"explicacao":"...","feedbackErro":"...","dificuldade":"facil|medio|dificil"}]}\nSEMPRE responda em português brasileiro.`      { role: "user", content: `Gere um quiz de ${materia} sobre ${tema}.` },
+Responda SOMENTE com JSON: {"questions":[{"pergunta":"TEXTO-BASE COMPLETO\\n\\nCOMANDO DA QUESTÃO","alternativas":["A) ...","B) ...","C) ...","D) ..."${objetivo === "concurso" ? "" : ',"E) ..."'}],"correta":0,"explicacao":"...","feedbackErro":"...","dificuldade":"facil|medio|dificil"}]}\nSEMPRE responda em português brasileiro.` },
+            { role: "user", content: `Gere um quiz de ${materia} sobre ${tema}.` },
           ],
           maxTokens: 1500, temperature: 0.5, jsonMode: true,
         };
