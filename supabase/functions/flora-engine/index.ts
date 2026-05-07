@@ -778,7 +778,8 @@ REGRAS OBRIGATÓRIAS DE CADA QUESTÃO (estilo ${objCtx.label} REAL — NÃO acei
 
 PROIBIDO: pergunta solta sem contexto, "qual é a definição de X?", "marque a alternativa correta sobre Y" sem texto-base, alternativas óbvias ou de tamanhos muito diferentes, explicação curta de 1 linha, DUAS ALTERNATIVAS CORRETAS, ambiguidade entre alternativas, comandos vagos ("a melhor opção" sem critério claro).
 
-Responda SOMENTE com JSON: {"questions":[{"pergunta":"TEXTO-BASE COMPLETO\\n\\nCOMANDO DA QUESTÃO","alternativas":["A) ...","B) ...","C) ...","D) ..."${objetivo === "concurso" ? "" : ","E) ...""}],"correta":0,"explicacao":"...","feedbackErro":"...","dificuldade":"facil|medio|dificil"}]}\nSEMPRE responda em português brasileiro.`      { role: "user", content: `Gere um quiz de ${materia} sobre ${tema}.` },
+Responda SOMENTE com JSON: {"questions":[{"pergunta":"TEXTO-BASE COMPLETO\\n\\nCOMANDO DA QUESTÃO","alternativas":["A) ...","B) ...","C) ...","D) ..."${objetivo === "concurso" ? "" : ',"E) ..."'}],"correta":0,"explicacao":"...","feedbackErro":"...","dificuldade":"facil|medio|dificil"}]}\nSEMPRE responda em português brasileiro.` },
+            { role: "user", content: `Gere um quiz de ${materia} sobre ${tema}.` },
           ],
           maxTokens: 1500, temperature: 0.5, jsonMode: true,
         };
