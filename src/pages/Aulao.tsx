@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, BookOpen, Lightbulb, PenTool, Volume2, Search, Loader2 } from "lucide-react";
+import { ArrowLeft, BookOpen, Lightbulb, PenTool, Search, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -21,7 +21,6 @@ interface AulaoTopic {
   mode: "lesson" | "essay" | "search";
   defaultLevel?: "enem" | "concurso" | "basico";
   defaultDidacticStyle?: "macetes" | "aprofundado" | "normal";
-  withVoice?: boolean;
 }
 
 interface SearchResult {
@@ -48,16 +47,6 @@ const AULAO_TOPICS: AulaoTopic[] = [
     description: "Escreva sua redação e receba feedback em tempo real da Flora sobre estrutura, argumentação e pontuação.",
     icon: <PenTool size={24} />,
     mode: "essay",
-  },
-  {
-    id: "lesson-voice",
-    title: "Aula com Voz (Modo Áudio)",
-    description: "A Flora lê a aula para você. Perfeito para estudar em movimento ou com as mãos ocupadas.",
-    icon: <Volume2 size={24} />,
-    mode: "lesson",
-    defaultLevel: "enem",
-    defaultDidacticStyle: "normal",
-    withVoice: true,
   },
   {
     id: "search-content",
@@ -199,13 +188,11 @@ export default function Aulao() {
             {!generatedLesson && !loadingLesson && (
               <div className="lesson-setup rounded-2xl border bg-card p-6 shadow-sm max-w-xl mx-auto space-y-4">
                 <div className="flex items-center gap-3 text-primary mb-2">
-                  {selectedTopic.withVoice ? <Volume2 size={28} /> : <BookOpen size={28} />}
+                  <BookOpen size={28} />
                   <h2 className="text-xl font-bold">Sobre o que vamos aprender?</h2>
                 </div>
                 <p className="text-muted-foreground text-sm">
-                  {selectedTopic.withVoice
-                    ? "A Flora vai narrar a aula para você. Digite o tema e relaxe!"
-                    : "A Flora vai preparar uma aula com explicações, resumo e exercícios."}
+                  A Flora vai preparar uma aula com explicações, resumo e exercícios.
                 </p>
                 <Input
                   placeholder="Ex: Primeira Guerra Mundial, Fotossíntese, Logaritmos..."
@@ -220,7 +207,7 @@ export default function Aulao() {
                   onClick={() => startLesson(selectedTopic, lessonTopicInput)}
                   disabled={!lessonTopicInput.trim()}
                 >
-                  {selectedTopic.withVoice ? <><Volume2 size={18} /> Gerar Aula com Voz</> : <><BookOpen size={18} /> Gerar Aula Completa</>}
+                  <BookOpen size={18} /> Gerar Aula Completa
                 </Button>
               </div>
             )}
@@ -236,7 +223,7 @@ export default function Aulao() {
             {generatedLesson && !loadingLesson && (
               <InteractiveLessonPlayer
                 lesson={generatedLesson}
-                enableVoice={!!selectedTopic.withVoice}
+                enableVoice={false}
                 personality="amiga"
               />
             )}
