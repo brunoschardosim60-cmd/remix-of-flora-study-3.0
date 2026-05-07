@@ -51,7 +51,7 @@ function saveFavoritesLocal(s: Set<string>) {
 }
 
 async function loadFavoritesRemote(userId: string): Promise<Set<string>> {
-  const { data } = await supabase
+  const { data } = await (supabase as any)
     .from("profiles")
     .select("metadata")
     .eq("id", userId)
@@ -62,15 +62,15 @@ async function loadFavoritesRemote(userId: string): Promise<Set<string>> {
 
 async function saveFavoritesRemote(userId: string, s: Set<string>): Promise<void> {
   // Persiste como campo no metadata do perfil para evitar criar tabela nova
-  const { data: profile } = await supabase
+  const { data: profile } = await (supabase as any)
     .from("profiles")
     .select("metadata")
     .eq("id", userId)
     .maybeSingle();
-  const meta = typeof profile?.metadata === "object" && profile.metadata !== null
-    ? profile.metadata as Record<string, unknown>
+  const meta = typeof profile?.metadata === "object" && profile?.metadata !== null
+    ? (profile.metadata as Record<string, unknown>)
     : {};
-  await supabase
+  await (supabase as any)
     .from("profiles")
     .update({ metadata: { ...meta, banco_favorites: Array.from(s) } } as any)
     .eq("id", userId);
