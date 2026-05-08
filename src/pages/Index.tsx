@@ -30,7 +30,6 @@ import { prefetchRoute, startIdlePrefetch, prefetchForContext } from "@/lib/pref
 import { countDueFlashcards } from "@/lib/flashcardScheduler";
 import { Sparkles } from "lucide-react";
 import { CalendarIntegration } from "@/components/CalendarIntegration";
-import { Settings2 } from "lucide-react";
 
 // Lazy: heavy components that DON'T appear on first render
 const FloraChatPanel = lazy(() => import("@/components/FloraChatPanel").then(m => ({ default: m.FloraChatPanel })));
@@ -428,23 +427,6 @@ export default function Index() {
           </div>
         </div>
       </header>
-      {/* Barra de personalização do dashboard */}
-      {user && (
-        <div className="border-b border-border/50 bg-card/50 px-3 sm:px-4 py-2">
-          <div className="container max-w-7xl mx-auto flex items-center justify-end">
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-2"
-              onClick={() => navigate("/settings?tab=dashboard")}
-            >
-              <Settings2 className="w-4 h-4" />
-              Personalizar Dashboard
-            </Button>
-          </div>
-        </div>
-      )}
-
       <main className="container max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
         <DashboardHero
           firstName={firstName}
