@@ -87,28 +87,46 @@ export function buildLessonPrompt(
     },
   }[mode];
 
-  // ─── Contexto pedagógico resumido (curto, pra não explodir token) ─────
+  // ─── Contexto pedagógico resumido (limites rígidos pra não explodir token) ─────
+  // Heurísticas:
+  // - Máx 3 itens por categoria, cada string até 60 chars.
+  // - Bloco inteiro de contexto cap em ~400 chars finais.
+  // - Máx de menções = min(2, blocos/4) — em rapida no máximo 1 menção.
+  // - Sem contexto = sem bloco no prompt (zero tokens extras).
+  const clip = (s: string, n = 60) => (s && s.length > n ? s.slice(0, n - 1) + "…" : s || "");
+  const uniq = (arr: string[]) => Array.from(new Set(arr.map((x) => clip(String(x))).filter(Boolean)));
+  const MAX_ITEMS = 3;
+
   const ctxLines: string[] = [];
+  let hasSignal = false;
   if (learningContext) {
     const { weakTopics, recentErrors, accuracyPct, commonMistakes, profileLevel } = learningContext;
-    if (typeof accuracyPct === "number") ctxLines.push(`- Acerto geral atual: ${accuracyPct}%`);
-    if (profileLevel) ctxLines.push(`- Perfil: ${profileLevel}`);
-    if (weakTopics?.length) ctxLines.push(`- Tópicos fracos recentes: ${weakTopics.slice(0, 4).join(", ")}`);
-    if (recentErrors?.length) ctxLines.push(`- Erros recentes em quizzes: ${recentErrors.slice(0, 4).join(", ")}`);
-    if (commonMistakes?.length) ctxLines.push(`- Padrões de erro: ${commonMistakes.slice(0, 3).join(", ")}`);
+    if (typeof accuracyPct === "number" && Number.isFinite(accuracyPct)) {
+      ctxLines.push(`acerto=${Math.max(0, Math.min(100, Math.round(accuracyPct)))}%`);
+    }
+    if (profileLevel) ctxLines.push(`perfil=${profileLevel}`);
+    const w = uniq(weakTopics || []).slice(0, MAX_ITEMS);
+    const r = uniq(recentErrors || []).slice(0, MAX_ITEMS);
+    const c = uniq(commonMistakes || []).slice(0, 2);
+    if (w.length) { ctxLines.push(`fracos=[${w.join("; ")}]`); hasSignal = true; }
+    if (r.length) { ctxLines.push(`errosRecentes=[${r.join("; ")}]`); hasSignal = true; }
+    if (c.length) { ctxLines.push(`padroes=[${c.join("; ")}]`); hasSignal = true; }
   }
-  const ctxBlock = ctxLines.length ? `
-CONTEXTO DO ALUNO (use com sutileza, no máximo 2-3 menções na aula inteira):
-${ctxLines.join("\n")}
 
-REGRA: a Flora DEVE referenciar esse contexto de forma natural em comentários humanos. Exemplos:
-- "Tu já errou isso no último quiz, então presta atenção nesse detalhe."
-- "Vou simplificar porque vi que tu pegou dificuldade em ${learningContext?.weakTopics?.[0] || "tópicos parecidos"}."
-- "Como teu acerto tá em ${learningContext?.accuracyPct ?? "X"}%, vou puxar um pouquinho mais."
-ADAPTE A AULA ao perfil:
-- iniciante: mais analogias, passos menores, menos jargão.
-- avancado: menos básico, mais pegadinhas, conexões com tópicos avançados.
-NÃO repita o contexto de forma robótica. Não liste. Não cite mais que 2-3 vezes. Não invente erros.
+  const maxMencoes = mode === "rapida" ? 1 : 2;
+  let ctxRaw = ctxLines.join(" | ");
+  if (ctxRaw.length > 400) ctxRaw = ctxRaw.slice(0, 397) + "…";
+
+  const ctxBlock = (ctxRaw && hasSignal) ? `
+CONTEXTO_ALUNO: ${ctxRaw}
+REGRAS DE USO DO CONTEXTO (cumpra à risca):
+- Use no MÁXIMO ${maxMencoes} menção(ões) em TODA a aula. Não mais.
+- Distribua: 1 na intro OU em "flora_comment" + 1 perto de pegadinha. Nunca duas seguidas.
+- Mencione de forma natural, em primeira pessoa ("vi que tu...", "como tu errou em..."). Nunca cite a palavra "contexto" nem liste dados.
+- PROIBIDO: repetir o mesmo dado em blocos diferentes, citar percentual mais de 1x, copiar nomes da lista literalmente em todo bloco.
+- Se o tema da aula NÃO se relaciona com o item, NÃO mencione — é melhor zero menção que forçada.
+- NÃO invente erros que não estão no contexto.
+- Adapte profundidade: iniciante → +analogia/-jargão; avancado → +pegadinhas/-básico.
 ` : "";
 
   return `MODE: ${mode}
