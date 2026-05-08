@@ -5,7 +5,7 @@ import { FloraThinkingLoader } from "@/components/FloraThinkingLoader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { floraGenerateLesson, floraGenerateLessonSkeleton, floraGenerateLessonBlock } from "@/lib/floraClient";
+import { floraGenerateLessonSkeleton, floraGenerateLessonBlock } from "@/lib/floraClient";
 import { Lesson } from "@/lib/types";
 import { InteractiveLessonPlayer } from "@/components/InteractiveLessonPlayer";
 import { EssayTutorMode } from "@/components/EssayTutorMode";
