@@ -29,6 +29,7 @@ import { AdminQuestionsPanel } from "@/components/admin/AdminQuestionsPanel";
 import { AdminConcursoQuestionsPanel } from "@/components/admin/AdminConcursoQuestionsPanel";
 import { AdminPdfReprocessPanel } from "@/components/admin/AdminPdfReprocessPanel";
 import { AdminPdfBatchPanel } from "@/components/admin/AdminPdfBatchPanel";
+import { AdminCachePanel } from "@/components/AdminCachePanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Admin() {
@@ -167,6 +168,7 @@ export default function Admin() {
             <TabsTrigger value="enem">ENEM</TabsTrigger>
             <TabsTrigger value="concurso">Concurso / Direito</TabsTrigger>
             <TabsTrigger value="pdf">Reprocessar PDF</TabsTrigger>
+            <TabsTrigger value="cache">Cache Flora</TabsTrigger>
           </TabsList>
 
           <TabsContent value="usuarios" className="mt-0">
@@ -679,6 +681,19 @@ export default function Admin() {
             </TabsContent>
           </Tabs>
         </section>
+          </TabsContent>
+
+          <TabsContent value="cache" className="mt-0">
+            <section>
+              <div className="mb-3 flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-primary" />
+                <h2 className="text-lg font-semibold">Cache Inteligente da Flora</h2>
+              </div>
+              <p className="text-xs text-muted-foreground mb-3">
+                Pré-popula o cache com aulas dos tópicos mais acessados (instantâneo para alunos, economiza créditos de IA).
+              </p>
+              <AdminCachePanel />
+            </section>
           </TabsContent>
         </Tabs>
       </div>
