@@ -5,7 +5,7 @@ import { FloraThinkingLoader } from "@/components/FloraThinkingLoader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { floraGenerateLesson } from "@/lib/floraClient";
+import { floraGenerateLesson, floraGenerateLessonSkeleton, floraGenerateLessonBlock } from "@/lib/floraClient";
 import { Lesson } from "@/lib/types";
 import { InteractiveLessonPlayer } from "@/components/InteractiveLessonPlayer";
 import { EssayTutorMode } from "@/components/EssayTutorMode";
@@ -69,6 +69,8 @@ export default function Aulao() {
   const [lessonMode, setLessonMode] = useState<"rapida" | "completa" | "masterclass">("completa");
   const [loadingLesson, setLoadingLesson] = useState(false);
   const [generatedLesson, setGeneratedLesson] = useState<Lesson | null>(null);
+  // Streaming: índices dos blocos ainda em geração
+  const [pendingBlocks, setPendingBlocks] = useState<number[]>([]);
 
   // Essay — input separado do tema confirmado para não pular ao digitar
   const [essayThemeInput, setEssayThemeInput] = useState("");
@@ -84,23 +86,63 @@ export default function Aulao() {
     if (!customTopic.trim()) { toast.error("Digite um tema para gerar a aula."); return; }
     setLoadingLesson(true);
     setGeneratedLesson(null);
+    setPendingBlocks([]);
     try {
-      const result = await floraGenerateLesson(
-        customTopic.trim(), lessonSubjectInput.trim() || "Geral",
-        topic.defaultLevel || "enem",
-        topic.defaultDidacticStyle || "normal",
-        `Aula sobre ${customTopic.trim()}`,
-        lessonMode
-      );
-      if (result?.lesson) {
-        setGeneratedLesson(result.lesson);
-      } else {
-        toast.error("Não consegui gerar a aula agora. Tente novamente!");
-      }
+      const tema = customTopic.trim();
+      const materia = lessonSubjectInput.trim() || "Geral";
+      const level = topic.defaultLevel || "enem";
+      const didacticStyle = topic.defaultDidacticStyle || "normal";
+
+      // FASE 1 — Esqueleto rápido (~2-3s). Aluno já vê a aula.
+      const skel = await floraGenerateLessonSkeleton(tema, materia, level, lessonMode);
+      const titulos: string[] = Array.isArray(skel?.blocos_titulos) ? skel.blocos_titulos : [];
+      if (!titulos.length) throw new Error("Esqueleto inválido.");
+
+      const placeholderBlocks: any[] = titulos.map((t) => ({
+        titulo: t, conteudo: "", checkpoint: "",
+      }));
+      const initialLesson: Lesson = {
+        titulo: skel.titulo || tema,
+        introducao: skel.introducao || "",
+        blocos: placeholderBlocks,
+        resumo: [],
+        exercicio_final: skel.exercicio_final,
+      };
+      setGeneratedLesson(initialLesson);
+      setPendingBlocks(titulos.map((_, i) => i));
+      setLoadingLesson(false);
+
+      // FASE 2 — Gera blocos em paralelo (limite 3 por vez pra não estourar quota).
+      const total = titulos.length;
+      const concurrency = 3;
+      let cursor = 0;
+      const worker = async () => {
+        while (cursor < total) {
+          const i = cursor++;
+          try {
+            const block = await floraGenerateLessonBlock({
+              topic: tema, materia,
+              blocoTitulo: titulos[i],
+              blocoIndex: i, totalBlocos: total,
+              mode: lessonMode, didacticStyle,
+            });
+            setGeneratedLesson((prev) => {
+              if (!prev) return prev;
+              const blocos = [...prev.blocos];
+              blocos[i] = { ...blocos[i], ...block };
+              return { ...prev, blocos };
+            });
+          } catch (e) {
+            console.warn(`[lesson stream] bloco ${i} falhou:`, e);
+          } finally {
+            setPendingBlocks((p) => p.filter((x) => x !== i));
+          }
+        }
+      };
+      await Promise.all(Array.from({ length: Math.min(concurrency, total) }, worker));
     } catch (err: any) {
       console.error("Error generating lesson:", err);
       toast.error(err?.message || "Erro ao conectar com a Flora.");
-    } finally {
       setLoadingLesson(false);
     }
   };
@@ -247,6 +289,7 @@ export default function Aulao() {
                 lesson={generatedLesson}
                 enableVoice={false}
                 personality="amiga"
+                loadingBlockIndices={pendingBlocks}
               />
             )}
           </div>
