@@ -805,7 +805,53 @@ Responda SOMENTE com JSON: {"questions":[{"pergunta":"TEXTO-BASE COMPLETO\\n\\nC
 
         const { topic, materia, level, didacticStyle, content, mode } = data.payload;
 
+        // ─── Contexto pedagógico do aluno (curto, focado) ─────────────────
+        let learningContext: any = undefined;
+        let hasContext = false;
+        try {
+          const ctx = await getStudentContext(userId);
+          const perf = (ctx.performance || []) as any[];
+          const weak = perf
+            .filter((p) => Number(p.accuracy) < 65 && Number(p.erros) >= 2)
+            .sort((a, b) => (b.prioridade || 0) - (a.prioridade || 0))
+            .slice(0, 4)
+            .map((p) => `${p.materia ? p.materia + ": " : ""}${p.topic_id}`)
+            .filter(Boolean);
+          const totals = perf.reduce((acc: any, p: any) => {
+            acc.a += Number(p.acertos) || 0;
+            acc.e += Number(p.erros) || 0;
+            return acc;
+          }, { a: 0, e: 0 });
+          const accuracyPct = (totals.a + totals.e) > 0
+            ? Math.round((totals.a / (totals.a + totals.e)) * 100)
+            : undefined;
+          // Erros recentes em quizzes (study_topics.quiz_errors)
+          const recentErrors: string[] = [];
+          for (const t of (ctx.studyTopics || []) as any[]) {
+            if (Array.isArray(t?.quiz_errors)) {
+              for (const e of t.quiz_errors.slice(0, 2)) {
+                const label = typeof e === "string" ? e : e?.tema || e?.topico || "";
+                if (label) recentErrors.push(`${t.materia || ""}: ${label}`.trim());
+              }
+            }
+            if (recentErrors.length >= 4) break;
+          }
+          // Perfil baseado em accuracy
+          let profileLevel: "iniciante" | "intermediario" | "avancado" = "intermediario";
+          if (typeof accuracyPct === "number") {
+            if (accuracyPct < 50) profileLevel = "iniciante";
+            else if (accuracyPct >= 78) profileLevel = "avancado";
+          }
+          if (weak.length || recentErrors.length || typeof accuracyPct === "number") {
+            learningContext = { weakTopics: weak, recentErrors, accuracyPct, profileLevel };
+            hasContext = weak.length > 0 || recentErrors.length > 0;
+          }
+        } catch (e) {
+          console.warn("[generate_lesson] contexto falhou, seguindo sem:", (e as Error)?.message);
+        }
+
         // ─── Cache lookup ─────────────────────────────────────────────────
+        // Se há contexto pedagógico forte, pular cache (aula personalizada).
         const lessonCacheKey = buildCacheKey({
           k: "lesson",
           materia: materia || "geral",
@@ -814,9 +860,11 @@ Responda SOMENTE com JSON: {"questions":[{"pergunta":"TEXTO-BASE COMPLETO\\n\\nC
           style: didacticStyle || "normal",
           mode: mode || "completa",
         });
-        const cachedLesson = await cacheLookup(supabase, lessonCacheKey);
-        if (cachedLesson && cachedLesson.lesson) {
-          return jsonResponse({ ok: true, lesson: cachedLesson.lesson, cached: true });
+        if (!hasContext) {
+          const cachedLesson = await cacheLookup(supabase, lessonCacheKey);
+          if (cachedLesson && cachedLesson.lesson) {
+            return jsonResponse({ ok: true, lesson: cachedLesson.lesson, cached: true });
+          }
         }
 
         const { LESSON_SYSTEM_PROMPT, buildLessonPrompt } = await import("../_shared/prompts_aulas.ts");
@@ -826,7 +874,7 @@ Responda SOMENTE com JSON: {"questions":[{"pergunta":"TEXTO-BASE COMPLETO\\n\\nC
           explanationStyle as ExplanationStyle,
         ) + "\n\n" + LESSON_SYSTEM_PROMPT;
 
-        const userPrompt = buildLessonPrompt(content || topic, materia || "Geral", topic, level || "enem", didacticStyle || "normal", (mode as any) || "completa");
+        const userPrompt = buildLessonPrompt(content || topic, materia || "Geral", topic, level || "enem", didacticStyle || "normal", (mode as any) || "completa", learningContext);
         const tokensCap = mode === "masterclass" ? 8000 : mode === "rapida" ? 2200 : 4500;
 
         const lessonJson = await runTaskChain(
@@ -840,15 +888,17 @@ Responda SOMENTE com JSON: {"questions":[{"pergunta":"TEXTO-BASE COMPLETO\\n\\nC
         if (!parsedLesson) throw new Error("Erro ao processar a aula gerada. Tente novamente.");
 
         await supabase.from("user_actions").insert({ user_id: userId, action: "generate_lesson", metadata: { topic, materia, level } }).then(() => {}).catch(() => {});
-        // Salva no cache server-side
-        cacheStore(supabase, lessonCacheKey, {
-          tipo: "lesson",
-          materia: materia || "Geral",
-          tema: topic || "",
-          dificuldade: didacticStyle || "normal",
-          estilo: mode || "completa",
-          objetivo: level || "enem",
-        }, { lesson: parsedLesson }).catch(() => {});
+        // Só cacheia aulas genéricas (sem contexto pedagógico) pra não poluir o cache.
+        if (!hasContext) {
+          cacheStore(supabase, lessonCacheKey, {
+            tipo: "lesson",
+            materia: materia || "Geral",
+            tema: topic || "",
+            dificuldade: didacticStyle || "normal",
+            estilo: mode || "completa",
+            objetivo: level || "enem",
+          }, { lesson: parsedLesson }).catch(() => {});
+        }
         return jsonResponse({ ok: true, lesson: parsedLesson });
       }
 

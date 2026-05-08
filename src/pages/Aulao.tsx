@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, BookOpen, Lightbulb, PenTool, Search, Loader2 } from "lucide-react";
+import { FloraThinkingLoader } from "@/components/FloraThinkingLoader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -240,15 +241,7 @@ export default function Aulao() {
                 </Button>
               </div>
             )}
-            {loadingLesson && (
-              <div className="flex flex-col items-center justify-center py-24 space-y-4">
-                <Loader2 className="w-12 h-12 animate-spin text-primary" />
-                <div className="text-center">
-                  <h2 className="text-xl font-bold">Flora está preparando sua aula...</h2>
-                  <p className="text-muted-foreground text-sm mt-1">Isso pode levar alguns segundos.</p>
-                </div>
-              </div>
-            )}
+            {loadingLesson && <FloraThinkingLoader />}
             {generatedLesson && !loadingLesson && (
               <InteractiveLessonPlayer
                 lesson={generatedLesson}

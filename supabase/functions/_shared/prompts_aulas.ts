@@ -50,6 +50,13 @@ export function buildLessonPrompt(
   level: "enem" | "concurso" | "basico" = "enem",
   didacticStyle: "macetes" | "aprofundado" | "normal" = "normal",
   mode: LessonMode = "completa",
+  learningContext?: {
+    weakTopics?: string[];
+    recentErrors?: string[];
+    accuracyPct?: number;
+    commonMistakes?: string[];
+    profileLevel?: "iniciante" | "intermediario" | "avancado";
+  },
 ): string {
   const truncated = content && content.length > 1500 ? content.slice(0, 1500) + "..." : content;
 
@@ -80,11 +87,36 @@ export function buildLessonPrompt(
     },
   }[mode];
 
+  // ─── Contexto pedagógico resumido (curto, pra não explodir token) ─────
+  const ctxLines: string[] = [];
+  if (learningContext) {
+    const { weakTopics, recentErrors, accuracyPct, commonMistakes, profileLevel } = learningContext;
+    if (typeof accuracyPct === "number") ctxLines.push(`- Acerto geral atual: ${accuracyPct}%`);
+    if (profileLevel) ctxLines.push(`- Perfil: ${profileLevel}`);
+    if (weakTopics?.length) ctxLines.push(`- Tópicos fracos recentes: ${weakTopics.slice(0, 4).join(", ")}`);
+    if (recentErrors?.length) ctxLines.push(`- Erros recentes em quizzes: ${recentErrors.slice(0, 4).join(", ")}`);
+    if (commonMistakes?.length) ctxLines.push(`- Padrões de erro: ${commonMistakes.slice(0, 3).join(", ")}`);
+  }
+  const ctxBlock = ctxLines.length ? `
+CONTEXTO DO ALUNO (use com sutileza, no máximo 2-3 menções na aula inteira):
+${ctxLines.join("\n")}
+
+REGRA: a Flora DEVE referenciar esse contexto de forma natural em comentários humanos. Exemplos:
+- "Tu já errou isso no último quiz, então presta atenção nesse detalhe."
+- "Vou simplificar porque vi que tu pegou dificuldade em ${learningContext?.weakTopics?.[0] || "tópicos parecidos"}."
+- "Como teu acerto tá em ${learningContext?.accuracyPct ?? "X"}%, vou puxar um pouquinho mais."
+ADAPTE A AULA ao perfil:
+- iniciante: mais analogias, passos menores, menos jargão.
+- avancado: menos básico, mais pegadinhas, conexões com tópicos avançados.
+NÃO repita o contexto de forma robótica. Não liste. Não cite mais que 2-3 vezes. Não invente erros.
+` : "";
+
   return `MODE: ${mode}
 MATÉRIA: ${materia}
 TEMA: ${tema}
 NÍVEL: ${level}
 ESTILO: ${didacticStyle}
+${ctxBlock}
 
 Gere uma aula ${modeSpec.tokens} sobre "${tema}".
 - Blocos: ${modeSpec.blocos}
