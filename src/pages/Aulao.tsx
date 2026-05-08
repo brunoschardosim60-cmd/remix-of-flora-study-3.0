@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, BookOpen, Lightbulb, PenTool, Search, Loader2 } from "lucide-react";
+import { FloraThinkingLoader } from "@/components/FloraThinkingLoader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
