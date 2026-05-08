@@ -756,7 +756,7 @@ Responda SOMENTE com JSON: {"questions":[{"pergunta":"TEXTO-BASE COMPLETO\\n\\nC
         const qChk = await checkQuota(supabase, userId, "chat");
         if (!qChk.allowed) return quotaExceededResponse(qChk, corsHeaders);
 
-        const { topic, materia, level, didacticStyle, content } = data.payload;
+        const { topic, materia, level, didacticStyle, content, mode } = data.payload;
         const { LESSON_SYSTEM_PROMPT, buildLessonPrompt } = await import("../_shared/prompts_aulas.ts");
 
         const systemPrompt = getSystemPromptWithPersona(
@@ -764,10 +764,11 @@ Responda SOMENTE com JSON: {"questions":[{"pergunta":"TEXTO-BASE COMPLETO\\n\\nC
           explanationStyle as ExplanationStyle,
         ) + "\n\n" + LESSON_SYSTEM_PROMPT;
 
-        const userPrompt = buildLessonPrompt(content || topic, materia || "Geral", topic, level || "enem", didacticStyle || "normal");
+        const userPrompt = buildLessonPrompt(content || topic, materia || "Geral", topic, level || "enem", didacticStyle || "normal", (mode as any) || "completa");
+        const tokensCap = mode === "masterclass" ? 8000 : mode === "rapida" ? 2200 : 4500;
 
         const lessonJson = await runTaskChain(
-          { messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt }] },
+          { messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt }], maxTokens: tokensCap, temperature: 0.7, jsonMode: true },
           "explicacao",
           "aulao_lesson_generation",
           { supabase, userId, actionType: "generate_lesson" },
