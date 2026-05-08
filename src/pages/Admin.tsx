@@ -29,6 +29,7 @@ import { AdminQuestionsPanel } from "@/components/admin/AdminQuestionsPanel";
 import { AdminConcursoQuestionsPanel } from "@/components/admin/AdminConcursoQuestionsPanel";
 import { AdminPdfReprocessPanel } from "@/components/admin/AdminPdfReprocessPanel";
 import { AdminPdfBatchPanel } from "@/components/admin/AdminPdfBatchPanel";
+import { AdminCachePanel } from "@/components/AdminCachePanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Admin() {
@@ -167,6 +168,7 @@ export default function Admin() {
             <TabsTrigger value="enem">ENEM</TabsTrigger>
             <TabsTrigger value="concurso">Concurso / Direito</TabsTrigger>
             <TabsTrigger value="pdf">Reprocessar PDF</TabsTrigger>
+            <TabsTrigger value="cache">Cache Flora</TabsTrigger>
           </TabsList>
 
           <TabsContent value="usuarios" className="mt-0">
