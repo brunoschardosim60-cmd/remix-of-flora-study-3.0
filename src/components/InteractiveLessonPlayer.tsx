@@ -1,5 +1,8 @@
 import React, { useState, lazy, Suspense } from "react";
-import { Loader2, Send, Image as ImageIcon, ChevronLeft, ChevronRight, Lightbulb, AlertTriangle, MessageCircleQuestion, CheckCircle2, XCircle } from "lucide-react";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
+import { Loader2, Send, Image as ImageIcon, ChevronLeft, ChevronRight, Lightbulb, AlertTriangle, MessageCircleQuestion, CheckCircle2, XCircle, Sparkles, Brain, HelpCircle } from "lucide-react";
 import { generateDidacticImage } from "@/lib/floraImages";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -14,6 +17,10 @@ interface LessonBlock {
   checkpoint?: string;
   macete?: string;
   pegadinha?: string;
+  analogia?: string;
+  exemplo_resolvido?: string;
+  flora_comment?: string;
+  mini_interacao?: string;
   duvida_simulada?: { pergunta: string; resposta: string };
 }
 
@@ -44,7 +51,7 @@ interface Props {
 function MD({ children }: { children: string }) {
   return (
     <Suspense fallback={<p style={{ whiteSpace: "pre-wrap" }}>{children}</p>}>
-      <ReactMarkdown>{children}</ReactMarkdown>
+      <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>{children}</ReactMarkdown>
     </Suspense>
   );
 }
@@ -177,7 +184,29 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete })
           <div className="ilp-card">
             <div className="ilp-stage-label">Bloco {idx + 1} / {blocos.length}</div>
             <h2 className="ilp-block-title">{cur.titulo}</h2>
+
+            {cur.flora_comment && (
+              <div className="ilp-flora-bubble">
+                <Sparkles size={16} />
+                <div><MD>{cur.flora_comment}</MD></div>
+              </div>
+            )}
+
+            {cur.analogia && (
+              <div className="ilp-callout ilp-analogia">
+                <Brain size={16} />
+                <div><strong>Pensa assim:</strong> <MD>{cur.analogia}</MD></div>
+              </div>
+            )}
+
             <div className="ilp-md"><MD>{cur.conteudo}</MD></div>
+
+            {cur.exemplo_resolvido && (
+              <div className="ilp-exemplo">
+                <div className="ilp-exemplo-head"><Lightbulb size={14} /> Exemplo resolvido</div>
+                <div className="ilp-md"><MD>{cur.exemplo_resolvido}</MD></div>
+              </div>
+            )}
 
             {blockImage[idx] && (
               <div className="ilp-img-wrap"><img src={blockImage[idx]} alt={cur.titulo} /></div>
@@ -205,6 +234,13 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete })
                   <strong>{cur.duvida_simulada.pergunta}</strong>
                   <div className="ilp-md"><MD>{cur.duvida_simulada.resposta}</MD></div>
                 </div>
+              </div>
+            )}
+
+            {cur.mini_interacao && (
+              <div className="ilp-mini-interacao">
+                <HelpCircle size={14} />
+                <span>{cur.mini_interacao}</span>
               </div>
             )}
 
