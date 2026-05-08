@@ -231,14 +231,14 @@ export async function checkOnboardingComplete(userId: string): Promise<boolean> 
   }
 }
 
-export async function floraGenerateLesson(topic: string, materia: string, level: 'enem' | 'concurso' | 'basico', didacticStyle: 'macetes' | 'aprofundado' | 'normal', content: string) {
+export async function floraGenerateLesson(topic: string, materia: string, level: 'enem' | 'concurso' | 'basico', didacticStyle: 'macetes' | 'aprofundado' | 'normal', content: string, mode: 'rapida' | 'completa' | 'masterclass' = 'completa') {
   try {
     const { data, error } = await supabase.functions.invoke("flora-engine", {
       body: {
         action: "execute_action",
         data: {
           actionType: "GENERATE_LESSON",
-          payload: { topic, materia, level, didacticStyle, content },
+          payload: { topic, materia, level, didacticStyle, content, mode },
         },
       },
     });
