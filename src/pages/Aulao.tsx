@@ -64,6 +64,8 @@ export default function Aulao() {
 
   // Lesson
   const [lessonTopicInput, setLessonTopicInput] = useState("");
+  const [lessonSubjectInput, setLessonSubjectInput] = useState("");
+  const [lessonMode, setLessonMode] = useState<"rapida" | "completa" | "masterclass">("completa");
   const [loadingLesson, setLoadingLesson] = useState(false);
   const [generatedLesson, setGeneratedLesson] = useState<Lesson | null>(null);
 
@@ -83,10 +85,11 @@ export default function Aulao() {
     setGeneratedLesson(null);
     try {
       const result = await floraGenerateLesson(
-        customTopic.trim(), "Geral",
+        customTopic.trim(), lessonSubjectInput.trim() || "Geral",
         topic.defaultLevel || "enem",
         topic.defaultDidacticStyle || "normal",
-        `Aula sobre ${customTopic.trim()}`
+        `Aula sobre ${customTopic.trim()}`,
+        lessonMode
       );
       if (result?.lesson) {
         setGeneratedLesson(result.lesson);
@@ -132,6 +135,7 @@ export default function Aulao() {
     setMode(topic.mode);
     setGeneratedLesson(null);
     setLessonTopicInput("");
+    setLessonSubjectInput("");
     setEssayThemeInput("");
     setConfirmedTheme("");
     setSearchQuery("");
@@ -202,6 +206,31 @@ export default function Aulao() {
                   className="text-base py-5"
                   autoFocus
                 />
+                <Input
+                  placeholder="Matéria (opcional) — Ex: História, Biologia, Matemática"
+                  value={lessonSubjectInput}
+                  onChange={(e) => setLessonSubjectInput(e.target.value)}
+                  className="text-base py-4"
+                />
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground mb-2">PROFUNDIDADE DA AULA</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {([
+                      { id: "rapida", label: "Rápida", hint: "5-10 min" },
+                      { id: "completa", label: "Completa", hint: "15-25 min" },
+                      { id: "masterclass", label: "Masterclass", hint: "30-50 min" },
+                    ] as const).map((m) => (
+                      <button
+                        key={m.id}
+                        onClick={() => setLessonMode(m.id)}
+                        className={`rounded-xl border px-3 py-2 text-sm font-semibold transition-colors ${lessonMode === m.id ? "border-primary bg-primary/10 text-primary" : "border-border bg-card text-foreground hover:border-primary/40"}`}
+                      >
+                        <div>{m.label}</div>
+                        <div className="text-[10px] font-normal text-muted-foreground">{m.hint}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <Button
                   className="w-full py-5 text-base font-bold gap-2"
                   onClick={() => startLesson(selectedTopic, lessonTopicInput)}
