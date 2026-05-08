@@ -362,6 +362,54 @@ export type Database = {
         }
         Relationships: []
       }
+      content_cache: {
+        Row: {
+          banca: string
+          cache_key: string
+          created_at: string
+          dificuldade: string
+          estilo: string
+          hits: number
+          id: string
+          materia: string
+          objetivo: string
+          payload: Json
+          tema: string
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          banca?: string
+          cache_key: string
+          created_at?: string
+          dificuldade?: string
+          estilo?: string
+          hits?: number
+          id?: string
+          materia?: string
+          objetivo?: string
+          payload?: Json
+          tema?: string
+          tipo: string
+          updated_at?: string
+        }
+        Update: {
+          banca?: string
+          cache_key?: string
+          created_at?: string
+          dificuldade?: string
+          estilo?: string
+          hits?: number
+          id?: string
+          materia?: string
+          objetivo?: string
+          payload?: Json
+          tema?: string
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       essay_themes: {
         Row: {
           competencias_destaque: string[]

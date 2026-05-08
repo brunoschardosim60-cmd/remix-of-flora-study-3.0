@@ -185,6 +185,53 @@ function isExatasTask(materia: string): boolean {
   return exatas.some(e => materia.toLowerCase().includes(e));
 }
 
+// ─── Cache helpers ────────────────────────────────────────────────────────────
+// Normaliza string para chave de cache: minúsculas, trim, remove acentos/símbolos.
+function normCacheStr(s: string): string {
+  return (s || "")
+    .toString()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase().replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+function buildCacheKey(parts: Record<string, string>): string {
+  return Object.entries(parts)
+    .map(([k, v]) => `${k}:${normCacheStr(v)}`)
+    .join("|");
+}
+async function cacheLookup(supabase: any, key: string): Promise<any | null> {
+  try {
+    const { data } = await supabase
+      .from("content_cache")
+      .select("payload, id")
+      .eq("cache_key", key)
+      .maybeSingle();
+    if (data?.payload) {
+      // hit++
+      supabase.rpc; // no-op; we'll just update via UPDATE
+      supabase.from("content_cache").update({ hits: (data as any).hits ? (data as any).hits + 1 : 1 }).eq("id", data.id).then(() => {}, () => {});
+      return data.payload;
+    }
+  } catch { /* ignore */ }
+  return null;
+}
+async function cacheStore(supabase: any, key: string, meta: { tipo: string; materia: string; tema: string; dificuldade?: string; banca?: string; estilo?: string; objetivo?: string; }, payload: any) {
+  try {
+    await supabase.from("content_cache").upsert({
+      cache_key: key,
+      tipo: meta.tipo,
+      materia: meta.materia || "",
+      tema: meta.tema || "",
+      dificuldade: meta.dificuldade || "medio",
+      banca: meta.banca || "",
+      estilo: meta.estilo || "",
+      objetivo: meta.objetivo || "enem",
+      payload,
+      hits: 1,
+    }, { onConflict: "cache_key" });
+  } catch { /* ignore */ }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
@@ -757,6 +804,21 @@ Responda SOMENTE com JSON: {"questions":[{"pergunta":"TEXTO-BASE COMPLETO\\n\\nC
         if (!qChk.allowed) return quotaExceededResponse(qChk, corsHeaders);
 
         const { topic, materia, level, didacticStyle, content, mode } = data.payload;
+
+        // ─── Cache lookup ─────────────────────────────────────────────────
+        const lessonCacheKey = buildCacheKey({
+          k: "lesson",
+          materia: materia || "geral",
+          tema: topic || "",
+          level: level || "enem",
+          style: didacticStyle || "normal",
+          mode: mode || "completa",
+        });
+        const cachedLesson = await cacheLookup(supabase, lessonCacheKey);
+        if (cachedLesson && cachedLesson.lesson) {
+          return jsonResponse({ ok: true, lesson: cachedLesson.lesson, cached: true });
+        }
+
         const { LESSON_SYSTEM_PROMPT, buildLessonPrompt } = await import("../_shared/prompts_aulas.ts");
 
         const systemPrompt = getSystemPromptWithPersona(
@@ -778,6 +840,15 @@ Responda SOMENTE com JSON: {"questions":[{"pergunta":"TEXTO-BASE COMPLETO\\n\\nC
         if (!parsedLesson) throw new Error("Erro ao processar a aula gerada. Tente novamente.");
 
         await supabase.from("user_actions").insert({ user_id: userId, action: "generate_lesson", metadata: { topic, materia, level } }).then(() => {}).catch(() => {});
+        // Salva no cache server-side
+        cacheStore(supabase, lessonCacheKey, {
+          tipo: "lesson",
+          materia: materia || "Geral",
+          tema: topic || "",
+          dificuldade: didacticStyle || "normal",
+          estilo: mode || "completa",
+          objetivo: level || "enem",
+        }, { lesson: parsedLesson }).catch(() => {});
         return jsonResponse({ ok: true, lesson: parsedLesson });
       }
 

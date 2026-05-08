@@ -82,48 +82,59 @@ export const EssayTutorMode: React.FC<EssayTutorModeProps> = ({
     if (!essayText.trim() || wordCount < 50) return;
     setIsAnalyzing(true);
     try {
-      const { data, error } = await supabase.functions.invoke("flora-engine", {
-        body: {
-          action: "correct_essay",
-          data: { content: essayText, theme, tipo: essayType },
-        },
+      // Cria um rascunho de essay para receber a correção
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Faça login para corrigir a redação.");
+      const { data: essayRow, error: essayErr } = await supabase
+        .from("essays")
+        .insert({
+          user_id: user.id,
+          tema: theme,
+          texto: essayText,
+          tipo_prova: essayType === "enem" ? "enem" : "geral",
+          status: "rascunho",
+          word_count: wordCount,
+          line_count: essayText.split(/\n/).length,
+        } as any)
+        .select("id")
+        .single();
+      if (essayErr) throw essayErr;
+
+      const { data, error } = await supabase.functions.invoke("essay-corrector", {
+        body: { action: "correct", essayId: essayRow.id, tema: theme, texto: essayText },
       });
       if (error) throw error;
+      const r = (data?.data ?? data) as any;
 
-      // Mapeia o resultado do edge function para FeedbackItem[]
       const items: FeedbackItem[] = [];
-      if (data?.competencias) {
-        const c = data.competencias;
-        if (c.pontos_positivos?.length) {
-          c.pontos_positivos.slice(0, 3).forEach((p: string) => items.push({ type: "positive", message: `✅ ${p}` }));
-        }
-        if (c.pontos_melhora?.length) {
-          c.pontos_melhora.slice(0, 3).forEach((p: string) => items.push({ type: "improvement", message: `⚠️ ${p}` }));
-        }
-        if (c.dicas?.length) {
-          c.dicas.slice(0, 2).forEach((d: string) => items.push({ type: "tip", message: `💡 ${d}` }));
-        }
-      } else if (data?.feedback) {
-        // Fallback: se edge function retornar texto livre
-        items.push({ type: "tip", message: data.feedback });
-      } else {
-        // Mock caso o edge function não tenha o handler ainda
-        items.push(
-          { type: "positive", message: "✅ Sua introdução está clara e bem estruturada!" },
-          { type: "improvement", message: "⚠️ Use mais conectivos entre os parágrafos para melhorar a coesão." },
-          { type: "tip", message: "💡 Macete ENEM: cite dados concretos para fortalecer seus argumentos." },
-          { type: "positive", message: "✅ Conclusão com proposta de intervenção — muito bem!" },
-        );
+      if (r?.nota_total != null) {
+        items.push({ type: "positive", message: `Nota total: ${r.nota_total}/1000` });
+        const comps = [
+          ["Competência 1 — Norma culta", r.competencia_1, r.feedback_competencias?.competencia_1],
+          ["Competência 2 — Compreensão do tema", r.competencia_2, r.feedback_competencias?.competencia_2],
+          ["Competência 3 — Argumentação", r.competencia_3, r.feedback_competencias?.competencia_3],
+          ["Competência 4 — Coesão", r.competencia_4, r.feedback_competencias?.competencia_4],
+          ["Competência 5 — Proposta de intervenção", r.competencia_5, r.feedback_competencias?.competencia_5],
+        ];
+        comps.forEach(([label, nota, fb]) => {
+          if (nota != null) items.push({
+            type: (nota as number) >= 160 ? "positive" : (nota as number) >= 80 ? "tip" : "improvement",
+            message: `${label}: ${nota}/200${fb ? ` — ${fb}` : ""}`,
+          });
+        });
+      } else if (r?.nota != null) {
+        items.push({ type: "positive", message: `Nota: ${r.nota}/${r.nota_maxima || 10}` });
       }
+      if (r?.feedback_geral) items.push({ type: "tip", message: r.feedback_geral });
+      const proxPassos: string[] = r?.plano_estudo?.curto_prazo || r?.proximos_passos || [];
+      proxPassos.slice(0, 3).forEach((p: string) => items.push({ type: "improvement", message: `Próximo passo: ${p}` }));
+      if (items.length === 0) items.push({ type: "tip", message: "Correção concluída, mas não veio detalhamento." });
       setFeedback(items);
       setCurrentStep("feedback");
     } catch (err) {
       console.error("Erro ao analisar redação:", err);
-      // Fallback mock
       setFeedback([
-        { type: "positive", message: "✅ Boa estrutura geral detectada." },
-        { type: "improvement", message: "⚠️ Revise a coesão entre parágrafos." },
-        { type: "tip", message: "💡 Dica: proposta de intervenção deve ter agente, ação e finalidade." },
+        { type: "improvement", message: (err as any)?.message || "Não consegui corrigir agora. Tente de novo." },
       ]);
       setCurrentStep("feedback");
     } finally {
