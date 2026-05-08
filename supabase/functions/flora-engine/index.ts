@@ -1361,6 +1361,72 @@ SEMPRE responda em português brasileiro.` },
       return jsonResponse({ ok: true, lesson: parsedLesson });
     }
 
+    // ─── GENERATE_LESSON_SKELETON: Fase 1 do streaming (rápido ~2-3s) ───────
+    // Retorna intro + títulos dos blocos + exercício final. Cliente exibe
+    // skeletons enquanto chama generate_lesson_block para cada bloco.
+    if (action === "generate_lesson_skeleton") {
+      const qChk = await checkQuota(supabase, userId, "generate_lesson");
+      if (!qChk.allowed) return quotaExceededResponse(qChk, corsHeaders);
+
+      const topic = (data as any)?.topic || "tema geral";
+      const materia = (data as any)?.materia || "Geral";
+      const level = (data as any)?.level || "enem";
+      const mode = (data as any)?.mode || "completa";
+
+      const skelKey = buildCacheKey({ k: "lesson_skel", materia, tema: topic, level, mode });
+      const cached = await cacheLookup(supabase, skelKey);
+      if (cached?.skeleton) return jsonResponse({ ok: true, skeleton: cached.skeleton, cached: true });
+
+      const { LESSON_SKELETON_SYSTEM_PROMPT, buildLessonSkeletonPrompt } = await import("../_shared/prompts_aulas.ts");
+      const userPrompt = buildLessonSkeletonPrompt(topic, materia, level, mode as any);
+
+      const json = await runTaskChain(
+        { messages: [{ role: "system", content: LESSON_SKELETON_SYSTEM_PROMPT }, { role: "user", content: userPrompt }], maxTokens: 1200, temperature: 0.6, jsonMode: true },
+        "chat",
+        "aulao_lesson_skeleton",
+        { supabase, userId, actionType: "generate_lesson_skeleton" },
+      );
+      const parsed = parseAIJSON(json as string);
+      if (!parsed || !Array.isArray(parsed.blocos_titulos)) {
+        throw new Error("Erro ao gerar esqueleto da aula.");
+      }
+      cacheStore(supabase, skelKey, { tipo: "lesson_skel", materia, tema: topic, estilo: mode, objetivo: level }, { skeleton: parsed }).catch(() => {});
+      return jsonResponse({ ok: true, skeleton: parsed });
+    }
+
+    // ─── GENERATE_LESSON_BLOCK: Fase 2 do streaming (gera 1 bloco) ──────────
+    if (action === "generate_lesson_block") {
+      const qChk = await checkQuota(supabase, userId, "generate_lesson");
+      if (!qChk.allowed) return quotaExceededResponse(qChk, corsHeaders);
+
+      const topic = (data as any)?.topic || "tema geral";
+      const materia = (data as any)?.materia || "Geral";
+      const blocoTitulo = (data as any)?.blocoTitulo || "";
+      const blocoIndex = Number((data as any)?.blocoIndex ?? 0);
+      const totalBlocos = Number((data as any)?.totalBlocos ?? 10);
+      const mode = (data as any)?.mode || "completa";
+      const didacticStyle = (data as any)?.didacticStyle || "normal";
+
+      const blockKey = buildCacheKey({ k: "lesson_block", materia, tema: topic, mode, t: blocoTitulo, i: blocoIndex });
+      const cached = await cacheLookup(supabase, blockKey);
+      if (cached?.block) return jsonResponse({ ok: true, block: cached.block, cached: true });
+
+      const { LESSON_BLOCK_SYSTEM_PROMPT, buildLessonBlockPrompt } = await import("../_shared/prompts_aulas.ts");
+      const userPrompt = buildLessonBlockPrompt(topic, materia, blocoTitulo, blocoIndex, totalBlocos, mode as any, didacticStyle as any);
+      const tokensCap = mode === "masterclass" ? 1800 : mode === "rapida" ? 900 : 1300;
+
+      const json = await runTaskChain(
+        { messages: [{ role: "system", content: LESSON_BLOCK_SYSTEM_PROMPT }, { role: "user", content: userPrompt }], maxTokens: tokensCap, temperature: 0.7, jsonMode: true },
+        "explicacao",
+        "aulao_lesson_block",
+        { supabase, userId, actionType: "generate_lesson_block" },
+      );
+      const parsed = parseAIJSON(json as string);
+      if (!parsed) throw new Error("Erro ao gerar bloco da aula.");
+      cacheStore(supabase, blockKey, { tipo: "lesson_block", materia, tema: topic, estilo: mode, objetivo: String(blocoIndex) }, { block: parsed }).catch(() => {});
+      return jsonResponse({ ok: true, block: parsed });
+    }
+
     // ─── LIVE_ESSAY_FEEDBACK: sugestões em tempo real enquanto escreve ───────
     if (action === "live_essay_feedback") {
       const text = (data as any)?.text || "";
