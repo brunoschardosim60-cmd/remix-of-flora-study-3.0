@@ -756,7 +756,7 @@ Responda SOMENTE com JSON: {"questions":[{"pergunta":"TEXTO-BASE COMPLETO\\n\\nC
         const qChk = await checkQuota(supabase, userId, "chat");
         if (!qChk.allowed) return quotaExceededResponse(qChk, corsHeaders);
 
-        const { topic, materia, level, didacticStyle, content } = data.payload;
+        const { topic, materia, level, didacticStyle, content, mode } = data.payload;
         const { LESSON_SYSTEM_PROMPT, buildLessonPrompt } = await import("../_shared/prompts_aulas.ts");
 
         const systemPrompt = getSystemPromptWithPersona(
@@ -764,10 +764,11 @@ Responda SOMENTE com JSON: {"questions":[{"pergunta":"TEXTO-BASE COMPLETO\\n\\nC
           explanationStyle as ExplanationStyle,
         ) + "\n\n" + LESSON_SYSTEM_PROMPT;
 
-        const userPrompt = buildLessonPrompt(content || topic, materia || "Geral", topic, level || "enem", didacticStyle || "normal");
+        const userPrompt = buildLessonPrompt(content || topic, materia || "Geral", topic, level || "enem", didacticStyle || "normal", (mode as any) || "completa");
+        const tokensCap = mode === "masterclass" ? 8000 : mode === "rapida" ? 2200 : 4500;
 
         const lessonJson = await runTaskChain(
-          { messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt }] },
+          { messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt }], maxTokens: tokensCap, temperature: 0.7, jsonMode: true },
           "explicacao",
           "aulao_lesson_generation",
           { supabase, userId, actionType: "generate_lesson" },
@@ -908,6 +909,73 @@ Responda SOMENTE com JSON: {"conteudo":"resposta em markdown"}` },
       const content = await runTaskChain(opts, "explicacao", "flora:study_now_followup", { supabase, userId, actionType: "study_now_followup" });
       const result = parseAIJSON(content as string) as any;
       return jsonResponse({ conteudo: result?.conteudo || (typeof content === "string" ? content : "") });
+    }
+
+    // ─── LESSON_DOUBT: aluno tira dúvida durante a aula ────────────────────
+    if (action === "lesson_doubt") {
+      const { tema, blocoTitulo, blocoConteudo, duvida } = data || {};
+      if (!duvida) return jsonResponse({ resposta: "Manda a dúvida!" });
+      const opts: CallOptions = {
+        messages: [
+          { role: "system", content: `Você é Flora, professora particular. O aluno está numa aula sobre "${tema}", no bloco "${blocoTitulo}".
+
+Conteúdo do bloco que ele acabou de ver:
+"""
+${(blocoConteudo || "").slice(0, 1500)}
+"""
+
+Ele perguntou: "${duvida}"
+
+Responda como uma professora real: clara, com 1-2 exemplos concretos, analogia se ajudar, sem encher de teoria. 6-15 linhas em markdown. Use **negrito** em conceitos-chave. Sem emojis. PT-BR.
+Termine confirmando se ficou claro ou propondo um ângulo extra.
+Responda SOMENTE JSON: {"resposta":"markdown"}` },
+          { role: "user", content: duvida },
+        ],
+        maxTokens: 900, temperature: 0.6, jsonMode: true,
+      };
+      const raw = await runTaskChain(opts, "explicacao", "flora:lesson_doubt", { supabase, userId, actionType: "lesson_doubt" });
+      const parsed = parseAIJSON(raw as string) as any;
+      return jsonResponse({ resposta: parsed?.resposta || (typeof raw === "string" ? raw : "Não consegui responder agora.") });
+    }
+
+    // ─── SEMANTIC_SEARCH: busca conteúdo no banco ──────────────────────────
+    if (action === "semantic_search") {
+      const query = (data?.query || "").toString().trim();
+      const limit = Math.min(Number(data?.limit) || 10, 25);
+      if (!query) return jsonResponse({ results: [] });
+      const q = `%${query}%`;
+      const results: any[] = [];
+      try {
+        const { data: questoes } = await supabase
+          .from("questions")
+          .select("id, enunciado, disciplina, tema")
+          .or(`enunciado.ilike.${q},tema.ilike.${q},disciplina.ilike.${q}`)
+          .limit(limit);
+        for (const r of questoes || []) {
+          results.push({
+            id: `q-${r.id}`, tipo: "questao",
+            titulo: (r.enunciado || "").slice(0, 120),
+            descricao: r.tema || "",
+            materia: r.disciplina || "",
+          });
+        }
+      } catch { /* tabela pode não ter resultados */ }
+      try {
+        const { data: topics } = await supabase
+          .from("study_topics")
+          .select("id, tema, materia, notas")
+          .eq("user_id", userId)
+          .or(`tema.ilike.${q},materia.ilike.${q},notas.ilike.${q}`)
+          .limit(limit);
+        for (const r of topics || []) {
+          results.push({
+            id: `t-${r.id}`, tipo: "resumo",
+            titulo: r.tema, descricao: (r.notas || "").slice(0, 140),
+            materia: r.materia || "",
+          });
+        }
+      } catch {}
+      return jsonResponse({ results: results.slice(0, limit) });
     }
 
     if (action === "generate_quiz") {
