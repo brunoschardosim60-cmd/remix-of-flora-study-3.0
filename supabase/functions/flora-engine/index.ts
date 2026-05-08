@@ -1114,6 +1114,17 @@ SEMPRE responda em português brasileiro.` },
         ],
         maxTokens: Math.min(350 * requestedCount + 800, 4000), temperature: 0.45, jsonMode: true,
       };
+
+      // ─── Cache lookup (apenas modo normal, sem pageContent customizado) ──
+      const canCacheQuiz = mode === "normal" && !pageContent;
+      const quizCacheKey = canCacheQuiz ? buildCacheKey({
+        k: "quiz", materia, tema, dif: difficulty, banca: bancaAluno, obj: objetivo, n: String(requestedCount),
+      }) : "";
+      if (canCacheQuiz) {
+        const cached = await cacheLookup(supabase, quizCacheKey);
+        if (cached?.questions) return jsonResponse({ ...cached, cached: true });
+      }
+
       // Quiz: Groq como primário
       const content = await runTaskChain(opts, "quiz", "flora:generate_quiz", { supabase, userId, actionType: "generate_quiz" });
       const result = parseAIJSON(content as string) as any;
@@ -1203,6 +1214,9 @@ SEMPRE responda em português brasileiro.` },
       }
 
       await supabase.from("user_actions").insert({ user_id: userId, action: "generate_quiz", materia, metadata: { tema, difficulty, questionCount: result.questions?.length || 0, discarded, mode } });
+      if (canCacheQuiz && Array.isArray(result?.questions) && result.questions.length >= 3) {
+        cacheStore(supabase, quizCacheKey, { tipo: "quiz", materia, tema, dificuldade: difficulty, banca: bancaAluno, objetivo }, result).catch(() => {});
+      }
       return jsonResponse(result);
     }
 
@@ -1215,6 +1229,14 @@ SEMPRE responda em português brasileiro.` },
       const pageContent = data?.pageContent || "";
       const perfData = context.performance.filter((p: any) => p.materia === materia);
       const accuracyMedia = perfData.length > 0 ? Math.round(perfData.reduce((a: number, p: any) => a + p.accuracy, 0) / perfData.length) : 50;
+
+      // ─── Cache lookup ─────────────────────────────────────────────────
+      const canCacheFc = !pageContent;
+      const fcCacheKey = canCacheFc ? buildCacheKey({ k: "flashcards", materia, tema, obj: objetivo }) : "";
+      if (canCacheFc) {
+        const cached = await cacheLookup(supabase, fcCacheKey);
+        if (cached?.flashcards) return jsonResponse({ ...cached, cached: true });
+      }
 
       const opts: CallOptions = {
         messages: [
@@ -1231,6 +1253,9 @@ SEMPRE responda em português brasileiro.` },
       const content = await runTaskChain(opts, task as TaskType, "flora:flashcards", { supabase, userId, actionType: "generate_flashcards" });
       const result = parseAIJSON(content as string) as any;
       await supabase.from("user_actions").insert({ user_id: userId, action: "generate_flashcards", materia, metadata: { tema, cardCount: result.flashcards?.length || 0 } });
+      if (canCacheFc && Array.isArray(result?.flashcards) && result.flashcards.length >= 4) {
+        cacheStore(supabase, fcCacheKey, { tipo: "flashcards", materia, tema, objetivo }, result).catch(() => {});
+      }
       return jsonResponse(result);
     }
 
@@ -1244,6 +1269,13 @@ SEMPRE responda em português brasileiro.` },
       const level = (data as any)?.level || "enem";
       const didacticStyle = (data as any)?.didacticStyle || "normal";
       const content = (data as any)?.content || topic;
+      const mode = (data as any)?.mode || "completa";
+
+      const lessonCacheKey = buildCacheKey({
+        k: "lesson", materia, tema: topic, level, style: didacticStyle, mode,
+      });
+      const cachedLesson = await cacheLookup(supabase, lessonCacheKey);
+      if (cachedLesson?.lesson) return jsonResponse({ ok: true, lesson: cachedLesson.lesson, cached: true });
 
       const { LESSON_SYSTEM_PROMPT, buildLessonPrompt } = await import("../_shared/prompts_aulas.ts");
       const ctx = await getStudentContext(userId);
@@ -1251,7 +1283,7 @@ SEMPRE responda em português brasileiro.` },
       const expStyle: ExplanationStyle = (ctx?.onboarding?.explanation_style as ExplanationStyle) || "padrao";
 
       const systemPrompt = getSystemPromptWithPersona(pers, expStyle) + "\n\n" + LESSON_SYSTEM_PROMPT;
-      const userPrompt = buildLessonPrompt(content, materia, topic, level, didacticStyle);
+      const userPrompt = buildLessonPrompt(content, materia, topic, level, didacticStyle, mode as any);
 
       const lessonJson = await runTaskChain(
         { messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt }] },
@@ -1264,6 +1296,7 @@ SEMPRE responda em português brasileiro.` },
       if (!parsedLesson) throw new Error("Erro ao processar a aula gerada. Tente novamente.");
 
       await supabase.from("user_actions").insert({ user_id: userId, action: "generate_lesson", metadata: { topic, materia, level } });
+      cacheStore(supabase, lessonCacheKey, { tipo: "lesson", materia, tema: topic, dificuldade: didacticStyle, estilo: mode, objetivo: level }, { lesson: parsedLesson }).catch(() => {});
       return jsonResponse({ ok: true, lesson: parsedLesson });
     }
 
