@@ -804,6 +804,21 @@ Responda SOMENTE com JSON: {"questions":[{"pergunta":"TEXTO-BASE COMPLETO\\n\\nC
         if (!qChk.allowed) return quotaExceededResponse(qChk, corsHeaders);
 
         const { topic, materia, level, didacticStyle, content, mode } = data.payload;
+
+        // ─── Cache lookup ─────────────────────────────────────────────────
+        const lessonCacheKey = buildCacheKey({
+          k: "lesson",
+          materia: materia || "geral",
+          tema: topic || "",
+          level: level || "enem",
+          style: didacticStyle || "normal",
+          mode: mode || "completa",
+        });
+        const cachedLesson = await cacheLookup(supabase, lessonCacheKey);
+        if (cachedLesson && cachedLesson.lesson) {
+          return jsonResponse({ ok: true, lesson: cachedLesson.lesson, cached: true });
+        }
+
         const { LESSON_SYSTEM_PROMPT, buildLessonPrompt } = await import("../_shared/prompts_aulas.ts");
 
         const systemPrompt = getSystemPromptWithPersona(
@@ -825,6 +840,15 @@ Responda SOMENTE com JSON: {"questions":[{"pergunta":"TEXTO-BASE COMPLETO\\n\\nC
         if (!parsedLesson) throw new Error("Erro ao processar a aula gerada. Tente novamente.");
 
         await supabase.from("user_actions").insert({ user_id: userId, action: "generate_lesson", metadata: { topic, materia, level } }).then(() => {}).catch(() => {});
+        // Salva no cache server-side
+        cacheStore(supabase, lessonCacheKey, {
+          tipo: "lesson",
+          materia: materia || "Geral",
+          tema: topic || "",
+          dificuldade: didacticStyle || "normal",
+          estilo: mode || "completa",
+          objetivo: level || "enem",
+        }, { lesson: parsedLesson }).catch(() => {});
         return jsonResponse({ ok: true, lesson: parsedLesson });
       }
 
