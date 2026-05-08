@@ -77,3 +77,39 @@
   .ilp-card { padding: 16px; }
   .ilp-controls { position: sticky; bottom: 0; }
 }
+
+/* ─── Skeleton de bloco em streaming ────────────────────────── */
+.ilp-skeleton { display: flex; flex-direction: column; gap: 10px; padding: 4px 0; }
+.ilp-skel-flora {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 14px; border-radius: 999px;
+  background: linear-gradient(90deg, hsl(var(--accent) / .35), hsl(var(--primary) / .15));
+  color: hsl(var(--foreground));
+  font-size: 13px; font-weight: 600; align-self: flex-start;
+  border: 1px solid hsl(var(--border));
+}
+.ilp-skel-pulse { animation: ilp-pulse 1.4s ease-in-out infinite; }
+@keyframes ilp-pulse {
+  0%, 100% { opacity: .55; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+.ilp-skel-line, .ilp-skel-block {
+  border-radius: 8px;
+  background: linear-gradient(90deg,
+    hsl(var(--muted)) 0%,
+    hsl(var(--muted) / .55) 50%,
+    hsl(var(--muted)) 100%);
+  background-size: 200% 100%;
+  animation: ilp-shimmer 1.6s linear infinite;
+}
+.ilp-skel-line { height: 12px; }
+.ilp-skel-block { height: 80px; margin: 6px 0; }
+.ilp-skel-line.w-70 { width: 70%; }
+.ilp-skel-line.w-80 { width: 80%; }
+.ilp-skel-line.w-85 { width: 85%; }
+.ilp-skel-line.w-90 { width: 90%; }
+.ilp-skel-line.w-95 { width: 95%; }
+@keyframes ilp-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
