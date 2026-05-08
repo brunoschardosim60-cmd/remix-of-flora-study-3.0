@@ -842,9 +842,20 @@ Responda SOMENTE com JSON: {"questions":[{"pergunta":"TEXTO-BASE COMPLETO\\n\\nC
             if (accuracyPct < 50) profileLevel = "iniciante";
             else if (accuracyPct >= 78) profileLevel = "avancado";
           }
-          if (weak.length || recentErrors.length || typeof accuracyPct === "number") {
-            learningContext = { weakTopics: weak, recentErrors, accuracyPct, profileLevel };
-            hasContext = weak.length > 0 || recentErrors.length > 0;
+          // Sanitiza: máx 3 itens por categoria, cada string até 60 chars, dedupe.
+          const clip = (s: string, n = 60) => (s && s.length > n ? s.slice(0, n - 1) + "…" : s || "");
+          const trim = (arr: string[], max: number) =>
+            Array.from(new Set(arr.map((x) => clip(String(x))).filter(Boolean))).slice(0, max);
+          const weakTrim = trim(weak, 3);
+          const errsTrim = trim(recentErrors, 3);
+          if (weakTrim.length || errsTrim.length || typeof accuracyPct === "number") {
+            learningContext = {
+              weakTopics: weakTrim,
+              recentErrors: errsTrim,
+              accuracyPct,
+              profileLevel,
+            };
+            hasContext = weakTrim.length > 0 || errsTrim.length > 0;
           }
         } catch (e) {
           console.warn("[generate_lesson] contexto falhou, seguindo sem:", (e as Error)?.message);
