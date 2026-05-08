@@ -46,6 +46,8 @@ interface Props {
   onComplete?: () => void;
   enableVoice?: boolean;
   personality?: "rigorosa" | "amiga" | "engraçada";
+  /** Índices dos blocos que ainda estão sendo gerados (streaming). */
+  loadingBlockIndices?: number[];
 }
 
 function MD({ children }: { children: string }) {
@@ -87,7 +89,24 @@ function ExerciseCard({ ex, label }: { ex: Exercise; label?: string }) {
   );
 }
 
-export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete }) => {
+function BlockSkeleton() {
+  return (
+    <div className="ilp-skeleton">
+      <div className="ilp-skel-flora">
+        <Sparkles size={16} className="ilp-skel-pulse" />
+        <span>Flora está escrevendo este bloco…</span>
+      </div>
+      <div className="ilp-skel-line w-90" />
+      <div className="ilp-skel-line w-80" />
+      <div className="ilp-skel-line w-95" />
+      <div className="ilp-skel-block" />
+      <div className="ilp-skel-line w-70" />
+      <div className="ilp-skel-line w-85" />
+    </div>
+  );
+}
+
+export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, loadingBlockIndices }) => {
   const { user } = useAuth();
   const [stage, setStage] = useState<"intro" | "block" | "exercises" | "final" | "done">("intro");
   const [idx, setIdx] = useState(0);
@@ -103,6 +122,7 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete })
   const blocos = lesson.blocos || [];
   const cur = blocos[idx];
   const isLast = idx === blocos.length - 1;
+  const isCurLoading = !!loadingBlockIndices?.includes(idx);
 
   const askDuvida = async () => {
     if (!duvidaText.trim() || duvidaLoading) return;
@@ -185,6 +205,7 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete })
             <div className="ilp-stage-label">Bloco {idx + 1} / {blocos.length}</div>
             <h2 className="ilp-block-title">{cur.titulo}</h2>
 
+            {isCurLoading ? <BlockSkeleton /> : <>
             {cur.flora_comment && (
               <div className="ilp-flora-bubble">
                 <Sparkles size={16} />
@@ -249,6 +270,7 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete })
                 <strong>Pra fixar:</strong> {cur.checkpoint}
               </div>
             )}
+            </>}
           </div>
         )}
 

@@ -250,3 +250,39 @@ export async function floraGenerateLesson(topic: string, materia: string, level:
     throw new Error(err?.message || "Erro ao gerar aula. Verifique sua conexão.");
   }
 }
+
+// ─── Streaming: skeleton + block-by-block ────────────────────────────────────
+export async function floraGenerateLessonSkeleton(
+  topic: string, materia: string,
+  level: 'enem' | 'concurso' | 'basico',
+  mode: 'rapida' | 'completa' | 'masterclass' = 'completa'
+) {
+  const { data, error } = await supabase.functions.invoke("flora-engine", {
+    body: { action: "generate_lesson_skeleton", data: { topic, materia, level, mode } },
+  });
+  if (error) throw error;
+  if (!data?.skeleton) throw new Error("Esqueleto vazio.");
+  return data.skeleton as {
+    titulo: string;
+    introducao: string;
+    blocos_titulos: string[];
+    exercicio_final: any;
+  };
+}
+
+export async function floraGenerateLessonBlock(args: {
+  topic: string;
+  materia: string;
+  blocoTitulo: string;
+  blocoIndex: number;
+  totalBlocos: number;
+  mode: 'rapida' | 'completa' | 'masterclass';
+  didacticStyle: 'macetes' | 'aprofundado' | 'normal';
+}) {
+  const { data, error } = await supabase.functions.invoke("flora-engine", {
+    body: { action: "generate_lesson_block", data: args },
+  });
+  if (error) throw error;
+  if (!data?.block) throw new Error("Bloco vazio.");
+  return data.block;
+}

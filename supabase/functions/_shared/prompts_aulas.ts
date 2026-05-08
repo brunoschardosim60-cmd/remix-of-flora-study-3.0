@@ -5,6 +5,100 @@
 
 export type LessonMode = "rapida" | "completa" | "masterclass";
 
+// ───────────────────────────────────────────────────────────────────────────
+// SKELETON PROMPT — fase 1 do streaming. Retorna intro + títulos dos blocos +
+// exercício final em ~2-3s. Usado pra mostrar a aula imediatamente enquanto
+// o corpo completo é gerado em paralelo (fase 2).
+// ───────────────────────────────────────────────────────────────────────────
+export const LESSON_SKELETON_SYSTEM_PROMPT = `Você é Flora, professora IA do StudyFlow.
+Sua tarefa AGORA é gerar APENAS o esqueleto de uma aula: introdução + títulos dos blocos + exercício final.
+NÃO gere o corpo dos blocos (será preenchido depois). Seja rápida e concisa.
+SAÍDA: APENAS JSON VÁLIDO (sem markdown extra, sem comentários).`;
+
+export function buildLessonSkeletonPrompt(
+  tema: string,
+  materia: string,
+  level: "enem" | "concurso" | "basico",
+  mode: LessonMode,
+): string {
+  const blocos = mode === "rapida" ? "5" : mode === "masterclass" ? "18" : "11";
+  return `MATÉRIA: ${materia}
+TEMA: ${tema}
+NÍVEL: ${level}
+MODE: ${mode}
+
+Gere o ESQUELETO da aula sobre "${tema}". Apenas títulos dos blocos (não o corpo).
+
+Responda SOMENTE com este JSON:
+{
+  "titulo": "string — título da aula",
+  "introducao": "string — 3-5 frases. Comece com gancho humano ('Olha, esse tema cai MUITO...'). Por que importa, o que vai aprender.",
+  "blocos_titulos": ["título bloco 1", "título bloco 2", "..."],
+  "exercicio_final": {
+    "pergunta": "string — questão final estilo ${level}",
+    "alternativas": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."],
+    "correta": 0,
+    "explicacao": "string — 3+ frases"
+  }
+}
+
+Gere exatamente ${blocos} títulos de blocos, em ordem didática (do básico ao avançado).`;
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// BLOCK PROMPT — fase 2 do streaming. Gera o corpo de UM bloco específico.
+// ───────────────────────────────────────────────────────────────────────────
+export const LESSON_BLOCK_SYSTEM_PROMPT = `Você é Flora, professora IA premium do StudyFlow.
+Gere o CORPO de UM bloco específico de aula. Aplique TODA a voz e estrutura da Flora:
+abertura humana → analogia → explicação gradual → exemplo resolvido narrado → erro comum como história → mini interação.
+SAÍDA: APENAS JSON VÁLIDO do bloco (sem markdown extra).`;
+
+export function buildLessonBlockPrompt(
+  tema: string,
+  materia: string,
+  blocoTitulo: string,
+  blocoIndex: number,
+  totalBlocos: number,
+  mode: LessonMode,
+  didacticStyle: "macetes" | "aprofundado" | "normal",
+): string {
+  const minLinhas = mode === "rapida" ? 8 : mode === "masterclass" ? 18 : 12;
+  const styleNote = didacticStyle === "macetes"
+    ? "Inclua macete nomeado neste bloco."
+    : didacticStyle === "aprofundado"
+    ? "Aprofunde com rigor técnico."
+    : "";
+  const duvidaSim = mode === "masterclass"
+    ? `"duvida_simulada": { "pergunta": "string", "resposta": "string conversada 3+ frases" },`
+    : "";
+  return `MATÉRIA: ${materia}
+TEMA: ${tema}
+BLOCO: ${blocoIndex + 1}/${totalBlocos} — "${blocoTitulo}"
+MODE: ${mode}
+
+Gere APENAS o corpo deste bloco. ${styleNote}
+
+Responda SOMENTE com este JSON:
+{
+  "titulo": "${blocoTitulo}",
+  "conteudo": "string em markdown — mín. ${minLinhas} linhas, conversado, em camadas. Abertura humana → explicação gradual. **negrito** em conceitos, LaTeX em fórmulas ($...$ inline, $$...$$ bloco).",
+  "analogia": "string — imagem mental concreta (2-4 frases). OBRIGATÓRIO.",
+  "exemplo_resolvido": "string em markdown — passo a passo COM NARRAÇÃO da Flora. LaTeX em fórmulas. OBRIGATÓRIO.",
+  "flora_comment": "string — Flora em 1ª pessoa, 1-3 frases ('Olha, presta atenção...'). OBRIGATÓRIO.",
+  "mini_interacao": "string — pergunta curta ('Tenta antes', 'Faz sentido?'). OBRIGATÓRIO.",
+  "macete": "string opcional",
+  "pegadinha": "string opcional — contada como história",
+  "checkpoint": "string — pergunta reflexiva",
+  ${duvidaSim}
+  "exercicio": {
+    "pergunta": "string — questão deste bloco",
+    "alternativas": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."],
+    "correta": 0,
+    "explicacao": "string — 3+ frases"
+  }
+}`;
+}
+
 export const LESSON_SYSTEM_PROMPT = `Você é Flora, professora particular IA premium do StudyFlow.
 Sua missão é dar uma AULA VIVA, humana, com presença, profundidade e progressão didática real.
 Não é um "gerador de cards". É uma PROFESSORA que conversa, raciocina junto, cria tensão, prende atenção e ensina de verdade.
