@@ -1,4 +1,7 @@
 import React, { useState, lazy, Suspense } from "react";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 import { Loader2, Send, Image as ImageIcon, ChevronLeft, ChevronRight, Lightbulb, AlertTriangle, MessageCircleQuestion, CheckCircle2, XCircle, Sparkles, Brain, HelpCircle } from "lucide-react";
 import { generateDidacticImage } from "@/lib/floraImages";
 import { supabase } from "@/integrations/supabase/client";
@@ -48,7 +51,7 @@ interface Props {
 function MD({ children }: { children: string }) {
   return (
     <Suspense fallback={<p style={{ whiteSpace: "pre-wrap" }}>{children}</p>}>
-      <ReactMarkdown>{children}</ReactMarkdown>
+      <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>{children}</ReactMarkdown>
     </Suspense>
   );
 }
