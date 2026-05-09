@@ -47,6 +47,8 @@ function MD({ children }: { children: string }) {
 type SceneKind = "intro" | "text" | "exemplo" | "analogia" | "macete" | "pegadinha" | "mini" | "fixar" | "duvida" | "impact";
 interface Scene { kind: SceneKind; text: string; flora?: string; question?: string; }
 
+const AUTO_ILLUST_KINDS: SceneKind[] = ["impact", "exemplo", "analogia", "macete"];
+
 /** Tenta extrair uma frase curta e marcante (≤110 chars) para um slide de impacto. */
 function extractImpactSentence(text: string): string | null {
   if (!text) return null;
@@ -318,6 +320,10 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
   const [blockImage, setBlockImage] = useState<Record<number, string>>({});
   const [imgLoading, setImgLoading] = useState(false);
 
+  // Ilustrações contextuais automáticas por cena (impact / exemplo / analogia / macete)
+  const [sceneImages, setSceneImages] = useState<Record<string, string>>({});
+  const [sceneImgLoading, setSceneImgLoading] = useState<Record<string, boolean>>({});
+
   // Direção da transição (forward/back) e som
   const [direction, setDirection] = useState<"forward" | "backward">("forward");
   const [soundOn, setSoundOn] = useState<boolean>(() => {
@@ -361,6 +367,58 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
 
   const scenes = useMemo(() => (cur ? buildScenes(cur, idx) : []), [cur, idx]);
   const curScene = scenes[sceneIdx];
+
+  // Chave estável da cena atual (cacheia por título do bloco + tipo + início do texto)
+  const sceneImgKey = useMemo(() => {
+    if (!curScene || !cur) return "";
+    const slug = (s: string) => (s || "").toLowerCase().replace(/\s+/g, "-").slice(0, 40);
+    return `${slug(lesson.titulo)}|${slug(cur.titulo)}|${curScene.kind}|${slug(curScene.text || "")}`;
+  }, [curScene, cur, lesson.titulo]);
+  const currentSceneImg = sceneImgKey ? sceneImages[sceneImgKey] : "";
+  const currentSceneImgLoading = sceneImgKey ? !!sceneImgLoading[sceneImgKey] : false;
+
+  // Auto-gera ilustração para cenas de alto-impacto. Debounce evita gerar
+  // ao só "passar" pelo slide. Usa cache em localStorage entre sessões.
+  useEffect(() => {
+    if (!curScene || !cur || !sceneImgKey) return;
+    if (!AUTO_ILLUST_KINDS.includes(curScene.kind)) return;
+    if (sceneImages[sceneImgKey] || sceneImgLoading[sceneImgKey]) return;
+
+    const cacheKey = `flora-img:scene:${sceneImgKey}`;
+    try {
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        setSceneImages((p) => ({ ...p, [sceneImgKey]: cached }));
+        return;
+      }
+    } catch { /* ignore */ }
+
+    const t = setTimeout(async () => {
+      setSceneImgLoading((p) => ({ ...p, [sceneImgKey]: true }));
+      try {
+        const styleByKind: Record<string, "scientific" | "educational" | "artistic" | "diagram"> = {
+          impact: "artistic",
+          analogia: "artistic",
+          exemplo: "educational",
+          macete: "diagram",
+        };
+        const r = await generateDidacticImage({
+          concept: curScene.kind === "impact" ? (curScene.text.slice(0, 80) || cur.titulo) : cur.titulo,
+          context: `${lesson.titulo} — ${cur.titulo}. ${curScene.kind}: ${curScene.text.slice(0, 320)}`,
+          style: styleByKind[curScene.kind] || "educational",
+          userId: user?.id || "anon",
+        });
+        if (r.success && r.imageUrl) {
+          setSceneImages((p) => ({ ...p, [sceneImgKey]: r.imageUrl }));
+          try { localStorage.setItem(cacheKey, r.imageUrl); } catch { /* ignore */ }
+        }
+      } catch { /* silent */ }
+      finally {
+        setSceneImgLoading((p) => ({ ...p, [sceneImgKey]: false }));
+      }
+    }, 650);
+    return () => clearTimeout(t);
+  }, [sceneImgKey, curScene, cur, lesson.titulo, user?.id]);
 
   // Reset scene when block changes
   useEffect(() => { setSceneIdx(0); }, [idx]);
@@ -526,6 +584,14 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
                 <>
                   {curScene.kind === "impact" && (
                     <div className="ilp-impact">
+                      {currentSceneImg && (
+                        <img
+                          className="ilp-impact-bg"
+                          src={currentSceneImg}
+                          alt=""
+                          aria-hidden
+                        />
+                      )}
                       <div className="ilp-impact-glow" />
                       <span className="ilp-impact-label">
                         <Sparkles size={12} /> Isso aqui importa
@@ -560,6 +626,11 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
                   {curScene.kind === "exemplo" && (
                     <>
                       <span className="ilp-tag exemplo"><Target size={12} /> Exemplo</span>
+                      {(currentSceneImg || currentSceneImgLoading) && (
+                        <div className={`ilp-scene-illust ${currentSceneImgLoading ? "loading" : ""}`}>
+                          {currentSceneImg && <img src={currentSceneImg} alt={cur.titulo} />}
+                        </div>
+                      )}
                       <div className="ilp-md-lg"><MD>{curScene.text}</MD></div>
                     </>
                   )}
@@ -567,6 +638,11 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
                   {curScene.kind === "analogia" && (
                     <>
                       <span className="ilp-tag analogia"><Brain size={12} /> Pensa assim</span>
+                      {(currentSceneImg || currentSceneImgLoading) && (
+                        <div className={`ilp-scene-illust ${currentSceneImgLoading ? "loading" : ""}`}>
+                          {currentSceneImg && <img src={currentSceneImg} alt={cur.titulo} />}
+                        </div>
+                      )}
                       <div className="ilp-md-lg"><MD>{curScene.text}</MD></div>
                     </>
                   )}
@@ -574,6 +650,11 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
                   {curScene.kind === "macete" && (
                     <>
                       <span className="ilp-tag macete"><Zap size={12} /> Macete</span>
+                      {(currentSceneImg || currentSceneImgLoading) && (
+                        <div className={`ilp-scene-illust ${currentSceneImgLoading ? "loading" : ""}`}>
+                          {currentSceneImg && <img src={currentSceneImg} alt={cur.titulo} />}
+                        </div>
+                      )}
                       <div className="ilp-md-lg"><MD>{curScene.text}</MD></div>
                     </>
                   )}
