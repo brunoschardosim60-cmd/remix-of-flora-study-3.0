@@ -436,7 +436,13 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
   });
 
   return (
-    <div className="ilp-root">
+    <div className="ilp-root" data-direction={direction}>
+      {/* fundo animado: blobs com blur */}
+      <div className="ilp-bg">
+        <span className="ilp-blob ilp-blob-1" />
+        <span className="ilp-blob ilp-blob-2" />
+        <span className="ilp-blob ilp-blob-3" />
+      </div>
       {/* ── Header: minimal, breathable ── */}
       <div className="ilp-header">
         <div className="ilp-header-row">
@@ -444,7 +450,17 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
             <div className="ilp-leaf"><Leaf size={14} /></div>
             <h1 className="ilp-title">{lesson.titulo}</h1>
           </div>
-          <span className="ilp-step-tag">{currentStep} / {totalScenes}</span>
+          <div className="ilp-header-right">
+            <button
+              className="ilp-icon-btn"
+              onClick={toggleSound}
+              aria-label={soundOn ? "Desativar sons" : "Ativar sons"}
+              title={soundOn ? "Sons ativados" : "Sons desativados"}
+            >
+              {soundOn ? <Volume2 size={14} /> : <VolumeX size={14} />}
+            </button>
+            <span className="ilp-step-tag">{currentStep} / {totalScenes}</span>
+          </div>
         </div>
         <div className="ilp-bar"><div className="ilp-fill" style={{ width: `${progress * 100}%` }} /></div>
       </div>
