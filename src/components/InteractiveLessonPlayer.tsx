@@ -270,6 +270,39 @@ function BlockSkeleton() {
   );
 }
 
+/* ─── Mini-interação revelável ─────────────────────────── */
+function RevealScene({
+  tag, title, content, revealLabel = "Mostrar resposta", onReveal,
+}: {
+  tag: React.ReactNode;
+  title?: string;
+  content: string;
+  revealLabel?: string;
+  onReveal?: () => void;
+}) {
+  const [revealed, setRevealed] = useState(false);
+  return (
+    <>
+      {tag}
+      {title && (
+        <h3 className="ilp-block-title" style={{ fontSize: "clamp(20px, 2.6vw, 28px)" }}>
+          {title}
+        </h3>
+      )}
+      {!revealed ? (
+        <button
+          className="ilp-reveal-btn"
+          onClick={() => { setRevealed(true); onReveal?.(); }}
+        >
+          <Eye size={14} /> {revealLabel}
+        </button>
+      ) : (
+        <div className="ilp-md-lg ilp-reveal-content"><MD>{content}</MD></div>
+      )}
+    </>
+  );
+}
+
 /* ─── Main player ─────────────────────────────────────── */
 export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, loadingBlockIndices }) => {
   const { user } = useAuth();
