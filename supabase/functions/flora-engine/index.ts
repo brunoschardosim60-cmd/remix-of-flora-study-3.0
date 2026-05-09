@@ -1645,6 +1645,23 @@ SEMPRE responda em português brasileiro.` },
       );
       const parsed = parseAIJSON(json as string);
       if (!parsed) throw new Error("Erro ao gerar bloco da aula.");
+      // Substitui o exercício gerado pela IA por uma QUESTÃO REAL do banco
+      // quando houver cache de questões para (matéria, tema). Economia de tokens
+      // e maior fidelidade ao estilo de prova real.
+      try {
+        if (parsed && typeof parsed === "object" && (parsed as any).exercicio) {
+          const real = await findCachedQuestion(supabase, materia, topic);
+          if (real && Array.isArray(real.alternativas) && real.alternativas.length >= 4) {
+            (parsed as any).exercicio = {
+              pergunta: real.pergunta,
+              alternativas: real.alternativas,
+              correta: real.correta,
+              explicacao: real.explicacao,
+              fonte: real.fonte || "Banco oficial",
+            };
+          }
+        }
+      } catch { /* mantém exercício original */ }
       // Só cacheia bloco se NÃO tiver sido personalizado por memória do aluno
       if (!memoryHint) {
         cacheStore(supabase, blockKey, { tipo: "lesson_block", materia, tema: topic, estilo: mode, objetivo: String(blocoIndex) }, { block: parsed }).catch(() => {});
