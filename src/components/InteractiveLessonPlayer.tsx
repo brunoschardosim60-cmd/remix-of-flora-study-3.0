@@ -476,9 +476,13 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
           )}
 
           {stage === "block" && cur && (
-            <div className="ilp-scene" key={`b${idx}-s${sceneIdx}`}>
-              {/* Block title shows only on first scene */}
-              {sceneIdx === 0 && (
+            <div
+              className={`ilp-scene ${curScene?.kind === "impact" ? "ilp-scene-impact" : ""}`}
+              key={`b${idx}-s${sceneIdx}-${direction}`}
+              data-direction={direction}
+            >
+              {/* Block title: só na primeira cena que NÃO seja impact */}
+              {sceneIdx === 0 && curScene?.kind !== "impact" && (
                 <div className="ilp-scene-head">
                   <span className="ilp-block-tag">Bloco {idx + 1} · {blocos.length}</span>
                   <h2 className="ilp-block-title">{cur.titulo}</h2>
@@ -487,6 +491,16 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
 
               {isCurLoading ? <BlockSkeleton /> : curScene && (
                 <>
+                  {curScene.kind === "impact" && (
+                    <div className="ilp-impact">
+                      <div className="ilp-impact-glow" />
+                      <span className="ilp-impact-label">
+                        <Sparkles size={12} /> Isso aqui importa
+                      </span>
+                      <p className="ilp-impact-text">{curScene.text}</p>
+                    </div>
+                  )}
+
                   {curScene.kind === "intro" && (
                     <>
                       {curScene.flora && (
