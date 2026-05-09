@@ -1110,6 +1110,71 @@ Tom: conversado, PT-BR, sem emojis, sem listas gigantes. Cada campo curto. Não 
       return jsonResponse({ ok: true, reforco: parsed });
     }
 
+    // ─── LESSON_GUIDED_SOLUTION: resolução em passos curtos ─────────────────
+    if (action === "lesson_guided_solution") {
+      const tema = (data as any)?.tema || "";
+      const pergunta = ((data as any)?.pergunta || "").toString().slice(0, 800);
+      const correta = ((data as any)?.alternativaCorreta || "").toString().slice(0, 200);
+      const explicacao = ((data as any)?.explicacao || "").toString().slice(0, 800);
+      if (!pergunta) return jsonResponse({ ok: false, error: "missing pergunta" });
+
+      const opts: CallOptions = {
+        messages: [
+          { role: "system", content: `Você é Flora, professora particular. Quebre a resolução do exercício em PASSOS CURTOS e CLAROS, como se estivesse no quadro.
+
+Tema: "${tema}"
+Pergunta: "${pergunta}"
+Resposta correta: "${correta}"
+Explicação base: "${explicacao}"
+
+Gere de 3 a 5 passos. Cada passo deve:
+- ter um título curto (3-7 palavras, verbo no infinitivo, ex.: "Identificar o que é pedido")
+- ter um conteúdo CURTO (1-3 frases) explicando o que fazer e por quê
+- usar markdown e LaTeX inline ($...$) quando houver matemática
+
+Responda SOMENTE JSON:
+{"passos":[{"titulo":"...","conteudo":"..."}]}
+PT-BR. Sem emojis. Sem listas dentro do conteúdo.` },
+          { role: "user", content: "Quebra em passos." },
+        ],
+        maxTokens: 800, temperature: 0.5, jsonMode: true,
+      };
+      const raw = await runTaskChain(opts, "explicacao", "flora:lesson_guided_solution", { supabase, userId, actionType: "lesson_guided_solution" });
+      const parsed = parseAIJSON(raw as string) as any;
+      if (!parsed?.passos) return jsonResponse({ ok: false, error: "parse_error" });
+      return jsonResponse({ ok: true, passos: parsed.passos });
+    }
+
+    // ─── LESSON_EXPLAIN_STEP: aprofunda 1 passo da resolução guiada ─────────
+    if (action === "lesson_explain_step") {
+      const tema = (data as any)?.tema || "";
+      const pergunta = ((data as any)?.pergunta || "").toString().slice(0, 600);
+      const passoTitulo = ((data as any)?.passoTitulo || "").toString().slice(0, 150);
+      const passoConteudo = ((data as any)?.passoConteudo || "").toString().slice(0, 500);
+      if (!passoTitulo) return jsonResponse({ ok: false, error: "missing passo" });
+
+      const opts: CallOptions = {
+        messages: [
+          { role: "system", content: `Você é Flora. O aluno pediu para explicar MELHOR um passo específico da resolução.
+
+Tema: "${tema}"
+Pergunta original: "${pergunta}"
+Passo: "${passoTitulo}"
+Conteúdo atual do passo: "${passoConteudo}"
+
+Gere uma explicação aprofundada SÓ desse passo: por que se faz isso, qual o raciocínio, mini-exemplo se ajudar, erros comuns nesse ponto. 4-8 linhas em markdown, com LaTeX inline quando precisar. Tom de professora paciente.
+
+Responda SOMENTE JSON: {"explicacao":"markdown"}
+PT-BR. Sem emojis.` },
+          { role: "user", content: "Explica esse passo." },
+        ],
+        maxTokens: 600, temperature: 0.6, jsonMode: true,
+      };
+      const raw = await runTaskChain(opts, "explicacao", "flora:lesson_explain_step", { supabase, userId, actionType: "lesson_explain_step" });
+      const parsed = parseAIJSON(raw as string) as any;
+      return jsonResponse({ ok: true, explicacao: parsed?.explicacao || "" });
+    }
+
     // ─── SEMANTIC_SEARCH: busca conteúdo no banco ──────────────────────────
     if (action === "semantic_search") {
       const query = (data?.query || "").toString().trim();
