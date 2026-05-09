@@ -1,4 +1,4 @@
-import React, { useMemo, useState, lazy, Suspense, useEffect } from "react";
+import React, { useMemo, useState, lazy, Suspense, useEffect, useRef, useCallback } from "react";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
@@ -6,6 +6,7 @@ import {
   Loader2, Send, Image as ImageIcon, ChevronLeft, ChevronRight,
   Lightbulb, AlertTriangle, MessageCircleQuestion, CheckCircle2, XCircle,
   Sparkles, Brain, HelpCircle, ListChecks, ChevronDown, Leaf, Zap, Target,
+  Volume2, VolumeX, Eye,
 } from "lucide-react";
 import { generateDidacticImage } from "@/lib/floraImages";
 import { supabase } from "@/integrations/supabase/client";
@@ -43,8 +44,20 @@ function MD({ children }: { children: string }) {
 }
 
 /* ─── Scene model ─────────────────────────────────────── */
-type SceneKind = "intro" | "text" | "exemplo" | "analogia" | "macete" | "pegadinha" | "mini" | "fixar" | "duvida";
+type SceneKind = "intro" | "text" | "exemplo" | "analogia" | "macete" | "pegadinha" | "mini" | "fixar" | "duvida" | "impact";
 interface Scene { kind: SceneKind; text: string; flora?: string; question?: string; }
+
+/** Tenta extrair uma frase curta e marcante (≤110 chars) para um slide de impacto. */
+function extractImpactSentence(text: string): string | null {
+  if (!text) return null;
+  const sentences = text.split(/(?<=[.!?])\s+/).map((s) => s.trim()).filter(Boolean);
+  // Prioriza frases entre 30 e 110 chars que pareçam afirmações fortes
+  const strong = sentences.find((s) => s.length >= 30 && s.length <= 110);
+  if (strong) return strong.replace(/\*+/g, "");
+  // fallback: primeira frase curta
+  const short = sentences.find((s) => s.length <= 130);
+  return short ? short.replace(/\*+/g, "") : null;
+}
 
 /** Agrupa parágrafos em chunks robustos (~500-700 chars) para não fragmentar demais. */
 function splitParagraphs(s: string): string[] {
@@ -78,6 +91,12 @@ function splitParagraphs(s: string): string[] {
 function buildScenes(b: LessonBlock, blockIdx: number): Scene[] {
   const paragraphs = splitParagraphs(b.conteudo);
   const scenes: Scene[] = [];
+
+  // Slide de impacto: aparece em blocos pares (incluindo o primeiro) — frase forte + fundo escuro
+  const impact = extractImpactSentence(b.flora_comment || b.conteudo);
+  if (impact && (blockIdx === 0 || blockIdx % 2 === 0)) {
+    scenes.push({ kind: "impact", text: impact });
+  }
 
   // Cena 1: Flora + TODO o conteúdo principal (texto denso é OK — uma cena só de explicação)
   const mainText = paragraphs.join("\n\n") || b.conteudo || "";
@@ -251,6 +270,39 @@ function BlockSkeleton() {
   );
 }
 
+/* ─── Mini-interação revelável ─────────────────────────── */
+function RevealScene({
+  tag, title, content, revealLabel = "Mostrar resposta", onReveal,
+}: {
+  tag: React.ReactNode;
+  title?: string;
+  content: string;
+  revealLabel?: string;
+  onReveal?: () => void;
+}) {
+  const [revealed, setRevealed] = useState(false);
+  return (
+    <>
+      {tag}
+      {title && (
+        <h3 className="ilp-block-title" style={{ fontSize: "clamp(20px, 2.6vw, 28px)" }}>
+          {title}
+        </h3>
+      )}
+      {!revealed ? (
+        <button
+          className="ilp-reveal-btn"
+          onClick={() => { setRevealed(true); onReveal?.(); }}
+        >
+          <Eye size={14} /> {revealLabel}
+        </button>
+      ) : (
+        <div className="ilp-md-lg ilp-reveal-content"><MD>{content}</MD></div>
+      )}
+    </>
+  );
+}
+
 /* ─── Main player ─────────────────────────────────────── */
 export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, loadingBlockIndices }) => {
   const { user } = useAuth();
@@ -265,6 +317,42 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
 
   const [blockImage, setBlockImage] = useState<Record<number, string>>({});
   const [imgLoading, setImgLoading] = useState(false);
+
+  // Direção da transição (forward/back) e som
+  const [direction, setDirection] = useState<"forward" | "backward">("forward");
+  const [soundOn, setSoundOn] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true;
+    return localStorage.getItem("ilp-sound") !== "off";
+  });
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const playTone = useCallback((freq: number, dur = 0.08, type: OscillatorType = "sine", gain = 0.06) => {
+    if (!soundOn) return;
+    try {
+      if (!audioCtxRef.current) {
+        const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+        audioCtxRef.current = new Ctx();
+      }
+      const ctx = audioCtxRef.current;
+      if (ctx.state === "suspended") ctx.resume();
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = type;
+      osc.frequency.value = freq;
+      g.gain.value = 0;
+      g.gain.linearRampToValueAtTime(gain, ctx.currentTime + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + dur);
+      osc.connect(g); g.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + dur + 0.02);
+    } catch { /* silent */ }
+  }, [soundOn]);
+  const toggleSound = useCallback(() => {
+    setSoundOn((v) => {
+      const nv = !v;
+      try { localStorage.setItem("ilp-sound", nv ? "on" : "off"); } catch {}
+      return nv;
+    });
+  }, []);
 
   const blocos = lesson.blocos || [];
   const cur = blocos[idx];
@@ -307,20 +395,31 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
 
   const next = () => {
     setDuvidaOpen(false); setDuvidaResp(""); setDuvidaText("");
+    setDirection("forward");
     if (stage === "intro") { setStage("block"); return; }
     if (stage === "block") {
       // advance scene first
-      if (sceneIdx < scenes.length - 1) { setSceneIdx((s) => s + 1); return; }
-      if (!isLast) { setIdx((i) => i + 1); return; }
+      if (sceneIdx < scenes.length - 1) { setSceneIdx((s) => s + 1); playTone(660, 0.06, "sine", 0.04); return; }
+      if (!isLast) { setIdx((i) => i + 1); playTone(880, 0.12, "sine", 0.05); return; }
       if (lesson.exercicios && lesson.exercicios.length) setStage("exercises");
       else setStage("final");
+      playTone(990, 0.18, "triangle", 0.06);
       return;
     }
     if (stage === "exercises") { setStage("final"); return; }
-    if (stage === "final") { setStage("done"); onComplete?.(); }
+    if (stage === "final") {
+      setStage("done");
+      // pequena melodia de conclusão
+      playTone(660, 0.1, "sine", 0.06);
+      setTimeout(() => playTone(880, 0.12, "sine", 0.06), 90);
+      setTimeout(() => playTone(1320, 0.2, "triangle", 0.07), 200);
+      onComplete?.();
+    }
   };
   const prev = () => {
     setDuvidaOpen(false); setDuvidaResp(""); setDuvidaText("");
+    setDirection("backward");
+    playTone(440, 0.05, "sine", 0.03);
     if (stage === "block") {
       if (sceneIdx > 0) { setSceneIdx((s) => s - 1); return; }
       if (idx > 0) { setIdx((i) => i - 1); return; }
@@ -370,7 +469,13 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
   });
 
   return (
-    <div className="ilp-root">
+    <div className="ilp-root" data-direction={direction}>
+      {/* fundo animado: blobs com blur */}
+      <div className="ilp-bg">
+        <span className="ilp-blob ilp-blob-1" />
+        <span className="ilp-blob ilp-blob-2" />
+        <span className="ilp-blob ilp-blob-3" />
+      </div>
       {/* ── Header: minimal, breathable ── */}
       <div className="ilp-header">
         <div className="ilp-header-row">
@@ -378,7 +483,17 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
             <div className="ilp-leaf"><Leaf size={14} /></div>
             <h1 className="ilp-title">{lesson.titulo}</h1>
           </div>
-          <span className="ilp-step-tag">{currentStep} / {totalScenes}</span>
+          <div className="ilp-header-right">
+            <button
+              className="ilp-icon-btn"
+              onClick={toggleSound}
+              aria-label={soundOn ? "Desativar sons" : "Ativar sons"}
+              title={soundOn ? "Sons ativados" : "Sons desativados"}
+            >
+              {soundOn ? <Volume2 size={14} /> : <VolumeX size={14} />}
+            </button>
+            <span className="ilp-step-tag">{currentStep} / {totalScenes}</span>
+          </div>
         </div>
         <div className="ilp-bar"><div className="ilp-fill" style={{ width: `${progress * 100}%` }} /></div>
       </div>
@@ -394,9 +509,13 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
           )}
 
           {stage === "block" && cur && (
-            <div className="ilp-scene" key={`b${idx}-s${sceneIdx}`}>
-              {/* Block title shows only on first scene */}
-              {sceneIdx === 0 && (
+            <div
+              className={`ilp-scene ${curScene?.kind === "impact" ? "ilp-scene-impact" : ""}`}
+              key={`b${idx}-s${sceneIdx}-${direction}`}
+              data-direction={direction}
+            >
+              {/* Block title: só na primeira cena que NÃO seja impact */}
+              {sceneIdx === 0 && curScene?.kind !== "impact" && (
                 <div className="ilp-scene-head">
                   <span className="ilp-block-tag">Bloco {idx + 1} · {blocos.length}</span>
                   <h2 className="ilp-block-title">{cur.titulo}</h2>
@@ -405,6 +524,16 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
 
               {isCurLoading ? <BlockSkeleton /> : curScene && (
                 <>
+                  {curScene.kind === "impact" && (
+                    <div className="ilp-impact">
+                      <div className="ilp-impact-glow" />
+                      <span className="ilp-impact-label">
+                        <Sparkles size={12} /> Isso aqui importa
+                      </span>
+                      <p className="ilp-impact-text">{curScene.text}</p>
+                    </div>
+                  )}
+
                   {curScene.kind === "intro" && (
                     <>
                       {curScene.flora && (
@@ -457,10 +586,12 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
                   )}
 
                   {curScene.kind === "mini" && (
-                    <>
-                      <span className="ilp-tag mini"><HelpCircle size={12} /> Pra pensar</span>
-                      <div className="ilp-md-lg"><MD>{curScene.text}</MD></div>
-                    </>
+                    <RevealScene
+                      tag={<span className="ilp-tag mini"><HelpCircle size={12} /> Pra pensar</span>}
+                      content={curScene.text}
+                      revealLabel="Pensei. Mostrar"
+                      onReveal={() => playTone(720, 0.1, "sine", 0.05)}
+                    />
                   )}
 
                   {curScene.kind === "fixar" && (
@@ -471,11 +602,13 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
                   )}
 
                   {curScene.kind === "duvida" && (
-                    <>
-                      <span className="ilp-tag duvida"><MessageCircleQuestion size={12} /> Dúvida comum</span>
-                      <h3 className="ilp-block-title" style={{ fontSize: "clamp(20px, 2.6vw, 28px)" }}>{curScene.question}</h3>
-                      <div className="ilp-md-lg"><MD>{curScene.text}</MD></div>
-                    </>
+                    <RevealScene
+                      tag={<span className="ilp-tag duvida"><MessageCircleQuestion size={12} /> Dúvida comum</span>}
+                      title={curScene.question}
+                      content={curScene.text}
+                      revealLabel="Ver resposta da Flora"
+                      onReveal={() => playTone(720, 0.1, "sine", 0.05)}
+                    />
                   )}
 
                   {/* Scene dots */}
