@@ -282,7 +282,7 @@ serve(async (req) => {
         supabase.from("study_sessions").select("*").eq("user_id", uid).order("created_at", { ascending: false }).limit(10),
         supabase.from("flora_chat_messages").select("role,content").eq("user_id", uid).order("created_at", { ascending: false }).limit(20),
         supabase.from("essays").select("id,tema,tipo_prova,status,nota_total,competencia_1,competencia_2,competencia_3,competencia_4,competencia_5,corrected_at,created_at").eq("user_id", uid).order("created_at", { ascending: false }).limit(5),
-        supabase.from("study_topics").select("id,materia,tema,rating,quiz_last_score,quiz_attempts").eq("user_id", uid).order("updated_at", { ascending: false }).limit(40),
+        supabase.from("study_topics").select("id,materia,tema,rating,quiz_last_score,quiz_attempts,quiz_errors,updated_at,study_date").eq("user_id", uid).order("updated_at", { ascending: false }).limit(40),
         supabase.from("question_attempts").select("acertou,modo,created_at,question:questions(disciplina,area,tema,ano)").eq("user_id", uid).order("created_at", { ascending: false }).limit(100),
       ]);
 
