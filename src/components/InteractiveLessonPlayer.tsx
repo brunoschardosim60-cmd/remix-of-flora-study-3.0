@@ -46,65 +46,68 @@ function MD({ children }: { children: string }) {
 type SceneKind = "intro" | "text" | "exemplo" | "analogia" | "macete" | "pegadinha" | "mini" | "fixar" | "duvida";
 interface Scene { kind: SceneKind; text: string; flora?: string; question?: string; }
 
-/** First sentence (for intro), rest as separate paragraphs. */
+/** Agrupa parágrafos em chunks robustos (~500-700 chars) para não fragmentar demais. */
 function splitParagraphs(s: string): string[] {
   const cleaned = (s || "").trim();
   if (!cleaned) return [];
-  // Split on blank lines OR sentences if single paragraph is too long
   const paras = cleaned.split(/\n\n+/).map((p) => p.trim()).filter(Boolean);
+  const TARGET = 600;
   const out: string[] = [];
+  let buf = "";
   for (const p of paras) {
-    if (p.length < 280) { out.push(p); continue; }
-    // break long paragraph by sentence boundary
-    const sentences = p.split(/(?<=[.!?])\s+(?=[A-ZÀ-Ú])/);
-    let buf = "";
-    for (const s of sentences) {
-      if ((buf + " " + s).trim().length > 240 && buf) { out.push(buf.trim()); buf = s; }
-      else buf = (buf ? buf + " " : "") + s;
-    }
-    if (buf.trim()) out.push(buf.trim());
+    if (!buf) { buf = p; continue; }
+    if ((buf.length + p.length + 2) <= TARGET) buf = buf + "\n\n" + p;
+    else { out.push(buf); buf = p; }
   }
-  return out;
+  if (buf) out.push(buf);
+  // Se um único chunk passar de 1100 chars, quebra por sentença
+  const final: string[] = [];
+  for (const c of out) {
+    if (c.length <= 1100) { final.push(c); continue; }
+    const sentences = c.split(/(?<=[.!?])\s+(?=[A-ZÀ-Ú])/);
+    let b = "";
+    for (const s of sentences) {
+      if ((b + " " + s).trim().length > 800 && b) { final.push(b.trim()); b = s; }
+      else b = (b ? b + " " : "") + s;
+    }
+    if (b.trim()) final.push(b.trim());
+  }
+  return final;
 }
 
 function buildScenes(b: LessonBlock, blockIdx: number): Scene[] {
   const paragraphs = splitParagraphs(b.conteudo);
   const scenes: Scene[] = [];
 
-  // Intro: Flora speaks + first paragraph
-  scenes.push({
-    kind: "intro",
-    flora: b.flora_comment || undefined,
-    text: paragraphs[0] || b.conteudo || "",
-  });
+  // Cena 1: Flora + TODO o conteúdo principal (texto denso é OK — uma cena só de explicação)
+  const mainText = paragraphs.join("\n\n") || b.conteudo || "";
+  scenes.push({ kind: "intro", flora: b.flora_comment || undefined, text: mainText });
 
-  // Rest of content as individual scenes
-  for (let i = 1; i < paragraphs.length; i++) {
-    scenes.push({ kind: "text", text: paragraphs[i] });
+  // Se o texto for MUITO longo (>1400 chars) quebra em duas cenas
+  if (mainText.length > 1400 && paragraphs.length >= 2) {
+    // refaz: primeira metade na cena 1, segunda metade numa nova cena
+    const mid = Math.ceil(paragraphs.length / 2);
+    scenes[0] = { kind: "intro", flora: b.flora_comment || undefined, text: paragraphs.slice(0, mid).join("\n\n") };
+    scenes.push({ kind: "text", text: paragraphs.slice(mid).join("\n\n") });
   }
 
-  // Exemplo (only on alternate blocks to avoid repetition)
-  if (b.exemplo_resolvido && blockIdx % 2 === 0) {
-    scenes.push({ kind: "exemplo", text: b.exemplo_resolvido });
-  }
-
-  // ONE rotating extra (analogia / macete / pegadinha) — never all at once
+  // Cena 2 (única): UM extra rotativo + fechamento juntos
+  // Combinamos exemplo OU (analogia/macete/pegadinha) + closer numa cena só quando possível
   const extras: Scene[] = [];
+  if (b.exemplo_resolvido && blockIdx % 2 === 0) extras.push({ kind: "exemplo", text: b.exemplo_resolvido });
   if (b.analogia) extras.push({ kind: "analogia", text: b.analogia });
   if (b.macete) extras.push({ kind: "macete", text: b.macete });
   if (b.pegadinha) extras.push({ kind: "pegadinha", text: b.pegadinha });
   if (extras.length) scenes.push(extras[blockIdx % extras.length]);
 
-  // Closer: rotate between mini-interaction, checkpoint or simulated doubt
+  // Closer rotativo (só se houver — e só uma das opções)
   const closers: Scene[] = [];
   if (b.checkpoint) closers.push({ kind: "fixar", text: b.checkpoint });
-  if (b.mini_interacao) closers.push({ kind: "mini", text: b.mini_interacao });
-  if (b.duvida_simulada?.pergunta) closers.push({
-    kind: "duvida",
-    text: b.duvida_simulada.resposta,
-    question: b.duvida_simulada.pergunta,
+  else if (b.mini_interacao) closers.push({ kind: "mini", text: b.mini_interacao });
+  else if (b.duvida_simulada?.pergunta) closers.push({
+    kind: "duvida", text: b.duvida_simulada.resposta, question: b.duvida_simulada.pergunta,
   });
-  if (closers.length) scenes.push(closers[blockIdx % closers.length]);
+  if (closers.length) scenes.push(closers[0]);
 
   return scenes;
 }
