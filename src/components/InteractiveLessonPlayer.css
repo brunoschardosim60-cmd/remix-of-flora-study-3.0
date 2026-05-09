@@ -159,3 +159,75 @@
   font-size: 14px; font-style: italic;
   color: hsl(var(--foreground) / .85);
 }
+
+/* Resolução guiada passo-a-passo */
+.ilp-guided-wrap { margin-top: 12px; }
+.ilp-guided-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 14px; border-radius: 999px;
+  background: hsl(var(--primary) / .08);
+  border: 1px solid hsl(var(--primary) / .3);
+  color: hsl(var(--primary));
+  font-size: 13px; font-weight: 500;
+  cursor: pointer; transition: all .2s;
+}
+.ilp-guided-btn:hover:not(:disabled) {
+  background: hsl(var(--primary) / .15);
+  transform: translateY(-1px);
+}
+.ilp-guided-btn:disabled { opacity: .7; cursor: wait; }
+
+.ilp-guided {
+  margin-top: 10px;
+  padding: 14px;
+  border-radius: 12px;
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  display: flex; flex-direction: column; gap: 10px;
+  animation: ilp-reforco-in .35s ease-out;
+}
+.ilp-guided-head {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 600;
+  color: hsl(var(--primary));
+  text-transform: uppercase; letter-spacing: .5px;
+  margin-bottom: 2px;
+}
+
+.ilp-passo {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: hsl(var(--muted) / .35);
+  border-left: 3px solid hsl(var(--primary) / .5);
+}
+.ilp-passo-head {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 4px;
+}
+.ilp-passo-num {
+  flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: hsl(var(--primary)); color: hsl(var(--primary-foreground));
+  font-size: 12px; font-weight: 700;
+}
+.ilp-passo-titulo { font-size: 14px; color: hsl(var(--foreground)); }
+.ilp-passo-conteudo { font-size: 13.5px; line-height: 1.55; color: hsl(var(--foreground) / .9); margin-left: 30px; }
+.ilp-passo-ask {
+  margin-top: 6px; margin-left: 30px;
+  display: inline-flex; align-items: center; gap: 4px;
+  background: transparent; border: none;
+  color: hsl(var(--primary)); font-size: 12px; font-weight: 500;
+  cursor: pointer; padding: 4px 0;
+}
+.ilp-passo-ask:hover { text-decoration: underline; }
+.ilp-passo-chev { transition: transform .2s; }
+.ilp-passo-chev.open { transform: rotate(180deg); }
+.ilp-passo-explic {
+  margin-top: 6px; margin-left: 30px;
+  padding: 10px 12px; border-radius: 8px;
+  background: hsl(var(--background));
+  border: 1px dashed hsl(var(--primary) / .3);
+  font-size: 13.5px; line-height: 1.55;
+  animation: ilp-reforco-in .25s ease-out;
+}
