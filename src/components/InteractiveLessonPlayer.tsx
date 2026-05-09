@@ -285,6 +285,42 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
   const [blockImage, setBlockImage] = useState<Record<number, string>>({});
   const [imgLoading, setImgLoading] = useState(false);
 
+  // Direção da transição (forward/back) e som
+  const [direction, setDirection] = useState<"forward" | "backward">("forward");
+  const [soundOn, setSoundOn] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true;
+    return localStorage.getItem("ilp-sound") !== "off";
+  });
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const playTone = useCallback((freq: number, dur = 0.08, type: OscillatorType = "sine", gain = 0.06) => {
+    if (!soundOn) return;
+    try {
+      if (!audioCtxRef.current) {
+        const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+        audioCtxRef.current = new Ctx();
+      }
+      const ctx = audioCtxRef.current;
+      if (ctx.state === "suspended") ctx.resume();
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = type;
+      osc.frequency.value = freq;
+      g.gain.value = 0;
+      g.gain.linearRampToValueAtTime(gain, ctx.currentTime + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + dur);
+      osc.connect(g); g.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + dur + 0.02);
+    } catch { /* silent */ }
+  }, [soundOn]);
+  const toggleSound = useCallback(() => {
+    setSoundOn((v) => {
+      const nv = !v;
+      try { localStorage.setItem("ilp-sound", nv ? "on" : "off"); } catch {}
+      return nv;
+    });
+  }, []);
+
   const blocos = lesson.blocos || [];
   const cur = blocos[idx];
   const isLast = idx === blocos.length - 1;
@@ -326,20 +362,31 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
 
   const next = () => {
     setDuvidaOpen(false); setDuvidaResp(""); setDuvidaText("");
+    setDirection("forward");
     if (stage === "intro") { setStage("block"); return; }
     if (stage === "block") {
       // advance scene first
-      if (sceneIdx < scenes.length - 1) { setSceneIdx((s) => s + 1); return; }
-      if (!isLast) { setIdx((i) => i + 1); return; }
+      if (sceneIdx < scenes.length - 1) { setSceneIdx((s) => s + 1); playTone(660, 0.06, "sine", 0.04); return; }
+      if (!isLast) { setIdx((i) => i + 1); playTone(880, 0.12, "sine", 0.05); return; }
       if (lesson.exercicios && lesson.exercicios.length) setStage("exercises");
       else setStage("final");
+      playTone(990, 0.18, "triangle", 0.06);
       return;
     }
     if (stage === "exercises") { setStage("final"); return; }
-    if (stage === "final") { setStage("done"); onComplete?.(); }
+    if (stage === "final") {
+      setStage("done");
+      // pequena melodia de conclusão
+      playTone(660, 0.1, "sine", 0.06);
+      setTimeout(() => playTone(880, 0.12, "sine", 0.06), 90);
+      setTimeout(() => playTone(1320, 0.2, "triangle", 0.07), 200);
+      onComplete?.();
+    }
   };
   const prev = () => {
     setDuvidaOpen(false); setDuvidaResp(""); setDuvidaText("");
+    setDirection("backward");
+    playTone(440, 0.05, "sine", 0.03);
     if (stage === "block") {
       if (sceneIdx > 0) { setSceneIdx((s) => s - 1); return; }
       if (idx > 0) { setIdx((i) => i - 1); return; }
