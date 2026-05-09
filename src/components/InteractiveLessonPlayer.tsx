@@ -47,6 +47,8 @@ function MD({ children }: { children: string }) {
 type SceneKind = "intro" | "text" | "exemplo" | "analogia" | "macete" | "pegadinha" | "mini" | "fixar" | "duvida" | "impact";
 interface Scene { kind: SceneKind; text: string; flora?: string; question?: string; }
 
+const AUTO_ILLUST_KINDS: SceneKind[] = ["impact", "exemplo", "analogia", "macete"];
+
 /** Tenta extrair uma frase curta e marcante (≤110 chars) para um slide de impacto. */
 function extractImpactSentence(text: string): string | null {
   if (!text) return null;
@@ -372,7 +374,6 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
     const slug = (s: string) => (s || "").toLowerCase().replace(/\s+/g, "-").slice(0, 40);
     return `${slug(lesson.titulo)}|${slug(cur.titulo)}|${curScene.kind}|${slug(curScene.text || "")}`;
   }, [curScene, cur, lesson.titulo]);
-  const AUTO_KINDS: SceneKind[] = ["impact", "exemplo", "analogia", "macete"];
   const currentSceneImg = sceneImgKey ? sceneImages[sceneImgKey] : "";
   const currentSceneImgLoading = sceneImgKey ? !!sceneImgLoading[sceneImgKey] : false;
 
@@ -380,7 +381,7 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
   // ao só "passar" pelo slide. Usa cache em localStorage entre sessões.
   useEffect(() => {
     if (!curScene || !cur || !sceneImgKey) return;
-    if (!AUTO_KINDS.includes(curScene.kind)) return;
+    if (!AUTO_ILLUST_KINDS.includes(curScene.kind)) return;
     if (sceneImages[sceneImgKey] || sceneImgLoading[sceneImgKey]) return;
 
     const cacheKey = `flora-img:scene:${sceneImgKey}`;
