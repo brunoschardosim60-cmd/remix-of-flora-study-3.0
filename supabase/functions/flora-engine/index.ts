@@ -232,6 +232,49 @@ async function cacheStore(supabase: any, key: string, meta: { tipo: string; mate
   } catch { /* ignore */ }
 }
 
+/**
+ * Procura uma questão real cacheada para (matéria, tema). Retorna 1 questão
+ * aleatória ou null. Tem fallback: se não houver match exato em (materia,tema),
+ * busca por matéria apenas.
+ */
+async function findCachedQuestion(supabase: any, materia: string, tema: string): Promise<any | null> {
+  try {
+    const exactKey = buildCacheKey({ k: "questions", materia, tema });
+    let { data } = await supabase
+      .from("content_cache").select("payload").eq("cache_key", exactKey).maybeSingle();
+    let qs: any[] | undefined = data?.payload?.questions;
+    if (!qs?.length) {
+      // fallback: qualquer cache de questões da mesma matéria
+      const { data: list } = await supabase
+        .from("content_cache").select("payload")
+        .eq("tipo", "questions").ilike("materia", materia).limit(3);
+      qs = (list || []).flatMap((r: any) => r.payload?.questions || []);
+    }
+    if (!qs?.length) return null;
+    return qs[Math.floor(Math.random() * qs.length)];
+  } catch { return null; }
+}
+
+/**
+ * Procura no catálogo de imagens didáticas um conceito relacionado ao tema
+ * (busca por substring no nome/contexto). Retorna { concept, context, style } ou null.
+ */
+async function findCatalogedImageConcept(supabase: any, materia: string, tema: string): Promise<any | null> {
+  try {
+    const key = buildCacheKey({ k: "image_catalog", materia });
+    const { data } = await supabase
+      .from("content_cache").select("payload").eq("cache_key", key).maybeSingle();
+    const concepts: any[] = data?.payload?.concepts || [];
+    if (!concepts.length) return null;
+    const t = (tema || "").toLowerCase();
+    const match = concepts.find(c =>
+      t.includes(String(c.concept || "").toLowerCase().split(" - ")[0].toLowerCase()) ||
+      String(c.concept || "").toLowerCase().includes(t)
+    );
+    return match || concepts[0]; // fallback: 1º conceito da matéria
+  } catch { return null; }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
@@ -1602,6 +1645,23 @@ SEMPRE responda em português brasileiro.` },
       );
       const parsed = parseAIJSON(json as string);
       if (!parsed) throw new Error("Erro ao gerar bloco da aula.");
+      // Substitui o exercício gerado pela IA por uma QUESTÃO REAL do banco
+      // quando houver cache de questões para (matéria, tema). Economia de tokens
+      // e maior fidelidade ao estilo de prova real.
+      try {
+        if (parsed && typeof parsed === "object" && (parsed as any).exercicio) {
+          const real = await findCachedQuestion(supabase, materia, topic);
+          if (real && Array.isArray(real.alternativas) && real.alternativas.length >= 4) {
+            (parsed as any).exercicio = {
+              pergunta: real.pergunta,
+              alternativas: real.alternativas,
+              correta: real.correta,
+              explicacao: real.explicacao,
+              fonte: real.fonte || "Banco oficial",
+            };
+          }
+        }
+      } catch { /* mantém exercício original */ }
       // Só cacheia bloco se NÃO tiver sido personalizado por memória do aluno
       if (!memoryHint) {
         cacheStore(supabase, blockKey, { tipo: "lesson_block", materia, tema: topic, estilo: mode, objetivo: String(blocoIndex) }, { block: parsed }).catch(() => {});
