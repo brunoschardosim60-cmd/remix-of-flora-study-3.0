@@ -439,52 +439,53 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
                   )}
 
                   {curScene.kind === "exemplo" && (
-                    <div className="ilp-pill ilp-pill-exemplo">
-                      <div className="ilp-pill-head"><Target size={14} /> Exemplo</div>
-                      <div className="ilp-md"><MD>{curScene.text}</MD></div>
-                    </div>
+                    <>
+                      <span className="ilp-tag exemplo"><Target size={12} /> Exemplo</span>
+                      <div className="ilp-md-lg"><MD>{curScene.text}</MD></div>
+                    </>
                   )}
 
                   {curScene.kind === "analogia" && (
-                    <div className="ilp-pill ilp-pill-analogia">
-                      <div className="ilp-pill-head"><Brain size={14} /> Pensa assim</div>
-                      <div className="ilp-md"><MD>{curScene.text}</MD></div>
-                    </div>
+                    <>
+                      <span className="ilp-tag analogia"><Brain size={12} /> Pensa assim</span>
+                      <div className="ilp-md-lg"><MD>{curScene.text}</MD></div>
+                    </>
                   )}
 
                   {curScene.kind === "macete" && (
-                    <div className="ilp-pill ilp-pill-macete">
-                      <div className="ilp-pill-head"><Zap size={14} /> Macete</div>
-                      <div className="ilp-md"><MD>{curScene.text}</MD></div>
-                    </div>
+                    <>
+                      <span className="ilp-tag macete"><Zap size={12} /> Macete</span>
+                      <div className="ilp-md-lg"><MD>{curScene.text}</MD></div>
+                    </>
                   )}
 
                   {curScene.kind === "pegadinha" && (
-                    <div className="ilp-pill ilp-pill-pegadinha">
-                      <div className="ilp-pill-head"><AlertTriangle size={14} /> Cai muito</div>
-                      <div className="ilp-md"><MD>{curScene.text}</MD></div>
-                    </div>
+                    <>
+                      <span className="ilp-tag pegadinha"><AlertTriangle size={12} /> Cai muito</span>
+                      <div className="ilp-md-lg"><MD>{curScene.text}</MD></div>
+                    </>
                   )}
 
                   {curScene.kind === "mini" && (
-                    <div className="ilp-pill ilp-pill-mini">
-                      <div className="ilp-pill-head"><HelpCircle size={14} /> Pra pensar</div>
-                      <div className="ilp-md"><MD>{curScene.text}</MD></div>
-                    </div>
+                    <>
+                      <span className="ilp-tag mini"><HelpCircle size={12} /> Pra pensar</span>
+                      <div className="ilp-md-lg"><MD>{curScene.text}</MD></div>
+                    </>
                   )}
 
                   {curScene.kind === "fixar" && (
-                    <div className="ilp-pill ilp-pill-fixar">
-                      <div className="ilp-pill-head"><CheckCircle2 size={14} /> Pra fixar</div>
-                      <div className="ilp-md"><MD>{curScene.text}</MD></div>
-                    </div>
+                    <>
+                      <span className="ilp-tag fixar"><CheckCircle2 size={12} /> Pra fixar</span>
+                      <div className="ilp-md-lg"><MD>{curScene.text}</MD></div>
+                    </>
                   )}
 
                   {curScene.kind === "duvida" && (
-                    <div className="ilp-pill ilp-pill-duvida">
-                      <div className="ilp-pill-head"><MessageCircleQuestion size={14} /> {curScene.question}</div>
-                      <div className="ilp-md"><MD>{curScene.text}</MD></div>
-                    </div>
+                    <>
+                      <span className="ilp-tag duvida"><MessageCircleQuestion size={12} /> Dúvida comum</span>
+                      <h3 className="ilp-block-title" style={{ fontSize: "clamp(20px, 2.6vw, 28px)" }}>{curScene.question}</h3>
+                      <div className="ilp-md-lg"><MD>{curScene.text}</MD></div>
+                    </>
                   )}
 
                   {/* Scene dots */}
@@ -539,24 +540,6 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
           )}
         </div>
 
-        {/* ── Right rail: Flora presence (desktop only) ── */}
-        <aside className="ilp-rail">
-          <div className="ilp-rail-card">
-            <div className="ilp-rail-flora">
-              <div className="ilp-flora-avatar lg"><Leaf size={18} /></div>
-              <div>
-                <div className="ilp-rail-name">Flora</div>
-                <div className="ilp-rail-line">{floraLine(progress, idx, blocos.length)}</div>
-              </div>
-            </div>
-          </div>
-          <div className="ilp-rail-card">
-            <div className="ilp-rail-label">Progresso</div>
-            <div className="ilp-rail-pct">{Math.round(progress * 100)}%</div>
-            <div className="ilp-bar small"><div className="ilp-fill" style={{ width: `${progress * 100}%` }} /></div>
-            <div className="ilp-rail-sub">{currentStep} de {totalScenes} etapas</div>
-          </div>
-        </aside>
       </div>
 
       {/* ── Minimal footer ── */}
