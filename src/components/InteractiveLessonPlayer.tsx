@@ -251,16 +251,6 @@ function BlockSkeleton() {
   );
 }
 
-/* ─── Flora reactive line (depending on progress) ─────── */
-function floraLine(progress: number, blockIdx: number, totalBlocks: number): string {
-  if (progress < 0.15) return "Vamos com calma. Uma ideia por vez.";
-  if (progress < 0.4) return "Tá pegando o ritmo. Continua.";
-  if (progress < 0.6) return "Metade do caminho. Respira e segue.";
-  if (blockIdx === totalBlocks - 1) return "Última parte. Foco aqui.";
-  if (progress < 0.85) return "Quase lá. Você tá indo bem.";
-  return "Reta final. Atenção total.";
-}
-
 /* ─── Main player ─────────────────────────────────────── */
 export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, loadingBlockIndices }) => {
   const { user } = useAuth();
