@@ -1,4 +1,4 @@
-import React, { useMemo, useState, lazy, Suspense, useEffect } from "react";
+import React, { useMemo, useState, lazy, Suspense, useEffect, useRef, useCallback } from "react";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
@@ -6,6 +6,7 @@ import {
   Loader2, Send, Image as ImageIcon, ChevronLeft, ChevronRight,
   Lightbulb, AlertTriangle, MessageCircleQuestion, CheckCircle2, XCircle,
   Sparkles, Brain, HelpCircle, ListChecks, ChevronDown, Leaf, Zap, Target,
+  Volume2, VolumeX, Eye,
 } from "lucide-react";
 import { generateDidacticImage } from "@/lib/floraImages";
 import { supabase } from "@/integrations/supabase/client";
@@ -43,8 +44,20 @@ function MD({ children }: { children: string }) {
 }
 
 /* ─── Scene model ─────────────────────────────────────── */
-type SceneKind = "intro" | "text" | "exemplo" | "analogia" | "macete" | "pegadinha" | "mini" | "fixar" | "duvida";
+type SceneKind = "intro" | "text" | "exemplo" | "analogia" | "macete" | "pegadinha" | "mini" | "fixar" | "duvida" | "impact";
 interface Scene { kind: SceneKind; text: string; flora?: string; question?: string; }
+
+/** Tenta extrair uma frase curta e marcante (≤110 chars) para um slide de impacto. */
+function extractImpactSentence(text: string): string | null {
+  if (!text) return null;
+  const sentences = text.split(/(?<=[.!?])\s+/).map((s) => s.trim()).filter(Boolean);
+  // Prioriza frases entre 30 e 110 chars que pareçam afirmações fortes
+  const strong = sentences.find((s) => s.length >= 30 && s.length <= 110);
+  if (strong) return strong.replace(/\*+/g, "");
+  // fallback: primeira frase curta
+  const short = sentences.find((s) => s.length <= 130);
+  return short ? short.replace(/\*+/g, "") : null;
+}
 
 /** Agrupa parágrafos em chunks robustos (~500-700 chars) para não fragmentar demais. */
 function splitParagraphs(s: string): string[] {
@@ -78,6 +91,12 @@ function splitParagraphs(s: string): string[] {
 function buildScenes(b: LessonBlock, blockIdx: number): Scene[] {
   const paragraphs = splitParagraphs(b.conteudo);
   const scenes: Scene[] = [];
+
+  // Slide de impacto: aparece em blocos pares (incluindo o primeiro) — frase forte + fundo escuro
+  const impact = extractImpactSentence(b.flora_comment || b.conteudo);
+  if (impact && (blockIdx === 0 || blockIdx % 2 === 0)) {
+    scenes.push({ kind: "impact", text: impact });
+  }
 
   // Cena 1: Flora + TODO o conteúdo principal (texto denso é OK — uma cena só de explicação)
   const mainText = paragraphs.join("\n\n") || b.conteudo || "";
