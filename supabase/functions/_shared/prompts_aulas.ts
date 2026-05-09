@@ -61,6 +61,7 @@ export function buildLessonBlockPrompt(
   totalBlocos: number,
   mode: LessonMode,
   didacticStyle: "macetes" | "aprofundado" | "normal",
+  memoryHint?: string, // 1 memória específica do aluno (opcional)
 ): string {
   const minLinhas = mode === "rapida" ? 8 : mode === "masterclass" ? 18 : 12;
   const styleNote = didacticStyle === "macetes"
@@ -71,10 +72,14 @@ export function buildLessonBlockPrompt(
   const duvidaSim = mode === "masterclass"
     ? `"duvida_simulada": { "pergunta": "string", "resposta": "string conversada 3+ frases" },`
     : "";
+  const memBlock = memoryHint && memoryHint.length > 8
+    ? `\nMEMORIA_ALUNO: ${memoryHint.slice(0, 110)}\nREGRA: SE essa memória se conectar diretamente ao bloco, cite UMA vez de forma natural em "flora_comment" ("lembra quando tu...", "tu já passou por isso quando..."). Reformule, não copie literal. Se não conectar, ignore.`
+    : "";
   return `MATÉRIA: ${materia}
 TEMA: ${tema}
 BLOCO: ${blocoIndex + 1}/${totalBlocos} — "${blocoTitulo}"
 MODE: ${mode}
+${memBlock}
 
 Gere APENAS o corpo deste bloco. ${styleNote}
 
