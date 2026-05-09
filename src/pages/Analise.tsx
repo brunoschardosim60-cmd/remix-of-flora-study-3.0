@@ -21,6 +21,9 @@ import {
 import { ConcursoDashboard } from "@/components/ConcursoDashboard";
 import { DetailedProgressReport } from "@/components/DetailedProgressReport";
 import { ConcursoSimuladoHistory } from "@/components/ConcursoSimuladoHistory";
+import { SubjectHeatmap } from "@/components/dashboard/SubjectHeatmap";
+import { EvolutionChart } from "@/components/dashboard/EvolutionChart";
+import { WeakSpotsCard } from "@/components/dashboard/WeakSpotsCard";
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 interface StudySession {
@@ -97,7 +100,7 @@ export default function Analise() {
   const [slots, setSlots] = useState<WeeklySlotRow[]>([]);
   const [onboarding, setOnboarding] = useState<OnboardingRow | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"geral" | "evolucao" | "enem" | "revisoes" | "relatorio">("geral");
+  const [activeTab, setActiveTab] = useState<"geral" | "vivo" | "evolucao" | "enem" | "revisoes" | "relatorio">("geral");
   const [period, setPeriod] = useState<"7d" | "30d" | "all">("7d");
 
   useEffect(() => {
@@ -270,6 +273,7 @@ export default function Analise() {
 
   const TABS = [
     { id: "geral" as const, label: "Visão geral" },
+    { id: "vivo" as const, label: "Dashboard vivo" },
     { id: "evolucao" as const, label: "Evolução" },
     ...(showEnemTab ? [{ id: "enem" as const, label: "Predição ENEM" }] : []),
     { id: "revisoes" as const, label: "Revisões" },
