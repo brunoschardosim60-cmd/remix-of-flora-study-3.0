@@ -150,6 +150,7 @@ export function buildLessonPrompt(
     accuracyPct?: number;
     commonMistakes?: string[];
     profileLevel?: "iniciante" | "intermediario" | "avancado";
+    specificMemories?: string[];
   },
 ): string {
   const truncated = content && content.length > 1500 ? content.slice(0, 1500) + "..." : content;
@@ -194,7 +195,7 @@ export function buildLessonPrompt(
   const ctxLines: string[] = [];
   let hasSignal = false;
   if (learningContext) {
-    const { weakTopics, recentErrors, accuracyPct, commonMistakes, profileLevel } = learningContext;
+    const { weakTopics, recentErrors, accuracyPct, commonMistakes, profileLevel, specificMemories } = learningContext;
     if (typeof accuracyPct === "number" && Number.isFinite(accuracyPct)) {
       ctxLines.push(`acerto=${Math.max(0, Math.min(100, Math.round(accuracyPct)))}%`);
     }
@@ -205,6 +206,8 @@ export function buildLessonPrompt(
     if (w.length) { ctxLines.push(`fracos=[${w.join("; ")}]`); hasSignal = true; }
     if (r.length) { ctxLines.push(`errosRecentes=[${r.join("; ")}]`); hasSignal = true; }
     if (c.length) { ctxLines.push(`padroes=[${c.join("; ")}]`); hasSignal = true; }
+    const m = (specificMemories || []).map((x) => clip(String(x), 110)).filter(Boolean).slice(0, 2);
+    if (m.length) { ctxLines.push(`memorias=[${m.join(" | ")}]`); hasSignal = true; }
   }
 
   const maxMencoes = mode === "rapida" ? 1 : 2;
@@ -221,6 +224,7 @@ REGRAS DE USO DO CONTEXTO (cumpra à risca):
 - Se o tema da aula NÃO se relaciona com o item, NÃO mencione — é melhor zero menção que forçada.
 - NÃO invente erros que não estão no contexto.
 - Adapte profundidade: iniciante → +analogia/-jargão; avancado → +pegadinhas/-básico.
+- "memorias" é OURO: se o item de memorias[] se conectar ao tema da aula, use 1 vez como referência específica e humana ("lembra quando tu travou em X semana passada? era exatamente isso..." / "tu já mandou bem em Y, então isso aqui vai parecer fácil"). NÃO copie a string literal — reformule. Máx 1 memória citada na aula inteira.
 ` : "";
 
   return `MODE: ${mode}
