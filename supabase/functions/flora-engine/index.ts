@@ -232,6 +232,49 @@ async function cacheStore(supabase: any, key: string, meta: { tipo: string; mate
   } catch { /* ignore */ }
 }
 
+/**
+ * Procura uma questão real cacheada para (matéria, tema). Retorna 1 questão
+ * aleatória ou null. Tem fallback: se não houver match exato em (materia,tema),
+ * busca por matéria apenas.
+ */
+async function findCachedQuestion(supabase: any, materia: string, tema: string): Promise<any | null> {
+  try {
+    const exactKey = buildCacheKey({ k: "questions", materia, tema });
+    let { data } = await supabase
+      .from("content_cache").select("payload").eq("cache_key", exactKey).maybeSingle();
+    let qs: any[] | undefined = data?.payload?.questions;
+    if (!qs?.length) {
+      // fallback: qualquer cache de questões da mesma matéria
+      const { data: list } = await supabase
+        .from("content_cache").select("payload")
+        .eq("tipo", "questions").ilike("materia", materia).limit(3);
+      qs = (list || []).flatMap((r: any) => r.payload?.questions || []);
+    }
+    if (!qs?.length) return null;
+    return qs[Math.floor(Math.random() * qs.length)];
+  } catch { return null; }
+}
+
+/**
+ * Procura no catálogo de imagens didáticas um conceito relacionado ao tema
+ * (busca por substring no nome/contexto). Retorna { concept, context, style } ou null.
+ */
+async function findCatalogedImageConcept(supabase: any, materia: string, tema: string): Promise<any | null> {
+  try {
+    const key = buildCacheKey({ k: "image_catalog", materia });
+    const { data } = await supabase
+      .from("content_cache").select("payload").eq("cache_key", key).maybeSingle();
+    const concepts: any[] = data?.payload?.concepts || [];
+    if (!concepts.length) return null;
+    const t = (tema || "").toLowerCase();
+    const match = concepts.find(c =>
+      t.includes(String(c.concept || "").toLowerCase().split(" - ")[0].toLowerCase()) ||
+      String(c.concept || "").toLowerCase().includes(t)
+    );
+    return match || concepts[0]; // fallback: 1º conceito da matéria
+  } catch { return null; }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
