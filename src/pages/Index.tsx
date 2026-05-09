@@ -471,7 +471,7 @@ export default function Index() {
           }}
         />
 
-        {dueFlashcardsCount > 0 && (
+        {dueFlashcardsCount > 0 && isWidgetVisible("flashcards_banner") && (
           <button
             onClick={() => setFlashcardSessionOpen(true)}
             className="w-full flex items-center justify-between gap-3 rounded-2xl border border-accent/30 bg-accent/5 hover:bg-accent/10 transition-colors px-4 py-3 text-left"
@@ -512,21 +512,25 @@ export default function Index() {
           </Suspense>
         </div>
 
-        <Suspense fallback={<SectionSkeleton className="min-h-[120px]" />}>
-          <GamificationCard
-            streak={gamification.streak}
-            xp={gamification.xp}
-            level={gamification.level}
-            todayStudyMinutes={gamification.todayStudyMinutes}
-            todayRevisions={gamification.todayRevisions}
-            todayQuizCount={gamification.todayQuizCount}
-            goals={gamification.dailyGoals}
-          />
-        </Suspense>
+        {isWidgetVisible("gamification") && (
+          <Suspense fallback={<SectionSkeleton className="min-h-[120px]" />}>
+            <GamificationCard
+              streak={gamification.streak}
+              xp={gamification.xp}
+              level={gamification.level}
+              todayStudyMinutes={gamification.todayStudyMinutes}
+              todayRevisions={gamification.todayRevisions}
+              todayQuizCount={gamification.todayQuizCount}
+              goals={gamification.dailyGoals}
+            />
+          </Suspense>
+        )}
 
-        <Suspense fallback={<SectionSkeleton className="min-h-[80px]" />}>
-          <StatsCards {...stats} />
-        </Suspense>
+        {isWidgetVisible("stats") && (
+          <Suspense fallback={<SectionSkeleton className="min-h-[80px]" />}>
+            <StatsCards {...stats} />
+          </Suspense>
+        )}
 
         {/* Painéis específicos de concurso */}
         {objetivo === "concurso" && (
@@ -540,28 +544,34 @@ export default function Index() {
           </>
         )}
 
-        <Suspense fallback={<SectionSkeleton className="min-h-[80px]" />}>
-          <div id="revisoes-atrasadas" className="scroll-mt-20">
-            <OverdueRevisions
-              revisions={overdueRevisions}
-              onComplete={handleToggleRevision}
-              onReschedule={handleRescheduleOverdue}
-            />
-          </div>
-        </Suspense>
+        {isWidgetVisible("overdue") && (
+          <Suspense fallback={<SectionSkeleton className="min-h-[80px]" />}>
+            <div id="revisoes-atrasadas" className="scroll-mt-20">
+              <OverdueRevisions
+                revisions={overdueRevisions}
+                onComplete={handleToggleRevision}
+                onReschedule={handleRescheduleOverdue}
+              />
+            </div>
+          </Suspense>
+        )}
 
-        <Suspense fallback={<SectionSkeleton className="min-h-[80px]" />}>
-          <div id="revisoes-hoje" className="scroll-mt-20">
-            <TodayRevisions revisions={todayRevisions} onComplete={handleToggleRevision} />
-          </div>
-        </Suspense>
+        {isWidgetVisible("today_revisions") && (
+          <Suspense fallback={<SectionSkeleton className="min-h-[80px]" />}>
+            <div id="revisoes-hoje" className="scroll-mt-20">
+              <TodayRevisions revisions={todayRevisions} onComplete={handleToggleRevision} />
+            </div>
+          </Suspense>
+        )}
 
-        <Suspense fallback={<SectionSkeleton className="min-h-[120px]" />}>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
-            <WeeklyRevisionSummary topics={topics} />
-            <UpcomingRevisions revisions={upcomingRevisions} />
-          </div>
-        </Suspense>
+        {isWidgetVisible("weekly_summary") && (
+          <Suspense fallback={<SectionSkeleton className="min-h-[120px]" />}>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
+              <WeeklyRevisionSummary topics={topics} />
+              <UpcomingRevisions revisions={upcomingRevisions} />
+            </div>
+          </Suspense>
+        )}
 
         {/* Tabs */}
         <div className="overflow-x-auto">
