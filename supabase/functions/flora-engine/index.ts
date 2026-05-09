@@ -1573,12 +1573,25 @@ SEMPRE responda em português brasileiro.` },
       const mode = (data as any)?.mode || "completa";
       const didacticStyle = (data as any)?.didacticStyle || "normal";
 
+      // Memória específica do aluno (1 item) — só no 1º bloco pra não saturar
+      let memoryHint: string | undefined;
+      try {
+        if (blocoIndex === 0) {
+          const ctx = await getStudentContext(userId);
+          const mems = buildSpecificMemories(ctx.studyTopics || [], materia, topic);
+          memoryHint = mems[0];
+        }
+      } catch { /* segue sem memória */ }
+
+      // Cache: se houver memória personalizada, pula cache (aula viva)
       const blockKey = buildCacheKey({ k: "lesson_block", materia, tema: topic, mode, t: blocoTitulo, i: blocoIndex });
-      const cached = await cacheLookup(supabase, blockKey);
-      if (cached?.block) return jsonResponse({ ok: true, block: cached.block, cached: true });
+      if (!memoryHint) {
+        const cached = await cacheLookup(supabase, blockKey);
+        if (cached?.block) return jsonResponse({ ok: true, block: cached.block, cached: true });
+      }
 
       const { LESSON_BLOCK_SYSTEM_PROMPT, buildLessonBlockPrompt } = await import("../_shared/prompts_aulas.ts");
-      const userPrompt = buildLessonBlockPrompt(topic, materia, blocoTitulo, blocoIndex, totalBlocos, mode as any, didacticStyle as any);
+      const userPrompt = buildLessonBlockPrompt(topic, materia, blocoTitulo, blocoIndex, totalBlocos, mode as any, didacticStyle as any, memoryHint);
       const tokensCap = mode === "masterclass" ? 1800 : mode === "rapida" ? 900 : 1300;
 
       const json = await runTaskChain(
@@ -1589,7 +1602,10 @@ SEMPRE responda em português brasileiro.` },
       );
       const parsed = parseAIJSON(json as string);
       if (!parsed) throw new Error("Erro ao gerar bloco da aula.");
-      cacheStore(supabase, blockKey, { tipo: "lesson_block", materia, tema: topic, estilo: mode, objetivo: String(blocoIndex) }, { block: parsed }).catch(() => {});
+      // Só cacheia bloco se NÃO tiver sido personalizado por memória do aluno
+      if (!memoryHint) {
+        cacheStore(supabase, blockKey, { tipo: "lesson_block", materia, tema: topic, estilo: mode, objetivo: String(blocoIndex) }, { block: parsed }).catch(() => {});
+      }
       return jsonResponse({ ok: true, block: parsed });
     }
 
