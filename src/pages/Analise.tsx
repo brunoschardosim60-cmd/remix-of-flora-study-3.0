@@ -467,6 +467,25 @@ export default function Analise() {
               </div>
             )}
 
+            {/* ── ABA: DASHBOARD VIVO ──────────────────────────────── */}
+            {activeTab === "vivo" && (
+              <div className="space-y-4">
+                <SubjectHeatmap sessions={sessions} days={14} />
+                <EvolutionChart sessions={sessions} actions={actions} days={30} />
+                <WeakSpotsCard
+                  perfs={perfs}
+                  topics={topics.map(t => ({
+                    id: (t as any).id,
+                    tema: (t as any).tema,
+                    materia: (t as any).materia,
+                    quizErrors: (t as any).quizErrors,
+                    quizLastScore: (t as any).quizLastScore ?? null,
+                    rating: (t as any).rating ?? 0,
+                  }))}
+                />
+              </div>
+            )}
+
             {/* ── ABA: EVOLUÇÃO ────────────────────────────────────── */}
             {activeTab === "evolucao" && (
               <div className="space-y-4">
