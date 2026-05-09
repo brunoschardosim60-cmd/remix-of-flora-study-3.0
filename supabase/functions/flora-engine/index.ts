@@ -359,6 +359,66 @@ serve(async (req) => {
       };
     }
 
+    // ─── Helper: Memórias específicas (datas relativas) para a Flora citar ───
+    // Pesca, dentro do contexto do aluno, 1-2 episódios concretos relacionados à
+    // matéria/tema da aula atual: travou em X há N dias, mandou bem em Y na semana
+    // passada. Frases curtas, sem números técnicos, prontas pra prompt.
+    function buildSpecificMemories(
+      studyTopics: any[],
+      materiaAtual: string,
+      temaAtual: string,
+    ): string[] {
+      if (!Array.isArray(studyTopics) || studyTopics.length === 0) return [];
+      const norm = (s: string) => (s || "").toString().toLowerCase();
+      const matAtual = norm(materiaAtual);
+      const temaAtualN = norm(temaAtual);
+
+      const sameMateria = (t: any) =>
+        matAtual && norm(t.materia).includes(matAtual.split(" ")[0]);
+
+      const ago = (iso?: string): string => {
+        if (!iso) return "";
+        const d = new Date(iso);
+        if (isNaN(d.getTime())) return "";
+        const diff = Math.floor((Date.now() - d.getTime()) / (1000 * 60 * 60 * 24));
+        if (diff <= 0) return "hoje";
+        if (diff === 1) return "ontem";
+        if (diff < 7) return `${diff} dias atrás`;
+        if (diff < 14) return "semana passada";
+        if (diff < 35) return `há ${Math.round(diff / 7)} semanas`;
+        return `há ${Math.round(diff / 30)} meses`;
+      };
+
+      // Filtra tópicos relacionados (mesma matéria) excluindo o próprio tema
+      const related = studyTopics.filter(
+        (t) => sameMateria(t) && norm(t.tema) !== temaAtualN,
+      );
+
+      const struggles = related
+        .filter((t) => (Number(t.rating) > 0 && Number(t.rating) <= 2) || (Number(t.quiz_last_score) > 0 && Number(t.quiz_last_score) < 60))
+        .slice(0, 1)
+        .map((t) => `travou em "${(t.tema || "").slice(0, 40)}" ${ago(t.updated_at || t.study_date)}`.trim());
+
+      const wins = related
+        .filter((t) => Number(t.rating) >= 4 || Number(t.quiz_last_score) >= 80)
+        .slice(0, 1)
+        .map((t) => `mandou bem em "${(t.tema || "").slice(0, 40)}" ${ago(t.updated_at || t.study_date)}`.trim());
+
+      // Erro recente concreto no MESMO tema (gold)
+      const sameTema = studyTopics.find((t) => norm(t.tema) === temaAtualN && Array.isArray(t.quiz_errors) && t.quiz_errors.length);
+      const sameTemaMem: string[] = [];
+      if (sameTema) {
+        const e0 = sameTema.quiz_errors[0];
+        const label = typeof e0 === "string" ? e0 : (e0?.tema || e0?.topico || e0?.pergunta || "");
+        if (label) sameTemaMem.push(`errou exatamente "${String(label).slice(0, 50)}" em ${temaAtual} ${ago(sameTema.updated_at)}`);
+      }
+
+      const out = [...sameTemaMem, ...struggles, ...wins]
+        .map((s) => s.replace(/\s+/g, " ").trim())
+        .filter((s) => s.length > 8 && s.length < 110);
+      return Array.from(new Set(out)).slice(0, 2);
+    }
+
     // ─── Streaming do chat ─────────────────────────────────────────────────
     // Streaming: Gemini k1 (SSE) → Gemini k2 (SSE) → Lovable → síntese non-stream
     async function callAIStream(messages: Msg[]): Promise<Response> {
