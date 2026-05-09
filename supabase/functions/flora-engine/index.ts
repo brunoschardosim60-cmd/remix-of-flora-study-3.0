@@ -914,8 +914,9 @@ Responda SOMENTE com JSON: {"questions":[{"pergunta":"TEXTO-BASE COMPLETO\\n\\nC
               recentErrors: errsTrim,
               accuracyPct,
               profileLevel,
+              specificMemories: buildSpecificMemories(ctx.studyTopics || [], materia || "", topic || ""),
             };
-            hasContext = weakTrim.length > 0 || errsTrim.length > 0;
+            hasContext = weakTrim.length > 0 || errsTrim.length > 0 || (learningContext.specificMemories?.length ?? 0) > 0;
           }
         } catch (e) {
           console.warn("[generate_lesson] contexto falhou, seguindo sem:", (e as Error)?.message);
