@@ -179,6 +179,7 @@ export default function Index() {
     const savedTab = loadStringStorage("studyflow.activeTab");
     return savedTab === "semanal" ? "semanal" : "revisao";
   });
+  const { isVisible: isWidgetVisible } = useDashboardWidgets();
   const [notesTopic, setNotesTopic] = useState<StudyTopic | null>(null);
   const [quizTopic, setQuizTopic] = useState<StudyTopic | null>(null);
   const [quizInitialQuestions, setQuizInitialQuestions] = useState<any[] | undefined>(undefined);
