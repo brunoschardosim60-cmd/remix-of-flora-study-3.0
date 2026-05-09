@@ -7,11 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { CustomThemeDialog } from "@/components/CustomThemeDialog";
-import { CalendarIntegration } from "@/components/CalendarIntegration";
 import { DashboardCustomizer } from "@/components/DashboardCustomizer";
-import { RewardsPanel } from "@/components/RewardsPanel";
-import { Sun, Moon, CircleDot, LogOut, ArrowLeft, Shield, User, Target, Sparkles, Bell, BellOff, Loader2, Save, Trophy, LayoutDashboard, Calendar } from "lucide-react";
-import { loadRewards } from "@/lib/rewards";
+import { Sun, Moon, CircleDot, LogOut, ArrowLeft, Shield, User, Target, Sparkles, Bell, BellOff, Loader2, Save, LayoutDashboard, Calendar, Download } from "lucide-react";
 import { toast } from "sonner";
 import { getMyTier, getMyQuota, type AITier } from "@/lib/aiUsage";
 
@@ -56,9 +53,6 @@ export default function Settings() {
 
   // Notifications
   const [notifPermission, setNotifPermission] = useState<NotificationPermission>("default");
-
-  // Rewards (lido do localStorage — mesma fonte do RewardsPanel)
-  const rewards = loadRewards();
 
   const themes = [
     { id: "light" as const, label: "Claro", icon: Sun },
@@ -148,6 +142,43 @@ export default function Settings() {
     } else {
       toast.info("Permissão negada. Você pode alterar nas configurações do navegador.");
     }
+  }
+
+  function handleExportCalendar() {
+    const now = new Date();
+    const events = Array.from({ length: 5 }, (_, i) => {
+      const d = new Date(now);
+      d.setDate(now.getDate() + i);
+      d.setHours(9 + i * 2, 0, 0, 0);
+      const end = new Date(d.getTime() + 60 * 60000);
+      const fmt = (x: Date) => x.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+      return [
+        "BEGIN:VEVENT",
+        `DTSTART:${fmt(d)}`,
+        `DTEND:${fmt(end)}`,
+        `SUMMARY:📚 Sessão ${i + 1} - Flora Study`,
+        `UID:flora-${i}-${Date.now()}@flora-study.app`,
+        "END:VEVENT",
+      ].join("\r\n");
+    }).join("\r\n");
+    const ics = [
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "PRODID:-//Flora Study//PT",
+      "X-WR-CALNAME:Flora Study",
+      events,
+      "END:VCALENDAR",
+    ].join("\r\n");
+    const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "flora-study.ics";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success("Cronograma exportado! Importe o .ics no seu calendário.");
   }
 
   const ACTION_LABELS: Record<string, string> = {
@@ -351,19 +382,6 @@ export default function Settings() {
         </section>
 
 
-        {/* Recompensas */}
-        {user && (
-          <section className="rounded-2xl border border-border bg-card p-4 sm:p-5 space-y-3">
-            <h2 className="font-heading font-semibold text-base flex items-center gap-2">
-              <Trophy className="w-4 h-4 text-primary" /> Recompensas
-            </h2>
-            <p className="text-xs text-muted-foreground">
-              Seus badges, avatares e temas desbloqueados.
-            </p>
-            <RewardsPanel xp={rewards.rewardStats.xp} level={rewards.rewardStats.level} streak={rewards.rewardStats.streak} />
-          </section>
-        )}
-
         {/* Personalizar Dashboard */}
         {user && (
           <section className="rounded-2xl border border-border bg-card p-4 sm:p-5 space-y-3">
@@ -380,13 +398,19 @@ export default function Settings() {
         {/* Integração com Calendário */}
         {user && (
           <section className="rounded-2xl border border-border bg-card p-4 sm:p-5 space-y-3">
-            <h2 className="font-heading font-semibold text-base flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-primary" /> Integração com Calendário
-            </h2>
-            <p className="text-xs text-muted-foreground">
-              Exporte seu cronograma para Google Calendar, Outlook ou qualquer app de agenda.
-            </p>
-            <CalendarIntegration />
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-2 min-w-0">
+                <Calendar className="w-4 h-4 text-primary shrink-0" />
+                <div className="min-w-0">
+                  <h2 className="font-heading font-semibold text-base">Calendário</h2>
+                  <p className="text-xs text-muted-foreground">Exportar cronograma como .ics</p>
+                </div>
+              </div>
+              <Button onClick={handleExportCalendar} size="sm" variant="outline" className="gap-1.5">
+                <Download className="w-4 h-4" />
+                Exportar .ics
+              </Button>
+            </div>
           </section>
         )}
 
