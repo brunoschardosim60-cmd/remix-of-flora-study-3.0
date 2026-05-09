@@ -282,7 +282,7 @@ serve(async (req) => {
         supabase.from("study_sessions").select("*").eq("user_id", uid).order("created_at", { ascending: false }).limit(10),
         supabase.from("flora_chat_messages").select("role,content").eq("user_id", uid).order("created_at", { ascending: false }).limit(20),
         supabase.from("essays").select("id,tema,tipo_prova,status,nota_total,competencia_1,competencia_2,competencia_3,competencia_4,competencia_5,corrected_at,created_at").eq("user_id", uid).order("created_at", { ascending: false }).limit(5),
-        supabase.from("study_topics").select("id,materia,tema,rating,quiz_last_score,quiz_attempts").eq("user_id", uid).order("updated_at", { ascending: false }).limit(40),
+        supabase.from("study_topics").select("id,materia,tema,rating,quiz_last_score,quiz_attempts,quiz_errors,updated_at,study_date").eq("user_id", uid).order("updated_at", { ascending: false }).limit(40),
         supabase.from("question_attempts").select("acertou,modo,created_at,question:questions(disciplina,area,tema,ano)").eq("user_id", uid).order("created_at", { ascending: false }).limit(100),
       ]);
 
@@ -357,6 +357,66 @@ serve(async (req) => {
         concursoTrilhas,
         concursoBankStats,
       };
+    }
+
+    // ─── Helper: Memórias específicas (datas relativas) para a Flora citar ───
+    // Pesca, dentro do contexto do aluno, 1-2 episódios concretos relacionados à
+    // matéria/tema da aula atual: travou em X há N dias, mandou bem em Y na semana
+    // passada. Frases curtas, sem números técnicos, prontas pra prompt.
+    function buildSpecificMemories(
+      studyTopics: any[],
+      materiaAtual: string,
+      temaAtual: string,
+    ): string[] {
+      if (!Array.isArray(studyTopics) || studyTopics.length === 0) return [];
+      const norm = (s: string) => (s || "").toString().toLowerCase();
+      const matAtual = norm(materiaAtual);
+      const temaAtualN = norm(temaAtual);
+
+      const sameMateria = (t: any) =>
+        matAtual && norm(t.materia).includes(matAtual.split(" ")[0]);
+
+      const ago = (iso?: string): string => {
+        if (!iso) return "";
+        const d = new Date(iso);
+        if (isNaN(d.getTime())) return "";
+        const diff = Math.floor((Date.now() - d.getTime()) / (1000 * 60 * 60 * 24));
+        if (diff <= 0) return "hoje";
+        if (diff === 1) return "ontem";
+        if (diff < 7) return `${diff} dias atrás`;
+        if (diff < 14) return "semana passada";
+        if (diff < 35) return `há ${Math.round(diff / 7)} semanas`;
+        return `há ${Math.round(diff / 30)} meses`;
+      };
+
+      // Filtra tópicos relacionados (mesma matéria) excluindo o próprio tema
+      const related = studyTopics.filter(
+        (t) => sameMateria(t) && norm(t.tema) !== temaAtualN,
+      );
+
+      const struggles = related
+        .filter((t) => (Number(t.rating) > 0 && Number(t.rating) <= 2) || (Number(t.quiz_last_score) > 0 && Number(t.quiz_last_score) < 60))
+        .slice(0, 1)
+        .map((t) => `travou em "${(t.tema || "").slice(0, 40)}" ${ago(t.updated_at || t.study_date)}`.trim());
+
+      const wins = related
+        .filter((t) => Number(t.rating) >= 4 || Number(t.quiz_last_score) >= 80)
+        .slice(0, 1)
+        .map((t) => `mandou bem em "${(t.tema || "").slice(0, 40)}" ${ago(t.updated_at || t.study_date)}`.trim());
+
+      // Erro recente concreto no MESMO tema (gold)
+      const sameTema = studyTopics.find((t) => norm(t.tema) === temaAtualN && Array.isArray(t.quiz_errors) && t.quiz_errors.length);
+      const sameTemaMem: string[] = [];
+      if (sameTema) {
+        const e0 = sameTema.quiz_errors[0];
+        const label = typeof e0 === "string" ? e0 : (e0?.tema || e0?.topico || e0?.pergunta || "");
+        if (label) sameTemaMem.push(`errou exatamente "${String(label).slice(0, 50)}" em ${temaAtual} ${ago(sameTema.updated_at)}`);
+      }
+
+      const out = [...sameTemaMem, ...struggles, ...wins]
+        .map((s) => s.replace(/\s+/g, " ").trim())
+        .filter((s) => s.length > 8 && s.length < 110);
+      return Array.from(new Set(out)).slice(0, 2);
     }
 
     // ─── Streaming do chat ─────────────────────────────────────────────────
@@ -854,8 +914,9 @@ Responda SOMENTE com JSON: {"questions":[{"pergunta":"TEXTO-BASE COMPLETO\\n\\nC
               recentErrors: errsTrim,
               accuracyPct,
               profileLevel,
+              specificMemories: buildSpecificMemories(ctx.studyTopics || [], materia || "", topic || ""),
             };
-            hasContext = weakTrim.length > 0 || errsTrim.length > 0;
+            hasContext = weakTrim.length > 0 || errsTrim.length > 0 || (learningContext.specificMemories?.length ?? 0) > 0;
           }
         } catch (e) {
           console.warn("[generate_lesson] contexto falhou, seguindo sem:", (e as Error)?.message);
@@ -1512,12 +1573,25 @@ SEMPRE responda em português brasileiro.` },
       const mode = (data as any)?.mode || "completa";
       const didacticStyle = (data as any)?.didacticStyle || "normal";
 
+      // Memória específica do aluno (1 item) — só no 1º bloco pra não saturar
+      let memoryHint: string | undefined;
+      try {
+        if (blocoIndex === 0) {
+          const ctx = await getStudentContext(userId);
+          const mems = buildSpecificMemories(ctx.studyTopics || [], materia, topic);
+          memoryHint = mems[0];
+        }
+      } catch { /* segue sem memória */ }
+
+      // Cache: se houver memória personalizada, pula cache (aula viva)
       const blockKey = buildCacheKey({ k: "lesson_block", materia, tema: topic, mode, t: blocoTitulo, i: blocoIndex });
-      const cached = await cacheLookup(supabase, blockKey);
-      if (cached?.block) return jsonResponse({ ok: true, block: cached.block, cached: true });
+      if (!memoryHint) {
+        const cached = await cacheLookup(supabase, blockKey);
+        if (cached?.block) return jsonResponse({ ok: true, block: cached.block, cached: true });
+      }
 
       const { LESSON_BLOCK_SYSTEM_PROMPT, buildLessonBlockPrompt } = await import("../_shared/prompts_aulas.ts");
-      const userPrompt = buildLessonBlockPrompt(topic, materia, blocoTitulo, blocoIndex, totalBlocos, mode as any, didacticStyle as any);
+      const userPrompt = buildLessonBlockPrompt(topic, materia, blocoTitulo, blocoIndex, totalBlocos, mode as any, didacticStyle as any, memoryHint);
       const tokensCap = mode === "masterclass" ? 1800 : mode === "rapida" ? 900 : 1300;
 
       const json = await runTaskChain(
@@ -1528,7 +1602,10 @@ SEMPRE responda em português brasileiro.` },
       );
       const parsed = parseAIJSON(json as string);
       if (!parsed) throw new Error("Erro ao gerar bloco da aula.");
-      cacheStore(supabase, blockKey, { tipo: "lesson_block", materia, tema: topic, estilo: mode, objetivo: String(blocoIndex) }, { block: parsed }).catch(() => {});
+      // Só cacheia bloco se NÃO tiver sido personalizado por memória do aluno
+      if (!memoryHint) {
+        cacheStore(supabase, blockKey, { tipo: "lesson_block", materia, tema: topic, estilo: mode, objetivo: String(blocoIndex) }, { block: parsed }).catch(() => {});
+      }
       return jsonResponse({ ok: true, block: parsed });
     }
 
