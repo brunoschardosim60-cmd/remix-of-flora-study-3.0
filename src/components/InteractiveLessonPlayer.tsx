@@ -58,10 +58,47 @@ function MD({ children }: { children: string }) {
   );
 }
 
-function ExerciseCard({ ex, label }: { ex: Exercise; label?: string }) {
+interface ReforcoData {
+  porque_errou?: string;
+  analogia?: string;
+  exemplo_novo?: string;
+  dica_flora?: string;
+}
+
+function ExerciseCard({ ex, label, tema, blocoTitulo }: { ex: Exercise; label?: string; tema?: string; blocoTitulo?: string }) {
   const opts = ex.alternativas || ex.opcoes || [];
   const [picked, setPicked] = useState<number | null>(null);
   const correct = picked !== null && picked === ex.correta;
+  const [reforco, setReforco] = useState<ReforcoData | null>(null);
+  const [reforcoLoading, setReforcoLoading] = useState(false);
+  const [reforcoTried, setReforcoTried] = useState(false);
+
+  const pickAnswer = async (i: number) => {
+    if (picked !== null) return;
+    setPicked(i);
+    if (i !== ex.correta && !reforcoTried) {
+      setReforcoTried(true);
+      setReforcoLoading(true);
+      try {
+        const { data } = await supabase.functions.invoke("flora-engine", {
+          body: {
+            action: "lesson_reinforce",
+            data: {
+              tema, blocoTitulo,
+              pergunta: ex.pergunta,
+              alternativaErrada: opts[i],
+              alternativaCorreta: opts[ex.correta],
+              explicacao: ex.explicacao,
+            },
+          },
+        });
+        if (data?.ok && data.reforco) setReforco(data.reforco as ReforcoData);
+      } catch {
+        // silencioso — explicação original ainda aparece
+      } finally { setReforcoLoading(false); }
+    }
+  };
+
   return (
     <div className="exercise-card">
       {label && <span className="exercise-label">{label}</span>}
@@ -73,7 +110,7 @@ function ExerciseCard({ ex, label }: { ex: Exercise; label?: string }) {
             i === ex.correta ? "correct" :
             i === picked ? "wrong" : "muted";
           return (
-            <button key={i} className={`exercise-opt ${cls}`} onClick={() => picked === null && setPicked(i)} disabled={picked !== null}>
+            <button key={i} className={`exercise-opt ${cls}`} onClick={() => pickAnswer(i)} disabled={picked !== null}>
               {o}
             </button>
           );
@@ -83,6 +120,44 @@ function ExerciseCard({ ex, label }: { ex: Exercise; label?: string }) {
         <div className={`exercise-feedback ${correct ? "ok" : "err"}`}>
           {correct ? <CheckCircle2 size={16} /> : <XCircle size={16} />}
           <div><MD>{ex.explicacao}</MD></div>
+        </div>
+      )}
+      {!correct && picked !== null && (reforcoLoading || reforco) && (
+        <div className="ilp-reforco">
+          <div className="ilp-reforco-head">
+            <Sparkles size={14} />
+            <span>Reforço da Flora</span>
+          </div>
+          {reforcoLoading && !reforco && (
+            <div className="ilp-reforco-loading">
+              <Loader2 size={14} className="ilp-spin" />
+              <span>Flora está pensando num jeito novo de explicar…</span>
+            </div>
+          )}
+          {reforco && (
+            <div className="ilp-reforco-body">
+              {reforco.porque_errou && (
+                <div className="ilp-reforco-row">
+                  <strong>Por que errou:</strong> <MD>{reforco.porque_errou}</MD>
+                </div>
+              )}
+              {reforco.analogia && (
+                <div className="ilp-reforco-row ilp-reforco-analogia">
+                  <Brain size={14} />
+                  <div><strong>Pensa assim:</strong> <MD>{reforco.analogia}</MD></div>
+                </div>
+              )}
+              {reforco.exemplo_novo && (
+                <div className="ilp-reforco-row ilp-reforco-exemplo">
+                  <Lightbulb size={14} />
+                  <div><strong>Outro exemplo:</strong> <MD>{reforco.exemplo_novo}</MD></div>
+                </div>
+              )}
+              {reforco.dica_flora && (
+                <div className="ilp-reforco-dica"><MD>{reforco.dica_flora}</MD></div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -277,7 +352,7 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
         {stage === "exercises" && lesson.exercicios && (
           <div className="ilp-card">
             <div className="ilp-stage-label">Exercícios progressivos</div>
-            {lesson.exercicios.map((ex, i) => <ExerciseCard key={i} ex={ex} label={`Exercício ${i + 1}`} />)}
+            {lesson.exercicios.map((ex, i) => <ExerciseCard key={i} ex={ex} label={`Exercício ${i + 1}`} tema={lesson.titulo} blocoTitulo={cur?.titulo} />)}
           </div>
         )}
 
@@ -289,7 +364,7 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
                 {resumo.map((r, i) => <li key={i}><MD>{r}</MD></li>)}
               </ul>
             )}
-            {lesson.exercicio_final && <ExerciseCard ex={lesson.exercicio_final} label="Questão final" />}
+            {lesson.exercicio_final && <ExerciseCard ex={lesson.exercicio_final} label="Questão final" tema={lesson.titulo} />}
             <button className="ilp-primary" onClick={() => { setStage("done"); onComplete?.(); }}>Concluir aula</button>
           </div>
         )}
