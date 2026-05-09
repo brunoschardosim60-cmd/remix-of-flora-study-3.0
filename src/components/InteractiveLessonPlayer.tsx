@@ -2,7 +2,7 @@ import React, { useState, lazy, Suspense } from "react";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
-import { Loader2, Send, Image as ImageIcon, ChevronLeft, ChevronRight, Lightbulb, AlertTriangle, MessageCircleQuestion, CheckCircle2, XCircle, Sparkles, Brain, HelpCircle } from "lucide-react";
+import { Loader2, Send, Image as ImageIcon, ChevronLeft, ChevronRight, Lightbulb, AlertTriangle, MessageCircleQuestion, CheckCircle2, XCircle, Sparkles, Brain, HelpCircle, ListChecks, ChevronDown } from "lucide-react";
 import { generateDidacticImage } from "@/lib/floraImages";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -65,6 +65,53 @@ interface ReforcoData {
   dica_flora?: string;
 }
 
+interface PassoGuiado { titulo: string; conteudo: string; }
+
+function GuidedStep({ passo, idx, tema, pergunta }: { passo: PassoGuiado; idx: number; tema?: string; pergunta: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const [explic, setExplic] = useState<string>("");
+  const [loading, setLoading] = useState(false);
+
+  const askExplain = async () => {
+    setExpanded(true);
+    if (explic || loading) return;
+    setLoading(true);
+    try {
+      const { data } = await supabase.functions.invoke("flora-engine", {
+        body: {
+          action: "lesson_explain_step",
+          data: { tema, pergunta, passoTitulo: passo.titulo, passoConteudo: passo.conteudo },
+        },
+      });
+      if (data?.ok && data.explicacao) setExplic(data.explicacao);
+      else setExplic("Não consegui detalhar esse passo agora.");
+    } catch { setExplic("Não consegui detalhar esse passo agora."); }
+    finally { setLoading(false); }
+  };
+
+  return (
+    <div className="ilp-passo">
+      <div className="ilp-passo-head">
+        <span className="ilp-passo-num">{idx + 1}</span>
+        <strong className="ilp-passo-titulo">{passo.titulo}</strong>
+      </div>
+      <div className="ilp-passo-conteudo"><MD>{passo.conteudo}</MD></div>
+      <button className="ilp-passo-ask" onClick={askExplain}>
+        <HelpCircle size={12} />
+        {expanded ? "Explicação detalhada" : "Me explica esse passo"}
+        <ChevronDown size={12} className={`ilp-passo-chev ${expanded ? "open" : ""}`} />
+      </button>
+      {expanded && (
+        <div className="ilp-passo-explic">
+          {loading && !explic ? (
+            <div className="ilp-reforco-loading"><Loader2 size={12} className="ilp-spin" /> <span>Flora pensando…</span></div>
+          ) : <MD>{explic}</MD>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ExerciseCard({ ex, label, tema, blocoTitulo }: { ex: Exercise; label?: string; tema?: string; blocoTitulo?: string }) {
   const opts = ex.alternativas || ex.opcoes || [];
   const [picked, setPicked] = useState<number | null>(null);
@@ -72,6 +119,29 @@ function ExerciseCard({ ex, label, tema, blocoTitulo }: { ex: Exercise; label?: 
   const [reforco, setReforco] = useState<ReforcoData | null>(null);
   const [reforcoLoading, setReforcoLoading] = useState(false);
   const [reforcoTried, setReforcoTried] = useState(false);
+  const [passos, setPassos] = useState<PassoGuiado[] | null>(null);
+  const [passosLoading, setPassosLoading] = useState(false);
+
+  const askGuided = async () => {
+    if (passos || passosLoading) return;
+    setPassosLoading(true);
+    try {
+      const { data } = await supabase.functions.invoke("flora-engine", {
+        body: {
+          action: "lesson_guided_solution",
+          data: {
+            tema,
+            pergunta: ex.pergunta,
+            alternativaCorreta: opts[ex.correta],
+            explicacao: ex.explicacao,
+          },
+        },
+      });
+      if (data?.ok && Array.isArray(data.passos)) setPassos(data.passos);
+    } catch {
+      // silencioso
+    } finally { setPassosLoading(false); }
+  };
 
   const pickAnswer = async (i: number) => {
     if (picked !== null) return;
@@ -156,6 +226,23 @@ function ExerciseCard({ ex, label, tema, blocoTitulo }: { ex: Exercise; label?: 
               {reforco.dica_flora && (
                 <div className="ilp-reforco-dica"><MD>{reforco.dica_flora}</MD></div>
               )}
+            </div>
+          )}
+        </div>
+      )}
+      {picked !== null && (
+        <div className="ilp-guided-wrap">
+          {!passos && (
+            <button className="ilp-guided-btn" onClick={askGuided} disabled={passosLoading}>
+              {passosLoading ? <><Loader2 size={14} className="ilp-spin" /> Montando passos…</> : <><ListChecks size={14} /> Resolução guiada passo a passo</>}
+            </button>
+          )}
+          {passos && (
+            <div className="ilp-guided">
+              <div className="ilp-guided-head"><ListChecks size={14} /> <span>Resolução em {passos.length} passos</span></div>
+              {passos.map((p, i) => (
+                <GuidedStep key={i} passo={p} idx={i} tema={tema} pergunta={ex.pergunta} />
+              ))}
             </div>
           )}
         </div>
