@@ -29,7 +29,6 @@ import { toLocalDateStr } from "@/lib/dateUtils";
 import { prefetchRoute, startIdlePrefetch, prefetchForContext } from "@/lib/prefetch";
 import { countDueFlashcards } from "@/lib/flashcardScheduler";
 import { Sparkles } from "lucide-react";
-import { CalendarIntegration } from "@/components/CalendarIntegration";
 
 // Lazy: heavy components that DON'T appear on first render
 const FloraChatPanel = lazy(() => import("@/components/FloraChatPanel").then(m => ({ default: m.FloraChatPanel })));
@@ -522,8 +521,6 @@ export default function Index() {
             goals={gamification.dailyGoals}
           />
         </Suspense>
-
-        <CalendarIntegration />
 
         <Suspense fallback={<SectionSkeleton className="min-h-[80px]" />}>
           <StatsCards {...stats} />
