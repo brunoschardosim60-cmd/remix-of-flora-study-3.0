@@ -1,8 +1,12 @@
-import React, { useState, lazy, Suspense } from "react";
+import React, { useMemo, useState, lazy, Suspense, useEffect } from "react";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
-import { Loader2, Send, Image as ImageIcon, ChevronLeft, ChevronRight, Lightbulb, AlertTriangle, MessageCircleQuestion, CheckCircle2, XCircle, Sparkles, Brain, HelpCircle, ListChecks, ChevronDown } from "lucide-react";
+import {
+  Loader2, Send, Image as ImageIcon, ChevronLeft, ChevronRight,
+  Lightbulb, AlertTriangle, MessageCircleQuestion, CheckCircle2, XCircle,
+  Sparkles, Brain, HelpCircle, ListChecks, ChevronDown, Leaf, Zap, Target,
+} from "lucide-react";
 import { generateDidacticImage } from "@/lib/floraImages";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -23,32 +27,12 @@ interface LessonBlock {
   mini_interacao?: string;
   duvida_simulada?: { pergunta: string; resposta: string };
 }
-
-interface Exercise {
-  pergunta: string;
-  alternativas?: string[];
-  opcoes?: string[];
-  correta: number;
-  explicacao: string;
-}
-
+interface Exercise { pergunta: string; alternativas?: string[]; opcoes?: string[]; correta: number; explicacao: string; }
 interface Lesson {
-  titulo: string;
-  introducao: string;
-  blocos: LessonBlock[];
-  resumo: string | string[];
-  exercicios?: Exercise[];
-  exercicio_final: Exercise;
+  titulo: string; introducao: string; blocos: LessonBlock[];
+  resumo: string | string[]; exercicios?: Exercise[]; exercicio_final: Exercise;
 }
-
-interface Props {
-  lesson: Lesson;
-  onComplete?: () => void;
-  enableVoice?: boolean;
-  personality?: "rigorosa" | "amiga" | "engraçada";
-  /** Índices dos blocos que ainda estão sendo gerados (streaming). */
-  loadingBlockIndices?: number[];
-}
+interface Props { lesson: Lesson; onComplete?: () => void; enableVoice?: boolean; personality?: "rigorosa" | "amiga" | "engraçada"; loadingBlockIndices?: number[]; }
 
 function MD({ children }: { children: string }) {
   return (
@@ -58,37 +42,94 @@ function MD({ children }: { children: string }) {
   );
 }
 
-interface ReforcoData {
-  porque_errou?: string;
-  analogia?: string;
-  exemplo_novo?: string;
-  dica_flora?: string;
+/* ─── Scene model ─────────────────────────────────────── */
+type SceneKind = "intro" | "text" | "exemplo" | "analogia" | "macete" | "pegadinha" | "mini" | "fixar" | "duvida";
+interface Scene { kind: SceneKind; text: string; flora?: string; question?: string; }
+
+/** First sentence (for intro), rest as separate paragraphs. */
+function splitParagraphs(s: string): string[] {
+  const cleaned = (s || "").trim();
+  if (!cleaned) return [];
+  // Split on blank lines OR sentences if single paragraph is too long
+  const paras = cleaned.split(/\n\n+/).map((p) => p.trim()).filter(Boolean);
+  const out: string[] = [];
+  for (const p of paras) {
+    if (p.length < 280) { out.push(p); continue; }
+    // break long paragraph by sentence boundary
+    const sentences = p.split(/(?<=[.!?])\s+(?=[A-ZÀ-Ú])/);
+    let buf = "";
+    for (const s of sentences) {
+      if ((buf + " " + s).trim().length > 240 && buf) { out.push(buf.trim()); buf = s; }
+      else buf = (buf ? buf + " " : "") + s;
+    }
+    if (buf.trim()) out.push(buf.trim());
+  }
+  return out;
 }
 
+function buildScenes(b: LessonBlock, blockIdx: number): Scene[] {
+  const paragraphs = splitParagraphs(b.conteudo);
+  const scenes: Scene[] = [];
+
+  // Intro: Flora speaks + first paragraph
+  scenes.push({
+    kind: "intro",
+    flora: b.flora_comment || undefined,
+    text: paragraphs[0] || b.conteudo || "",
+  });
+
+  // Rest of content as individual scenes
+  for (let i = 1; i < paragraphs.length; i++) {
+    scenes.push({ kind: "text", text: paragraphs[i] });
+  }
+
+  // Exemplo (only on alternate blocks to avoid repetition)
+  if (b.exemplo_resolvido && blockIdx % 2 === 0) {
+    scenes.push({ kind: "exemplo", text: b.exemplo_resolvido });
+  }
+
+  // ONE rotating extra (analogia / macete / pegadinha) — never all at once
+  const extras: Scene[] = [];
+  if (b.analogia) extras.push({ kind: "analogia", text: b.analogia });
+  if (b.macete) extras.push({ kind: "macete", text: b.macete });
+  if (b.pegadinha) extras.push({ kind: "pegadinha", text: b.pegadinha });
+  if (extras.length) scenes.push(extras[blockIdx % extras.length]);
+
+  // Closer: rotate between mini-interaction, checkpoint or simulated doubt
+  const closers: Scene[] = [];
+  if (b.checkpoint) closers.push({ kind: "fixar", text: b.checkpoint });
+  if (b.mini_interacao) closers.push({ kind: "mini", text: b.mini_interacao });
+  if (b.duvida_simulada?.pergunta) closers.push({
+    kind: "duvida",
+    text: b.duvida_simulada.resposta,
+    question: b.duvida_simulada.pergunta,
+  });
+  if (closers.length) scenes.push(closers[blockIdx % closers.length]);
+
+  return scenes;
+}
+
+/* ─── Reforço / passos guiados (igual antes) ──────────── */
+interface ReforcoData { porque_errou?: string; analogia?: string; exemplo_novo?: string; dica_flora?: string; }
 interface PassoGuiado { titulo: string; conteudo: string; }
 
 function GuidedStep({ passo, idx, tema, pergunta }: { passo: PassoGuiado; idx: number; tema?: string; pergunta: string }) {
   const [expanded, setExpanded] = useState(false);
   const [explic, setExplic] = useState<string>("");
   const [loading, setLoading] = useState(false);
-
   const askExplain = async () => {
     setExpanded(true);
     if (explic || loading) return;
     setLoading(true);
     try {
       const { data } = await supabase.functions.invoke("flora-engine", {
-        body: {
-          action: "lesson_explain_step",
-          data: { tema, pergunta, passoTitulo: passo.titulo, passoConteudo: passo.conteudo },
-        },
+        body: { action: "lesson_explain_step", data: { tema, pergunta, passoTitulo: passo.titulo, passoConteudo: passo.conteudo } },
       });
       if (data?.ok && data.explicacao) setExplic(data.explicacao);
       else setExplic("Não consegui detalhar esse passo agora.");
     } catch { setExplic("Não consegui detalhar esse passo agora."); }
     finally { setLoading(false); }
   };
-
   return (
     <div className="ilp-passo">
       <div className="ilp-passo-head">
@@ -103,9 +144,7 @@ function GuidedStep({ passo, idx, tema, pergunta }: { passo: PassoGuiado; idx: n
       </button>
       {expanded && (
         <div className="ilp-passo-explic">
-          {loading && !explic ? (
-            <div className="ilp-reforco-loading"><Loader2 size={12} className="ilp-spin" /> <span>Flora pensando…</span></div>
-          ) : <MD>{explic}</MD>}
+          {loading && !explic ? <div className="ilp-reforco-loading"><Loader2 size={12} className="ilp-spin" /> <span>Flora pensando…</span></div> : <MD>{explic}</MD>}
         </div>
       )}
     </div>
@@ -127,45 +166,23 @@ function ExerciseCard({ ex, label, tema, blocoTitulo }: { ex: Exercise; label?: 
     setPassosLoading(true);
     try {
       const { data } = await supabase.functions.invoke("flora-engine", {
-        body: {
-          action: "lesson_guided_solution",
-          data: {
-            tema,
-            pergunta: ex.pergunta,
-            alternativaCorreta: opts[ex.correta],
-            explicacao: ex.explicacao,
-          },
-        },
+        body: { action: "lesson_guided_solution", data: { tema, pergunta: ex.pergunta, alternativaCorreta: opts[ex.correta], explicacao: ex.explicacao } },
       });
       if (data?.ok && Array.isArray(data.passos)) setPassos(data.passos);
-    } catch {
-      // silencioso
-    } finally { setPassosLoading(false); }
+    } catch {} finally { setPassosLoading(false); }
   };
 
   const pickAnswer = async (i: number) => {
     if (picked !== null) return;
     setPicked(i);
     if (i !== ex.correta && !reforcoTried) {
-      setReforcoTried(true);
-      setReforcoLoading(true);
+      setReforcoTried(true); setReforcoLoading(true);
       try {
         const { data } = await supabase.functions.invoke("flora-engine", {
-          body: {
-            action: "lesson_reinforce",
-            data: {
-              tema, blocoTitulo,
-              pergunta: ex.pergunta,
-              alternativaErrada: opts[i],
-              alternativaCorreta: opts[ex.correta],
-              explicacao: ex.explicacao,
-            },
-          },
+          body: { action: "lesson_reinforce", data: { tema, blocoTitulo, pergunta: ex.pergunta, alternativaErrada: opts[i], alternativaCorreta: opts[ex.correta], explicacao: ex.explicacao } },
         });
         if (data?.ok && data.reforco) setReforco(data.reforco as ReforcoData);
-      } catch {
-        // silencioso — explicação original ainda aparece
-      } finally { setReforcoLoading(false); }
+      } catch {} finally { setReforcoLoading(false); }
     }
   };
 
@@ -175,13 +192,11 @@ function ExerciseCard({ ex, label, tema, blocoTitulo }: { ex: Exercise; label?: 
       <div className="exercise-q"><MD>{ex.pergunta}</MD></div>
       <div className="exercise-opts">
         {opts.map((o, i) => {
-          const cls =
-            picked === null ? "" :
-            i === ex.correta ? "correct" :
-            i === picked ? "wrong" : "muted";
+          const cls = picked === null ? "" : i === ex.correta ? "correct" : i === picked ? "wrong" : "muted";
           return (
             <button key={i} className={`exercise-opt ${cls}`} onClick={() => pickAnswer(i)} disabled={picked !== null}>
-              {o}
+              <span className="exercise-opt-letter">{String.fromCharCode(65 + i)}</span>
+              <span>{o}</span>
             </button>
           );
         })}
@@ -194,55 +209,25 @@ function ExerciseCard({ ex, label, tema, blocoTitulo }: { ex: Exercise; label?: 
       )}
       {!correct && picked !== null && (reforcoLoading || reforco) && (
         <div className="ilp-reforco">
-          <div className="ilp-reforco-head">
-            <Sparkles size={14} />
-            <span>Reforço da Flora</span>
-          </div>
-          {reforcoLoading && !reforco && (
-            <div className="ilp-reforco-loading">
-              <Loader2 size={14} className="ilp-spin" />
-              <span>Flora está pensando num jeito novo de explicar…</span>
-            </div>
-          )}
+          <div className="ilp-reforco-head"><Sparkles size={14} /><span>Reforço da Flora</span></div>
+          {reforcoLoading && !reforco && <div className="ilp-reforco-loading"><Loader2 size={14} className="ilp-spin" /><span>Pensando num jeito novo de explicar…</span></div>}
           {reforco && (
             <div className="ilp-reforco-body">
-              {reforco.porque_errou && (
-                <div className="ilp-reforco-row">
-                  <strong>Por que errou:</strong> <MD>{reforco.porque_errou}</MD>
-                </div>
-              )}
-              {reforco.analogia && (
-                <div className="ilp-reforco-row ilp-reforco-analogia">
-                  <Brain size={14} />
-                  <div><strong>Pensa assim:</strong> <MD>{reforco.analogia}</MD></div>
-                </div>
-              )}
-              {reforco.exemplo_novo && (
-                <div className="ilp-reforco-row ilp-reforco-exemplo">
-                  <Lightbulb size={14} />
-                  <div><strong>Outro exemplo:</strong> <MD>{reforco.exemplo_novo}</MD></div>
-                </div>
-              )}
-              {reforco.dica_flora && (
-                <div className="ilp-reforco-dica"><MD>{reforco.dica_flora}</MD></div>
-              )}
+              {reforco.porque_errou && <div className="ilp-reforco-row"><strong>Por que errou:</strong> <MD>{reforco.porque_errou}</MD></div>}
+              {reforco.analogia && <div className="ilp-reforco-row ilp-reforco-analogia"><Brain size={14} /><div><strong>Pensa assim:</strong> <MD>{reforco.analogia}</MD></div></div>}
+              {reforco.exemplo_novo && <div className="ilp-reforco-row ilp-reforco-exemplo"><Lightbulb size={14} /><div><strong>Outro exemplo:</strong> <MD>{reforco.exemplo_novo}</MD></div></div>}
+              {reforco.dica_flora && <div className="ilp-reforco-dica"><MD>{reforco.dica_flora}</MD></div>}
             </div>
           )}
         </div>
       )}
       {picked !== null && (
         <div className="ilp-guided-wrap">
-          {!passos && (
-            <button className="ilp-guided-btn" onClick={askGuided} disabled={passosLoading}>
-              {passosLoading ? <><Loader2 size={14} className="ilp-spin" /> Montando passos…</> : <><ListChecks size={14} /> Resolução guiada passo a passo</>}
-            </button>
-          )}
+          {!passos && <button className="ilp-guided-btn" onClick={askGuided} disabled={passosLoading}>{passosLoading ? <><Loader2 size={14} className="ilp-spin" /> Montando passos…</> : <><ListChecks size={14} /> Resolução guiada passo a passo</>}</button>}
           {passos && (
             <div className="ilp-guided">
               <div className="ilp-guided-head"><ListChecks size={14} /> <span>Resolução em {passos.length} passos</span></div>
-              {passos.map((p, i) => (
-                <GuidedStep key={i} passo={p} idx={i} tema={tema} pergunta={ex.pergunta} />
-              ))}
+              {passos.map((p, i) => <GuidedStep key={i} passo={p} idx={i} tema={tema} pergunta={ex.pergunta} />)}
             </div>
           )}
         </div>
@@ -251,27 +236,34 @@ function ExerciseCard({ ex, label, tema, blocoTitulo }: { ex: Exercise; label?: 
   );
 }
 
+/* ─── Skeleton ────────────────────────────────────────── */
 function BlockSkeleton() {
   return (
     <div className="ilp-skeleton">
-      <div className="ilp-skel-flora">
-        <Sparkles size={16} className="ilp-skel-pulse" />
-        <span>Flora está escrevendo este bloco…</span>
-      </div>
+      <div className="ilp-skel-flora"><Sparkles size={14} className="ilp-skel-pulse" /><span>Flora escrevendo…</span></div>
       <div className="ilp-skel-line w-90" />
       <div className="ilp-skel-line w-80" />
-      <div className="ilp-skel-line w-95" />
-      <div className="ilp-skel-block" />
-      <div className="ilp-skel-line w-70" />
-      <div className="ilp-skel-line w-85" />
+      <div className="ilp-skel-line w-60" />
     </div>
   );
 }
 
+/* ─── Flora reactive line (depending on progress) ─────── */
+function floraLine(progress: number, blockIdx: number, totalBlocks: number): string {
+  if (progress < 0.15) return "Vamos com calma. Uma ideia por vez.";
+  if (progress < 0.4) return "Tá pegando o ritmo. Continua.";
+  if (progress < 0.6) return "Metade do caminho. Respira e segue.";
+  if (blockIdx === totalBlocks - 1) return "Última parte. Foco aqui.";
+  if (progress < 0.85) return "Quase lá. Você tá indo bem.";
+  return "Reta final. Atenção total.";
+}
+
+/* ─── Main player ─────────────────────────────────────── */
 export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, loadingBlockIndices }) => {
   const { user } = useAuth();
   const [stage, setStage] = useState<"intro" | "block" | "exercises" | "final" | "done">("intro");
   const [idx, setIdx] = useState(0);
+  const [sceneIdx, setSceneIdx] = useState(0);
 
   const [duvidaOpen, setDuvidaOpen] = useState(false);
   const [duvidaText, setDuvidaText] = useState("");
@@ -286,6 +278,12 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
   const isLast = idx === blocos.length - 1;
   const isCurLoading = !!loadingBlockIndices?.includes(idx);
 
+  const scenes = useMemo(() => (cur ? buildScenes(cur, idx) : []), [cur, idx]);
+  const curScene = scenes[sceneIdx];
+
+  // Reset scene when block changes
+  useEffect(() => { setSceneIdx(0); }, [idx]);
+
   const askDuvida = async () => {
     if (!duvidaText.trim() || duvidaLoading) return;
     setDuvidaLoading(true); setDuvidaResp("");
@@ -295,9 +293,8 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
       });
       if (error) throw error;
       setDuvidaResp(data?.resposta || "Não consegui responder agora.");
-    } catch (e: any) {
-      toast.error("Erro ao pedir ajuda à Flora.");
-    } finally { setDuvidaLoading(false); }
+    } catch { toast.error("Erro ao pedir ajuda à Flora."); }
+    finally { setDuvidaLoading(false); }
   };
 
   const generateImg = async () => {
@@ -319,8 +316,10 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
     setDuvidaOpen(false); setDuvidaResp(""); setDuvidaText("");
     if (stage === "intro") { setStage("block"); return; }
     if (stage === "block") {
-      if (!isLast) setIdx((i) => i + 1);
-      else if (lesson.exercicios && lesson.exercicios.length) setStage("exercises");
+      // advance scene first
+      if (sceneIdx < scenes.length - 1) { setSceneIdx((s) => s + 1); return; }
+      if (!isLast) { setIdx((i) => i + 1); return; }
+      if (lesson.exercicios && lesson.exercicios.length) setStage("exercises");
       else setStage("final");
       return;
     }
@@ -329,148 +328,232 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
   };
   const prev = () => {
     setDuvidaOpen(false); setDuvidaResp(""); setDuvidaText("");
-    if (stage === "block" && idx > 0) setIdx((i) => i - 1);
-    else if (stage === "exercises") { setStage("block"); setIdx(blocos.length - 1); }
-    else if (stage === "final") { setStage(lesson.exercicios?.length ? "exercises" : "block"); }
-    else if (stage === "block" && idx === 0) setStage("intro");
+    if (stage === "block") {
+      if (sceneIdx > 0) { setSceneIdx((s) => s - 1); return; }
+      if (idx > 0) { setIdx((i) => i - 1); return; }
+      setStage("intro"); return;
+    }
+    if (stage === "exercises") { setStage("block"); setIdx(blocos.length - 1); setSceneIdx(0); return; }
+    if (stage === "final") { setStage(lesson.exercicios?.length ? "exercises" : "block"); return; }
   };
 
-  const totalSteps = 1 + blocos.length + (lesson.exercicios?.length ? 1 : 0) + 1;
-  const stepIdx =
-    stage === "intro" ? 1 :
-    stage === "block" ? 1 + idx + 1 :
-    stage === "exercises" ? 1 + blocos.length + 1 :
-    totalSteps;
+  // Total micro-steps (for progress bar)
+  const totalScenes = useMemo(() => {
+    let t = 1; // intro
+    for (let i = 0; i < blocos.length; i++) t += buildScenes(blocos[i], i).length;
+    if (lesson.exercicios?.length) t += 1;
+    t += 1; // final
+    return t;
+  }, [blocos, lesson.exercicios]);
 
+  const currentStep = useMemo(() => {
+    let s = 0;
+    if (stage === "intro") return 1;
+    s += 1; // intro counted
+    for (let i = 0; i < idx; i++) s += buildScenes(blocos[i], i).length;
+    if (stage === "block") return s + sceneIdx + 1;
+    // past all blocks
+    for (let i = idx; i < blocos.length; i++) s += buildScenes(blocos[i], i).length;
+    if (stage === "exercises") return s + 1;
+    if (lesson.exercicios?.length) s += 1;
+    if (stage === "final") return s + 1;
+    return totalScenes;
+  }, [stage, idx, sceneIdx, blocos, lesson.exercicios, totalScenes]);
+
+  const progress = currentStep / totalScenes;
   const resumo = Array.isArray(lesson.resumo) ? lesson.resumo : (typeof lesson.resumo === "string" ? [lesson.resumo] : []);
 
   return (
     <div className="ilp-root">
+      {/* ── Header: minimal, breathable ── */}
       <div className="ilp-header">
-        <h1 className="ilp-title">{lesson.titulo}</h1>
-        <div className="ilp-progress">
-          <span>Etapa {stepIdx} de {totalSteps}</span>
-          <div className="ilp-bar"><div className="ilp-fill" style={{ width: `${(stepIdx / totalSteps) * 100}%` }} /></div>
+        <div className="ilp-header-row">
+          <div className="ilp-header-left">
+            <div className="ilp-leaf"><Leaf size={14} /></div>
+            <h1 className="ilp-title">{lesson.titulo}</h1>
+          </div>
+          <span className="ilp-step-tag">{currentStep} / {totalScenes}</span>
         </div>
+        <div className="ilp-bar"><div className="ilp-fill" style={{ width: `${progress * 100}%` }} /></div>
       </div>
 
-      <div className="ilp-body">
-        {stage === "intro" && (
-          <div className="ilp-card">
-            <div className="ilp-stage-label">Introdução</div>
-            <div className="ilp-md"><MD>{lesson.introducao}</MD></div>
-          </div>
-        )}
+      <div className="ilp-layout">
+        {/* ── Stage canvas ── */}
+        <div className="ilp-stage">
+          {stage === "intro" && (
+            <div className="ilp-scene ilp-scene-intro" key="intro">
+              <div className="ilp-flora-mark"><Leaf size={18} /> Flora</div>
+              <div className="ilp-md ilp-md-lg"><MD>{lesson.introducao}</MD></div>
+            </div>
+          )}
 
-        {stage === "block" && cur && (
-          <div className="ilp-card">
-            <div className="ilp-stage-label">Bloco {idx + 1} / {blocos.length}</div>
-            <h2 className="ilp-block-title">{cur.titulo}</h2>
-
-            {isCurLoading ? <BlockSkeleton /> : <>
-            {cur.flora_comment && (
-              <div className="ilp-flora-bubble">
-                <Sparkles size={16} />
-                <div><MD>{cur.flora_comment}</MD></div>
-              </div>
-            )}
-
-            {cur.analogia && (
-              <div className="ilp-callout ilp-analogia">
-                <Brain size={16} />
-                <div><strong>Pensa assim:</strong> <MD>{cur.analogia}</MD></div>
-              </div>
-            )}
-
-            <div className="ilp-md"><MD>{cur.conteudo}</MD></div>
-
-            {cur.exemplo_resolvido && (
-              <div className="ilp-exemplo">
-                <div className="ilp-exemplo-head"><Lightbulb size={14} /> Exemplo resolvido</div>
-                <div className="ilp-md"><MD>{cur.exemplo_resolvido}</MD></div>
-              </div>
-            )}
-
-            {blockImage[idx] && (
-              <div className="ilp-img-wrap"><img src={blockImage[idx]} alt={cur.titulo} /></div>
-            )}
-            {!blockImage[idx] && (
-              <button className="ilp-secondary" onClick={generateImg} disabled={imgLoading}>
-                {imgLoading ? <><Loader2 size={14} className="ilp-spin" /> Gerando ilustração...</> : <><ImageIcon size={14} /> Gerar ilustração</>}
-              </button>
-            )}
-
-            {cur.macete && (
-              <div className="ilp-callout ilp-macete">
-                <Lightbulb size={16} /> <div><strong>Macete:</strong> <MD>{cur.macete}</MD></div>
-              </div>
-            )}
-            {cur.pegadinha && (
-              <div className="ilp-callout ilp-pegadinha">
-                <AlertTriangle size={16} /> <div><strong>Pegadinha:</strong> <MD>{cur.pegadinha}</MD></div>
-              </div>
-            )}
-            {cur.duvida_simulada?.pergunta && (
-              <div className="ilp-callout ilp-duvida">
-                <MessageCircleQuestion size={16} />
-                <div>
-                  <strong>{cur.duvida_simulada.pergunta}</strong>
-                  <div className="ilp-md"><MD>{cur.duvida_simulada.resposta}</MD></div>
+          {stage === "block" && cur && (
+            <div className="ilp-scene" key={`b${idx}-s${sceneIdx}`}>
+              {/* Block title shows only on first scene */}
+              {sceneIdx === 0 && (
+                <div className="ilp-scene-head">
+                  <span className="ilp-block-tag">Bloco {idx + 1} · {blocos.length}</span>
+                  <h2 className="ilp-block-title">{cur.titulo}</h2>
                 </div>
+              )}
+
+              {isCurLoading ? <BlockSkeleton /> : curScene && (
+                <>
+                  {curScene.kind === "intro" && (
+                    <>
+                      {curScene.flora && (
+                        <div className="ilp-flora-bubble">
+                          <div className="ilp-flora-avatar"><Leaf size={14} /></div>
+                          <div><MD>{curScene.flora}</MD></div>
+                        </div>
+                      )}
+                      <div className="ilp-md ilp-md-lg"><MD>{curScene.text}</MD></div>
+                      {/* image attached to first scene if exists */}
+                      {blockImage[idx] && <div className="ilp-img-wrap"><img src={blockImage[idx]} alt={cur.titulo} /></div>}
+                      {!blockImage[idx] && (
+                        <button className="ilp-img-btn" onClick={generateImg} disabled={imgLoading}>
+                          {imgLoading ? <><Loader2 size={12} className="ilp-spin" /> gerando ilustração…</> : <><ImageIcon size={12} /> ver ilustração</>}
+                        </button>
+                      )}
+                    </>
+                  )}
+
+                  {curScene.kind === "text" && (
+                    <div className="ilp-md ilp-md-lg"><MD>{curScene.text}</MD></div>
+                  )}
+
+                  {curScene.kind === "exemplo" && (
+                    <div className="ilp-pill ilp-pill-exemplo">
+                      <div className="ilp-pill-head"><Target size={14} /> Exemplo</div>
+                      <div className="ilp-md"><MD>{curScene.text}</MD></div>
+                    </div>
+                  )}
+
+                  {curScene.kind === "analogia" && (
+                    <div className="ilp-pill ilp-pill-analogia">
+                      <div className="ilp-pill-head"><Brain size={14} /> Pensa assim</div>
+                      <div className="ilp-md"><MD>{curScene.text}</MD></div>
+                    </div>
+                  )}
+
+                  {curScene.kind === "macete" && (
+                    <div className="ilp-pill ilp-pill-macete">
+                      <div className="ilp-pill-head"><Zap size={14} /> Macete</div>
+                      <div className="ilp-md"><MD>{curScene.text}</MD></div>
+                    </div>
+                  )}
+
+                  {curScene.kind === "pegadinha" && (
+                    <div className="ilp-pill ilp-pill-pegadinha">
+                      <div className="ilp-pill-head"><AlertTriangle size={14} /> Cai muito</div>
+                      <div className="ilp-md"><MD>{curScene.text}</MD></div>
+                    </div>
+                  )}
+
+                  {curScene.kind === "mini" && (
+                    <div className="ilp-pill ilp-pill-mini">
+                      <div className="ilp-pill-head"><HelpCircle size={14} /> Pra pensar</div>
+                      <div className="ilp-md"><MD>{curScene.text}</MD></div>
+                    </div>
+                  )}
+
+                  {curScene.kind === "fixar" && (
+                    <div className="ilp-pill ilp-pill-fixar">
+                      <div className="ilp-pill-head"><CheckCircle2 size={14} /> Pra fixar</div>
+                      <div className="ilp-md"><MD>{curScene.text}</MD></div>
+                    </div>
+                  )}
+
+                  {curScene.kind === "duvida" && (
+                    <div className="ilp-pill ilp-pill-duvida">
+                      <div className="ilp-pill-head"><MessageCircleQuestion size={14} /> {curScene.question}</div>
+                      <div className="ilp-md"><MD>{curScene.text}</MD></div>
+                    </div>
+                  )}
+
+                  {/* Scene dots */}
+                  {scenes.length > 1 && (
+                    <div className="ilp-dots">
+                      {scenes.map((_, i) => (
+                        <button
+                          key={i}
+                          className={`ilp-dot ${i === sceneIdx ? "active" : ""} ${i < sceneIdx ? "done" : ""}`}
+                          onClick={() => setSceneIdx(i)}
+                          aria-label={`Cena ${i + 1}`}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
+          {stage === "exercises" && lesson.exercicios && (
+            <div className="ilp-scene">
+              <div className="ilp-scene-head">
+                <span className="ilp-block-tag">Pratique</span>
+                <h2 className="ilp-block-title">Hora de testar</h2>
               </div>
-            )}
+              {lesson.exercicios.map((ex, i) => <ExerciseCard key={i} ex={ex} label={`Exercício ${i + 1}`} tema={lesson.titulo} blocoTitulo={cur?.titulo} />)}
+            </div>
+          )}
 
-            {cur.mini_interacao && (
-              <div className="ilp-mini-interacao">
-                <HelpCircle size={14} />
-                <span>{cur.mini_interacao}</span>
+          {stage === "final" && (
+            <div className="ilp-scene">
+              <div className="ilp-scene-head">
+                <span className="ilp-block-tag">Revisão</span>
+                <h2 className="ilp-block-title">O essencial</h2>
               </div>
-            )}
+              {resumo.length > 0 && (
+                <ul className="ilp-resumo">
+                  {resumo.map((r, i) => <li key={i}><MD>{r}</MD></li>)}
+                </ul>
+              )}
+              {lesson.exercicio_final && <ExerciseCard ex={lesson.exercicio_final} label="Questão final" tema={lesson.titulo} />}
+            </div>
+          )}
 
-            {cur.checkpoint && (
-              <div className="ilp-checkpoint">
-                <strong>Pra fixar:</strong> {cur.checkpoint}
+          {stage === "done" && (
+            <div className="ilp-scene ilp-done">
+              <div className="ilp-done-icon"><Sparkles size={32} /></div>
+              <h2>Aula concluída</h2>
+              <p>Você terminou <strong>{lesson.titulo}</strong>. Bom trabalho.</p>
+            </div>
+          )}
+        </div>
+
+        {/* ── Right rail: Flora presence (desktop only) ── */}
+        <aside className="ilp-rail">
+          <div className="ilp-rail-card">
+            <div className="ilp-rail-flora">
+              <div className="ilp-flora-avatar lg"><Leaf size={18} /></div>
+              <div>
+                <div className="ilp-rail-name">Flora</div>
+                <div className="ilp-rail-line">{floraLine(progress, idx, blocos.length)}</div>
               </div>
-            )}
-            </>}
+            </div>
           </div>
-        )}
-
-        {stage === "exercises" && lesson.exercicios && (
-          <div className="ilp-card">
-            <div className="ilp-stage-label">Exercícios progressivos</div>
-            {lesson.exercicios.map((ex, i) => <ExerciseCard key={i} ex={ex} label={`Exercício ${i + 1}`} tema={lesson.titulo} blocoTitulo={cur?.titulo} />)}
+          <div className="ilp-rail-card">
+            <div className="ilp-rail-label">Progresso</div>
+            <div className="ilp-rail-pct">{Math.round(progress * 100)}%</div>
+            <div className="ilp-bar small"><div className="ilp-fill" style={{ width: `${progress * 100}%` }} /></div>
+            <div className="ilp-rail-sub">{currentStep} de {totalScenes} etapas</div>
           </div>
-        )}
-
-        {stage === "final" && (
-          <div className="ilp-card">
-            <div className="ilp-stage-label">Revisão final</div>
-            {resumo.length > 0 && (
-              <ul className="ilp-resumo">
-                {resumo.map((r, i) => <li key={i}><MD>{r}</MD></li>)}
-              </ul>
-            )}
-            {lesson.exercicio_final && <ExerciseCard ex={lesson.exercicio_final} label="Questão final" tema={lesson.titulo} />}
-            <button className="ilp-primary" onClick={() => { setStage("done"); onComplete?.(); }}>Concluir aula</button>
-          </div>
-        )}
-
-        {stage === "done" && (
-          <div className="ilp-card ilp-done">
-            <h2>Aula concluída 🎯</h2>
-            <p>Boa! Você terminou a aula sobre <strong>{lesson.titulo}</strong>.</p>
-          </div>
-        )}
+        </aside>
       </div>
 
+      {/* ── Minimal footer ── */}
       <div className="ilp-controls">
-        <button className="ilp-nav" onClick={prev} disabled={stage === "intro"}><ChevronLeft size={18} /> Voltar</button>
-        <button className="ilp-nav ask" onClick={() => setDuvidaOpen((v) => !v)}>
-          <MessageCircleQuestion size={18} /> Tirar dúvida
+        <button className="ilp-nav ghost" onClick={prev} disabled={stage === "intro"}>
+          <ChevronLeft size={16} /> <span>Voltar</span>
+        </button>
+        <button className="ilp-nav ghost" onClick={() => setDuvidaOpen((v) => !v)}>
+          <MessageCircleQuestion size={16} /> <span>Tirar dúvida</span>
         </button>
         <button className="ilp-nav primary" onClick={next} disabled={stage === "done"}>
-          {stage === "intro" ? "Começar" : stage === "final" ? "Concluir" : "Próximo"} <ChevronRight size={18} />
+          <span>{stage === "intro" ? "Começar" : stage === "final" ? "Concluir" : "Continuar"}</span>
+          <ChevronRight size={16} />
         </button>
       </div>
 
@@ -487,12 +570,7 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
             </div>
           ) : (
             <div className="ilp-duvida-form">
-              <textarea
-                rows={3}
-                placeholder="Não entendi essa parte... explica de outra forma?"
-                value={duvidaText}
-                onChange={(e) => setDuvidaText(e.target.value)}
-              />
+              <textarea rows={3} placeholder="Não entendi essa parte... explica de outra forma?" value={duvidaText} onChange={(e) => setDuvidaText(e.target.value)} />
               <button className="ilp-primary" onClick={askDuvida} disabled={duvidaLoading || !duvidaText.trim()}>
                 {duvidaLoading ? <><Loader2 size={14} className="ilp-spin" /> Pensando...</> : <><Send size={14} /> Perguntar</>}
               </button>
