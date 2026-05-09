@@ -1070,6 +1070,46 @@ Responda SOMENTE JSON: {"resposta":"markdown"}` },
       return jsonResponse({ resposta: parsed?.resposta || (typeof raw === "string" ? raw : "Não consegui responder agora.") });
     }
 
+    // ─── LESSON_REINFORCE: aluno errou exercício → mini-bloco de reforço ───
+    if (action === "lesson_reinforce") {
+      const tema = (data as any)?.tema || "";
+      const blocoTitulo = (data as any)?.blocoTitulo || "";
+      const pergunta = ((data as any)?.pergunta || "").toString().slice(0, 600);
+      const alternativaErrada = ((data as any)?.alternativaErrada || "").toString().slice(0, 200);
+      const alternativaCorreta = ((data as any)?.alternativaCorreta || "").toString().slice(0, 200);
+      const explicacaoOriginal = ((data as any)?.explicacao || "").toString().slice(0, 600);
+      if (!pergunta) return jsonResponse({ ok: false, error: "missing pergunta" });
+
+      const opts: CallOptions = {
+        messages: [
+          { role: "system", content: `Você é Flora, professora particular calorosa e direta. O aluno está numa aula sobre "${tema}" (bloco "${blocoTitulo}") e ACABOU DE ERRAR um exercício.
+
+Pergunta: "${pergunta}"
+Resposta dele (errada): "${alternativaErrada}"
+Resposta correta: "${alternativaCorreta}"
+Contexto da explicação original: "${explicacaoOriginal}"
+
+Sua missão: gerar um MINI-BLOCO de reforço que faça o aluno entender de verdade o erro. NÃO repita a explicação original. Use ângulo NOVO.
+
+Responda SOMENTE JSON neste formato:
+{
+  "porque_errou": "1-2 frases dizendo o erro de raciocínio mais provável (ex.: 'Você caiu na pegadinha de X — é fácil confundir com Y').",
+  "analogia": "1 analogia curta e visual (1-2 frases).",
+  "exemplo_novo": "1 exemplo CONCRETO diferente do original, resolvido em 2-4 passos curtos em markdown.",
+  "dica_flora": "1 frase curta de encerramento, encorajadora, em primeira pessoa ('Vou te dar um truque...' / 'Toda vez que ver X, lembra...')."
+}
+
+Tom: conversado, PT-BR, sem emojis, sem listas gigantes. Cada campo curto. Não cite percentuais nem dados do aluno.` },
+          { role: "user", content: "Gera o reforço." },
+        ],
+        maxTokens: 700, temperature: 0.7, jsonMode: true,
+      };
+      const raw = await runTaskChain(opts, "explicacao", "flora:lesson_reinforce", { supabase, userId, actionType: "lesson_reinforce" });
+      const parsed = parseAIJSON(raw as string) as any;
+      if (!parsed) return jsonResponse({ ok: false, error: "parse_error" });
+      return jsonResponse({ ok: true, reforco: parsed });
+    }
+
     // ─── SEMANTIC_SEARCH: busca conteúdo no banco ──────────────────────────
     if (action === "semantic_search") {
       const query = (data?.query || "").toString().trim();

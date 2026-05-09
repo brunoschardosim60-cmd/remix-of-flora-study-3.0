@@ -113,3 +113,49 @@
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
+
+/* Reforço inline da Flora (após erro em exercício) */
+.ilp-reforco {
+  margin-top: 12px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, hsl(var(--primary) / .08), hsl(var(--accent) / .06));
+  border: 1px solid hsl(var(--primary) / .25);
+  animation: ilp-reforco-in .35s ease-out;
+}
+@keyframes ilp-reforco-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.ilp-reforco-head {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 600;
+  color: hsl(var(--primary));
+  text-transform: uppercase; letter-spacing: .5px;
+  margin-bottom: 8px;
+}
+.ilp-reforco-loading {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; color: hsl(var(--muted-foreground));
+  font-style: italic;
+}
+.ilp-reforco-body { display: flex; flex-direction: column; gap: 10px; }
+.ilp-reforco-row {
+  font-size: 14px; line-height: 1.55;
+  color: hsl(var(--foreground));
+}
+.ilp-reforco-row strong { color: hsl(var(--primary)); }
+.ilp-reforco-analogia, .ilp-reforco-exemplo {
+  display: flex; gap: 8px; align-items: flex-start;
+  padding: 8px 10px; border-radius: 8px;
+  background: hsl(var(--background) / .6);
+}
+.ilp-reforco-analogia svg, .ilp-reforco-exemplo svg {
+  flex-shrink: 0; margin-top: 2px; color: hsl(var(--primary));
+}
+.ilp-reforco-dica {
+  margin-top: 4px; padding-top: 8px;
+  border-top: 1px dashed hsl(var(--primary) / .25);
+  font-size: 14px; font-style: italic;
+  color: hsl(var(--foreground) / .85);
+}
