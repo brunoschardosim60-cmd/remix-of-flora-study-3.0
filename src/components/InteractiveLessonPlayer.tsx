@@ -553,10 +553,12 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
                   )}
 
                   {curScene.kind === "mini" && (
-                    <>
-                      <span className="ilp-tag mini"><HelpCircle size={12} /> Pra pensar</span>
-                      <div className="ilp-md-lg"><MD>{curScene.text}</MD></div>
-                    </>
+                    <RevealScene
+                      tag={<span className="ilp-tag mini"><HelpCircle size={12} /> Pra pensar</span>}
+                      content={curScene.text}
+                      revealLabel="Pensei. Mostrar"
+                      onReveal={() => playTone(720, 0.1, "sine", 0.05)}
+                    />
                   )}
 
                   {curScene.kind === "fixar" && (
@@ -567,11 +569,13 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
                   )}
 
                   {curScene.kind === "duvida" && (
-                    <>
-                      <span className="ilp-tag duvida"><MessageCircleQuestion size={12} /> Dúvida comum</span>
-                      <h3 className="ilp-block-title" style={{ fontSize: "clamp(20px, 2.6vw, 28px)" }}>{curScene.question}</h3>
-                      <div className="ilp-md-lg"><MD>{curScene.text}</MD></div>
-                    </>
+                    <RevealScene
+                      tag={<span className="ilp-tag duvida"><MessageCircleQuestion size={12} /> Dúvida comum</span>}
+                      title={curScene.question}
+                      content={curScene.text}
+                      revealLabel="Ver resposta da Flora"
+                      onReveal={() => playTone(720, 0.1, "sine", 0.05)}
+                    />
                   )}
 
                   {/* Scene dots */}
