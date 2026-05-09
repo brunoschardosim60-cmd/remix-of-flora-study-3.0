@@ -366,6 +366,19 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
   const progress = currentStep / totalScenes;
   const resumo = Array.isArray(lesson.resumo) ? lesson.resumo : (typeof lesson.resumo === "string" ? [lesson.resumo] : []);
 
+  // keyboard navigation (Keynote-style)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (duvidaOpen) return;
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+      if (e.key === "ArrowRight" || e.key === " " || e.key === "Enter") { e.preventDefault(); next(); }
+      else if (e.key === "ArrowLeft") { e.preventDefault(); prev(); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
+
   return (
     <div className="ilp-root">
       {/* ── Header: minimal, breathable ── */}
