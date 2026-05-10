@@ -387,7 +387,8 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
   const isLast = idx === blocos.length - 1;
   const isCurLoading = !!loadingBlockIndices?.includes(idx);
 
-  const scenes = useMemo(() => (cur ? buildScenes(cur, idx) : []), [cur, idx]);
+  const lessonSeed = useMemo(() => strHash(lesson.titulo || ""), [lesson.titulo]);
+  const scenes = useMemo(() => (cur ? buildScenes(cur, idx, lessonSeed) : []), [cur, idx, lessonSeed]);
   const curScene = scenes[sceneIdx];
 
   // Chave estável da cena atual (cacheia por título do bloco + tipo + início do texto)
@@ -498,25 +499,25 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
   // Total micro-steps (for progress bar)
   const totalScenes = useMemo(() => {
     let t = 1; // intro
-    for (let i = 0; i < blocos.length; i++) t += buildScenes(blocos[i], i).length;
+    for (let i = 0; i < blocos.length; i++) t += buildScenes(blocos[i], i, lessonSeed).length;
     if (lesson.exercicios?.length) t += 1;
     t += 1; // final
     return t;
-  }, [blocos, lesson.exercicios]);
+  }, [blocos, lesson.exercicios, lessonSeed]);
 
   const currentStep = useMemo(() => {
     let s = 0;
     if (stage === "intro") return 1;
     s += 1; // intro counted
-    for (let i = 0; i < idx; i++) s += buildScenes(blocos[i], i).length;
+    for (let i = 0; i < idx; i++) s += buildScenes(blocos[i], i, lessonSeed).length;
     if (stage === "block") return s + sceneIdx + 1;
     // past all blocks
-    for (let i = idx; i < blocos.length; i++) s += buildScenes(blocos[i], i).length;
+    for (let i = idx; i < blocos.length; i++) s += buildScenes(blocos[i], i, lessonSeed).length;
     if (stage === "exercises") return s + 1;
     if (lesson.exercicios?.length) s += 1;
     if (stage === "final") return s + 1;
     return totalScenes;
-  }, [stage, idx, sceneIdx, blocos, lesson.exercicios, totalScenes]);
+  }, [stage, idx, sceneIdx, blocos, lesson.exercicios, totalScenes, lessonSeed]);
 
   const progress = currentStep / totalScenes;
   const resumo = Array.isArray(lesson.resumo) ? lesson.resumo : (typeof lesson.resumo === "string" ? [lesson.resumo] : []);
