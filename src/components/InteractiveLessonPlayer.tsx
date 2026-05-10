@@ -6,7 +6,7 @@ import {
   Loader2, Send, Image as ImageIcon, ChevronLeft, ChevronRight,
   Lightbulb, AlertTriangle, MessageCircleQuestion, CheckCircle2, XCircle,
   Sparkles, Brain, HelpCircle, ListChecks, ChevronDown, Leaf, Zap, Target,
-  Volume2, VolumeX, Eye,
+  Volume2, VolumeX, Eye, Share2, Trophy, Flame,
 } from "lucide-react";
 import { generateDidacticImage } from "@/lib/floraImages";
 import { supabase } from "@/integrations/supabase/client";
@@ -332,10 +332,7 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
   const [duvidaLoading, setDuvidaLoading] = useState(false);
   const [duvidaResp, setDuvidaResp] = useState("");
 
-  const [blockImage, setBlockImage] = useState<Record<number, string>>({});
-  const [imgLoading, setImgLoading] = useState(false);
-
-  // Ilustrações contextuais automáticas por cena (impact / exemplo / analogia / macete)
+  // Ilustrações contextuais automáticas por cena
   const [sceneImages, setSceneImages] = useState<Record<string, string>>({});
   const [sceneImgLoading, setSceneImgLoading] = useState<Record<string, boolean>>({});
 
@@ -449,21 +446,6 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
       setDuvidaResp(data?.resposta || "Não consegui responder agora.");
     } catch { toast.error("Erro ao pedir ajuda à Flora."); }
     finally { setDuvidaLoading(false); }
-  };
-
-  const generateImg = async () => {
-    if (!cur || imgLoading || blockImage[idx]) return;
-    const cacheKey = `flora-img:${lesson.titulo}:${cur.titulo}`;
-    const cached = localStorage.getItem(cacheKey);
-    if (cached) { setBlockImage((p) => ({ ...p, [idx]: cached })); return; }
-    setImgLoading(true);
-    try {
-      const r = await generateDidacticImage({ concept: cur.titulo, context: cur.conteudo, style: "educational", userId: user?.id || "anon" });
-      if (r.success && r.imageUrl) {
-        setBlockImage((p) => ({ ...p, [idx]: r.imageUrl }));
-        try { localStorage.setItem(cacheKey, r.imageUrl); } catch {}
-      } else toast.error("Não consegui gerar a imagem agora.");
-    } finally { setImgLoading(false); }
   };
 
   const next = () => {
