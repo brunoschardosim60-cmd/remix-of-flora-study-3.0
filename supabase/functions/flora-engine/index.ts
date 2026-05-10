@@ -1026,7 +1026,7 @@ Responda SOMENTE com JSON: {"questions":[{"pergunta":"TEXTO-BASE COMPLETO\\n\\nC
             dificuldade: didacticStyle || "normal",
             estilo: mode || "completa",
             objetivo: level || "enem",
-          }, { lesson: parsedLesson }).catch(() => {});
+          }, { lesson: parsedLesson }, CACHE_TTL.lesson).catch(() => {});
         }
         return jsonResponse({ ok: true, lesson: parsedLesson });
       }
@@ -1499,7 +1499,7 @@ SEMPRE responda em português brasileiro.` },
 
       await supabase.from("user_actions").insert({ user_id: userId, action: "generate_quiz", materia, metadata: { tema, difficulty, questionCount: result.questions?.length || 0, discarded, mode } });
       if (canCacheQuiz && Array.isArray(result?.questions) && result.questions.length >= 3) {
-        cacheStore(supabase, quizCacheKey, { tipo: "quiz", materia, tema, dificuldade: difficulty, banca: bancaAluno, objetivo }, result).catch(() => {});
+        cacheStore(supabase, quizCacheKey, { tipo: "quiz", materia, tema, dificuldade: difficulty, banca: bancaAluno, objetivo }, result, CACHE_TTL.quiz).catch(() => {});
       }
       return jsonResponse(result);
     }
@@ -1538,7 +1538,7 @@ SEMPRE responda em português brasileiro.` },
       const result = parseAIJSON(content as string) as any;
       await supabase.from("user_actions").insert({ user_id: userId, action: "generate_flashcards", materia, metadata: { tema, cardCount: result.flashcards?.length || 0 } });
       if (canCacheFc && Array.isArray(result?.flashcards) && result.flashcards.length >= 4) {
-        cacheStore(supabase, fcCacheKey, { tipo: "flashcards", materia, tema, objetivo }, result).catch(() => {});
+        cacheStore(supabase, fcCacheKey, { tipo: "flashcards", materia, tema, objetivo }, result, CACHE_TTL.flashcards).catch(() => {});
       }
       return jsonResponse(result);
     }
@@ -1580,7 +1580,7 @@ SEMPRE responda em português brasileiro.` },
       if (!parsedLesson) throw new Error("Erro ao processar a aula gerada. Tente novamente.");
 
       await supabase.from("user_actions").insert({ user_id: userId, action: "generate_lesson", metadata: { topic, materia, level } });
-      cacheStore(supabase, lessonCacheKey, { tipo: "lesson", materia, tema: topic, dificuldade: didacticStyle, estilo: mode, objetivo: level }, { lesson: parsedLesson }).catch(() => {});
+      cacheStore(supabase, lessonCacheKey, { tipo: "lesson", materia, tema: topic, dificuldade: didacticStyle, estilo: mode, objetivo: level }, { lesson: parsedLesson }, CACHE_TTL.lesson).catch(() => {});
       return jsonResponse({ ok: true, lesson: parsedLesson });
     }
 
@@ -1613,7 +1613,7 @@ SEMPRE responda em português brasileiro.` },
       if (!parsed || !Array.isArray(parsed.blocos_titulos)) {
         throw new Error("Erro ao gerar esqueleto da aula.");
       }
-      cacheStore(supabase, skelKey, { tipo: "lesson_skel", materia, tema: topic, estilo: mode, objetivo: level }, { skeleton: parsed }).catch(() => {});
+      cacheStore(supabase, skelKey, { tipo: "lesson_skel", materia, tema: topic, estilo: mode, objetivo: level }, { skeleton: parsed }, CACHE_TTL.lesson_skel).catch(() => {});
       return jsonResponse({ ok: true, skeleton: parsed });
     }
 
@@ -1678,7 +1678,7 @@ SEMPRE responda em português brasileiro.` },
       } catch { /* mantém exercício original */ }
       // Só cacheia bloco se NÃO tiver sido personalizado por memória do aluno
       if (!memoryHint) {
-        cacheStore(supabase, blockKey, { tipo: "lesson_block", materia, tema: topic, estilo: mode, objetivo: String(blocoIndex) }, { block: parsed }).catch(() => {});
+        cacheStore(supabase, blockKey, { tipo: "lesson_block", materia, tema: topic, estilo: mode, objetivo: String(blocoIndex) }, { block: parsed }, CACHE_TTL.lesson_block).catch(() => {});
       }
       return jsonResponse({ ok: true, block: parsed });
     }
