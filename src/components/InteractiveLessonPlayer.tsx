@@ -3,7 +3,7 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import {
-  Loader2, Send, Image as ImageIcon, ChevronLeft, ChevronRight,
+  Loader2, Send, ChevronLeft, ChevronRight,
   Lightbulb, AlertTriangle, MessageCircleQuestion, CheckCircle2, XCircle,
   Sparkles, Brain, HelpCircle, ListChecks, ChevronDown, Leaf, Zap, Target,
   Volume2, VolumeX, Eye, Share2, Trophy, Flame,
