@@ -33,7 +33,7 @@ interface Lesson {
   titulo: string; introducao: string; blocos: LessonBlock[];
   resumo: string | string[]; exercicios?: Exercise[]; exercicio_final: Exercise;
 }
-interface Props { lesson: Lesson; onComplete?: () => void; enableVoice?: boolean; personality?: "rigorosa" | "amiga" | "engraçada"; loadingBlockIndices?: number[]; }
+interface Props { lesson: Lesson; onComplete?: () => void; enableVoice?: boolean; personality?: "padrao" | "amiga_motivadora" | "professora_rigorosa" | "tutor_engracado"; loadingBlockIndices?: number[]; }
 
 function MD({ children }: { children: string }) {
   return (

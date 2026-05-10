@@ -232,13 +232,16 @@ export async function checkOnboardingComplete(userId: string): Promise<boolean> 
 }
 
 // ─── Streaming: skeleton + block-by-block ────────────────────────────────────
+export type FloraPersonality = "padrao" | "amiga_motivadora" | "professora_rigorosa" | "tutor_engracado";
+
 export async function floraGenerateLessonSkeleton(
   topic: string, materia: string,
   level: 'enem' | 'concurso' | 'basico',
-  mode: 'rapida' | 'completa' | 'masterclass' = 'completa'
+  mode: 'rapida' | 'completa' | 'masterclass' = 'completa',
+  personality: FloraPersonality = "amiga_motivadora",
 ) {
   const { data, error } = await supabase.functions.invoke("flora-engine", {
-    body: { action: "generate_lesson_skeleton", data: { topic, materia, level, mode } },
+    body: { action: "generate_lesson_skeleton", data: { topic, materia, level, mode }, personality },
   });
   if (error) throw error;
   if (!data?.skeleton) throw new Error("Esqueleto vazio.");
@@ -258,9 +261,11 @@ export async function floraGenerateLessonBlock(args: {
   totalBlocos: number;
   mode: 'rapida' | 'completa' | 'masterclass';
   didacticStyle: 'macetes' | 'aprofundado' | 'normal';
+  personality?: FloraPersonality;
 }) {
+  const { personality = "amiga_motivadora", ...rest } = args;
   const { data, error } = await supabase.functions.invoke("flora-engine", {
-    body: { action: "generate_lesson_block", data: args },
+    body: { action: "generate_lesson_block", data: rest, personality },
   });
   if (error) throw error;
   if (!data?.block) throw new Error("Bloco vazio.");
