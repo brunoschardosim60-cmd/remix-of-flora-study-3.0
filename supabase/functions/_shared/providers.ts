@@ -227,10 +227,12 @@ export function buildDefaultChain(opts: CallOptions): Array<[string, () => Promi
 }
 
 // ─── Runner com fallback ──────────────────────────────────────────────────────
-export async function runChain(chain: Array<[string, () => Promise<string>]>, tag: string): Promise<string> {
+export interface ChainResult { result: string; provider: string; }
+
+export async function runChainEx(chain: Array<[string, () => Promise<string>]>, tag: string): Promise<ChainResult> {
   let lastErr: unknown;
   for (const [name, fn] of chain) {
-    try { const out = await fn(); console.log(`[${tag}] provider=${name} OK`); return out; }
+    try { const out = await fn(); console.log(`[${tag}] provider=${name} OK`); return { result: out, provider: name }; }
     catch (e) {
       const status = (e as any)?.status ?? "?";
       console.warn(`[${tag}] provider=${name} falhou (${status}):`, e instanceof Error ? e.message : e);
@@ -238,6 +240,11 @@ export async function runChain(chain: Array<[string, () => Promise<string>]>, ta
     }
   }
   throw lastErr instanceof Error ? lastErr : new Error("Todos os provedores falharam");
+}
+
+export async function runChain(chain: Array<[string, () => Promise<string>]>, tag: string): Promise<string> {
+  const { result } = await runChainEx(chain, tag);
+  return result;
 }
 
 export async function chatWithFallback(opts: CallOptions, tag = "ai"): Promise<string> {
