@@ -18,6 +18,8 @@ import { useStudyNow } from "@/hooks/useStudyNow";
 import { useDashboardDialogs } from "@/hooks/useDashboardDialogs";
 import { useDashboardBootstrap } from "@/hooks/useDashboardBootstrap";
 import { useStudentObjetivo } from "@/hooks/useStudentObjetivo";
+import { useDashboardHeroData } from "@/hooks/useDashboardHeroData";
+import { useDashboardPrimaryAction } from "@/hooks/useDashboardPrimaryAction";
 import { loadStringStorage } from "@/lib/storage";
 import { Loader2 as Loader2Icon } from "lucide-react";
 import { loadAIActivities } from "@/lib/aiActivityStore";
@@ -166,47 +168,7 @@ export default function Index() {
     dailyGoals: gamification.dailyGoals,
   });
 
-  const firstName = (() => {
-    const profileName = profile?.display_name;
-    if (typeof profileName === "string" && profileName.trim()) {
-      return profileName.trim().split(" ")[0];
-    }
-
-    const metaName = user?.user_metadata?.full_name || user?.user_metadata?.name;
-    if (typeof metaName === "string" && metaName.trim()) {
-      return metaName.trim().split(" ")[0];
-    }
-
-    if (user?.email) {
-      return user.email.split("@")[0];
-    }
-
-    return undefined;
-  })();
-
-  const dailyGoals = [
-    {
-      id: "minutes" as const,
-      label: "Tempo estudado",
-      current: gamification.todayStudyMinutes,
-      target: gamification.dailyGoals.studyMinutes,
-      unit: "min",
-    },
-    {
-      id: "revisions" as const,
-      label: "Revisadas",
-      current: gamification.todayRevisions,
-      target: gamification.dailyGoals.revisions,
-      unit: "itens",
-    },
-    {
-      id: "quiz" as const,
-      label: "Quiz",
-      current: gamification.todayQuizCount,
-      target: gamification.dailyGoals.quizCount,
-      unit: "quiz",
-    },
-  ];
+  const { firstName, dailyGoals } = useDashboardHeroData(user, profile, gamification);
 
   const handleNotesDialogUpdate = useCallback((topicId: string, notas: string) => {
     handleUpdateNotes(topicId, notas);
@@ -248,39 +210,17 @@ export default function Index() {
     closeStudyNow,
   } = useStudyNow({ recommendedTopic, handleStartStudyNow });
 
-  const handlePrimaryAction = async () => {
-    setTab("revisao");
-
-    if (topics.length === 0 && !user) {
-      openAddTopic();
-      return;
-    }
-
-    // If logged in: pergunta antes — não decide sozinho.
-    if (user) {
-      if (topics.length === 0) {
-        openAddTopic();
-        toast.info("Crie seu primeiro tema para começar a estudar.");
-        return;
-      }
-      setStudyChoiceOpen(true);
-      return;
-    }
-
-    if (recommendedTopic) {
-      handleStartStudyNow(recommendedTopic);
-    }
-  };
-
-  const primaryLabel = studyNowLoading
-    ? "Flora preparando..."
-    : topics.length === 0 && !user
-    ? "Criar primeiro tema"
-    : user
-    ? "Estudar agora"
-    : momentum.comebackMode
-      ? "Retomar pelo mais facil"
-      : "Comecar agora";
+  const { handlePrimaryAction, primaryLabel } = useDashboardPrimaryAction({
+    user,
+    topics,
+    recommendedTopic,
+    studyNowLoading,
+    comebackMode: momentum.comebackMode,
+    setTab,
+    openAddTopic,
+    setStudyChoiceOpen,
+    handleStartStudyNow,
+  });
 
   if (!hydrated || (user && !onboardingChecked)) {
     return (
