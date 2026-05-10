@@ -16,6 +16,16 @@ import { FloraPersonality, ExplanationStyle, getSystemPromptWithPersona } from "
 import { checkQuota, logAIUsage, quotaExceededResponse } from "../_shared/usage.ts";
 import { cacheLookup as sharedCacheLookup, cacheStore as sharedCacheStore, buildCacheKey as sharedBuildCacheKey, normCacheStr as sharedNormCacheStr } from "../_shared/cache.ts";
 
+// TTLs (segundos) por tipo de conteúdo cacheado.
+const TTL_DAY = 86400;
+const CACHE_TTL = {
+  lesson: 30 * TTL_DAY,
+  lesson_skel: 30 * TTL_DAY,
+  lesson_block: 30 * TTL_DAY,
+  quiz: 7 * TTL_DAY,
+  flashcards: 30 * TTL_DAY,
+} as const;
+
 // ─── Sanitiza alternativas de quiz: remove prefixos duplicados como "A) A)" → "A)" ──
 function sanitizeQuizQuestions(questions: any[]): any[] {
   if (!Array.isArray(questions)) return questions;
