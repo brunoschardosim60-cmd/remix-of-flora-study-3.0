@@ -191,6 +191,24 @@ export default function Aulao() {
         await saveGamificationForUser(user.id, next);
         const gained = next.xp - cur.xp;
         if (gained > 0) toast.success(`+${gained} XP · aula concluída!`);
+
+        // Loop fechado: registra a conclusão como user_action para a Flora
+        // ler no contexto do chat (recommend) e em decide_next_topic.
+        try {
+          await supabase.from("user_actions").insert({
+            user_id: user.id,
+            action: "lesson_completed",
+            materia: generatedLesson?.materia ?? null,
+            metadata: {
+              titulo: generatedLesson?.titulo ?? "",
+              blocks: generatedLesson?.blocks?.length ?? 0,
+              duration_ms: ms,
+              xp_gained: Math.max(0, gained),
+            },
+          });
+        } catch (e) {
+          console.warn("[aulao] log lesson_completed failed", e);
+        }
       }
     } catch (e) {
       console.warn("[aulao] gamification register failed", e);
