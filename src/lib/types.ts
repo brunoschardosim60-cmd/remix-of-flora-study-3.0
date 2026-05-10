@@ -1,7 +1,14 @@
 export interface LessonBlock {
   titulo: string;
   conteudo: string;
-  checkpoint: string;
+  checkpoint?: string;
+  macete?: string;
+  pegadinha?: string;
+  analogia?: string;
+  exemplo_resolvido?: string;
+  flora_comment?: string;
+  mini_interacao?: string;
+  duvida_simulada?: { pergunta: string; resposta: string };
 }
 
 export interface ExerciseQuestion {

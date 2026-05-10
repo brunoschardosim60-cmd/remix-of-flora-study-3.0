@@ -3,10 +3,10 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import {
-  Loader2, Send, Image as ImageIcon, ChevronLeft, ChevronRight,
+  Loader2, Send, ChevronLeft, ChevronRight,
   Lightbulb, AlertTriangle, MessageCircleQuestion, CheckCircle2, XCircle,
   Sparkles, Brain, HelpCircle, ListChecks, ChevronDown, Leaf, Zap, Target,
-  Volume2, VolumeX, Eye,
+  Volume2, VolumeX, Eye, Share2, Trophy, Flame,
 } from "lucide-react";
 import { generateDidacticImage } from "@/lib/floraImages";
 import { supabase } from "@/integrations/supabase/client";
@@ -47,7 +47,27 @@ function MD({ children }: { children: string }) {
 type SceneKind = "intro" | "text" | "exemplo" | "analogia" | "macete" | "pegadinha" | "mini" | "fixar" | "duvida" | "impact";
 interface Scene { kind: SceneKind; text: string; flora?: string; question?: string; }
 
-const AUTO_ILLUST_KINDS: SceneKind[] = ["impact", "exemplo", "analogia", "macete"];
+const AUTO_ILLUST_KINDS: SceneKind[] = ["impact", "exemplo", "analogia", "macete", "intro"];
+
+/** Higieniza texto vindo da IA: colapsa espaços, remove letras/pontuações repetidas,
+ *  normaliza quebras de linha e tira espaços antes de pontuação. */
+function sanitizeText(s: string): string {
+  if (!s) return "";
+  return s
+    .replace(/\r\n/g, "\n")
+    .replace(/\u00A0/g, " ")
+    .replace(/[ \t]{2,}/g, " ")
+    .replace(/ ?\n ?/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    // limita letras repetidas: "aaaaa" → "aaa"
+    .replace(/([a-zA-ZÀ-ÿ])\1{3,}/g, "$1$1$1")
+    // limita pontuação repetida: "!!!!" → "!!", "...." → "..."
+    .replace(/([!?])\1{2,}/g, "$1$1")
+    .replace(/\.{4,}/g, "...")
+    // sem espaço antes de pontuação
+    .replace(/ +([.,;:!?])/g, "$1")
+    .trim();
+}
 
 /** Tenta extrair uma frase curta e marcante (≤110 chars) para um slide de impacto. */
 function extractImpactSentence(text: string): string | null {
@@ -71,32 +91,44 @@ function splitParagraphs(s: string): string[] {
 
 function buildScenes(b: LessonBlock, blockIdx: number): Scene[] {
   const scenes: Scene[] = [];
-  const mainText = (b.conteudo || "").trim();
+  const mainText = sanitizeText(b.conteudo || "");
 
   // Evita duplicar flora_comment quando ele já está embutido no conteúdo principal.
-  const floraText = (b.flora_comment || "").trim();
+  const floraText = sanitizeText(b.flora_comment || "");
   const floraInMain =
     floraText.length > 0 &&
     mainText.toLowerCase().includes(floraText.toLowerCase().slice(0, Math.min(60, floraText.length)));
   const flora = floraText && !floraInMain ? floraText : undefined;
 
+  // Slide de impacto: dispara em blocos alternados (a partir do 2º) quando há frase forte.
+  // Cria a memória emocional sem repetir o conteúdo do intro (a frase é REMOVIDA do mainText).
+  let textForIntro = mainText;
+  if (blockIdx > 0 && blockIdx % 2 === 1) {
+    const impact = extractImpactSentence(mainText);
+    if (impact && impact.length >= 30) {
+      scenes.push({ kind: "impact", text: impact });
+      // remove a frase do intro pra não repetir
+      textForIntro = mainText.replace(impact, "").replace(/\s{2,}/g, " ").trim();
+    }
+  }
+
   // Cena única de explicação: bloco inteiro num slide só, com bolha da Flora se houver.
-  scenes.push({ kind: "intro", flora, text: mainText });
+  scenes.push({ kind: "intro", flora, text: textForIntro });
 
   // No máximo UM slide complementar por bloco — rotaciona entre extras e closers
   // para que cada bloco tenha sabor diferente, sem repetir conteúdo.
   const candidates: Scene[] = [];
-  if (b.exemplo_resolvido) candidates.push({ kind: "exemplo", text: b.exemplo_resolvido });
-  if (b.analogia) candidates.push({ kind: "analogia", text: b.analogia });
-  if (b.macete) candidates.push({ kind: "macete", text: b.macete });
-  if (b.pegadinha) candidates.push({ kind: "pegadinha", text: b.pegadinha });
-  if (b.checkpoint) candidates.push({ kind: "fixar", text: b.checkpoint });
-  if (b.mini_interacao) candidates.push({ kind: "mini", text: b.mini_interacao });
+  if (b.exemplo_resolvido) candidates.push({ kind: "exemplo", text: sanitizeText(b.exemplo_resolvido) });
+  if (b.analogia) candidates.push({ kind: "analogia", text: sanitizeText(b.analogia) });
+  if (b.macete) candidates.push({ kind: "macete", text: sanitizeText(b.macete) });
+  if (b.pegadinha) candidates.push({ kind: "pegadinha", text: sanitizeText(b.pegadinha) });
+  if (b.checkpoint) candidates.push({ kind: "fixar", text: sanitizeText(b.checkpoint) });
+  if (b.mini_interacao) candidates.push({ kind: "mini", text: sanitizeText(b.mini_interacao) });
   if (b.duvida_simulada?.pergunta) {
     candidates.push({
       kind: "duvida",
-      text: b.duvida_simulada.resposta,
-      question: b.duvida_simulada.pergunta,
+      text: sanitizeText(b.duvida_simulada.resposta),
+      question: sanitizeText(b.duvida_simulada.pergunta),
     });
   }
   if (candidates.length) {
@@ -105,6 +137,16 @@ function buildScenes(b: LessonBlock, blockIdx: number): Scene[] {
 
   return scenes;
 }
+
+/** Frases curtas de encorajamento da Flora — rotacionam quando flora_comment não vem do backend. */
+const FLORA_ENCOURAGEMENT = [
+  "Foca aqui comigo — vai fazer sentido em segundos.",
+  "Esse pedaço aqui é onde a maioria trava. Vou facilitar.",
+  "Se entender isso, o resto do bloco vira consequência.",
+  "Lê devagar, sem pressa. Eu tô do teu lado.",
+  "Esse é o tipo de coisa que cai e a galera erra. Tu não vai.",
+  "Pronto pra mais um? Esse é rapidinho.",
+];
 
 /* ─── Reforço / passos guiados (igual antes) ──────────── */
 interface ReforcoData { porque_errou?: string; analogia?: string; exemplo_novo?: string; dica_flora?: string; }
@@ -290,10 +332,7 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
   const [duvidaLoading, setDuvidaLoading] = useState(false);
   const [duvidaResp, setDuvidaResp] = useState("");
 
-  const [blockImage, setBlockImage] = useState<Record<number, string>>({});
-  const [imgLoading, setImgLoading] = useState(false);
-
-  // Ilustrações contextuais automáticas por cena (impact / exemplo / analogia / macete)
+  // Ilustrações contextuais automáticas por cena
   const [sceneImages, setSceneImages] = useState<Record<string, string>>({});
   const [sceneImgLoading, setSceneImgLoading] = useState<Record<string, boolean>>({});
 
@@ -374,6 +413,7 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
           analogia: "artistic",
           exemplo: "educational",
           macete: "diagram",
+          intro: "educational",
         };
         const r = await generateDidacticImage({
           concept: curScene.kind === "impact" ? (curScene.text.slice(0, 80) || cur.titulo) : cur.titulo,
@@ -407,21 +447,6 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
       setDuvidaResp(data?.resposta || "Não consegui responder agora.");
     } catch { toast.error("Erro ao pedir ajuda à Flora."); }
     finally { setDuvidaLoading(false); }
-  };
-
-  const generateImg = async () => {
-    if (!cur || imgLoading || blockImage[idx]) return;
-    const cacheKey = `flora-img:${lesson.titulo}:${cur.titulo}`;
-    const cached = localStorage.getItem(cacheKey);
-    if (cached) { setBlockImage((p) => ({ ...p, [idx]: cached })); return; }
-    setImgLoading(true);
-    try {
-      const r = await generateDidacticImage({ concept: cur.titulo, context: cur.conteudo, style: "educational", userId: user?.id || "anon" });
-      if (r.success && r.imageUrl) {
-        setBlockImage((p) => ({ ...p, [idx]: r.imageUrl }));
-        try { localStorage.setItem(cacheKey, r.imageUrl); } catch {}
-      } else toast.error("Não consegui gerar a imagem agora.");
-    } finally { setImgLoading(false); }
   };
 
   const next = () => {
@@ -575,19 +600,18 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
 
                   {curScene.kind === "intro" && (
                     <>
-                      {curScene.flora && (
-                        <div className="ilp-flora-bubble">
-                          <div className="ilp-flora-avatar"><Leaf size={14} /></div>
-                          <div><MD>{curScene.flora}</MD></div>
+                      <div className="ilp-flora-bubble">
+                        <div className="ilp-flora-avatar"><Leaf size={14} /></div>
+                        <div>
+                          <MD>{curScene.flora || FLORA_ENCOURAGEMENT[idx % FLORA_ENCOURAGEMENT.length]}</MD>
                         </div>
-                      )}
+                      </div>
                       <div className="ilp-md ilp-md-lg"><MD>{curScene.text}</MD></div>
-                      {/* image attached to first scene if exists */}
-                      {blockImage[idx] && <div className="ilp-img-wrap"><img src={blockImage[idx]} alt={cur.titulo} /></div>}
-                      {!blockImage[idx] && (
-                        <button className="ilp-img-btn" onClick={generateImg} disabled={imgLoading}>
-                          {imgLoading ? <><Loader2 size={12} className="ilp-spin" /> gerando ilustração…</> : <><ImageIcon size={12} /> ver ilustração</>}
-                        </button>
+                      {/* Ilustração contextual automática */}
+                      {(currentSceneImg || currentSceneImgLoading) && (
+                        <div className={`ilp-scene-illust ${currentSceneImgLoading ? "loading" : ""}`}>
+                          {currentSceneImg && <img src={currentSceneImg} alt={cur.titulo} />}
+                        </div>
                       )}
                     </>
                   )}
@@ -710,9 +734,55 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
 
           {stage === "done" && (
             <div className="ilp-scene ilp-done">
-              <div className="ilp-done-icon"><Sparkles size={32} /></div>
+              <div className="ilp-done-icon"><Trophy size={36} /></div>
               <h2>Aula concluída</h2>
-              <p>Você terminou <strong>{lesson.titulo}</strong>. Bom trabalho.</p>
+              <p className="ilp-done-sub">Você terminou <strong>{lesson.titulo}</strong>.</p>
+
+              <div className="ilp-done-stats">
+                <div className="ilp-done-stat">
+                  <Sparkles size={18} />
+                  <strong>+{50 + blocos.length * 5}</strong>
+                  <span>XP</span>
+                </div>
+                <div className="ilp-done-stat">
+                  <Flame size={18} />
+                  <strong>{blocos.length}</strong>
+                  <span>blocos</span>
+                </div>
+                <div className="ilp-done-stat">
+                  <CheckCircle2 size={18} />
+                  <strong>{(lesson.exercicios?.length || 0) + (lesson.exercicio_final ? 1 : 0)}</strong>
+                  <span>exercícios</span>
+                </div>
+              </div>
+
+              <div className="ilp-flora-bubble" style={{ marginTop: 20 }}>
+                <div className="ilp-flora-avatar"><Leaf size={14} /></div>
+                <div>
+                  Você foi muito bem nessa. Quer fixar agora com revisão espaçada, ou já partir pra próxima aula?
+                </div>
+              </div>
+
+              <div className="ilp-done-actions">
+                <button
+                  className="ilp-nav primary"
+                  onClick={() => onComplete?.()}
+                >
+                  <Sparkles size={16} /> Próxima aula
+                </button>
+                <button
+                  className="ilp-nav ghost"
+                  onClick={async () => {
+                    const text = `Acabei de concluir "${lesson.titulo}" no StudyFlow com a Flora 🌿`;
+                    try {
+                      if (navigator.share) await navigator.share({ title: lesson.titulo, text });
+                      else { await navigator.clipboard.writeText(text); toast.success("Copiado para compartilhar!"); }
+                    } catch { /* user cancel */ }
+                  }}
+                >
+                  <Share2 size={16} /> Compartilhar
+                </button>
+              </div>
             </div>
           )}
         </div>
