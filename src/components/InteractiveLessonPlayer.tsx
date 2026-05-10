@@ -89,7 +89,14 @@ function splitParagraphs(s: string): string[] {
   return [cleaned];
 }
 
-function buildScenes(b: LessonBlock, blockIdx: number): Scene[] {
+/** Hash determinístico simples para variar a ordem dos slides por aula. */
+function strHash(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+  return Math.abs(h);
+}
+
+function buildScenes(b: LessonBlock, blockIdx: number, lessonSeed = 0): Scene[] {
   const scenes: Scene[] = [];
   const mainText = sanitizeText(b.conteudo || "");
 
@@ -132,7 +139,10 @@ function buildScenes(b: LessonBlock, blockIdx: number): Scene[] {
     });
   }
   if (candidates.length) {
-    scenes.push(candidates[blockIdx % candidates.length]);
+    // Quebra a previsibilidade: a ordem dos candidatos depende de um seed da aula,
+    // então a mesma aula é estável mas diferentes aulas variam o ritmo.
+    const offset = (lessonSeed + blockIdx * 7) % candidates.length;
+    scenes.push(candidates[offset]);
   }
 
   return scenes;
