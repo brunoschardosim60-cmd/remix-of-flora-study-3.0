@@ -413,6 +413,7 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
           analogia: "artistic",
           exemplo: "educational",
           macete: "diagram",
+          intro: "educational",
         };
         const r = await generateDidacticImage({
           concept: curScene.kind === "impact" ? (curScene.text.slice(0, 80) || cur.titulo) : cur.titulo,
@@ -733,9 +734,55 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
 
           {stage === "done" && (
             <div className="ilp-scene ilp-done">
-              <div className="ilp-done-icon"><Sparkles size={32} /></div>
+              <div className="ilp-done-icon"><Trophy size={36} /></div>
               <h2>Aula concluída</h2>
-              <p>Você terminou <strong>{lesson.titulo}</strong>. Bom trabalho.</p>
+              <p className="ilp-done-sub">Você terminou <strong>{lesson.titulo}</strong>.</p>
+
+              <div className="ilp-done-stats">
+                <div className="ilp-done-stat">
+                  <Sparkles size={18} />
+                  <strong>+{50 + blocos.length * 5}</strong>
+                  <span>XP</span>
+                </div>
+                <div className="ilp-done-stat">
+                  <Flame size={18} />
+                  <strong>{blocos.length}</strong>
+                  <span>blocos</span>
+                </div>
+                <div className="ilp-done-stat">
+                  <CheckCircle2 size={18} />
+                  <strong>{(lesson.exercicios?.length || 0) + (lesson.exercicio_final ? 1 : 0)}</strong>
+                  <span>exercícios</span>
+                </div>
+              </div>
+
+              <div className="ilp-flora-bubble" style={{ marginTop: 20 }}>
+                <div className="ilp-flora-avatar"><Leaf size={14} /></div>
+                <div>
+                  Você foi muito bem nessa. Quer fixar agora com revisão espaçada, ou já partir pra próxima aula?
+                </div>
+              </div>
+
+              <div className="ilp-done-actions">
+                <button
+                  className="ilp-nav primary"
+                  onClick={() => onComplete?.()}
+                >
+                  <Sparkles size={16} /> Próxima aula
+                </button>
+                <button
+                  className="ilp-nav ghost"
+                  onClick={async () => {
+                    const text = `Acabei de concluir "${lesson.titulo}" no StudyFlow com a Flora 🌿`;
+                    try {
+                      if (navigator.share) await navigator.share({ title: lesson.titulo, text });
+                      else { await navigator.clipboard.writeText(text); toast.success("Copiado para compartilhar!"); }
+                    } catch { /* user cancel */ }
+                  }}
+                >
+                  <Share2 size={16} /> Compartilhar
+                </button>
+              </div>
             </div>
           )}
         </div>
