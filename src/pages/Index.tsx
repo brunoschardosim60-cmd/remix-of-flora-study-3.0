@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { CalendarDays, LayoutGrid } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { createTopic, StudyTopic, WeeklySlot, ALL_SUBJECTS, Subject } from "@/lib/studyData";
@@ -16,8 +16,9 @@ import { useOnboardingGuard } from "@/hooks/useOnboardingGuard";
 import { useFloraEvents } from "@/hooks/useFloraEvents";
 import { useStudyNow } from "@/hooks/useStudyNow";
 import { useDashboardDialogs } from "@/hooks/useDashboardDialogs";
+import { useDashboardBootstrap } from "@/hooks/useDashboardBootstrap";
+import { useStudentObjetivo } from "@/hooks/useStudentObjetivo";
 import { loadStringStorage } from "@/lib/storage";
-import { supabase } from "@/integrations/supabase/client";
 import { Loader2 as Loader2Icon } from "lucide-react";
 import { loadAIActivities } from "@/lib/aiActivityStore";
 import { toast } from "sonner";
@@ -25,16 +26,15 @@ import { FloraConfirmationBanner } from "@/components/FloraConfirmationBanner";
 import { FloraFirstAction } from "@/components/FloraFirstAction";
 import { FloraIcon } from "@/components/FloraIcon";
 import { toLocalDateStr } from "@/lib/dateUtils";
-import { startIdlePrefetch, prefetchForContext } from "@/lib/prefetch";
 import { countDueFlashcards } from "@/lib/flashcardScheduler";
 import { Sparkles } from "lucide-react";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { StudyNowDialog } from "@/components/dashboard/StudyNowDialog";
 import { StudyChoiceDialog } from "@/components/dashboard/StudyChoiceDialog";
+import { FloraButton } from "@/components/dashboard/FloraButton";
 import { Button } from "@/components/ui/button";
 
 // Lazy: heavy components that DON'T appear on first render
-const FloraChatPanel = lazy(() => import("@/components/FloraChatPanel").then(m => ({ default: m.FloraChatPanel })));
 const FocusModeOverlay = lazy(() => import("@/components/FocusModeOverlay").then(m => ({ default: m.FocusModeOverlay })));
 const QuizDialog = lazy(() => import("@/components/QuizDialog").then(m => ({ default: m.QuizDialog })));
 const FlashcardSessionDialog = lazy(() => import("@/components/FlashcardSessionDialog").then(m => ({ default: m.FlashcardSessionDialog })));
@@ -73,61 +73,15 @@ type Tab = "revisao" | "semanal";
 export default function Index() {
   const { user, profile, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
 
-  // Deep link de notificações: rola até a seção pedida
-  useEffect(() => {
-    const target = searchParams.get("revisar");
-    if (!target) return;
-    const id = target === "atrasadas" ? "revisoes-atrasadas" : "revisoes-hoje";
-    // Aguarda render das seções lazy
-    const t = setTimeout(() => {
-      const el = document.getElementById(id);
-      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-      // Limpa o param para não rolar de novo em re-renders
-      const next = new URLSearchParams(searchParams);
-      next.delete("revisar");
-      setSearchParams(next, { replace: true });
-    }, 600);
-    return () => clearTimeout(t);
-  }, [searchParams, setSearchParams]);
-
-  // Apply custom colors on mount + start idle prefetch
-  useEffect(() => {
-    import("@/components/CustomThemeDialog").then(m => m.applyCustomColors());
-    startIdlePrefetch();
-    prefetchForContext("dashboard");
-  }, []);
-
-  // Flora: trigger proactive analysis on dashboard load (once per session)
-  useEffect(() => {
-    if (!user) return;
-    const key = `flora-analyze-${user.id}-${new Date().toISOString().split("T")[0]}`;
-    if (sessionStorage.getItem(key)) return;
-    sessionStorage.setItem(key, "1");
-    supabase.functions.invoke("flora-engine", {
-      body: { action: "analyze_and_suggest" },
-    }).then(() => {
-      window.dispatchEvent(new Event("flora-decisions-updated"));
-    }).catch(() => {});
-  }, [user]);
+  // Bootstrap: deep-link, custom colors, idle prefetch, análise Flora
+  useDashboardBootstrap(user);
 
   // Force onboarding for logged-in users who haven't completed it (admins skip)
   const onboardingChecked = useOnboardingGuard(user, isAdmin);
 
-  // Lê objetivo do aluno para direcionar o link "Banco" (ENEM vs concurso).
-  const [objetivo, setObjetivo] = useState<string>("");
-  useEffect(() => {
-    if (!user) return;
-    supabase
-      .from("student_onboarding")
-      .select("objetivo")
-      .eq("user_id", user.id)
-      .maybeSingle()
-      .then(({ data }) => setObjetivo(data?.objetivo ?? ""));
-  }, [user]);
-  const bancoRoute = objetivo === "concurso" ? "/banco-concurso" : "/banco";
-  const bancoLabel = objetivo === "concurso" ? "Banco Concurso" : "Banco";
+  // Objetivo do aluno → rota/label do "Banco"
+  const { objetivo, isConcurso, bancoRoute, bancoLabel } = useStudentObjetivo(user);
 
   const {
     topics,
@@ -444,7 +398,7 @@ export default function Index() {
         )}
 
         {/* Painéis específicos de concurso */}
-        {objetivo === "concurso" && (
+        {isConcurso && (
           <>
             <Suspense fallback={<SectionSkeleton className="min-h-[120px]" />}>
               <ConcursoDashboard />
