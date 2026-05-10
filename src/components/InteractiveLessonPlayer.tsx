@@ -49,6 +49,26 @@ interface Scene { kind: SceneKind; text: string; flora?: string; question?: stri
 
 const AUTO_ILLUST_KINDS: SceneKind[] = ["impact", "exemplo", "analogia", "macete"];
 
+/** Higieniza texto vindo da IA: colapsa espaços, remove letras/pontuações repetidas,
+ *  normaliza quebras de linha e tira espaços antes de pontuação. */
+function sanitizeText(s: string): string {
+  if (!s) return "";
+  return s
+    .replace(/\r\n/g, "\n")
+    .replace(/\u00A0/g, " ")
+    .replace(/[ \t]{2,}/g, " ")
+    .replace(/ ?\n ?/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    // limita letras repetidas: "aaaaa" → "aaa"
+    .replace(/([a-zA-ZÀ-ÿ])\1{3,}/g, "$1$1$1")
+    // limita pontuação repetida: "!!!!" → "!!", "...." → "..."
+    .replace(/([!?])\1{2,}/g, "$1$1")
+    .replace(/\.{4,}/g, "...")
+    // sem espaço antes de pontuação
+    .replace(/ +([.,;:!?])/g, "$1")
+    .trim();
+}
+
 /** Tenta extrair uma frase curta e marcante (≤110 chars) para um slide de impacto. */
 function extractImpactSentence(text: string): string | null {
   if (!text) return null;
@@ -71,32 +91,44 @@ function splitParagraphs(s: string): string[] {
 
 function buildScenes(b: LessonBlock, blockIdx: number): Scene[] {
   const scenes: Scene[] = [];
-  const mainText = (b.conteudo || "").trim();
+  const mainText = sanitizeText(b.conteudo || "");
 
   // Evita duplicar flora_comment quando ele já está embutido no conteúdo principal.
-  const floraText = (b.flora_comment || "").trim();
+  const floraText = sanitizeText(b.flora_comment || "");
   const floraInMain =
     floraText.length > 0 &&
     mainText.toLowerCase().includes(floraText.toLowerCase().slice(0, Math.min(60, floraText.length)));
   const flora = floraText && !floraInMain ? floraText : undefined;
 
+  // Slide de impacto: dispara em blocos alternados (a partir do 2º) quando há frase forte.
+  // Cria a memória emocional sem repetir o conteúdo do intro (a frase é REMOVIDA do mainText).
+  let textForIntro = mainText;
+  if (blockIdx > 0 && blockIdx % 2 === 1) {
+    const impact = extractImpactSentence(mainText);
+    if (impact && impact.length >= 30) {
+      scenes.push({ kind: "impact", text: impact });
+      // remove a frase do intro pra não repetir
+      textForIntro = mainText.replace(impact, "").replace(/\s{2,}/g, " ").trim();
+    }
+  }
+
   // Cena única de explicação: bloco inteiro num slide só, com bolha da Flora se houver.
-  scenes.push({ kind: "intro", flora, text: mainText });
+  scenes.push({ kind: "intro", flora, text: textForIntro });
 
   // No máximo UM slide complementar por bloco — rotaciona entre extras e closers
   // para que cada bloco tenha sabor diferente, sem repetir conteúdo.
   const candidates: Scene[] = [];
-  if (b.exemplo_resolvido) candidates.push({ kind: "exemplo", text: b.exemplo_resolvido });
-  if (b.analogia) candidates.push({ kind: "analogia", text: b.analogia });
-  if (b.macete) candidates.push({ kind: "macete", text: b.macete });
-  if (b.pegadinha) candidates.push({ kind: "pegadinha", text: b.pegadinha });
-  if (b.checkpoint) candidates.push({ kind: "fixar", text: b.checkpoint });
-  if (b.mini_interacao) candidates.push({ kind: "mini", text: b.mini_interacao });
+  if (b.exemplo_resolvido) candidates.push({ kind: "exemplo", text: sanitizeText(b.exemplo_resolvido) });
+  if (b.analogia) candidates.push({ kind: "analogia", text: sanitizeText(b.analogia) });
+  if (b.macete) candidates.push({ kind: "macete", text: sanitizeText(b.macete) });
+  if (b.pegadinha) candidates.push({ kind: "pegadinha", text: sanitizeText(b.pegadinha) });
+  if (b.checkpoint) candidates.push({ kind: "fixar", text: sanitizeText(b.checkpoint) });
+  if (b.mini_interacao) candidates.push({ kind: "mini", text: sanitizeText(b.mini_interacao) });
   if (b.duvida_simulada?.pergunta) {
     candidates.push({
       kind: "duvida",
-      text: b.duvida_simulada.resposta,
-      question: b.duvida_simulada.pergunta,
+      text: sanitizeText(b.duvida_simulada.resposta),
+      question: sanitizeText(b.duvida_simulada.pergunta),
     });
   }
   if (candidates.length) {
@@ -105,6 +137,16 @@ function buildScenes(b: LessonBlock, blockIdx: number): Scene[] {
 
   return scenes;
 }
+
+/** Frases curtas de encorajamento da Flora — rotacionam quando flora_comment não vem do backend. */
+const FLORA_ENCOURAGEMENT = [
+  "Foca aqui comigo — vai fazer sentido em segundos.",
+  "Esse pedaço aqui é onde a maioria trava. Vou facilitar.",
+  "Se entender isso, o resto do bloco vira consequência.",
+  "Lê devagar, sem pressa. Eu tô do teu lado.",
+  "Esse é o tipo de coisa que cai e a galera erra. Tu não vai.",
+  "Pronto pra mais um? Esse é rapidinho.",
+];
 
 /* ─── Reforço / passos guiados (igual antes) ──────────── */
 interface ReforcoData { porque_errou?: string; analogia?: string; exemplo_novo?: string; dica_flora?: string; }
