@@ -73,14 +73,6 @@ export default function Index() {
   const { user, profile, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { theme, setTheme } = useTheme();
-
-  const cycleTheme = () => {
-    if (theme === "light") setTheme("dark");
-    else if (theme === "dark") setTheme("black");
-    else setTheme("light");
-  };
-  const ThemeIcon = theme === "light" ? Sun : theme === "dark" ? Moon : CircleDot;
 
   // Deep link de notificações: rola até a seção pedida
   useEffect(() => {
