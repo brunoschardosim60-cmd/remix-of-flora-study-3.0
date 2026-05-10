@@ -650,6 +650,26 @@ ${recActs.map((a: any) => {
   return `- ${fmtAgo(a.created_at)}: ${label}${mat}${tema ? ` — "${String(tema).slice(0, 50)}"` : ""}`;
 }).join("\n")}${lastSessionAgo !== null && lastSessionAgo >= 2 ? `\n⚠ ${lastSessionAgo} dia${lastSessionAgo > 1 ? "s" : ""} sem sessão registrada — considere puxar de volta.` : ""}` : "";
 
+      // ── Erros recorrentes específicos (loop fechado — Flora muda explicação) ──
+      // Agrega quiz_errors dos study_topics: pergunta + alternativa marcada + resposta correta.
+      // Sem isso a Flora não sabe QUE TIPO de erro o aluno comete (ex: "sempre erra sinal").
+      const errosRec: string[] = [];
+      for (const t of (context.studyTopics || [])) {
+        const errs = Array.isArray(t.quiz_errors) ? t.quiz_errors : [];
+        for (const e of errs.slice(0, 2)) {
+          const q = String(e?.pergunta || e?.question || "").slice(0, 80);
+          const marcada = String(e?.alternativa_marcada || e?.marcada || "?");
+          const correta = String(e?.correta || e?.resposta_correta || "?");
+          if (q) errosRec.push(`${t.materia} › ${t.tema}: "${q}" (marcou ${marcada}, correta ${correta})`);
+          if (errosRec.length >= 6) break;
+        }
+        if (errosRec.length >= 6) break;
+      }
+      const errosRecInfo = errosRec.length > 0 ? `
+ERROS RECORRENTES NO QUIZ (use para adaptar explicações — ex: "vi que você sempre marca X em vez de Y"):
+${errosRec.map((e) => `- ${e}`).join("\n")}
+REGRA: ao explicar conceitos relacionados, ANTECIPE essas confusões específicas no próprio texto.` : "";
+
       const olderSummary = olderMsgs.length > 0 ? `
 CONVERSA ANTERIOR (${olderMsgs.length} msgs):
 ${olderMsgs.map((m: any) => `${m.role === "user" ? "Aluno" : "Flora"}: ${m.content.slice(0, 90).replace(/\n/g, " ")}`).join(" | ")}` : "";
@@ -720,6 +740,7 @@ ${essayInfo}
 ${qbInfo}
 ${concursoInfo}
 ${recentActivityInfo}
+${errosRecInfo}
 ${buildAdaptiveBlock(context)}
 ${olderSummary}${recentChatSummary}`;
       return systemPrompt;
