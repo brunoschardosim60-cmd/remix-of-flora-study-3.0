@@ -1,6 +1,6 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, BookOpen, Lightbulb, PenTool, Search, Loader2 } from "lucide-react";
+import { ArrowLeft, BookOpen, Lightbulb, PenTool, Search, Loader2, Leaf, Clock } from "lucide-react";
 import { FloraThinkingLoader } from "@/components/FloraThinkingLoader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,9 @@ import { Lesson } from "@/lib/types";
 import { InteractiveLessonPlayer } from "@/components/InteractiveLessonPlayer";
 import { EssayTutorMode } from "@/components/EssayTutorMode";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { loadGamificationForUser, saveGamificationForUser } from "@/lib/gamificationStore";
+import { ensureDailyReset, registerStudySession } from "@/lib/gamification";
 import "./Aulao.css";
 
 type AulaoMode = "selection" | "lesson" | "essay" | "search";
@@ -58,10 +61,35 @@ const AULAO_TOPICS: AulaoTopic[] = [
   },
 ];
 
+const RECENT_LESSONS_KEY = "studyflow.aulao.recent";
+interface RecentLesson { topic: string; subject: string; at: number; }
+function loadRecentLessons(): RecentLesson[] {
+  try {
+    const raw = localStorage.getItem(RECENT_LESSONS_KEY);
+    if (!raw) return [];
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr.slice(0, 5) : [];
+  } catch { return []; }
+}
+function pushRecentLesson(item: RecentLesson) {
+  try {
+    const cur = loadRecentLessons().filter(
+      (r) => r.topic.toLowerCase() !== item.topic.toLowerCase()
+    );
+    const next = [item, ...cur].slice(0, 5);
+    localStorage.setItem(RECENT_LESSONS_KEY, JSON.stringify(next));
+  } catch { /* ignore */ }
+}
+
 export default function Aulao() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [mode, setMode] = useState<AulaoMode>("selection");
   const [selectedTopic, setSelectedTopic] = useState<AulaoTopic | null>(null);
+  const [recent, setRecent] = useState<RecentLesson[]>([]);
+  const lessonStartRef = useRef<number | null>(null);
+
+  useEffect(() => { setRecent(loadRecentLessons()); }, [mode]);
 
   // Lesson
   const [lessonTopicInput, setLessonTopicInput] = useState("");
@@ -87,6 +115,7 @@ export default function Aulao() {
     setLoadingLesson(true);
     setGeneratedLesson(null);
     setPendingBlocks([]);
+    lessonStartRef.current = Date.now();
     try {
       const tema = customTopic.trim();
       const materia = lessonSubjectInput.trim() || "Geral";
@@ -111,6 +140,7 @@ export default function Aulao() {
       setGeneratedLesson(initialLesson);
       setPendingBlocks(titulos.map((_, i) => i));
       setLoadingLesson(false);
+      pushRecentLesson({ topic: tema, subject: materia, at: Date.now() });
 
       // FASE 2 — Gera blocos em paralelo (limite 3 por vez pra não estourar quota).
       const total = titulos.length;
@@ -144,6 +174,28 @@ export default function Aulao() {
       console.error("Error generating lesson:", err);
       toast.error(err?.message || "Erro ao conectar com a Flora.");
       setLoadingLesson(false);
+    }
+  };
+
+  const handleLessonComplete = async () => {
+    // Concede XP/streak via gamificação ao concluir uma aula.
+    try {
+      const elapsed = lessonStartRef.current ? Date.now() - lessonStartRef.current : 0;
+      // Mínimo de 10 minutos creditados, mesmo que o aluno corra os slides.
+      const ms = Math.max(elapsed, 10 * 60 * 1000);
+      if (user?.id) {
+        const cur = ensureDailyReset(await loadGamificationForUser(user.id));
+        const next = registerStudySession(cur, ms);
+        await saveGamificationForUser(user.id, next);
+        const gained = next.xp - cur.xp;
+        if (gained > 0) toast.success(`+${gained} XP · aula concluída!`);
+      }
+    } catch (e) {
+      console.warn("[aulao] gamification register failed", e);
+    } finally {
+      setMode("selection");
+      setGeneratedLesson(null);
+      lessonStartRef.current = null;
     }
   };
 
@@ -212,6 +264,39 @@ export default function Aulao() {
       <main className="aulao-main">
         {mode === "selection" && (
           <div className="aulao-selection">
+            <div className="aulao-flora-card">
+              <div className="flora-avatar"><Leaf size={18} /></div>
+              <p>
+                <strong>Oi, sou a Flora.</strong> Posso preparar uma aula completa,
+                te guiar numa redação ou achar conteúdo sobre qualquer tema. Por onde a gente começa hoje?
+              </p>
+            </div>
+
+            {recent.length > 0 && (
+              <div className="aulao-recent">
+                <p className="aulao-recent-title">Continue de onde parou</p>
+                <div className="aulao-recent-row">
+                  {recent.map((r) => (
+                    <button
+                      key={r.topic + r.at}
+                      className="aulao-recent-chip"
+                      onClick={() => {
+                        const lessonTopic = AULAO_TOPICS.find((t) => t.mode === "lesson");
+                        if (!lessonTopic) return;
+                        setSelectedTopic(lessonTopic);
+                        setMode("lesson");
+                        setGeneratedLesson(null);
+                        setLessonSubjectInput(r.subject || "");
+                        setLessonTopicInput(r.topic);
+                      }}
+                    >
+                      <Clock size={14} /> {r.topic}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="selection-intro">
               <Lightbulb size={32} className="intro-icon" />
               <h2>Como você quer estudar hoje?</h2>
@@ -290,6 +375,7 @@ export default function Aulao() {
                 enableVoice={false}
                 personality="amiga"
                 loadingBlockIndices={pendingBlocks}
+                onComplete={handleLessonComplete}
               />
             )}
           </div>
