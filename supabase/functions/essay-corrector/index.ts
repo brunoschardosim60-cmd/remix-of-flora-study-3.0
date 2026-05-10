@@ -316,7 +316,7 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
-async function generateTheme(objetivo: Objetivo): Promise<string> {
+async function generateTheme(objetivo: Objetivo): Promise<{ tema: string; provider: string }> {
   const ctx =
     objetivo === "enem" || objetivo === "vestibular"
       ? "ENEM/vestibular — dissertativo-argumentativo atual e relevante"
@@ -348,8 +348,8 @@ async function generateTheme(objetivo: Objetivo): Promise<string> {
     ["openai",              () => callOpenAI(opts)],
     ["lovable",             () => callLovable(opts)],
   ];
-  const content = await runChain(chain, "essay:theme");
-  return content.trim().replace(/^["']|["']$/g, "");
+  const { result: content, provider } = await runChainEx(chain, "essay:theme");
+  return { tema: content.trim().replace(/^["']|["']$/g, ""), provider };
 }
 
 function normalizeENEMCorrection(parsed: any): any {
@@ -547,10 +547,11 @@ async function correctEssay(
   };
 
   const chain = buildEssayChain(opts);
-  const raw = await runChain(chain, "essay:correct");
+  const { result: raw, provider } = await runChainEx(chain, "essay:correct");
 
   // Parse robusto em camadas (lida com truncamento e prefixos do Gemini)
   const parsed = robustParseJSON(raw) as any;
+  parsed._provider = provider;
 
   if (isENEM) {
     const normalized = normalizeENEMCorrection(parsed);
