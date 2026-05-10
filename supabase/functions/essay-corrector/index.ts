@@ -10,6 +10,7 @@ import {
   callOpenAI,
   callLovable,
   runChain,
+  runChainEx,
   parseAIJSON,
 } from "../_shared/providers.ts";
 
@@ -315,7 +316,7 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
-async function generateTheme(objetivo: Objetivo): Promise<string> {
+async function generateTheme(objetivo: Objetivo): Promise<{ tema: string; provider: string }> {
   const ctx =
     objetivo === "enem" || objetivo === "vestibular"
       ? "ENEM/vestibular — dissertativo-argumentativo atual e relevante"
@@ -347,8 +348,8 @@ async function generateTheme(objetivo: Objetivo): Promise<string> {
     ["openai",              () => callOpenAI(opts)],
     ["lovable",             () => callLovable(opts)],
   ];
-  const content = await runChain(chain, "essay:theme");
-  return content.trim().replace(/^["']|["']$/g, "");
+  const { result: content, provider } = await runChainEx(chain, "essay:theme");
+  return { tema: content.trim().replace(/^["']|["']$/g, ""), provider };
 }
 
 function normalizeENEMCorrection(parsed: any): any {
@@ -546,10 +547,11 @@ async function correctEssay(
   };
 
   const chain = buildEssayChain(opts);
-  const raw = await runChain(chain, "essay:correct");
+  const { result: raw, provider } = await runChainEx(chain, "essay:correct");
 
   // Parse robusto em camadas (lida com truncamento e prefixos do Gemini)
   const parsed = robustParseJSON(raw) as any;
+  parsed._provider = provider;
 
   if (isENEM) {
     const normalized = normalizeENEMCorrection(parsed);
@@ -611,11 +613,12 @@ Deno.serve(async (req) => {
       const quota = await checkQuota(adminClient, userId, "essay_theme");
       if (!quota.allowed) return quotaExceededResponse(quota, corsHeaders);
 
-      const tema = await generateTheme(objetivo);
+      const { tema, provider: themeProvider } = await generateTheme(objetivo);
       void logAIUsage(adminClient, {
         userId,
         actionType: "essay_theme",
-        model: "gemini-2.5-flash-preview",
+        model: "essay_theme",
+        provider: themeProvider,
         success: true,
       });
       return json({ data: { tema } });
@@ -644,7 +647,8 @@ Deno.serve(async (req) => {
       void logAIUsage(adminClient, {
         userId,
         actionType: "essay_correct",
-        model: "gemini-2.5-flash-preview",
+        model: "essay_correct",
+        provider: result?._provider ?? "unknown",
         tokensIn: texto.length,
         tokensOut: 2500,
         success: true,

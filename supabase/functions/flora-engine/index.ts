@@ -6,6 +6,7 @@ import {
   type TaskType,
   callGemini,
   callWithTaskFallback,
+  callWithTaskFallbackEx,
   runChain,
   parseAIJSON,
   trimHistory,
@@ -119,7 +120,7 @@ type Objetivo = "enem" | "vestibular" | "concurso" | "faculdade" | "aprender" | 
 async function runTaskChain(opts: CallOptions, task: TaskType, tag: string, ctx?: { supabase: any; userId: string; actionType: string }): Promise<string> {
   const t0 = Date.now();
   try {
-    const out = await callWithTaskFallback(opts, task, tag);
+    const { result: out, provider } = await callWithTaskFallbackEx(opts, task, tag);
     if (ctx) {
       // Estimativa simples: 1 token ≈ 4 chars (PT/EN).
       const tokensIn = Math.round(JSON.stringify(opts.messages ?? []).length / 4);
@@ -128,10 +129,11 @@ async function runTaskChain(opts: CallOptions, task: TaskType, tag: string, ctx?
         userId: ctx.userId,
         actionType: ctx.actionType,
         model: task,
+        provider,
         tokensIn,
         tokensOut,
         success: true,
-        metadata: { tag, latencyMs: Date.now() - t0 },
+        metadata: { tag, latencyMs: Date.now() - t0, task },
       });
     }
     return out;
@@ -141,9 +143,10 @@ async function runTaskChain(opts: CallOptions, task: TaskType, tag: string, ctx?
         userId: ctx.userId,
         actionType: ctx.actionType,
         model: task,
+        provider: "error",
         success: false,
         errorMessage: e instanceof Error ? e.message : String(e),
-        metadata: { tag, latencyMs: Date.now() - t0 },
+        metadata: { tag, latencyMs: Date.now() - t0, task },
       });
     }
     throw e;
