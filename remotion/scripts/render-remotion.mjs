@@ -22,8 +22,9 @@ await renderMedia({
   composition,
   serveUrl: bundled,
   codec: "h264",
-  outputLocation: "/mnt/documents/studyflow-apresentacao.mp4",
+  outputLocation: "/tmp/studyflow-video-muted.mp4",
   puppeteerInstance: browser,
+  muted: true,
   concurrency: 2,
 });
 
