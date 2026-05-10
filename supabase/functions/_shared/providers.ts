@@ -268,6 +268,11 @@ export type TaskType =
 let _keysLogged = false;
 
 export async function callWithTaskFallback(opts: CallOptions, task: TaskType, tag = "ai"): Promise<string> {
+  const { result } = await callWithTaskFallbackEx(opts, task, tag);
+  return result;
+}
+
+export async function callWithTaskFallbackEx(opts: CallOptions, task: TaskType, tag = "ai"): Promise<ChainResult> {
   if (!_keysLogged) { logMissingKeys(); _keysLogged = true; }
   const key1 = Deno.env.get("GEMINI_API_KEY") ?? "";
   const key2 = Deno.env.get("GEMINI_API_KEY_2") ?? "";
@@ -280,13 +285,13 @@ export async function callWithTaskFallback(opts: CallOptions, task: TaskType, ta
   const ck = useCache ? cacheKey(opts, `${tag}:${task}`) : "";
   if (useCache) {
     const hit = cacheGet(ck);
-    if (hit) { console.log(`[${tag}:${task}] cache HIT`); return hit; }
+    if (hit) { console.log(`[${tag}:${task}] cache HIT`); return { result: hit, provider: "cache" }; }
   }
 
   // ── Dedup ─────────────────────────────────────────────────────────────────
   if (useCache && _inFlight.has(ck)) {
     console.log(`[${tag}:${task}] dedup: aguardando chamada em andamento`);
-    return _inFlight.get(ck)!;
+    return { result: await _inFlight.get(ck)!, provider: "dedup" };
   }
 
   // ── Monta cadeia por tarefa ───────────────────────────────────────────────
@@ -327,7 +332,9 @@ export async function callWithTaskFallback(opts: CallOptions, task: TaskType, ta
     ...buildDefaultChain(opts).filter(([n]) => !primNames.has(n)),
   ];
 
-  const promise = runChain(finalChain, `${tag}:${task}`).then(result => {
+  let chosenProvider = "unknown";
+  const promise = runChainEx(finalChain, `${tag}:${task}`).then(({ result, provider }) => {
+    chosenProvider = provider;
     if (useCache) { cacheSet(ck, result); _inFlight.delete(ck); }
     return result;
   }).catch(err => {
@@ -336,7 +343,8 @@ export async function callWithTaskFallback(opts: CallOptions, task: TaskType, ta
   });
 
   if (useCache) _inFlight.set(ck, promise);
-  return promise;
+  const result = await promise;
+  return { result, provider: chosenProvider };
 }
 
 // ─── Parser JSON seguro ───────────────────────────────────────────────────────
