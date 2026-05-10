@@ -740,6 +740,7 @@ ${essayInfo}
 ${qbInfo}
 ${concursoInfo}
 ${recentActivityInfo}
+${errosRecInfo}
 ${buildAdaptiveBlock(context)}
 ${olderSummary}${recentChatSummary}`;
       return systemPrompt;
