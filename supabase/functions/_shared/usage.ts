@@ -2,6 +2,40 @@
 // Reutilizado por todas edge functions que chamam IA (flora-engine, essay-corrector, solve-math).
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
+/**
+ * Tabela de preços por provider (USD por 1M tokens).
+ * Referência: preços públicos de Nov/2024 dos providers usados em providers.ts.
+ * Quando não conseguimos identificar o provider, cai no fallback genérico.
+ */
+export const MODEL_PRICING: Record<string, { in: number; out: number }> = {
+  // Gemini 2.0 Flash (gratuito até quota; valor médio para estimativa)
+  gemini:             { in: 0.10, out: 0.40 },
+  gemini_2:           { in: 0.10, out: 0.40 },
+  gemini_25_preview:  { in: 0.15, out: 0.60 },
+  gemini_25_preview_2:{ in: 0.15, out: 0.60 },
+  // Groq Llama 4 Scout
+  groq:               { in: 0.11, out: 0.34 },
+  // Mistral nemo
+  mistral:            { in: 0.15, out: 0.15 },
+  // Cerebras Llama
+  cerebras:           { in: 0.10, out: 0.10 },
+  // DeepSeek chat
+  deepseek:           { in: 0.27, out: 1.10 },
+  // OpenAI gpt-4o-mini
+  openai:             { in: 0.15, out: 0.60 },
+  // Lovable AI Gateway (gemini-2.5-flash via gateway)
+  lovable:            { in: 0.10, out: 0.40 },
+  // Hits de cache/dedup não custam nada
+  cache:              { in: 0,    out: 0 },
+  dedup:              { in: 0,    out: 0 },
+};
+const FALLBACK_PRICE = { in: 0.25, out: 0.75 };
+
+export function estimateCost(provider: string | undefined, tokensIn: number, tokensOut: number): number {
+  const p = (provider && MODEL_PRICING[provider]) || FALLBACK_PRICE;
+  return (tokensIn / 1_000_000) * p.in + (tokensOut / 1_000_000) * p.out;
+}
+
 export interface QuotaResult {
   tier: "free" | "pro" | "pro_plus" | string;
   limit: number;
@@ -39,6 +73,7 @@ export async function logAIUsage(
     userId: string;
     actionType: string;
     model?: string;
+    provider?: string;
     tokensIn?: number;
     tokensOut?: number;
     success: boolean;
@@ -47,19 +82,20 @@ export async function logAIUsage(
   },
 ): Promise<void> {
   try {
-    // Estimativa de custo bem grosseira — pode refinar depois por modelo.
-    const totalTok = (params.tokensIn ?? 0) + (params.tokensOut ?? 0);
-    const cost = (totalTok / 1_000_000) * 0.5; // ~$0.50/Mtok médio
+    const tokensIn = params.tokensIn ?? 0;
+    const tokensOut = params.tokensOut ?? 0;
+    const cost = estimateCost(params.provider, tokensIn, tokensOut);
+    const metadata = { ...(params.metadata ?? {}), provider: params.provider ?? "unknown" };
     await supabase.from("ai_usage_logs").insert({
       user_id: params.userId,
       action_type: params.actionType,
       model: params.model ?? "",
-      tokens_in: params.tokensIn ?? 0,
-      tokens_out: params.tokensOut ?? 0,
+      tokens_in: tokensIn,
+      tokens_out: tokensOut,
       cost_estimate: cost,
       success: params.success,
       error_message: params.errorMessage ?? "",
-      metadata: params.metadata ?? {},
+      metadata,
     });
   } catch (e) {
     console.warn("[usage] logAIUsage failed:", e);
