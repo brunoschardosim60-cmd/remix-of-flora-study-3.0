@@ -47,7 +47,7 @@ function MD({ children }: { children: string }) {
 type SceneKind = "intro" | "text" | "exemplo" | "analogia" | "macete" | "pegadinha" | "mini" | "fixar" | "duvida" | "impact";
 interface Scene { kind: SceneKind; text: string; flora?: string; question?: string; }
 
-const AUTO_ILLUST_KINDS: SceneKind[] = ["impact", "exemplo", "analogia", "macete"];
+const AUTO_ILLUST_KINDS: SceneKind[] = ["impact", "exemplo", "analogia", "macete", "intro"];
 
 /** Higieniza texto vindo da IA: colapsa espaços, remove letras/pontuações repetidas,
  *  normaliza quebras de linha e tira espaços antes de pontuação. */
