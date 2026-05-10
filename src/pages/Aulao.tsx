@@ -283,9 +283,11 @@ export default function Aulao() {
                       onClick={() => {
                         const lessonTopic = AULAO_TOPICS.find((t) => t.mode === "lesson");
                         if (!lessonTopic) return;
+                        setSelectedTopic(lessonTopic);
+                        setMode("lesson");
+                        setGeneratedLesson(null);
                         setLessonSubjectInput(r.subject || "");
                         setLessonTopicInput(r.topic);
-                        handleTopicSelect(lessonTopic);
                       }}
                     >
                       <Clock size={14} /> {r.topic}
