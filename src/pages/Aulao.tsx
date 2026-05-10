@@ -198,10 +198,9 @@ export default function Aulao() {
           await supabase.from("user_actions").insert({
             user_id: user.id,
             action: "lesson_completed",
-            materia: generatedLesson?.materia ?? null,
             metadata: {
               titulo: generatedLesson?.titulo ?? "",
-              blocks: generatedLesson?.blocks?.length ?? 0,
+              blocks: generatedLesson?.blocos?.length ?? 0,
               duration_ms: ms,
               xp_gained: Math.max(0, gained),
             },
