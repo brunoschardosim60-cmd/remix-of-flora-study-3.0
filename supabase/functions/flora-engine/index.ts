@@ -14,6 +14,7 @@ import {
 } from "../_shared/providers.ts";
 import { FloraPersonality, ExplanationStyle, getSystemPromptWithPersona } from "../_shared/flora_persona.ts";
 import { checkQuota, logAIUsage, quotaExceededResponse } from "../_shared/usage.ts";
+import { cacheLookup as sharedCacheLookup, cacheStore as sharedCacheStore, buildCacheKey as sharedBuildCacheKey, normCacheStr as sharedNormCacheStr } from "../_shared/cache.ts";
 
 // ─── Sanitiza alternativas de quiz: remove prefixos duplicados como "A) A)" → "A)" ──
 function sanitizeQuizQuestions(questions: any[]): any[] {
