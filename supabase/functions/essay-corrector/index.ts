@@ -613,11 +613,12 @@ Deno.serve(async (req) => {
       const quota = await checkQuota(adminClient, userId, "essay_theme");
       if (!quota.allowed) return quotaExceededResponse(quota, corsHeaders);
 
-      const tema = await generateTheme(objetivo);
+      const { tema, provider: themeProvider } = await generateTheme(objetivo);
       void logAIUsage(adminClient, {
         userId,
         actionType: "essay_theme",
-        model: "gemini-2.5-flash-preview",
+        model: "essay_theme",
+        provider: themeProvider,
         success: true,
       });
       return json({ data: { tema } });
@@ -646,7 +647,8 @@ Deno.serve(async (req) => {
       void logAIUsage(adminClient, {
         userId,
         actionType: "essay_correct",
-        model: "gemini-2.5-flash-preview",
+        model: "essay_correct",
+        provider: result?._provider ?? "unknown",
         tokensIn: texto.length,
         tokensOut: 2500,
         success: true,
