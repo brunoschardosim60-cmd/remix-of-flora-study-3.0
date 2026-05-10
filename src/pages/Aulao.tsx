@@ -5,7 +5,7 @@ import { FloraThinkingLoader } from "@/components/FloraThinkingLoader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { floraGenerateLessonSkeleton, floraGenerateLessonBlock } from "@/lib/floraClient";
+import { floraGenerateLessonSkeleton, floraGenerateLessonBlock, type FloraPersonality } from "@/lib/floraClient";
 import { Lesson } from "@/lib/types";
 import { InteractiveLessonPlayer } from "@/components/InteractiveLessonPlayer";
 import { EssayTutorMode } from "@/components/EssayTutorMode";
@@ -121,9 +121,10 @@ export default function Aulao() {
       const materia = lessonSubjectInput.trim() || "Geral";
       const level = topic.defaultLevel || "enem";
       const didacticStyle = topic.defaultDidacticStyle || "normal";
+      const personality: FloraPersonality = "amiga_motivadora";
 
       // FASE 1 — Esqueleto rápido (~2-3s). Aluno já vê a aula.
-      const skel = await floraGenerateLessonSkeleton(tema, materia, level, lessonMode);
+      const skel = await floraGenerateLessonSkeleton(tema, materia, level, lessonMode, personality);
       const titulos: string[] = Array.isArray(skel?.blocos_titulos) ? skel.blocos_titulos : [];
       if (!titulos.length) throw new Error("Esqueleto inválido.");
 
@@ -155,6 +156,7 @@ export default function Aulao() {
               blocoTitulo: titulos[i],
               blocoIndex: i, totalBlocos: total,
               mode: lessonMode, didacticStyle,
+              personality,
             });
             setGeneratedLesson((prev) => {
               if (!prev) return prev;
@@ -373,7 +375,7 @@ export default function Aulao() {
               <InteractiveLessonPlayer
                 lesson={generatedLesson}
                 enableVoice={false}
-                personality="amiga"
+                personality="amiga_motivadora"
                 loadingBlockIndices={pendingBlocks}
                 onComplete={handleLessonComplete}
               />
