@@ -369,6 +369,7 @@ export type Database = {
           created_at: string
           dificuldade: string
           estilo: string
+          expires_at: string | null
           hits: number
           id: string
           materia: string
@@ -384,6 +385,7 @@ export type Database = {
           created_at?: string
           dificuldade?: string
           estilo?: string
+          expires_at?: string | null
           hits?: number
           id?: string
           materia?: string
@@ -399,6 +401,7 @@ export type Database = {
           created_at?: string
           dificuldade?: string
           estilo?: string
+          expires_at?: string | null
           hits?: number
           id?: string
           materia?: string
