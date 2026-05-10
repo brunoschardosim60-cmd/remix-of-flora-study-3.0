@@ -1,35 +1,36 @@
 import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { BookOpen, CalendarDays, LayoutGrid, NotebookPen, FileText, BarChart3, Sun, Moon, CircleDot, LogOut, Settings, Library } from "lucide-react";
-import { useTheme } from "next-themes";
+import { CalendarDays, LayoutGrid } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
 import { createTopic, StudyTopic, WeeklySlot, ALL_SUBJECTS, Subject } from "@/lib/studyData";
 import { DashboardHero } from "@/components/DashboardHero";
 import { AddTopicForm } from "@/components/AddTopicForm";
 import { StudyTimer } from "@/components/StudyTimer";
 import { FocusMiniPlayer } from "@/components/FocusMiniPlayer";
 import { QuickStartChecklist } from "@/components/QuickStartChecklist";
-import { applyCustomColors, CustomThemeDialog } from "@/components/CustomThemeDialog";
 import { useDashboardWidgets } from "@/components/DashboardCustomizer";
 import { BottomNav } from "@/components/BottomNav";
 import { useStudyDashboard } from "@/hooks/useStudyDashboard";
 import { useStudyTimer } from "@/hooks/useStudyTimer";
 import { useOnboardingGuard } from "@/hooks/useOnboardingGuard";
 import { useFloraEvents } from "@/hooks/useFloraEvents";
+import { useStudyNow } from "@/hooks/useStudyNow";
 import { loadStringStorage } from "@/lib/storage";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 as Loader2Icon } from "lucide-react";
 import { loadAIActivities } from "@/lib/aiActivityStore";
-import { floraStudyNow, floraStudyNowFollowup } from "@/lib/floraClient";
 import { toast } from "sonner";
 import { FloraConfirmationBanner } from "@/components/FloraConfirmationBanner";
 import { FloraFirstAction } from "@/components/FloraFirstAction";
 import { FloraIcon } from "@/components/FloraIcon";
 import { toLocalDateStr } from "@/lib/dateUtils";
-import { prefetchRoute, startIdlePrefetch, prefetchForContext } from "@/lib/prefetch";
+import { startIdlePrefetch, prefetchForContext } from "@/lib/prefetch";
 import { countDueFlashcards } from "@/lib/flashcardScheduler";
 import { Sparkles } from "lucide-react";
+import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
+import { StudyNowDialog } from "@/components/dashboard/StudyNowDialog";
+import { StudyChoiceDialog } from "@/components/dashboard/StudyChoiceDialog";
+import { Button } from "@/components/ui/button";
 
 // Lazy: heavy components that DON'T appear on first render
 const FloraChatPanel = lazy(() => import("@/components/FloraChatPanel").then(m => ({ default: m.FloraChatPanel })));
@@ -38,7 +39,6 @@ const QuizDialog = lazy(() => import("@/components/QuizDialog").then(m => ({ def
 const FlashcardSessionDialog = lazy(() => import("@/components/FlashcardSessionDialog").then(m => ({ default: m.FlashcardSessionDialog })));
 const TopicNotesDialog = lazy(() => import("@/components/TopicNotesDialog").then(m => ({ default: m.TopicNotesDialog })));
 const WeeklySchedule = lazy(() => import("@/components/WeeklySchedule").then(m => ({ default: m.WeeklySchedule })));
-const ReactMarkdown = lazy(() => import("react-markdown"));
 
 // Lazy: below-fold heavy components (recharts = 212KB, revision tables, stats)
 const StudyHoursCards = lazy(() => import("@/components/StudyHoursCards").then(m => ({ default: m.StudyHoursCards })));
