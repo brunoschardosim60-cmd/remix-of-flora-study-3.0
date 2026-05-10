@@ -617,19 +617,18 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
 
                   {curScene.kind === "intro" && (
                     <>
-                      {curScene.flora && (
-                        <div className="ilp-flora-bubble">
-                          <div className="ilp-flora-avatar"><Leaf size={14} /></div>
-                          <div><MD>{curScene.flora}</MD></div>
+                      <div className="ilp-flora-bubble">
+                        <div className="ilp-flora-avatar"><Leaf size={14} /></div>
+                        <div>
+                          <MD>{curScene.flora || FLORA_ENCOURAGEMENT[idx % FLORA_ENCOURAGEMENT.length]}</MD>
                         </div>
-                      )}
+                      </div>
                       <div className="ilp-md ilp-md-lg"><MD>{curScene.text}</MD></div>
-                      {/* image attached to first scene if exists */}
-                      {blockImage[idx] && <div className="ilp-img-wrap"><img src={blockImage[idx]} alt={cur.titulo} /></div>}
-                      {!blockImage[idx] && (
-                        <button className="ilp-img-btn" onClick={generateImg} disabled={imgLoading}>
-                          {imgLoading ? <><Loader2 size={12} className="ilp-spin" /> gerando ilustração…</> : <><ImageIcon size={12} /> ver ilustração</>}
-                        </button>
+                      {/* Ilustração contextual automática */}
+                      {(currentSceneImg || currentSceneImgLoading) && (
+                        <div className={`ilp-scene-illust ${currentSceneImgLoading ? "loading" : ""}`}>
+                          {currentSceneImg && <img src={currentSceneImg} alt={cur.titulo} />}
+                        </div>
                       )}
                     </>
                   )}
