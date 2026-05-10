@@ -65,70 +65,43 @@ function extractImpactSentence(text: string): string | null {
 function splitParagraphs(s: string): string[] {
   const cleaned = (s || "").trim();
   if (!cleaned) return [];
-  const paras = cleaned.split(/\n\n+/).map((p) => p.trim()).filter(Boolean);
-  const TARGET = 600;
-  const out: string[] = [];
-  let buf = "";
-  for (const p of paras) {
-    if (!buf) { buf = p; continue; }
-    if ((buf.length + p.length + 2) <= TARGET) buf = buf + "\n\n" + p;
-    else { out.push(buf); buf = p; }
-  }
-  if (buf) out.push(buf);
-  // Se um único chunk passar de 1100 chars, quebra por sentença
-  const final: string[] = [];
-  for (const c of out) {
-    if (c.length <= 1100) { final.push(c); continue; }
-    const sentences = c.split(/(?<=[.!?])\s+(?=[A-ZÀ-Ú])/);
-    let b = "";
-    for (const s of sentences) {
-      if ((b + " " + s).trim().length > 800 && b) { final.push(b.trim()); b = s; }
-      else b = (b ? b + " " : "") + s;
-    }
-    if (b.trim()) final.push(b.trim());
-  }
-  return final;
+  // Mantém todos os parágrafos juntos — texto denso por slide é o que o usuário pediu.
+  return [cleaned];
 }
 
 function buildScenes(b: LessonBlock, blockIdx: number): Scene[] {
-  const paragraphs = splitParagraphs(b.conteudo);
   const scenes: Scene[] = [];
+  const mainText = (b.conteudo || "").trim();
 
-  // Slide de impacto: aparece em blocos pares (incluindo o primeiro) — frase forte + fundo escuro
-  const impact = extractImpactSentence(b.flora_comment || b.conteudo);
-  if (impact && (blockIdx === 0 || blockIdx % 2 === 0)) {
-    scenes.push({ kind: "impact", text: impact });
+  // Evita duplicar flora_comment quando ele já está embutido no conteúdo principal.
+  const floraText = (b.flora_comment || "").trim();
+  const floraInMain =
+    floraText.length > 0 &&
+    mainText.toLowerCase().includes(floraText.toLowerCase().slice(0, Math.min(60, floraText.length)));
+  const flora = floraText && !floraInMain ? floraText : undefined;
+
+  // Cena única de explicação: bloco inteiro num slide só, com bolha da Flora se houver.
+  scenes.push({ kind: "intro", flora, text: mainText });
+
+  // No máximo UM slide complementar por bloco — rotaciona entre extras e closers
+  // para que cada bloco tenha sabor diferente, sem repetir conteúdo.
+  const candidates: Scene[] = [];
+  if (b.exemplo_resolvido) candidates.push({ kind: "exemplo", text: b.exemplo_resolvido });
+  if (b.analogia) candidates.push({ kind: "analogia", text: b.analogia });
+  if (b.macete) candidates.push({ kind: "macete", text: b.macete });
+  if (b.pegadinha) candidates.push({ kind: "pegadinha", text: b.pegadinha });
+  if (b.checkpoint) candidates.push({ kind: "fixar", text: b.checkpoint });
+  if (b.mini_interacao) candidates.push({ kind: "mini", text: b.mini_interacao });
+  if (b.duvida_simulada?.pergunta) {
+    candidates.push({
+      kind: "duvida",
+      text: b.duvida_simulada.resposta,
+      question: b.duvida_simulada.pergunta,
+    });
   }
-
-  // Cena 1: Flora + TODO o conteúdo principal (texto denso é OK — uma cena só de explicação)
-  const mainText = paragraphs.join("\n\n") || b.conteudo || "";
-  scenes.push({ kind: "intro", flora: b.flora_comment || undefined, text: mainText });
-
-  // Se o texto for MUITO longo (>1400 chars) quebra em duas cenas
-  if (mainText.length > 1400 && paragraphs.length >= 2) {
-    // refaz: primeira metade na cena 1, segunda metade numa nova cena
-    const mid = Math.ceil(paragraphs.length / 2);
-    scenes[0] = { kind: "intro", flora: b.flora_comment || undefined, text: paragraphs.slice(0, mid).join("\n\n") };
-    scenes.push({ kind: "text", text: paragraphs.slice(mid).join("\n\n") });
+  if (candidates.length) {
+    scenes.push(candidates[blockIdx % candidates.length]);
   }
-
-  // Cena 2 (única): UM extra rotativo + fechamento juntos
-  // Combinamos exemplo OU (analogia/macete/pegadinha) + closer numa cena só quando possível
-  const extras: Scene[] = [];
-  if (b.exemplo_resolvido && blockIdx % 2 === 0) extras.push({ kind: "exemplo", text: b.exemplo_resolvido });
-  if (b.analogia) extras.push({ kind: "analogia", text: b.analogia });
-  if (b.macete) extras.push({ kind: "macete", text: b.macete });
-  if (b.pegadinha) extras.push({ kind: "pegadinha", text: b.pegadinha });
-  if (extras.length) scenes.push(extras[blockIdx % extras.length]);
-
-  // Closer rotativo (só se houver — e só uma das opções)
-  const closers: Scene[] = [];
-  if (b.checkpoint) closers.push({ kind: "fixar", text: b.checkpoint });
-  else if (b.mini_interacao) closers.push({ kind: "mini", text: b.mini_interacao });
-  else if (b.duvida_simulada?.pergunta) closers.push({
-    kind: "duvida", text: b.duvida_simulada.resposta, question: b.duvida_simulada.pergunta,
-  });
-  if (closers.length) scenes.push(closers[0]);
 
   return scenes;
 }
