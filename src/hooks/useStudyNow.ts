@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import { floraStudyNow, floraStudyNowFollowup } from "@/lib/floraClient";
-import type { StudyTopic } from "@/lib/types";
+import type { StudyTopic } from "@/lib/studyData";
 
 export interface StudyNowMessage {
   role: "flora" | "user";
