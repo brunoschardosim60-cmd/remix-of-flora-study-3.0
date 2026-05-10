@@ -264,6 +264,37 @@ export default function Aulao() {
       <main className="aulao-main">
         {mode === "selection" && (
           <div className="aulao-selection">
+            <div className="aulao-flora-card">
+              <div className="flora-avatar"><Leaf size={18} /></div>
+              <p>
+                <strong>Oi, sou a Flora.</strong> Posso preparar uma aula completa,
+                te guiar numa redação ou achar conteúdo sobre qualquer tema. Por onde a gente começa hoje?
+              </p>
+            </div>
+
+            {recent.length > 0 && (
+              <div className="aulao-recent">
+                <p className="aulao-recent-title">Continue de onde parou</p>
+                <div className="aulao-recent-row">
+                  {recent.map((r) => (
+                    <button
+                      key={r.topic + r.at}
+                      className="aulao-recent-chip"
+                      onClick={() => {
+                        const lessonTopic = AULAO_TOPICS.find((t) => t.mode === "lesson");
+                        if (!lessonTopic) return;
+                        setLessonSubjectInput(r.subject || "");
+                        setLessonTopicInput(r.topic);
+                        handleTopicSelect(lessonTopic);
+                      }}
+                    >
+                      <Clock size={14} /> {r.topic}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="selection-intro">
               <Lightbulb size={32} className="intro-icon" />
               <h2>Como você quer estudar hoje?</h2>
