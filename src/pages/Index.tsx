@@ -326,56 +326,7 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-background pb-16 md:pb-0">
-      {/* Header */}
-      <header className="border-b border-border bg-card sticky top-0 z-10">
-        <div className="container max-w-7xl mx-auto px-3 sm:px-4 py-3 flex items-center gap-2 sm:gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-            <BookOpen className="w-5 h-5 text-primary-foreground" />
-          </div>
-          <div className="flex-1 min-w-[120px]">
-            <h1 className="font-heading font-bold text-lg sm:text-xl">StudyFlow</h1>
-            <p className="text-xs text-muted-foreground hidden sm:block">Seu plano de estudos inteligente</p>
-          </div>
-          {/* Desktop nav links */}
-          <div className="hidden md:flex items-center gap-2">
-            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate("/notebooks")} onMouseEnter={() => prefetchRoute("/notebooks")}>
-              <NotebookPen className="w-4 h-4" /> Cadernos
-            </Button>
-            {user && (
-              <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate(bancoRoute)} onMouseEnter={() => prefetchRoute(bancoRoute)}>
-                <Library className="w-4 h-4" /> {bancoLabel}
-              </Button>
-            )}
-            {user && (
-              <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate("/redacao")} onMouseEnter={() => prefetchRoute("/redacao")}>
-                <FileText className="w-4 h-4" /> Redação
-              </Button>
-            )}
-            {user && (
-              <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate("/analise")} onMouseEnter={() => prefetchRoute("/analise")}>
-                <BarChart3 className="w-4 h-4" /> Análise
-              </Button>
-            )}
-          </div>
-          {/* Always visible: palette, theme, settings, logout */}
-          <div className="flex items-center gap-1">
-            <CustomThemeDialog />
-            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={cycleTheme} aria-label="Trocar tema">
-              <ThemeIcon className="w-4 h-4" />
-            </Button>
-            {user && (
-              <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => navigate("/settings")} aria-label="Configurações">
-                <Settings className="w-4 h-4" />
-              </Button>
-            )}
-            {user && (
-              <Button variant="ghost" size="icon" className="h-9 w-9" onClick={signOut}>
-                <LogOut className="w-4 h-4" />
-              </Button>
-            )}
-          </div>
-        </div>
-      </header>
+      <DashboardHeader user={user} bancoRoute={bancoRoute} bancoLabel={bancoLabel} onSignOut={signOut} />
       <main className="container max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
         <DashboardHero
           firstName={firstName}
