@@ -640,6 +640,45 @@ REGRA CONCURSO: ao gerar quizzes/simulados/material, SEMPRE calibre pelo estilo 
       const allChat = context.recentChat;
       const olderMsgs = allChat.slice(0, Math.max(0, allChat.length - 12));
       const recentMsgs = allChat.slice(-12);
+
+      // ── Atividades recentes (loop fechado) ──────────────────────────────
+      // Sem isso a Flora chat não sabe que o aluno acabou de terminar uma aula,
+      // gerou quiz, criou caderno, etc. — mesmo que tudo esteja em user_actions.
+      const ACTION_LABELS: Record<string, string> = {
+        lesson_completed: "concluiu aula",
+        generate_lesson: "gerou aula",
+        flora_generate_quiz: "gerou quiz",
+        generate_quiz: "fez quiz",
+        flora_generate_flashcards: "gerou flashcards",
+        generate_flashcards: "estudou flashcards",
+        flora_create_notebook: "criou caderno",
+        flora_create_schedule: "montou cronograma",
+        study_now: "estudou agora",
+        onboarding_plan_created: "criou plano inicial",
+      };
+      const fmtAgo = (iso: string): string => {
+        const diffMs = Date.now() - new Date(iso).getTime();
+        const min = Math.round(diffMs / 60000);
+        if (min < 60) return `${min}min atrás`;
+        const h = Math.round(min / 60);
+        if (h < 24) return `${h}h atrás`;
+        const d = Math.round(h / 24);
+        return `${d}d atrás`;
+      };
+      const recActs = (context.recentActions || []).slice(0, 8);
+      const recSess = (context.recentSessions || [])[0];
+      const lastSessionAgo = recSess?.start_at
+        ? Math.floor((Date.now() - new Date(recSess.start_at).getTime()) / (1000 * 60 * 60 * 24))
+        : null;
+      const recentActivityInfo = recActs.length > 0 ? `
+ATIVIDADES RECENTES (use naturalmente — ex: "vi que você acabou de terminar X"):
+${recActs.map((a: any) => {
+  const label = ACTION_LABELS[a.action] || a.action;
+  const mat = a.materia ? ` ${a.materia}` : "";
+  const tema = a.metadata?.titulo || a.metadata?.tema || "";
+  return `- ${fmtAgo(a.created_at)}: ${label}${mat}${tema ? ` — "${String(tema).slice(0, 50)}"` : ""}`;
+}).join("\n")}${lastSessionAgo !== null && lastSessionAgo >= 2 ? `\n⚠ ${lastSessionAgo} dia${lastSessionAgo > 1 ? "s" : ""} sem sessão registrada — considere puxar de volta.` : ""}` : "";
+
       const olderSummary = olderMsgs.length > 0 ? `
 CONVERSA ANTERIOR (${olderMsgs.length} msgs):
 ${olderMsgs.map((m: any) => `${m.role === "user" ? "Aluno" : "Flora"}: ${m.content.slice(0, 90).replace(/\n/g, " ")}`).join(" | ")}` : "";
@@ -709,6 +748,7 @@ CONTEXTO (silencioso):
 ${essayInfo}
 ${qbInfo}
 ${concursoInfo}
+${recentActivityInfo}
 ${buildAdaptiveBlock(context)}
 ${olderSummary}${recentChatSummary}`;
       return systemPrompt;
