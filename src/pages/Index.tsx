@@ -1,35 +1,36 @@
 import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { BookOpen, CalendarDays, LayoutGrid, NotebookPen, FileText, BarChart3, Sun, Moon, CircleDot, LogOut, Settings, Library } from "lucide-react";
-import { useTheme } from "next-themes";
+import { CalendarDays, LayoutGrid } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
 import { createTopic, StudyTopic, WeeklySlot, ALL_SUBJECTS, Subject } from "@/lib/studyData";
 import { DashboardHero } from "@/components/DashboardHero";
 import { AddTopicForm } from "@/components/AddTopicForm";
 import { StudyTimer } from "@/components/StudyTimer";
 import { FocusMiniPlayer } from "@/components/FocusMiniPlayer";
 import { QuickStartChecklist } from "@/components/QuickStartChecklist";
-import { applyCustomColors, CustomThemeDialog } from "@/components/CustomThemeDialog";
 import { useDashboardWidgets } from "@/components/DashboardCustomizer";
 import { BottomNav } from "@/components/BottomNav";
 import { useStudyDashboard } from "@/hooks/useStudyDashboard";
 import { useStudyTimer } from "@/hooks/useStudyTimer";
 import { useOnboardingGuard } from "@/hooks/useOnboardingGuard";
 import { useFloraEvents } from "@/hooks/useFloraEvents";
+import { useStudyNow } from "@/hooks/useStudyNow";
 import { loadStringStorage } from "@/lib/storage";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 as Loader2Icon } from "lucide-react";
 import { loadAIActivities } from "@/lib/aiActivityStore";
-import { floraStudyNow, floraStudyNowFollowup } from "@/lib/floraClient";
 import { toast } from "sonner";
 import { FloraConfirmationBanner } from "@/components/FloraConfirmationBanner";
 import { FloraFirstAction } from "@/components/FloraFirstAction";
 import { FloraIcon } from "@/components/FloraIcon";
 import { toLocalDateStr } from "@/lib/dateUtils";
-import { prefetchRoute, startIdlePrefetch, prefetchForContext } from "@/lib/prefetch";
+import { startIdlePrefetch, prefetchForContext } from "@/lib/prefetch";
 import { countDueFlashcards } from "@/lib/flashcardScheduler";
 import { Sparkles } from "lucide-react";
+import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
+import { StudyNowDialog } from "@/components/dashboard/StudyNowDialog";
+import { StudyChoiceDialog } from "@/components/dashboard/StudyChoiceDialog";
+import { Button } from "@/components/ui/button";
 
 // Lazy: heavy components that DON'T appear on first render
 const FloraChatPanel = lazy(() => import("@/components/FloraChatPanel").then(m => ({ default: m.FloraChatPanel })));
@@ -38,7 +39,6 @@ const QuizDialog = lazy(() => import("@/components/QuizDialog").then(m => ({ def
 const FlashcardSessionDialog = lazy(() => import("@/components/FlashcardSessionDialog").then(m => ({ default: m.FlashcardSessionDialog })));
 const TopicNotesDialog = lazy(() => import("@/components/TopicNotesDialog").then(m => ({ default: m.TopicNotesDialog })));
 const WeeklySchedule = lazy(() => import("@/components/WeeklySchedule").then(m => ({ default: m.WeeklySchedule })));
-const ReactMarkdown = lazy(() => import("react-markdown"));
 
 // Lazy: below-fold heavy components (recharts = 212KB, revision tables, stats)
 const StudyHoursCards = lazy(() => import("@/components/StudyHoursCards").then(m => ({ default: m.StudyHoursCards })));
@@ -73,14 +73,6 @@ export default function Index() {
   const { user, profile, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { theme, setTheme } = useTheme();
-
-  const cycleTheme = () => {
-    if (theme === "light") setTheme("dark");
-    else if (theme === "dark") setTheme("black");
-    else setTheme("light");
-  };
-  const ThemeIcon = theme === "light" ? Sun : theme === "dark" ? Moon : CircleDot;
 
   // Deep link de notificações: rola até a seção pedida
   useEffect(() => {
@@ -276,63 +268,19 @@ export default function Index() {
     { id: "semanal" as Tab, label: "Cronograma Semanal", icon: LayoutGrid },
   ];
 
-  const [studyNowLoading, setStudyNowLoading] = useState(false);
-  const [studyNowContent, setStudyNowContent] = useState<{ tema: string; materia: string; conteudo: string } | null>(null);
-  const [studyNowMessages, setStudyNowMessages] = useState<Array<{ role: "flora" | "user"; content: string }>>([]);
-  const [studyNowFollowupInput, setStudyNowFollowupInput] = useState("");
-  const [studyNowFollowupLoading, setStudyNowFollowupLoading] = useState(false);
-  const [studyChoiceOpen, setStudyChoiceOpen] = useState(false);
-
-  const runFloraStudyNow = useCallback(async () => {
-    setStudyNowLoading(true);
-    try {
-      const result = await floraStudyNow();
-      if (result && result.conteudo) {
-        setStudyNowContent(result);
-        setStudyNowMessages([{ role: "flora", content: result.conteudo }]);
-      } else if (recommendedTopic) {
-        handleStartStudyNow(recommendedTopic);
-      } else {
-        toast.info("Adicione um tema ao cronograma para a Flora sugerir o que estudar.");
-      }
-    } catch {
-      if (recommendedTopic) handleStartStudyNow(recommendedTopic);
-    } finally {
-      setStudyNowLoading(false);
-    }
-  }, [handleStartStudyNow, recommendedTopic]);
-
-  const sendStudyNowFollowup = useCallback(async (request: string) => {
-    if (!studyNowContent || !request.trim() || studyNowFollowupLoading) return;
-    setStudyNowMessages((prev) => [...prev, { role: "user", content: request }]);
-    setStudyNowFollowupInput("");
-    setStudyNowFollowupLoading(true);
-    try {
-      const previousContent = studyNowMessages
-        .filter((m) => m.role === "flora")
-        .map((m) => m.content)
-        .join("\n\n---\n\n");
-      const res = await floraStudyNowFollowup({
-        tema: studyNowContent.tema,
-        materia: studyNowContent.materia,
-        previousContent,
-        userRequest: request,
-      });
-      if (res?.conteudo) {
-        setStudyNowMessages((prev) => [...prev, { role: "flora", content: res.conteudo }]);
-      } else {
-        toast.error("A Flora não conseguiu responder agora. Tenta de novo?");
-      }
-    } finally {
-      setStudyNowFollowupLoading(false);
-    }
-  }, [studyNowContent, studyNowMessages, studyNowFollowupLoading]);
-
-  const closeStudyNow = useCallback(() => {
-    setStudyNowContent(null);
-    setStudyNowMessages([]);
-    setStudyNowFollowupInput("");
-  }, []);
+  const {
+    studyChoiceOpen,
+    studyNowLoading,
+    studyNowContent,
+    studyNowMessages,
+    studyNowFollowupInput,
+    studyNowFollowupLoading,
+    setStudyChoiceOpen,
+    setStudyNowFollowupInput,
+    runFloraStudyNow,
+    sendStudyNowFollowup,
+    closeStudyNow,
+  } = useStudyNow({ recommendedTopic, handleStartStudyNow });
 
   const handlePrimaryAction = async () => {
     setTab("revisao");
@@ -378,56 +326,7 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-background pb-16 md:pb-0">
-      {/* Header */}
-      <header className="border-b border-border bg-card sticky top-0 z-10">
-        <div className="container max-w-7xl mx-auto px-3 sm:px-4 py-3 flex items-center gap-2 sm:gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-            <BookOpen className="w-5 h-5 text-primary-foreground" />
-          </div>
-          <div className="flex-1 min-w-[120px]">
-            <h1 className="font-heading font-bold text-lg sm:text-xl">StudyFlow</h1>
-            <p className="text-xs text-muted-foreground hidden sm:block">Seu plano de estudos inteligente</p>
-          </div>
-          {/* Desktop nav links */}
-          <div className="hidden md:flex items-center gap-2">
-            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate("/notebooks")} onMouseEnter={() => prefetchRoute("/notebooks")}>
-              <NotebookPen className="w-4 h-4" /> Cadernos
-            </Button>
-            {user && (
-              <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate(bancoRoute)} onMouseEnter={() => prefetchRoute(bancoRoute)}>
-                <Library className="w-4 h-4" /> {bancoLabel}
-              </Button>
-            )}
-            {user && (
-              <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate("/redacao")} onMouseEnter={() => prefetchRoute("/redacao")}>
-                <FileText className="w-4 h-4" /> Redação
-              </Button>
-            )}
-            {user && (
-              <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate("/analise")} onMouseEnter={() => prefetchRoute("/analise")}>
-                <BarChart3 className="w-4 h-4" /> Análise
-              </Button>
-            )}
-          </div>
-          {/* Always visible: palette, theme, settings, logout */}
-          <div className="flex items-center gap-1">
-            <CustomThemeDialog />
-            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={cycleTheme} aria-label="Trocar tema">
-              <ThemeIcon className="w-4 h-4" />
-            </Button>
-            {user && (
-              <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => navigate("/settings")} aria-label="Configurações">
-                <Settings className="w-4 h-4" />
-              </Button>
-            )}
-            {user && (
-              <Button variant="ghost" size="icon" className="h-9 w-9" onClick={signOut}>
-                <LogOut className="w-4 h-4" />
-              </Button>
-            )}
-          </div>
-        </div>
-      </header>
+      <DashboardHeader user={user} bancoRoute={bancoRoute} bancoLabel={bancoLabel} onSignOut={signOut} />
       <main className="container max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
         <DashboardHero
           firstName={firstName}
@@ -684,163 +583,45 @@ export default function Index() {
       {/* Flora Chat */}
       <FloraButton />
 
-      {/* Study Now Content Dialog */}
       {studyNowContent && (
-        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-card border border-border rounded-2xl shadow-xl max-w-2xl w-full max-h-[85vh] flex flex-col">
-            <div className="flex items-center justify-between p-5 border-b border-border">
-              <div>
-                <h2 className="font-heading text-xl font-bold">{studyNowContent.tema}</h2>
-                <p className="text-sm text-muted-foreground">{studyNowContent.materia} · briefing com a Flora</p>
-              </div>
-              <Button variant="ghost" size="sm" onClick={closeStudyNow}>X</Button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-5 space-y-4">
-              {studyNowMessages.map((msg, i) => (
-                <div key={i} className={msg.role === "user" ? "flex justify-end" : "flex justify-start"}>
-                  <div className={`max-w-[90%] rounded-2xl px-4 py-3 text-sm ${msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
-                    {msg.role === "flora" ? (
-                      <div className="prose prose-sm max-w-none dark:prose-invert break-words [&_pre]:whitespace-pre-wrap [&_pre]:break-words [&_code]:break-words">
-                        <Suspense fallback={<p className="text-sm text-muted-foreground">Carregando...</p>}>
-                          <ReactMarkdown>{msg.content}</ReactMarkdown>
-                        </Suspense>
-                      </div>
-                    ) : (
-                      <p className="whitespace-pre-wrap break-words">{msg.content}</p>
-                    )}
-                  </div>
-                </div>
-              ))}
-              {studyNowFollowupLoading && (
-                <div className="flex justify-start">
-                  <div className="bg-muted rounded-2xl px-4 py-3 text-sm text-muted-foreground">Flora está pensando...</div>
-                </div>
-              )}
-            </div>
-
-            <div className="border-t border-border p-4 space-y-3">
-              <div className="flex flex-wrap gap-2">
-                {[
-                  "Explica de outro jeito",
-                  "Dá mais exemplos",
-                  "Aprofunda esse tema",
-                  "Por onde começar a ler",
-                ].map((q) => (
-                  <Button
-                    key={q}
-                    size="sm"
-                    variant="outline"
-                    disabled={studyNowFollowupLoading}
-                    onClick={() => sendStudyNowFollowup(q)}
-                  >
-                    {q}
-                  </Button>
-                ))}
-              </div>
-              <form
-                className="flex gap-2"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  sendStudyNowFollowup(studyNowFollowupInput);
-                }}
-              >
-                <input
-                  type="text"
-                  value={studyNowFollowupInput}
-                  onChange={(e) => setStudyNowFollowupInput(e.target.value)}
-                  placeholder="Pergunta algo antes de começar..."
-                  className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm"
-                  disabled={studyNowFollowupLoading}
-                />
-                <Button type="submit" variant="outline" size="sm" disabled={studyNowFollowupLoading || !studyNowFollowupInput.trim()}>
-                  Enviar
-                </Button>
-              </form>
-              <div className="flex gap-2 justify-end pt-1">
-                <Button variant="ghost" onClick={closeStudyNow}>Fechar</Button>
-                <Button onClick={() => {
-                  closeStudyNow();
-                  timer.start();
-                  toast.success("Tudo certo. Boa sessão!");
-                }}>Tudo claro — iniciar cronômetro</Button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <StudyNowDialog
+          content={studyNowContent}
+          messages={studyNowMessages}
+          followupInput={studyNowFollowupInput}
+          followupLoading={studyNowFollowupLoading}
+          onChangeFollowupInput={setStudyNowFollowupInput}
+          onSendFollowup={sendStudyNowFollowup}
+          onClose={closeStudyNow}
+          onConfirmStart={() => {
+            closeStudyNow();
+            timer.start();
+            toast.success("Tudo certo. Boa sessão!");
+          }}
+        />
       )}
 
-      {/* Study Choice Dialog */}
-      {studyChoiceOpen && (
-        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setStudyChoiceOpen(false)}>
-          <div className="bg-card border border-border rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
-            <div>
-              <h2 className="font-heading text-lg font-bold">Por onde quer começar?</h2>
-              <p className="text-sm text-muted-foreground">Escolha como iniciar sua sessão.</p>
-            </div>
-            <div className="space-y-2">
-              {recommendedTopic && (
-                <Button
-                  variant="outline"
-                  className="w-full justify-start h-auto py-3"
-                  onClick={() => {
-                    setStudyChoiceOpen(false);
-                    handleStartStudyNow(recommendedTopic);
-                  }}
-                >
-                  <div className="text-left">
-                    <p className="font-semibold text-sm">Recomendado pela Flora</p>
-                    <p className="text-xs text-muted-foreground truncate">{recommendedTopic.tema} · {recommendedTopic.materia}</p>
-                  </div>
-                </Button>
-              )}
-              <Button
-                variant="outline"
-                className="w-full justify-start h-auto py-3"
-                onClick={() => {
-                  setStudyChoiceOpen(false);
-                  void runFloraStudyNow();
-                }}
-              >
-                <div className="text-left">
-                  <p className="font-semibold text-sm">Resumo rápido pela Flora</p>
-                  <p className="text-xs text-muted-foreground">Conteúdo curto antes de iniciar o timer</p>
-                </div>
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full justify-start h-auto py-3"
-                onClick={() => {
-                  setStudyChoiceOpen(false);
-                  timer.start();
-                  toast.success("Cronômetro iniciado. Boa sessão!");
-                }}
-              >
-                <div className="text-left">
-                  <p className="font-semibold text-sm">Só iniciar o cronômetro</p>
-                  <p className="text-xs text-muted-foreground">Sem matéria fixa — você escolhe enquanto estuda</p>
-                </div>
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full justify-start h-auto py-3"
-                onClick={() => {
-                  setStudyChoiceOpen(false);
-                  navigate("/aulao");
-                }}
-              >
-                <div className="text-left">
-                  <p className="font-semibold text-sm">Aulão com a Flora</p>
-                  <p className="text-xs text-muted-foreground">Aula explicada com macetes, redação e busca de conteúdo</p>
-                </div>
-              </Button>
-            </div>
-            <div className="flex justify-end pt-1">
-              <Button variant="ghost" size="sm" onClick={() => setStudyChoiceOpen(false)}>Cancelar</Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <StudyChoiceDialog
+        open={studyChoiceOpen}
+        onClose={() => setStudyChoiceOpen(false)}
+        recommendedTopic={recommendedTopic}
+        onChooseRecommended={() => {
+          setStudyChoiceOpen(false);
+          if (recommendedTopic) handleStartStudyNow(recommendedTopic);
+        }}
+        onChooseFloraResume={() => {
+          setStudyChoiceOpen(false);
+          void runFloraStudyNow();
+        }}
+        onChooseTimerOnly={() => {
+          setStudyChoiceOpen(false);
+          timer.start();
+          toast.success("Cronômetro iniciado. Boa sessão!");
+        }}
+        onChooseAulao={() => {
+          setStudyChoiceOpen(false);
+          navigate("/aulao");
+        }}
+      />
 
       {/* Loading overlay for Study Now */}
       {studyNowLoading && (
