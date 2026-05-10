@@ -268,63 +268,19 @@ export default function Index() {
     { id: "semanal" as Tab, label: "Cronograma Semanal", icon: LayoutGrid },
   ];
 
-  const [studyNowLoading, setStudyNowLoading] = useState(false);
-  const [studyNowContent, setStudyNowContent] = useState<{ tema: string; materia: string; conteudo: string } | null>(null);
-  const [studyNowMessages, setStudyNowMessages] = useState<Array<{ role: "flora" | "user"; content: string }>>([]);
-  const [studyNowFollowupInput, setStudyNowFollowupInput] = useState("");
-  const [studyNowFollowupLoading, setStudyNowFollowupLoading] = useState(false);
-  const [studyChoiceOpen, setStudyChoiceOpen] = useState(false);
-
-  const runFloraStudyNow = useCallback(async () => {
-    setStudyNowLoading(true);
-    try {
-      const result = await floraStudyNow();
-      if (result && result.conteudo) {
-        setStudyNowContent(result);
-        setStudyNowMessages([{ role: "flora", content: result.conteudo }]);
-      } else if (recommendedTopic) {
-        handleStartStudyNow(recommendedTopic);
-      } else {
-        toast.info("Adicione um tema ao cronograma para a Flora sugerir o que estudar.");
-      }
-    } catch {
-      if (recommendedTopic) handleStartStudyNow(recommendedTopic);
-    } finally {
-      setStudyNowLoading(false);
-    }
-  }, [handleStartStudyNow, recommendedTopic]);
-
-  const sendStudyNowFollowup = useCallback(async (request: string) => {
-    if (!studyNowContent || !request.trim() || studyNowFollowupLoading) return;
-    setStudyNowMessages((prev) => [...prev, { role: "user", content: request }]);
-    setStudyNowFollowupInput("");
-    setStudyNowFollowupLoading(true);
-    try {
-      const previousContent = studyNowMessages
-        .filter((m) => m.role === "flora")
-        .map((m) => m.content)
-        .join("\n\n---\n\n");
-      const res = await floraStudyNowFollowup({
-        tema: studyNowContent.tema,
-        materia: studyNowContent.materia,
-        previousContent,
-        userRequest: request,
-      });
-      if (res?.conteudo) {
-        setStudyNowMessages((prev) => [...prev, { role: "flora", content: res.conteudo }]);
-      } else {
-        toast.error("A Flora não conseguiu responder agora. Tenta de novo?");
-      }
-    } finally {
-      setStudyNowFollowupLoading(false);
-    }
-  }, [studyNowContent, studyNowMessages, studyNowFollowupLoading]);
-
-  const closeStudyNow = useCallback(() => {
-    setStudyNowContent(null);
-    setStudyNowMessages([]);
-    setStudyNowFollowupInput("");
-  }, []);
+  const {
+    studyChoiceOpen,
+    studyNowLoading,
+    studyNowContent,
+    studyNowMessages,
+    studyNowFollowupInput,
+    studyNowFollowupLoading,
+    setStudyChoiceOpen,
+    setStudyNowFollowupInput,
+    runFloraStudyNow,
+    sendStudyNowFollowup,
+    closeStudyNow,
+  } = useStudyNow({ recommendedTopic, handleStartStudyNow });
 
   const handlePrimaryAction = async () => {
     setTab("revisao");
