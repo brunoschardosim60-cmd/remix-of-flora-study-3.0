@@ -15,6 +15,7 @@ import { useStudyTimer } from "@/hooks/useStudyTimer";
 import { useOnboardingGuard } from "@/hooks/useOnboardingGuard";
 import { useFloraEvents } from "@/hooks/useFloraEvents";
 import { useStudyNow } from "@/hooks/useStudyNow";
+import { useDashboardDialogs } from "@/hooks/useDashboardDialogs";
 import { loadStringStorage } from "@/lib/storage";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 as Loader2Icon } from "lucide-react";
@@ -172,11 +173,22 @@ export default function Index() {
     return savedTab === "semanal" ? "semanal" : "revisao";
   });
   const { isVisible: isWidgetVisible } = useDashboardWidgets();
-  const [notesTopic, setNotesTopic] = useState<StudyTopic | null>(null);
-  const [quizTopic, setQuizTopic] = useState<StudyTopic | null>(null);
-  const [quizInitialQuestions, setQuizInitialQuestions] = useState<any[] | undefined>(undefined);
-  const [addTopicOpenSignal, setAddTopicOpenSignal] = useState(0);
-  const [flashcardSessionOpen, setFlashcardSessionOpen] = useState(false);
+  const {
+    notesTopic,
+    quizTopic,
+    quizInitialQuestions,
+    flashcardSessionOpen,
+    addTopicOpenSignal,
+    setNotesTopic,
+    setQuizTopic,
+    setQuizInitialQuestions,
+    openAddTopic,
+    openQuiz,
+    closeQuiz,
+    openFlashcardSession,
+    closeFlashcardSession,
+    patchNotesTopic,
+  } = useDashboardDialogs();
   const hasNotebookActivity = useMemo(
     () => loadAIActivities().some((item) => item.notebookId),
     []
@@ -244,13 +256,13 @@ export default function Index() {
 
   const handleNotesDialogUpdate = useCallback((topicId: string, notas: string) => {
     handleUpdateNotes(topicId, notas);
-    setNotesTopic((prev) => (prev && prev.id === topicId ? { ...prev, notas } : prev));
-  }, [handleUpdateNotes]);
+    patchNotesTopic(topicId, { notas });
+  }, [handleUpdateNotes, patchNotesTopic]);
 
   const handleFlashcardsDialogUpdate = useCallback((topicId: string, flashcards: StudyTopic["flashcards"]) => {
     handleUpdateFlashcards(topicId, flashcards);
-    setNotesTopic((prev) => (prev && prev.id === topicId ? { ...prev, flashcards } : prev));
-  }, [handleUpdateFlashcards]);
+    patchNotesTopic(topicId, { flashcards });
+  }, [handleUpdateFlashcards, patchNotesTopic]);
 
   const dueFlashcardsCount = useMemo(() => countDueFlashcards(topics), [topics]);
 
@@ -286,14 +298,14 @@ export default function Index() {
     setTab("revisao");
 
     if (topics.length === 0 && !user) {
-      setAddTopicOpenSignal((prev) => prev + 1);
+      openAddTopic();
       return;
     }
 
     // If logged in: pergunta antes — não decide sozinho.
     if (user) {
       if (topics.length === 0) {
-        setAddTopicOpenSignal((prev) => prev + 1);
+        openAddTopic();
         toast.info("Crie seu primeiro tema para começar a estudar.");
         return;
       }
@@ -358,7 +370,7 @@ export default function Index() {
           hasStartedStudySession={sessions.length > 0}
           onCreateTopic={() => {
             setTab("revisao");
-            setAddTopicOpenSignal((prev) => prev + 1);
+            openAddTopic();
           }}
           onStartStudy={() => {
             if (recommendedTopic) {
@@ -366,13 +378,13 @@ export default function Index() {
               return;
             }
             setTab("revisao");
-            setAddTopicOpenSignal((prev) => prev + 1);
+            openAddTopic();
           }}
         />
 
         {dueFlashcardsCount > 0 && isWidgetVisible("flashcards_banner") && (
           <button
-            onClick={() => setFlashcardSessionOpen(true)}
+            onClick={openFlashcardSession}
             className="w-full flex items-center justify-between gap-3 rounded-2xl border border-accent/30 bg-accent/5 hover:bg-accent/10 transition-colors px-4 py-3 text-left"
           >
             <div className="flex items-center gap-3 min-w-0">
@@ -504,7 +516,7 @@ export default function Index() {
                   onRatingChange={handleRatingChange}
                   onDelete={handleDelete}
                   onOpenNotes={setNotesTopic}
-                  onOpenQuiz={(topic) => { setQuizInitialQuestions(undefined); setQuizTopic(topic); }}
+                  onOpenQuiz={(topic) => openQuiz(topic)}
                   onStartStudy={handleStartStudyNow}
                 />
               </Suspense>
@@ -534,7 +546,7 @@ export default function Index() {
           <QuizDialog
             topic={quizTopic}
             open={!!quizTopic}
-            onClose={() => { setQuizTopic(null); setQuizInitialQuestions(undefined); }}
+            onClose={closeQuiz}
             onSaveResult={handleSaveQuizResult}
             initialQuestions={quizInitialQuestions}
           />
@@ -545,7 +557,7 @@ export default function Index() {
           <FlashcardSessionDialog
             open={flashcardSessionOpen}
             topics={topics}
-            onClose={() => setFlashcardSessionOpen(false)}
+            onClose={closeFlashcardSession}
             onUpdateFlashcards={handleFlashcardsDialogUpdate}
           />
         </Suspense>
