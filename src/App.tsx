@@ -31,6 +31,7 @@ const BancoConcurso = lazy(() => import("./pages/BancoConcurso"));
 const RedacaoTemas = lazy(() => import("./pages/RedacaoTemas"));
 const Aulao = lazy(() => import("./pages/Aulao"));
 const Comunidades = lazy(() => import("./pages/Comunidades"));
+const Landing = lazy(() => import("./pages/Landing"));
 
 
 const queryClient = new QueryClient({
@@ -115,7 +116,7 @@ function NotificationInit() {
 function LandingOrDashboard() {
   const { user, loading } = useAuth();
   if (loading) return <RouteFallback />;
-  if (!user) return <Navigate to="/auth" replace />;
+  if (!user) return <Suspense fallback={<RouteFallback />}><Landing /></Suspense>;
   return (
     <ProtectedRoute>
       <Suspense fallback={<RouteFallback />}><Index /></Suspense>
