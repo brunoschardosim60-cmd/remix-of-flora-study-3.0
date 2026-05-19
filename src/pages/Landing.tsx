@@ -65,6 +65,7 @@ export default function Landing() {
             <span className="font-heading font-bold text-lg">StudyFlow</span>
           </div>
           <div className="flex items-center gap-2">
+            <Link to="/pricing"><Button variant="ghost" size="sm" className="hidden sm:inline-flex">Planos</Button></Link>
             <Link to="/auth"><Button variant="ghost" size="sm">Entrar</Button></Link>
             <Link to="/auth"><Button size="sm">Come\u00e7ar gr\u00e1tis</Button></Link>
           </div>
