@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { prefetchForContext } from "@/lib/prefetch";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, FileText, Loader2, PlusCircle, Sparkles, Trash2, Wand2, Save, CheckCircle2, AlertCircle, Target, CalendarDays, CalendarRange, Dumbbell, Lightbulb, PanelLeftClose, PanelLeftOpen, WifiOff, CloudUpload } from "lucide-react";
+import { ArrowLeft, FileText, Loader2, PlusCircle, Sparkles, Trash2, Wand2, Save, CheckCircle2, AlertCircle, Target, CalendarDays, CalendarRange, Dumbbell, Lightbulb, PanelLeftClose, PanelLeftOpen, WifiOff, CloudUpload, Download } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +26,7 @@ import {
 } from "@/lib/essays";
 import { reportError, toErrorMessage } from "@/lib/errorHandling";
 import { EssayEvolutionCard } from "@/components/EssayEvolutionCard";
+import { exportEssayToPdf } from "@/lib/essayPdfExport";
 import {
   saveLocalDraft,
   loadLocalDraft,
@@ -696,6 +697,23 @@ export default function Redacao() {
                         <CheckCircle2 className="h-5 w-5 text-primary" />
                         <h2 className="font-heading text-lg font-semibold">Correção da Flora</h2>
                         <Badge variant="outline" className="text-xs">{config.label}</Badge>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="ml-2 h-8 gap-1"
+                          onClick={async () => {
+                            try {
+                              await exportEssayToPdf(selected, isENEM);
+                              toast.success("PDF gerado");
+                            } catch (err) {
+                              toast.error("Falha ao gerar PDF");
+                              reportError(err, { tag: "essay-pdf" });
+                            }
+                          }}
+                        >
+                          <Download className="h-3.5 w-3.5" />
+                          Baixar PDF
+                        </Button>
                       </div>
                       <div className="text-right">
                         <p className="text-xs text-muted-foreground">Nota</p>
