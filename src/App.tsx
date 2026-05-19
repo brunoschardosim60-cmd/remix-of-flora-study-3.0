@@ -32,6 +32,7 @@ const RedacaoTemas = lazy(() => import("./pages/RedacaoTemas"));
 const Aulao = lazy(() => import("./pages/Aulao"));
 const Comunidades = lazy(() => import("./pages/Comunidades"));
 const Pricing = lazy(() => import("./pages/Pricing"));
+const PublicProfile = lazy(() => import("./pages/PublicProfile"));
 
 
 const queryClient = new QueryClient({
@@ -192,6 +193,7 @@ const App = () => (
                 <Route path="/aulao" element={<ProtectedRoute><Aulao /></ProtectedRoute>} />
                 <Route path="/comunidades" element={<ProtectedRoute><Comunidades /></ProtectedRoute>} />
                 <Route path="/pricing" element={<Suspense fallback={<RouteFallback />}><Pricing /></Suspense>} />
+                <Route path="/u/:username" element={<Suspense fallback={<RouteFallback />}><PublicProfile /></Suspense>} />
                 
                 <Route path="*" element={<NotFound />} />
               </Routes>
