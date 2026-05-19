@@ -31,7 +31,6 @@ const BancoConcurso = lazy(() => import("./pages/BancoConcurso"));
 const RedacaoTemas = lazy(() => import("./pages/RedacaoTemas"));
 const Aulao = lazy(() => import("./pages/Aulao"));
 const Comunidades = lazy(() => import("./pages/Comunidades"));
-const Landing = lazy(() => import("./pages/Landing"));
 const Pricing = lazy(() => import("./pages/Pricing"));
 
 
@@ -113,11 +112,11 @@ function NotificationInit() {
   return null;
 }
 
-// Se não estiver logado, envia direto para /auth para evitar redirects externos quebrando em preview
+// Não logado vai direto para /auth — sem tela de apresentação intermediária
 function LandingOrDashboard() {
   const { user, loading } = useAuth();
   if (loading) return <RouteFallback />;
-  if (!user) return <Suspense fallback={<RouteFallback />}><Landing /></Suspense>;
+  if (!user) return <Navigate to="/auth" replace />;
   return (
     <ProtectedRoute>
       <Suspense fallback={<RouteFallback />}><Index /></Suspense>
