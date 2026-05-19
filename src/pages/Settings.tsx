@@ -120,6 +120,47 @@ export default function Settings() {
     }
   }
 
+  async function handleSavePublic() {
+    if (!user) return;
+    const cleanUsername = username.trim().toLowerCase().replace(/[^a-z0-9_]/g, "");
+    if (isPublic && !cleanUsername) {
+      toast.error("Defina um username para tornar seu perfil público.");
+      return;
+    }
+    if (cleanUsername && cleanUsername.length < 3) {
+      toast.error("Username precisa ter no mínimo 3 caracteres.");
+      return;
+    }
+    setSavingPublic(true);
+    try {
+      const { error } = await supabase.from("profiles").update({
+        username: cleanUsername || null,
+        bio: bio.trim() || null,
+        is_public: isPublic,
+      }).eq("id", user.id);
+      if (error) {
+        if (String(error.message).includes("duplicate") || String((error as any).code) === "23505") {
+          toast.error("Esse username já está em uso.");
+        } else {
+          throw error;
+        }
+        return;
+      }
+      setUsername(cleanUsername);
+      toast.success(isPublic ? "Perfil público atualizado." : "Perfil salvo.");
+    } catch {
+      toast.error("Erro ao salvar perfil público.");
+    } finally {
+      setSavingPublic(false);
+    }
+  }
+
+  function copyPublicUrl() {
+    if (!username) return;
+    const url = `${window.location.origin}/u/${username}`;
+    navigator.clipboard.writeText(url).then(() => toast.success("Link copiado!"));
+  }
+
   async function handleSaveGoal() {
     if (!user) return;
     setSavingGoal(true);
