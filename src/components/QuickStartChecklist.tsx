@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Brain, CheckCircle2, PlayCircle, X } from "lucide-react";
+import { BookOpen, Brain, CheckCircle2, PlayCircle, Sparkles, X } from "lucide-react";
 
 const DISMISSED_KEY = "quickstart-dismissed";
+const FLORA_TALKED_KEY = "quickstart-flora-talked";
 
 interface QuickStartChecklistProps {
   isLoggedIn: boolean;
@@ -25,6 +26,18 @@ export function QuickStartChecklist({
   const [dismissed, setDismissed] = useState(() => {
     try { return localStorage.getItem(DISMISSED_KEY) === "true"; } catch { return false; }
   });
+  const [talkedToFlora, setTalkedToFlora] = useState(() => {
+    try { return localStorage.getItem(FLORA_TALKED_KEY) === "true"; } catch { return false; }
+  });
+
+  useEffect(() => {
+    const onOpen = () => {
+      try { localStorage.setItem(FLORA_TALKED_KEY, "true"); } catch {}
+      setTalkedToFlora(true);
+    };
+    window.addEventListener("open-flora-chat", onOpen);
+    return () => window.removeEventListener("open-flora-chat", onOpen);
+  }, []);
 
   const steps = [
     {
@@ -44,6 +57,19 @@ export function QuickStartChecklist({
       action: onStartStudy,
       actionLabel: "Estudar agora",
       helper: "Uma sessao ja comeca a alimentar foco e metricas.",
+    },
+    {
+      id: "flora",
+      title: "Conversar com a Flora",
+      done: talkedToFlora,
+      icon: Sparkles,
+      action: () => {
+        try { localStorage.setItem(FLORA_TALKED_KEY, "true"); } catch {}
+        setTalkedToFlora(true);
+        window.dispatchEvent(new CustomEvent("open-flora-chat"));
+      },
+      actionLabel: "Falar com a Flora",
+      helper: "Pe\u00e7a um plano, tire d\u00favida ou pe\u00e7a uma aula. Ela te conhece.",
     },
   ];
 
@@ -92,7 +118,7 @@ export function QuickStartChecklist({
         </div>
       </div>
 
-      <div className={`mt-4 grid gap-3 ${steps.length === 2 ? "lg:grid-cols-2" : ""}`}>
+      <div className={`mt-4 grid gap-3 ${steps.length === 2 ? "lg:grid-cols-2" : "lg:grid-cols-3"}`}>
         {steps.map((step) => {
           const Icon = step.icon;
           return (
