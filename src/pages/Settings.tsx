@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { CustomThemeDialog } from "@/components/CustomThemeDialog";
 import { DashboardCustomizer } from "@/components/DashboardCustomizer";
 import { Sun, Moon, CircleDot, LogOut, ArrowLeft, Shield, User, Target, Sparkles, Bell, BellOff, Loader2, Save, LayoutDashboard, Calendar, Download } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Globe, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { getMyTier, getMyQuota, type AITier } from "@/lib/aiUsage";
 
@@ -39,6 +41,12 @@ export default function Settings() {
   const [displayName, setDisplayName] = useState("");
   const [savingProfile, setSavingProfile] = useState(false);
 
+  // Public profile
+  const [username, setUsername] = useState("");
+  const [bio, setBio] = useState("");
+  const [isPublic, setIsPublic] = useState(false);
+  const [savingPublic, setSavingPublic] = useState(false);
+
   // Onboarding
   const [objetivo, setObjetivo] = useState("");
   const [metaResultado, setMetaResultado] = useState("");
@@ -64,8 +72,13 @@ export default function Settings() {
   useEffect(() => {
     if (!user) return;
     // Profile
-    supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle()
-      .then(({ data }) => { if (data?.display_name) setDisplayName(data.display_name); });
+    supabase.from("profiles").select("display_name, username, bio, is_public").eq("id", user.id).maybeSingle()
+      .then(({ data }) => {
+        if (data?.display_name) setDisplayName(data.display_name);
+        if ((data as any)?.username) setUsername((data as any).username);
+        if ((data as any)?.bio) setBio((data as any).bio);
+        if ((data as any)?.is_public) setIsPublic(Boolean((data as any).is_public));
+      });
     // Onboarding
     supabase.from("student_onboarding").select("objetivo,meta_resultado,banca,cargo,orgao").eq("user_id", user.id).maybeSingle()
       .then(({ data }) => {
@@ -105,6 +118,47 @@ export default function Settings() {
     } finally {
       setSavingProfile(false);
     }
+  }
+
+  async function handleSavePublic() {
+    if (!user) return;
+    const cleanUsername = username.trim().toLowerCase().replace(/[^a-z0-9_]/g, "");
+    if (isPublic && !cleanUsername) {
+      toast.error("Defina um username para tornar seu perfil público.");
+      return;
+    }
+    if (cleanUsername && cleanUsername.length < 3) {
+      toast.error("Username precisa ter no mínimo 3 caracteres.");
+      return;
+    }
+    setSavingPublic(true);
+    try {
+      const { error } = await supabase.from("profiles").update({
+        username: cleanUsername || null,
+        bio: bio.trim() || null,
+        is_public: isPublic,
+      }).eq("id", user.id);
+      if (error) {
+        if (String(error.message).includes("duplicate") || String((error as any).code) === "23505") {
+          toast.error("Esse username já está em uso.");
+        } else {
+          throw error;
+        }
+        return;
+      }
+      setUsername(cleanUsername);
+      toast.success(isPublic ? "Perfil público atualizado." : "Perfil salvo.");
+    } catch {
+      toast.error("Erro ao salvar perfil público.");
+    } finally {
+      setSavingPublic(false);
+    }
+  }
+
+  function copyPublicUrl() {
+    if (!username) return;
+    const url = `${window.location.origin}/u/${username}`;
+    navigator.clipboard.writeText(url).then(() => toast.success("Link copiado!"));
   }
 
   async function handleSaveGoal() {
@@ -221,6 +275,52 @@ export default function Settings() {
               </div>
             </div>
             <p className="text-xs text-muted-foreground">Conta: {user.email}</p>
+          </section>
+        )}
+
+        {/* Public profile */}
+        {user && (
+          <section className="rounded-2xl border border-border bg-card p-4 sm:p-5 space-y-4">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="font-heading font-semibold text-base flex items-center gap-2">
+                <Globe className="w-4 h-4 text-primary" /> Perfil público
+              </h2>
+              <Switch checked={isPublic} onCheckedChange={setIsPublic} />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Quando ativo, qualquer pessoa pode ver seu nome, bio e estatísticas (nível, XP, sequência e horas).
+            </p>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Username</label>
+              <div className="flex gap-2 items-center">
+                <span className="text-muted-foreground text-sm">@</span>
+                <Input
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
+                  placeholder="seu_username"
+                  maxLength={24}
+                  className="flex-1"
+                />
+              </div>
+              {username && (
+                <button type="button" onClick={copyPublicUrl} className="text-xs text-primary inline-flex items-center gap-1 hover:underline">
+                  <Copy className="w-3 h-3" /> {window.location.origin}/u/{username}
+                </button>
+              )}
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Bio</label>
+              <Input
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                placeholder="Estudando para o ENEM 2026..."
+                maxLength={160}
+              />
+            </div>
+            <Button onClick={handleSavePublic} disabled={savingPublic} size="sm" className="w-full sm:w-auto">
+              {savingPublic ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+              Salvar perfil público
+            </Button>
           </section>
         )}
 
