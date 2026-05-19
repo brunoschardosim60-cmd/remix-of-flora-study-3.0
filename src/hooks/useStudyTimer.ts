@@ -23,6 +23,14 @@ export function useStudyTimer({
   const intervalRef = useRef<number | null>(null);
   const elapsedRef = useRef(0);
 
+  // Refs para acessar valores atuais dentro do tick sem recriar o intervalo
+  const onSessionEndRef = useRef(onSessionEnd);
+  const activeTopicIdRef = useRef(activeTopicId);
+  const activeSubjectRef = useRef(activeSubject);
+  useEffect(() => { onSessionEndRef.current = onSessionEnd; }, [onSessionEnd]);
+  useEffect(() => { activeTopicIdRef.current = activeTopicId; }, [activeTopicId]);
+  useEffect(() => { activeSubjectRef.current = activeSubject; }, [activeSubject]);
+
   const persistTimerState = useCallback((nextRunning: boolean, nextElapsed: number) => {
     if (typeof window === "undefined") return;
     try {
@@ -64,7 +72,39 @@ export function useStudyTimer({
     // Ancora o startRef uma única vez ao iniciar/retomar
     startRef.current = Date.now() - elapsedRef.current;
     intervalRef.current = window.setInterval(() => {
-      setElapsed(Date.now() - (startRef.current ?? Date.now()));
+      const now = Date.now();
+      let startTs = startRef.current ?? now;
+
+      // Detecta cruzamento de meia-noite e divide a sessão por dia
+      // Loop cobre o caso (raro) de cruzar mais de um dia entre ticks
+      // ex: aba dormente por horas
+      while (true) {
+        const startDay = new Date(startTs);
+        startDay.setHours(0, 0, 0, 0);
+        const nextMidnight = new Date(startDay);
+        nextMidnight.setDate(nextMidnight.getDate() + 1);
+        const nextMidnightTs = nextMidnight.getTime();
+        if (now < nextMidnightTs) break;
+
+        const endOfDay = nextMidnightTs - 1; // 23:59:59.999
+        const partialDuration = endOfDay - startTs;
+        if (partialDuration > 1000) {
+          const session: StudySession = {
+            id: crypto.randomUUID(),
+            start: new Date(startTs).toISOString(),
+            end: new Date(endOfDay).toISOString(),
+            durationMs: partialDuration,
+            topicId: activeTopicIdRef.current ?? null,
+            subject: activeSubjectRef.current ?? null,
+          };
+          try { onSessionEndRef.current(session); } catch {}
+        }
+        // Reinicia a contagem a partir da meia-noite do novo dia
+        startTs = nextMidnightTs;
+        startRef.current = startTs;
+      }
+
+      setElapsed(now - startTs);
     }, 1000);
     return () => { if (intervalRef.current) { window.clearInterval(intervalRef.current); intervalRef.current = null; } };
   // eslint-disable-next-line react-hooks/exhaustive-deps
