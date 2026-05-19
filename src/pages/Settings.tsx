@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { CustomThemeDialog } from "@/components/CustomThemeDialog";
 import { DashboardCustomizer } from "@/components/DashboardCustomizer";
 import { Sun, Moon, CircleDot, LogOut, ArrowLeft, Shield, User, Target, Sparkles, Bell, BellOff, Loader2, Save, LayoutDashboard, Calendar, Download } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Globe, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { getMyTier, getMyQuota, type AITier } from "@/lib/aiUsage";
 
@@ -39,6 +41,12 @@ export default function Settings() {
   const [displayName, setDisplayName] = useState("");
   const [savingProfile, setSavingProfile] = useState(false);
 
+  // Public profile
+  const [username, setUsername] = useState("");
+  const [bio, setBio] = useState("");
+  const [isPublic, setIsPublic] = useState(false);
+  const [savingPublic, setSavingPublic] = useState(false);
+
   // Onboarding
   const [objetivo, setObjetivo] = useState("");
   const [metaResultado, setMetaResultado] = useState("");
@@ -64,8 +72,13 @@ export default function Settings() {
   useEffect(() => {
     if (!user) return;
     // Profile
-    supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle()
-      .then(({ data }) => { if (data?.display_name) setDisplayName(data.display_name); });
+    supabase.from("profiles").select("display_name, username, bio, is_public").eq("id", user.id).maybeSingle()
+      .then(({ data }) => {
+        if (data?.display_name) setDisplayName(data.display_name);
+        if ((data as any)?.username) setUsername((data as any).username);
+        if ((data as any)?.bio) setBio((data as any).bio);
+        if ((data as any)?.is_public) setIsPublic(Boolean((data as any).is_public));
+      });
     // Onboarding
     supabase.from("student_onboarding").select("objetivo,meta_resultado,banca,cargo,orgao").eq("user_id", user.id).maybeSingle()
       .then(({ data }) => {
