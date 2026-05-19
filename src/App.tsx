@@ -31,6 +31,8 @@ const BancoConcurso = lazy(() => import("./pages/BancoConcurso"));
 const RedacaoTemas = lazy(() => import("./pages/RedacaoTemas"));
 const Aulao = lazy(() => import("./pages/Aulao"));
 const Comunidades = lazy(() => import("./pages/Comunidades"));
+const Landing = lazy(() => import("./pages/Landing"));
+const Pricing = lazy(() => import("./pages/Pricing"));
 
 
 const queryClient = new QueryClient({
@@ -115,7 +117,7 @@ function NotificationInit() {
 function LandingOrDashboard() {
   const { user, loading } = useAuth();
   if (loading) return <RouteFallback />;
-  if (!user) return <Navigate to="/auth" replace />;
+  if (!user) return <Suspense fallback={<RouteFallback />}><Landing /></Suspense>;
   return (
     <ProtectedRoute>
       <Suspense fallback={<RouteFallback />}><Index /></Suspense>
@@ -190,6 +192,7 @@ const App = () => (
                 <Route path="/shared/notebook/:token" element={<Suspense fallback={<RouteFallback />}><SharedNotebook /></Suspense>} />
                 <Route path="/aulao" element={<ProtectedRoute><Aulao /></ProtectedRoute>} />
                 <Route path="/comunidades" element={<ProtectedRoute><Comunidades /></ProtectedRoute>} />
+                <Route path="/pricing" element={<Suspense fallback={<RouteFallback />}><Pricing /></Suspense>} />
                 
                 <Route path="*" element={<NotFound />} />
               </Routes>
