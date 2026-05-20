@@ -183,11 +183,21 @@ function SceneGraphic({ kind }: { kind: string }) {
 
 function SceneVisual({ kind, image }: { kind: string; image?: string; showChart?: boolean }) {
   const kicker = SCENE_KICKERS[kind] || SCENE_KICKERS.text;
+  const [imgFailed, setImgFailed] = useState(false);
+  useEffect(() => { setImgFailed(false); }, [image]);
+  const showImage = !!image && !imgFailed;
   return (
     <aside className="ilp-visual" aria-hidden>
-      {image ? (
+      {showImage ? (
         <>
-          <img className="ilp-visual-img" src={image} alt="" />
+          <img
+            className="ilp-visual-img"
+            src={image}
+            alt=""
+            loading="eager"
+            referrerPolicy="no-referrer"
+            onError={() => setImgFailed(true)}
+          />
           <div className="ilp-visual-overlay" />
           <div className="ilp-visual-caption-strip">
             <span className="ilp-visual-kicker">{kicker}</span>

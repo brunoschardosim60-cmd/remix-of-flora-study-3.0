@@ -821,6 +821,7 @@
     repeating-linear-gradient(-45deg, hsl(var(--accent) / 0.025) 0 2px, transparent 2px 24px);
   animation: ilp-grid-drift 22s linear infinite;
   pointer-events: none;
+  z-index: 0;
 }
 @keyframes ilp-grid-drift {
   from { transform: translate(0,0); }
@@ -830,13 +831,14 @@
   position: absolute; inset: 0;
   width: 100%; height: 100%;
   object-fit: cover;
-  z-index: 0;
-  opacity: 0.92;
+  z-index: 1;
+  opacity: 1;
 }
 .ilp-visual-img + .ilp-visual-overlay {
   position: absolute; inset: 0;
-  background: linear-gradient(180deg, hsl(var(--background) / 0.05), hsl(var(--background) / 0.55));
-  z-index: 1;
+  background: linear-gradient(180deg, transparent 40%, hsl(var(--background) / 0.35));
+  z-index: 2;
+  pointer-events: none;
 }
 .ilp-visual-icon-wrap,
 .ilp-visual-graphic-wrap {
@@ -861,7 +863,7 @@
 }
 .ilp-visual-caption-strip {
   position: absolute; bottom: 16px; left: 16px;
-  z-index: 2;
+  z-index: 3;
   padding: 6px 12px; border-radius: 999px;
   background: hsl(var(--background) / 0.7);
   backdrop-filter: blur(8px);
