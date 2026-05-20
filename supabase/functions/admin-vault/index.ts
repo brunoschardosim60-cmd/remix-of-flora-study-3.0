@@ -104,7 +104,7 @@ async function loadState(admin: AdminClient, userId: string): Promise<StudyState
     .maybeSingle();
 
   let topics = (data?.topics as StudyTopic[]) ?? [];
-  let sessions = (data?.sessions as StudySession[]) ?? [];
+  const jsonSessions = (data?.sessions as StudySession[]) ?? [];
   const weekly = (data?.weekly_slots as unknown[]) ?? [];
 
   // Fallback: ler das tabelas relacionais quando o snapshot agregado estiver vazio
@@ -129,20 +129,25 @@ async function loadState(admin: AdminClient, userId: string): Promise<StudyState
     }));
   }
 
-  if (sessions.length === 0) {
-    const { data: rows } = await admin
-      .from("study_sessions")
-      .select("*")
-      .eq("user_id", userId);
-    sessions = (rows ?? []).map((r: Record<string, unknown>) => ({
-      id: r.id as string,
-      topicId: (r.topic_id as string | null) ?? null,
-      subject: (r.subject as string | null) ?? null,
-      start: (r.start_at as string) ?? "",
-      end: (r.end_at as string) ?? (r.start_at as string) ?? "",
-      durationMs: (r.duration_ms as number) ?? 0,
-    }));
-  }
+  // Merge JSON snapshot with relational table — table is the source of truth
+  // for sessions the user actually recorded; JSON may contain admin-added or
+  // legacy entries. Union by id so admin sees ALL hours.
+  const { data: sessionRows } = await admin
+    .from("study_sessions")
+    .select("*")
+    .eq("user_id", userId);
+  const tableSessions: StudySession[] = (sessionRows ?? []).map((r: Record<string, unknown>) => ({
+    id: r.id as string,
+    topicId: (r.topic_id as string | null) ?? null,
+    subject: (r.subject as string | null) ?? null,
+    start: (r.start_at as string) ?? "",
+    end: (r.end_at as string) ?? (r.start_at as string) ?? "",
+    durationMs: (r.duration_ms as number) ?? 0,
+  }));
+  const byId = new Map<string, StudySession>();
+  for (const s of jsonSessions) if (s?.id) byId.set(s.id, s);
+  for (const s of tableSessions) if (s?.id) byId.set(s.id, s); // table wins
+  const sessions = Array.from(byId.values());
 
   return { topics, weekly, sessions };
 }
