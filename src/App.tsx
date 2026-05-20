@@ -33,6 +33,8 @@ const Aulao = lazy(() => import("./pages/Aulao"));
 const Comunidades = lazy(() => import("./pages/Comunidades"));
 const Pricing = lazy(() => import("./pages/Pricing"));
 const PublicProfile = lazy(() => import("./pages/PublicProfile"));
+const Cursos = lazy(() => import("./pages/Cursos"));
+const CursoPlayer = lazy(() => import("./pages/CursoPlayer"));
 
 
 const queryClient = new QueryClient({
@@ -191,6 +193,8 @@ const App = () => (
                 <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                 <Route path="/shared/notebook/:token" element={<Suspense fallback={<RouteFallback />}><SharedNotebook /></Suspense>} />
                 <Route path="/aulao" element={<ProtectedRoute><Aulao /></ProtectedRoute>} />
+                <Route path="/cursos" element={<ProtectedRoute><Cursos /></ProtectedRoute>} />
+                <Route path="/cursos/:id" element={<ProtectedRoute><CursoPlayer /></ProtectedRoute>} />
                 <Route path="/comunidades" element={<ProtectedRoute><Comunidades /></ProtectedRoute>} />
                 <Route path="/pricing" element={<Suspense fallback={<RouteFallback />}><Pricing /></Suspense>} />
                 <Route path="/u/:username" element={<Suspense fallback={<RouteFallback />}><PublicProfile /></Suspense>} />
