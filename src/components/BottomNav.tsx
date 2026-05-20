@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Home, NotebookPen, FileText, BarChart3, Sparkles, Library, BookOpen } from "lucide-react";
+import { Home, NotebookPen, FileText, BarChart3, Sparkles, Library, BookOpen, GraduationCap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -8,7 +8,7 @@ type Item = { path: string; label: string; icon: any; isAction?: boolean };
 
 const BASE_ITEMS: Item[] = [
   { path: "/", label: "Início", icon: Home },
-  { path: "/redacao", label: "Redação", icon: FileText },
+  { path: "/cursos", label: "Cursos", icon: GraduationCap },
   { path: "flora", label: "Flora", icon: Sparkles, isAction: true },
   { path: "/aulao", label: "Aulão", icon: BookOpen },
   { path: "/analise", label: "Análise", icon: BarChart3 },
@@ -16,7 +16,7 @@ const BASE_ITEMS: Item[] = [
 
 const CONCURSO_ITEMS: Item[] = [
   { path: "/", label: "Início", icon: Home },
-  { path: "/banco-concurso", label: "Banco", icon: Library },
+  { path: "/cursos", label: "Cursos", icon: GraduationCap },
   { path: "flora", label: "Flora", icon: Sparkles, isAction: true },
   { path: "/aulao", label: "Aulão", icon: BookOpen },
   { path: "/analise", label: "Análise", icon: BarChart3 },
