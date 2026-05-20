@@ -9,6 +9,7 @@ import {
   Volume2, VolumeX, Eye, Share2, Trophy, Flame,
 } from "lucide-react";
 import { generateDidacticImage } from "@/lib/floraImages";
+import { pickTopicImage } from "@/lib/topicImages";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -763,7 +764,10 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
             : stage === "done" ? "done"
             : (curScene?.kind || "text")
           }
-          image={currentSceneImg || undefined}
+          image={
+            currentSceneImg ||
+            pickTopicImage(lesson.titulo, cur?.titulo, curScene?.text)
+          }
           showChart={stage === "intro" || stage === "done" || stage === "final"}
         />
         {/* ── Stage canvas ── */}
