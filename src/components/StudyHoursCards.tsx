@@ -93,14 +93,26 @@ export function StudyHoursCards({ todayHours, weekHours, monthHours, sessions }:
   viewMonday.setDate(currentMonday.getDate() + weekOffset * 7);
 
   const weekData = getWeekData(sessions, viewMonday);
-  const weekTotal = Math.round(weekData.reduce((s, d) => s + d.hours, 0) * 10) / 10;
+  const weekTotalMs = weekData.reduce((s, d) => s + d.ms, 0);
   const todayStr = toLocalDate(new Date());
   const isCurrentWeek = weekOffset === 0;
 
+  const nowDate = new Date();
+  let todayMs = 0;
+  let monthMs = 0;
+  for (const s of sessions) {
+    if (!s.durationMs) continue;
+    const sd = new Date(s.start);
+    if (toLocalDate(sd) === todayStr) todayMs += s.durationMs;
+    if (sd.getFullYear() === nowDate.getFullYear() && sd.getMonth() === nowDate.getMonth()) {
+      monthMs += s.durationMs;
+    }
+  }
+
   const summaryItems = [
-    { label: "Hoje", value: `${todayHours}h` },
-    { label: "Semana", value: `${weekTotal}h` },
-    { label: "Mês", value: `${monthHours}h` },
+    { label: "Hoje", value: formatHM(todayMs) },
+    { label: "Semana", value: formatHM(weekTotalMs) },
+    { label: "Mês", value: formatHM(monthMs) },
   ];
 
   return (
