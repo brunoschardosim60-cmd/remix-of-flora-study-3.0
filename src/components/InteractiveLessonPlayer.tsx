@@ -898,6 +898,9 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
 
   const progress = currentStep / totalScenes;
   const resumo = Array.isArray(lesson.resumo) ? lesson.resumo : (typeof lesson.resumo === "string" ? [lesson.resumo] : []);
+  const visualContext = [lesson.titulo, cur?.titulo, cur?.conteudo, curScene?.text]
+    .filter(Boolean)
+    .join(" | ");
 
   // keyboard navigation (Keynote-style)
   useEffect(() => {
@@ -952,10 +955,7 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
             : stage === "done" ? "done"
             : (curScene?.kind || "text")
           }
-          image={
-            currentSceneImg ||
-            pickTopicImage(lesson.titulo, cur?.titulo, curScene?.text)
-          }
+          context={visualContext}
           showChart={stage === "intro" || stage === "done" || stage === "final"}
         />
         {/* ── Stage canvas ── */}
