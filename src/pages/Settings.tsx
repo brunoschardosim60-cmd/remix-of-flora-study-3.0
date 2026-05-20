@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { CustomThemeDialog } from "@/components/CustomThemeDialog";
 import { DashboardCustomizer } from "@/components/DashboardCustomizer";
 import { TwoFactorPanel } from "@/components/TwoFactorPanel";
-import { Sun, Moon, CircleDot, LogOut, ArrowLeft, Shield, User, Target, Sparkles, Bell, BellOff, Loader2, Save, LayoutDashboard, Calendar, Download } from "lucide-react";
+import { Sun, Moon, CircleDot, LogOut, ArrowLeft, Shield, User, Target, Sparkles, Bell, BellOff, Loader2, Save, LayoutDashboard, Calendar, Download, FileDown, Trash2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Globe, Copy } from "lucide-react";
 import { toast } from "sonner";
@@ -535,7 +535,83 @@ export default function Settings() {
             </Button>
           </section>
         )}
+
+        {/* LGPD: Export & Delete */}
+        {user && <LgpdSection />}
       </main>
     </div>
+  );
+}
+
+function LgpdSection() {
+  const [exporting, setExporting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { toast.error("Faça login novamente."); return; }
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/account-data`,
+        { headers: { Authorization: `Bearer ${session.access_token}` } },
+      );
+      if (!res.ok) throw new Error(await res.text());
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `studyflow-dados-${new Date().toISOString().split("T")[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Dados exportados!");
+    } catch (e: any) {
+      toast.error("Erro ao exportar: " + (e?.message ?? ""));
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    const txt = prompt('Esta ação é IRREVERSÍVEL. Todos os seus dados serão apagados.\n\nDigite "EXCLUIR" para confirmar:');
+    if (txt !== "EXCLUIR") return;
+    setDeleting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { toast.error("Faça login novamente."); return; }
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/account-data`,
+        { method: "DELETE", headers: { Authorization: `Bearer ${session.access_token}` } },
+      );
+      if (!res.ok) throw new Error(await res.text());
+      toast.success("Conta excluída. Até logo.");
+      await supabase.auth.signOut();
+      window.location.href = "/";
+    } catch (e: any) {
+      toast.error("Erro ao excluir: " + (e?.message ?? ""));
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  return (
+    <section className="rounded-2xl border border-border bg-card p-4 sm:p-5 space-y-3">
+      <h2 className="font-heading font-semibold text-base flex items-center gap-2">
+        <Shield className="w-4 h-4 text-primary" /> Privacidade (LGPD)
+      </h2>
+      <p className="text-xs text-muted-foreground">
+        Você pode baixar todos os seus dados ou excluir sua conta a qualquer momento.
+      </p>
+      <div className="flex flex-col sm:flex-row gap-2">
+        <Button onClick={handleExport} disabled={exporting} variant="outline" size="sm" className="gap-1.5">
+          {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
+          Baixar meus dados (.json)
+        </Button>
+        <Button onClick={handleDelete} disabled={deleting} variant="destructive" size="sm" className="gap-1.5">
+          {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+          Excluir minha conta
+        </Button>
+      </div>
+    </section>
   );
 }
