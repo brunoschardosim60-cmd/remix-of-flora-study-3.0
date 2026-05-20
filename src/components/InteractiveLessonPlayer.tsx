@@ -9,7 +9,6 @@ import {
   Volume2, VolumeX, Eye, Share2, Trophy, Flame,
 } from "lucide-react";
 import { generateDidacticImage } from "@/lib/floraImages";
-import { pickTopicImage } from "@/lib/topicImages";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
