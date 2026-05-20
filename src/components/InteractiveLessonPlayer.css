@@ -777,3 +777,197 @@
   from { opacity: 0; transform: translateY(8px); filter: blur(2px); }
   to   { opacity: 1; transform: translateY(0); filter: blur(0); }
 }
+
+/* ═══════════════════════════════════════════════════════
+   IMERSIVO v2 — tela cheia, sem scroll, painel visual
+   (Overrides aplicados ao final pra ter prioridade)
+   ═══════════════════════════════════════════════════════ */
+
+.ilp-root {
+  height: 100%;
+  min-height: 0;
+  border-radius: 0;
+  overflow: hidden;
+}
+
+.ilp-header { padding: 10px 20px 8px; }
+.ilp-header-row { margin-bottom: 8px; }
+
+.ilp-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 38%) 1fr;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ── Painel visual (esquerda) ───────────────────────────── */
+.ilp-visual {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(circle at 30% 20%, hsl(var(--primary) / 0.18), transparent 60%),
+    radial-gradient(circle at 70% 80%, hsl(var(--accent) / 0.15), transparent 55%),
+    linear-gradient(160deg, hsl(var(--primary) / 0.06), hsl(var(--accent) / 0.04));
+  border-right: 1px solid hsl(var(--border));
+}
+.ilp-visual::before {
+  content: "";
+  position: absolute; inset: -10%;
+  background:
+    repeating-linear-gradient(45deg, hsl(var(--primary) / 0.03) 0 2px, transparent 2px 24px),
+    repeating-linear-gradient(-45deg, hsl(var(--accent) / 0.025) 0 2px, transparent 2px 24px);
+  animation: ilp-grid-drift 22s linear infinite;
+  pointer-events: none;
+}
+@keyframes ilp-grid-drift {
+  from { transform: translate(0,0); }
+  to   { transform: translate(48px, 48px); }
+}
+.ilp-visual-img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  z-index: 0;
+  opacity: 0.92;
+}
+.ilp-visual-img + .ilp-visual-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, hsl(var(--background) / 0.05), hsl(var(--background) / 0.55));
+  z-index: 1;
+}
+.ilp-visual-icon-wrap {
+  position: relative;
+  z-index: 2;
+  display: flex; flex-direction: column; align-items: center; gap: 16px;
+  text-align: center; padding: 24px;
+  animation: ilp-visual-pop 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes ilp-visual-pop {
+  from { opacity: 0; transform: scale(0.92) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+.ilp-visual-icon {
+  width: clamp(96px, 14vw, 168px);
+  height: clamp(96px, 14vw, 168px);
+  border-radius: 32px;
+  display: grid; place-items: center;
+  color: white;
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
+  box-shadow:
+    0 30px 60px -25px hsl(var(--primary) / 0.55),
+    inset 0 1px 0 hsl(0 0% 100% / 0.25);
+  position: relative;
+}
+.ilp-visual-icon::after {
+  content: ""; position: absolute; inset: -8px;
+  border-radius: 36px;
+  border: 2px solid hsl(var(--primary) / 0.25);
+  animation: ilp-ring 2.8s ease-in-out infinite;
+}
+@keyframes ilp-ring {
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50%      { transform: scale(1.06); opacity: 0.2; }
+}
+.ilp-visual-kicker {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: hsl(var(--primary));
+}
+.ilp-visual-caption {
+  font-family: var(--font-heading, "Space Grotesk", sans-serif);
+  font-size: clamp(14px, 1.4vw, 18px);
+  font-weight: 600;
+  color: hsl(var(--foreground) / 0.85);
+  max-width: 280px;
+  line-height: 1.3;
+}
+
+/* Mini chart decorativo (barras) */
+.ilp-visual-chart {
+  position: relative; z-index: 2;
+  display: flex; align-items: flex-end; gap: 6px;
+  height: 64px; margin-top: 8px;
+}
+.ilp-visual-chart span {
+  display: block; width: 10px; border-radius: 4px 4px 2px 2px;
+  background: linear-gradient(180deg, hsl(var(--primary)), hsl(var(--primary) / 0.6));
+  animation: ilp-bar 1.8s ease-in-out infinite;
+}
+.ilp-visual-chart span:nth-child(1) { height: 30%; animation-delay: 0s; }
+.ilp-visual-chart span:nth-child(2) { height: 65%; animation-delay: 0.15s; }
+.ilp-visual-chart span:nth-child(3) { height: 45%; animation-delay: 0.3s; background: linear-gradient(180deg, hsl(var(--accent)), hsl(var(--accent) / 0.6)); }
+.ilp-visual-chart span:nth-child(4) { height: 80%; animation-delay: 0.45s; }
+.ilp-visual-chart span:nth-child(5) { height: 55%; animation-delay: 0.6s; background: linear-gradient(180deg, hsl(var(--accent)), hsl(var(--accent) / 0.6)); }
+@keyframes ilp-bar {
+  0%, 100% { transform: scaleY(0.85); }
+  50%      { transform: scaleY(1.1); }
+}
+
+/* ── Stage à direita: sem scroll, conteúdo ajustado ───── */
+.ilp-stage {
+  padding: clamp(16px, 2.6vw, 36px) clamp(20px, 3vw, 48px);
+  overflow: hidden;
+  min-height: 0;
+}
+.ilp-scene {
+  max-width: 720px;
+  max-height: 100%;
+  gap: clamp(12px, 1.6vw, 22px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  padding-right: 4px;
+}
+.ilp-scene::-webkit-scrollbar { width: 6px; }
+.ilp-scene::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 999px; }
+
+/* Tamanho da tipografia: cabe sem rolagem na maioria das aulas */
+.ilp-block-title { font-size: clamp(22px, 3vw, 36px); }
+.ilp-md-lg { font-size: clamp(15px, 1.5vw, 18px); line-height: 1.55; }
+.ilp-md    { font-size: clamp(14px, 1.3vw, 16px); }
+.ilp-scene-intro .ilp-md-lg { font-size: clamp(17px, 1.9vw, 22px); line-height: 1.45; }
+
+/* Esconde ilustração in-line (já está no painel visual) */
+.ilp-stage .ilp-scene-illust { display: none; }
+
+/* ── Pares de ação Entendi / Confuso ─────────────────── */
+.ilp-task-row {
+  display: flex; gap: 10px; flex-wrap: wrap;
+  margin-top: auto; padding-top: 10px;
+  border-top: 1px dashed hsl(var(--border));
+}
+.ilp-task-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 18px; border-radius: 12px;
+  font-size: 14px; font-weight: 600;
+  cursor: pointer; transition: all 0.18s ease;
+  border: 1.5px solid hsl(var(--border));
+  background: hsl(var(--card));
+  color: hsl(var(--foreground));
+}
+.ilp-task-btn:hover { transform: translateY(-1px); }
+.ilp-task-btn.ok {
+  border-color: hsl(150 65% 45% / 0.5);
+  background: hsl(150 65% 45% / 0.08);
+  color: hsl(150 65% 35%);
+}
+.ilp-task-btn.ok:hover { background: hsl(150 65% 45% / 0.16); }
+.ilp-task-btn.confuso:hover {
+  border-color: hsl(var(--primary));
+  color: hsl(var(--primary));
+}
+.dark .ilp-task-btn.ok { color: hsl(150 65% 65%); }
+
+/* ── Mobile: empilha (visual em cima compacto) ─────────── */
+@media (max-width: 768px) {
+  .ilp-layout { grid-template-columns: 1fr; grid-template-rows: 30vh 1fr; }
+  .ilp-visual { border-right: 0; border-bottom: 1px solid hsl(var(--border)); }
+  .ilp-visual-icon { width: 80px; height: 80px; border-radius: 22px; }
+  .ilp-visual-caption { display: none; }
+  .ilp-visual-chart { height: 40px; }
+  .ilp-stage { padding: 16px; }
+}
+
+.ilp-controls { padding: 10px 20px 14px; }
