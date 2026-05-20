@@ -838,12 +838,34 @@
   background: linear-gradient(180deg, hsl(var(--background) / 0.05), hsl(var(--background) / 0.55));
   z-index: 1;
 }
-.ilp-visual-icon-wrap {
+.ilp-visual-icon-wrap,
+.ilp-visual-graphic-wrap {
   position: relative;
   z-index: 2;
-  display: flex; flex-direction: column; align-items: center; gap: 16px;
-  text-align: center; padding: 24px;
+  display: flex; flex-direction: column; align-items: center; gap: 18px;
+  text-align: center; padding: 28px;
+  width: 100%;
   animation: ilp-visual-pop 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.ilp-visual-graphic {
+  width: 100%;
+  max-width: 360px;
+  aspect-ratio: 320 / 220;
+  display: grid; place-items: center;
+  background: hsl(var(--card) / 0.55);
+  backdrop-filter: blur(8px);
+  border: 1px solid hsl(var(--border));
+  border-radius: 20px;
+  padding: 18px;
+  box-shadow: 0 20px 50px -25px hsl(var(--primary) / 0.35);
+}
+.ilp-visual-caption-strip {
+  position: absolute; bottom: 16px; left: 16px;
+  z-index: 2;
+  padding: 6px 12px; border-radius: 999px;
+  background: hsl(var(--background) / 0.7);
+  backdrop-filter: blur(8px);
+  border: 1px solid hsl(var(--border));
 }
 @keyframes ilp-visual-pop {
   from { opacity: 0; transform: scale(0.92) translateY(8px); }
