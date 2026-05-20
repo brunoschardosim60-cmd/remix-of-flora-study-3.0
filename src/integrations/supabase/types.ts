@@ -617,6 +617,107 @@ export type Database = {
         }
         Relationships: []
       }
+      lesson_progress: {
+        Row: {
+          completed: boolean
+          completed_at: string | null
+          created_at: string
+          current_block: number
+          id: string
+          last_seen_at: string
+          lesson_id: string
+          quiz_correct: number
+          quiz_total: number
+          seconds_studied: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          current_block?: number
+          id?: string
+          last_seen_at?: string
+          lesson_id: string
+          quiz_correct?: number
+          quiz_total?: number
+          seconds_studied?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          current_block?: number
+          id?: string
+          last_seen_at?: string
+          lesson_id?: string
+          quiz_correct?: number
+          quiz_total?: number
+          seconds_studied?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_progress_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lessons: {
+        Row: {
+          content: Json
+          cover_emoji: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          estimated_minutes: number
+          id: string
+          level: string
+          published: boolean
+          subject: string
+          title: string
+          topic: string
+          updated_at: string
+        }
+        Insert: {
+          content?: Json
+          cover_emoji?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          estimated_minutes?: number
+          id?: string
+          level?: string
+          published?: boolean
+          subject: string
+          title: string
+          topic: string
+          updated_at?: string
+        }
+        Update: {
+          content?: Json
+          cover_emoji?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          estimated_minutes?: number
+          id?: string
+          level?: string
+          published?: boolean
+          subject?: string
+          title?: string
+          topic?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       notebook_ai_activities: {
         Row: {
           created_at: string
