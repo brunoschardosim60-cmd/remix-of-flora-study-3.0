@@ -7,6 +7,18 @@ import { loadNumberStorage } from "@/lib/storage";
 
 const DAY_LABELS = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
 
+function formatHM(ms: number): string {
+  if (!ms || ms < 60000) {
+    const s = Math.floor((ms || 0) / 1000);
+    return `${s}s`;
+  }
+  const totalMin = Math.floor(ms / 60000);
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  if (h === 0) return `${m}min`;
+  return `${h}h ${String(m).padStart(2, "0")}min`;
+}
+
 function getMonday(date: Date): Date {
   const d = new Date(date);
   const day = d.getDay();
