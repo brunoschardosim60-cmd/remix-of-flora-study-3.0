@@ -211,7 +211,7 @@ function TopicIllustration({ context, kind }: { context: string; kind: string })
   }
 }
 
-function SceneVisual({ kind, image, context = "" }: { kind: string; image?: string; context?: string; showChart?: boolean }) {
+function SceneVisual({ kind, image, context = "" }: { kind: string; image?: string; context?: string }) {
   const kicker = SCENE_KICKERS[kind] || SCENE_KICKERS.text;
   const [imgFailed, setImgFailed] = useState(false);
   useEffect(() => { setImgFailed(false); }, [image]);
@@ -804,7 +804,7 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
       </div>
 
       <div className="ilp-layout">
-        {/* ── Painel visual (esquerda) — ícone + chart + ilustração ── */}
+        {/* ── Painel visual (esquerda) — ilustração temática ── */}
         <SceneVisual
           kind={
             stage === "intro" ? "intro"
@@ -814,7 +814,6 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
             : (curScene?.kind || "text")
           }
           context={visualContext}
-          showChart={stage === "intro" || stage === "done" || stage === "final"}
         />
         {/* ── Stage canvas ── */}
         <div className="ilp-stage">
