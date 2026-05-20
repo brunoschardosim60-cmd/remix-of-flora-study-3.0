@@ -16,6 +16,43 @@ import "./InteractiveLessonPlayer.css";
 
 const ReactMarkdown = lazy(() => import("react-markdown"));
 
+/* ─── Visual panel: ícone grande + mini-chart + ilustração ─── */
+const SCENE_VISUAL: Record<string, { icon: React.ReactNode; kicker: string; caption: string }> = {
+  intro:     { icon: <Leaf size={64} />,       kicker: "Aula da Flora",    caption: "Vou guiar você passo a passo." },
+  impact:    { icon: <Sparkles size={64} />,   kicker: "Ponto-chave",      caption: "Memorize esta ideia." },
+  exemplo:   { icon: <Target size={64} />,     kicker: "Exemplo prático",  caption: "Veja como se aplica." },
+  analogia:  { icon: <Brain size={64} />,      kicker: "Pensa assim",      caption: "Uma comparação que clareia." },
+  macete:    { icon: <Zap size={64} />,        kicker: "Macete",           caption: "Atalho pra lembrar." },
+  pegadinha: { icon: <AlertTriangle size={64} />, kicker: "Cuidado",        caption: "Onde a maioria erra." },
+  fixar:     { icon: <CheckCircle2 size={64} />, kicker: "Pra fixar",      caption: "Resumo do que importa." },
+  mini:      { icon: <HelpCircle size={64} />, kicker: "Pra pensar",       caption: "Reflita antes de avançar." },
+  duvida:    { icon: <MessageCircleQuestion size={64} />, kicker: "Dúvida comum", caption: "Pergunta que sempre aparece." },
+  text:      { icon: <Lightbulb size={64} />,  kicker: "Conteúdo",         caption: "Entenda a fundo." },
+  exercises: { icon: <ListChecks size={64} />, kicker: "Hora de praticar", caption: "Mão na massa." },
+  final:     { icon: <Trophy size={64} />,     kicker: "Revisão final",    caption: "Quase lá!" },
+  done:      { icon: <Trophy size={64} />,     kicker: "Concluído",        caption: "Você arrasou!" },
+};
+
+function SceneVisual({ kind, image, showChart }: { kind: string; image?: string; showChart?: boolean }) {
+  const cfg = SCENE_VISUAL[kind] || SCENE_VISUAL.text;
+  return (
+    <aside className="ilp-visual" aria-hidden>
+      {image && <img className="ilp-visual-img" src={image} alt="" />}
+      {image && <div className="ilp-visual-overlay" />}
+      <div className="ilp-visual-icon-wrap" key={kind}>
+        <div className="ilp-visual-icon">{cfg.icon}</div>
+        <span className="ilp-visual-kicker">{cfg.kicker}</span>
+        <p className="ilp-visual-caption">{cfg.caption}</p>
+        {showChart && (
+          <div className="ilp-visual-chart">
+            <span /><span /><span /><span /><span />
+          </div>
+        )}
+      </div>
+    </aside>
+  );
+}
+
 interface LessonBlock {
   titulo: string;
   conteudo: string;
