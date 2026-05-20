@@ -764,7 +764,10 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
             : stage === "done" ? "done"
             : (curScene?.kind || "text")
           }
-          image={currentSceneImg || undefined}
+          image={
+            currentSceneImg ||
+            pickTopicImage(lesson.titulo, cur?.titulo, curScene?.text)
+          }
           showChart={stage === "intro" || stage === "done" || stage === "final"}
         />
         {/* ── Stage canvas ── */}
