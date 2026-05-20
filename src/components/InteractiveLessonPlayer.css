@@ -909,27 +909,6 @@
   line-height: 1.3;
 }
 
-/* Mini chart decorativo (barras) */
-.ilp-visual-chart {
-  position: relative; z-index: 2;
-  display: flex; align-items: flex-end; gap: 6px;
-  height: 64px; margin-top: 8px;
-}
-.ilp-visual-chart span {
-  display: block; width: 10px; border-radius: 4px 4px 2px 2px;
-  background: linear-gradient(180deg, hsl(var(--primary)), hsl(var(--primary) / 0.6));
-  animation: ilp-bar 1.8s ease-in-out infinite;
-}
-.ilp-visual-chart span:nth-child(1) { height: 30%; animation-delay: 0s; }
-.ilp-visual-chart span:nth-child(2) { height: 65%; animation-delay: 0.15s; }
-.ilp-visual-chart span:nth-child(3) { height: 45%; animation-delay: 0.3s; background: linear-gradient(180deg, hsl(var(--accent)), hsl(var(--accent) / 0.6)); }
-.ilp-visual-chart span:nth-child(4) { height: 80%; animation-delay: 0.45s; }
-.ilp-visual-chart span:nth-child(5) { height: 55%; animation-delay: 0.6s; background: linear-gradient(180deg, hsl(var(--accent)), hsl(var(--accent) / 0.6)); }
-@keyframes ilp-bar {
-  0%, 100% { transform: scaleY(0.85); }
-  50%      { transform: scaleY(1.1); }
-}
-
 /* ── Stage à direita: sem scroll, conteúdo ajustado ───── */
 .ilp-stage {
   padding: clamp(16px, 2.6vw, 36px) clamp(20px, 3vw, 48px);
@@ -990,7 +969,6 @@
   .ilp-visual { border-right: 0; border-bottom: 1px solid hsl(var(--border)); }
   .ilp-visual-icon { width: 80px; height: 80px; border-radius: 22px; }
   .ilp-visual-caption { display: none; }
-  .ilp-visual-chart { height: 40px; }
   .ilp-visual-graphic { max-width: 220px; padding: 10px; border-radius: 14px; }
   .ilp-visual-graphic-wrap { gap: 10px; padding: 12px; }
   .ilp-stage { padding: 16px; }

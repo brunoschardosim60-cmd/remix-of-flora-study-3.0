@@ -9,7 +9,6 @@ import {
   Volume2, VolumeX, Eye, Share2, Trophy, Flame,
 } from "lucide-react";
 import { generateDidacticImage } from "@/lib/floraImages";
-import { pickTopicImage } from "@/lib/topicImages";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -17,7 +16,7 @@ import "./InteractiveLessonPlayer.css";
 
 const ReactMarkdown = lazy(() => import("react-markdown"));
 
-/* ─── Visual panel: gráficos / diagramas SVG por tipo de cena ─── */
+/* ─── Visual panel: ilustrações temáticas por assunto ─── */
 const SCENE_KICKERS: Record<string, string> = {
   intro: "Aula da Flora",
   impact: "Ponto-chave",
@@ -34,154 +33,185 @@ const SCENE_KICKERS: Record<string, string> = {
   done: "Concluído",
 };
 
-/** Gráficos SVG temáticos. Usam tokens do design system (currentColor / hsl(var(--primary|accent))). */
-function SceneGraphic({ kind }: { kind: string }) {
-  // paleta semântica
+type TopicCategory = "ecology" | "math" | "biology" | "chemistry" | "physics" | "history" | "geography" | "law" | "writing" | "tech" | "study";
+
+function normalizeTopicText(s: string): string {
+  return (s || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function resolveTopicCategory(context: string): TopicCategory {
+  const hay = normalizeTopicText(context);
+  const match = (terms: string[]) => terms.some((term) => hay.includes(term));
+
+  if (match(["ecolog", "ecossist", "meio ambiente", "bioma", "cadeia alimentar", "sustent", "biodivers", "populacao"])) return "ecology";
+  if (match(["matemat", "algebra", "equac", "funcao", "geometr", "trigon", "raiz", "logarit", "porcent", "probabil", "estatist"])) return "math";
+  if (match(["biolog", "celul", "dna", "genetic", "anatom", "fisiolog", "evolu", "especie"])) return "biology";
+  if (match(["quimic", "reacao", "molecul", "atomo", "organica", "carbono", "estequiometr"])) return "chemistry";
+  if (match(["fisica", "newton", "energia", "forca", "cinemat", "mecanica", "eletric", "circuito", "ondas"])) return "physics";
+  if (match(["historia", "guerra", "revolu", "imperio", "colon", "republica", "idade media"])) return "history";
+  if (match(["geograf", "mapa", "clima", "relevo", "urban", "territorio", "globalizacao"])) return "geography";
+  if (match(["direito", "constitui", "jurid", "lei", "penal", "civil", "administrativo"])) return "law";
+  if (match(["redac", "portugues", "gramat", "literat", "texto", "argument", "interpret", "sintax"])) return "writing";
+  if (match(["informat", "comput", "tecnolog", "internet", "software", "hardware", "algorit"])) return "tech";
+  return "study";
+}
+
+function TopicIllustration({ context, kind }: { context: string; kind: string }) {
+  const category = resolveTopicCategory(context);
   const P = "hsl(var(--primary))";
   const A = "hsl(var(--accent))";
-  const M = "hsl(var(--muted-foreground) / 0.35)";
+  const F = "hsl(var(--foreground))";
+  const M = "hsl(var(--muted-foreground) / 0.42)";
+  const S = "hsl(var(--secondary))";
+  const B = "hsl(var(--background))";
+  const common = { width: "100%", height: "100%", viewBox: "0 0 360 300", fill: "none", className: "ilp-topic-illustration" } as const;
 
-  const common = { width: "100%", height: "100%", viewBox: "0 0 320 220", fill: "none" } as const;
+  if (kind === "final" || kind === "done") {
+    return (
+      <svg {...common} role="img" aria-label="Aula concluída">
+        <circle cx="180" cy="142" r="92" fill={P} opacity="0.1" />
+        <path d="M180 62l20 45 49 5-37 33 11 49-43-25-43 25 11-49-37-33 49-5 20-45z" fill={A} stroke={P} strokeWidth="4" strokeLinejoin="round" />
+        <path d="M106 222c28 22 120 22 148 0" stroke={P} strokeWidth="8" strokeLinecap="round" opacity="0.35" />
+      </svg>
+    );
+  }
 
-  switch (kind) {
-    case "intro":
-    case "exemplo":
-      // gráfico de barras crescentes
+  switch (category) {
+    case "ecology":
       return (
-        <svg {...common} role="img" aria-label="Gráfico de barras">
-          <line x1="30" y1="180" x2="300" y2="180" stroke={M} strokeWidth="1.5" />
-          <line x1="30" y1="40" x2="30" y2="180" stroke={M} strokeWidth="1.5" />
-          {[40, 75, 95, 130, 155].map((h, i) => (
-            <rect key={i} x={50 + i * 48} y={180 - h} width="32" height={h} rx="6"
-              fill={i % 2 ? A : P} opacity={0.85}>
-              <animate attributeName="height" from="0" to={h} dur="0.9s" fill="freeze" begin={`${i * 0.08}s`} />
-              <animate attributeName="y" from="180" to={180 - h} dur="0.9s" fill="freeze" begin={`${i * 0.08}s`} />
-            </rect>
-          ))}
-        </svg>
-      );
-    case "impact":
-      // big number / pizza pulsando
-      return (
-        <svg {...common} role="img" aria-label="Gráfico circular">
-          <circle cx="160" cy="110" r="78" stroke={M} strokeWidth="14" />
-          <circle cx="160" cy="110" r="78" stroke={P} strokeWidth="14" strokeLinecap="round"
-            strokeDasharray="490" strokeDashoffset="120" transform="rotate(-90 160 110)">
-            <animate attributeName="stroke-dashoffset" from="490" to="120" dur="1.2s" fill="freeze" />
-          </circle>
-          <text x="160" y="118" textAnchor="middle" fontSize="42" fontWeight="800" fill={P}>76%</text>
-          <text x="160" y="145" textAnchor="middle" fontSize="11" fill={M}>impacto</text>
-        </svg>
-      );
-    case "analogia":
-      // duas formas se conectando (analogia entre conceitos)
-      return (
-        <svg {...common} role="img" aria-label="Diagrama de analogia">
-          <circle cx="85" cy="110" r="45" fill={P} opacity="0.18" />
-          <circle cx="85" cy="110" r="28" fill={P} />
-          <rect x="200" y="75" width="70" height="70" rx="14" fill={A} opacity="0.18" />
-          <rect x="208" y="83" width="54" height="54" rx="10" fill={A} />
-          <path d="M115 110 Q 160 60 200 110" stroke={P} strokeWidth="2.5" strokeDasharray="5 5" fill="none">
-            <animate attributeName="stroke-dashoffset" from="40" to="0" dur="1.4s" repeatCount="indefinite" />
-          </path>
-          <text x="160" y="48" textAnchor="middle" fontSize="11" fill={M}>≈ é como</text>
-        </svg>
-      );
-    case "macete":
-      // bolt + steps
-      return (
-        <svg {...common} role="img" aria-label="Atalho">
-          {[0, 1, 2].map(i => (
-            <g key={i}>
-              <circle cx={70 + i * 90} cy="110" r="22" fill={i === 1 ? A : P} opacity="0.85" />
-              <text x={70 + i * 90} y="116" textAnchor="middle" fontSize="14" fontWeight="700" fill="white">{i + 1}</text>
-              {i < 2 && <path d={`M${92 + i * 90} 110 L${138 + i * 90} 110`} stroke={M} strokeWidth="2" markerEnd="url(#arr)" />}
+        <svg {...common} role="img" aria-label="Ilustração de ecologia com árvores, ciclo e curva populacional">
+          <circle cx="286" cy="58" r="24" fill={A} opacity="0.55" />
+          <path d="M36 220c54-58 95-57 145-18 48 38 91 32 143-18v76H36v-40z" fill={P} opacity="0.16" />
+          <path d="M56 230h248" stroke={M} strokeWidth="3" strokeLinecap="round" />
+          {[88, 136, 242].map((x, i) => (
+            <g key={x}>
+              <path d={`M${x} 214v-${44 + i * 10}`} stroke={F} strokeWidth="9" strokeLinecap="round" opacity="0.7" />
+              <circle cx={x - 16} cy={164 - i * 10} r="24" fill={P} opacity="0.78" />
+              <circle cx={x + 14} cy={154 - i * 10} r="28" fill={A} opacity="0.7" />
+              <circle cx={x} cy={135 - i * 10} r="22" fill={P} opacity="0.55" />
             </g>
           ))}
-          <defs>
-            <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
-              <path d="M0,0 L6,4 L0,8 z" fill={M} />
-            </marker>
-          </defs>
-          <path d="M155 165 L170 145 L160 145 L175 125" stroke={A} strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M68 126c48-58 114-49 150-5 22 27 46 36 78 12" stroke={P} strokeWidth="5" strokeLinecap="round" />
+          {[68, 126, 204, 296].map((x, i) => <circle key={x} cx={x} cy={[126, 88, 119, 133][i]} r="7" fill={A} />)}
+          <path d="M74 58c18-22 55-22 72 0M146 58c18 22 55 22 72 0" stroke={M} strokeWidth="4" strokeLinecap="round" />
+          <path d="M219 48l-1 24 22-11" fill={M} />
         </svg>
       );
-    case "pegadinha":
-      // alerta com X
+    case "math":
       return (
-        <svg {...common} role="img" aria-label="Atenção">
-          <path d="M160 30 L290 190 L30 190 Z" fill="hsl(0 80% 60% / 0.12)" stroke="hsl(0 75% 55%)" strokeWidth="3" strokeLinejoin="round" />
-          <line x1="160" y1="90" x2="160" y2="140" stroke="hsl(0 75% 55%)" strokeWidth="6" strokeLinecap="round" />
-          <circle cx="160" cy="165" r="5" fill="hsl(0 75% 55%)" />
+        <svg {...common} role="img" aria-label="Ilustração matemática com operação e plano cartesiano">
+          <rect x="46" y="42" width="268" height="184" rx="18" fill={S} stroke={M} strokeWidth="2" />
+          <path d="M86 190h152M86 190V78" stroke={M} strokeWidth="3" strokeLinecap="round" />
+          <path d="M90 170c34-54 64-70 96-44 25 21 43 18 69-30" stroke={P} strokeWidth="5" strokeLinecap="round" />
+          <circle cx="90" cy="170" r="6" fill={A} /><circle cx="186" cy="126" r="6" fill={A} /><circle cx="255" cy="96" r="6" fill={A} />
+          <rect x="96" y="70" width="166" height="46" rx="12" fill={B} stroke={P} strokeWidth="2" />
+          <text x="179" y="100" textAnchor="middle" fontSize="23" fontWeight="800" fill={F}>2x + 5 = 17</text>
+          <text x="98" y="250" fontSize="34" fontWeight="800" fill={P}>÷</text>
+          <text x="154" y="250" fontSize="34" fontWeight="800" fill={A}>×</text>
+          <text x="210" y="250" fontSize="34" fontWeight="800" fill={P}>√</text>
+          <text x="262" y="250" fontSize="30" fontWeight="800" fill={A}>π</text>
         </svg>
       );
-    case "fixar":
-      // checklist
+    case "biology":
       return (
-        <svg {...common} role="img" aria-label="Checklist">
-          {[0, 1, 2].map(i => (
-            <g key={i}>
-              <rect x="60" y={50 + i * 45} width="200" height="32" rx="8" fill={P} opacity="0.08" />
-              <circle cx="78" cy={66 + i * 45} r="10" fill={P} />
-              <path d={`M73 ${66 + i * 45} l4 4 l8 -8`} stroke="white" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-              <rect x="100" y={60 + i * 45} width={120 - i * 20} height="6" rx="3" fill={M} />
-            </g>
-          ))}
+        <svg {...common} role="img" aria-label="Ilustração de biologia com célula e DNA">
+          <ellipse cx="148" cy="150" rx="92" ry="70" fill={P} opacity="0.12" stroke={P} strokeWidth="4" />
+          <ellipse cx="148" cy="150" rx="36" ry="28" fill={A} opacity="0.55" stroke={A} strokeWidth="3" />
+          <circle cx="96" cy="132" r="12" fill={P} opacity="0.55" /><circle cx="204" cy="172" r="10" fill={P} opacity="0.45" />
+          <path d="M250 62c-40 36-40 72 0 108s40 72 0 108" stroke={P} strokeWidth="5" strokeLinecap="round" />
+          <path d="M306 62c-40 36-40 72 0 108s40 72 0 108" stroke={A} strokeWidth="5" strokeLinecap="round" />
+          {[78, 112, 146, 180, 214, 248].map((y) => <path key={y} d={`M252 ${y}h52`} stroke={M} strokeWidth="3" strokeLinecap="round" />)}
         </svg>
       );
-    case "mini":
-    case "duvida":
-      // balão de pergunta
+    case "chemistry":
       return (
-        <svg {...common} role="img" aria-label="Pergunta">
-          <rect x="50" y="50" width="220" height="110" rx="20" fill={P} opacity="0.12" />
-          <rect x="50" y="50" width="220" height="110" rx="20" stroke={P} strokeWidth="2" />
-          <path d="M90 160 L110 185 L130 160 Z" fill={P} opacity="0.12" />
-          <text x="160" y="120" textAnchor="middle" fontSize="64" fontWeight="800" fill={P}>?</text>
+        <svg {...common} role="img" aria-label="Ilustração de química com moléculas e béquer">
+          <path d="M106 70h86M130 70v82l-44 78c-9 16 2 36 21 36h84c19 0 30-20 21-36l-44-78V70" stroke={F} strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" opacity="0.75" />
+          <path d="M106 220h86l24 42H82l24-42z" fill={P} opacity="0.22" />
+          <circle cx="258" cy="108" r="28" fill={P} opacity="0.68" /><circle cx="302" cy="158" r="20" fill={A} opacity="0.72" /><circle cx="238" cy="190" r="18" fill={P} opacity="0.45" />
+          <path d="M276 130l14 15M250 135l-7 38" stroke={M} strokeWidth="4" strokeLinecap="round" />
+          <circle cx="126" cy="200" r="6" fill={A} /><circle cx="162" cy="232" r="7" fill={A} /><circle cx="146" cy="176" r="5" fill={A} />
         </svg>
       );
-    case "exercises":
-      // gráfico linha (progresso de prática)
+    case "physics":
       return (
-        <svg {...common} role="img" aria-label="Progresso">
-          <line x1="30" y1="180" x2="300" y2="180" stroke={M} strokeWidth="1.5" />
-          <polyline points="40,160 90,140 130,150 170,100 220,90 280,50"
-            stroke={P} strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-          <polygon points="40,160 90,140 130,150 170,100 220,90 280,50 280,180 40,180"
-            fill={P} opacity="0.12" />
-          {[[40, 160], [90, 140], [130, 150], [170, 100], [220, 90], [280, 50]].map(([x, y], i) => (
-            <circle key={i} cx={x} cy={y} r="4" fill={A} />
-          ))}
+        <svg {...common} role="img" aria-label="Ilustração de física com circuito e movimento">
+          <path d="M70 82h92v54h78v64h54" stroke={M} strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="162" cy="136" r="18" fill={P} /><circle cx="240" cy="200" r="18" fill={A} />
+          <path d="M112 62v128" stroke={F} strokeWidth="4" opacity="0.65" />
+          <path d="M112 62c58 38 96 32 142 0" stroke={P} strokeWidth="4" strokeLinecap="round" />
+          <line x1="178" y1="70" x2="178" y2="172" stroke={P} strokeWidth="3" />
+          <circle cx="178" cy="190" r="22" fill={A} opacity="0.75" />
+          <path d="M56 236c76-36 150-33 244 0" stroke={P} strokeWidth="5" strokeLinecap="round" opacity="0.45" />
         </svg>
       );
-    case "final":
-    case "done":
-      // troféu / estrela
+    case "history":
       return (
-        <svg {...common} role="img" aria-label="Concluído">
-          <circle cx="160" cy="110" r="80" fill={P} opacity="0.14">
-            <animate attributeName="r" values="78;84;78" dur="2s" repeatCount="indefinite" />
-          </circle>
-          <path d="M160 60 l16 34 l38 4 l-28 26 l8 38 l-34 -20 l-34 20 l8 -38 l-28 -26 l38 -4 z"
-            fill={A} stroke={P} strokeWidth="2" strokeLinejoin="round" />
+        <svg {...common} role="img" aria-label="Ilustração de história com linha do tempo e documento antigo">
+          <path d="M78 56h170c22 0 38 16 38 38v140H110c-18 0-32-14-32-32V56z" fill={S} stroke={M} strokeWidth="2" />
+          <path d="M112 96h132M112 124h94M112 152h122" stroke={M} strokeWidth="5" strokeLinecap="round" />
+          <path d="M64 244h232" stroke={P} strokeWidth="5" strokeLinecap="round" />
+          {[92, 156, 220, 284].map((x, i) => <g key={x}><circle cx={x} cy="244" r="10" fill={i % 2 ? A : P} /><path d={`M${x} 218v-28`} stroke={i % 2 ? A : P} strokeWidth="3" strokeLinecap="round" /></g>)}
         </svg>
       );
-    case "text":
+    case "geography":
+      return (
+        <svg {...common} role="img" aria-label="Ilustração de geografia com mapa e relevo">
+          <circle cx="172" cy="145" r="88" fill={P} opacity="0.1" stroke={P} strokeWidth="4" />
+          <path d="M110 124c28-42 72-48 108-12 26 26 49 22 72 2" stroke={P} strokeWidth="6" strokeLinecap="round" />
+          <path d="M82 198c42-38 78-42 116-14 34 25 66 20 100-12" stroke={A} strokeWidth="6" strokeLinecap="round" />
+          <path d="M172 58v174M84 145h176" stroke={M} strokeWidth="2" />
+          <path d="M44 246l52-62 42 38 46-68 54 76 36-30 44 46" fill={P} opacity="0.14" stroke={P} strokeWidth="4" strokeLinejoin="round" />
+        </svg>
+      );
+    case "law":
+      return (
+        <svg {...common} role="img" aria-label="Ilustração de direito com balança e livros">
+          <path d="M180 62v164M128 96h104" stroke={F} strokeWidth="7" strokeLinecap="round" />
+          <path d="M128 96l-42 72h84l-42-72zM232 96l-42 72h84l-42-72z" fill={P} opacity="0.16" stroke={P} strokeWidth="4" strokeLinejoin="round" />
+          <path d="M122 246h116" stroke={F} strokeWidth="9" strokeLinecap="round" opacity="0.75" />
+          <rect x="62" y="224" width="78" height="22" rx="5" fill={A} opacity="0.75" />
+          <rect x="220" y="224" width="78" height="22" rx="5" fill={P} opacity="0.75" />
+        </svg>
+      );
+    case "writing":
+      return (
+        <svg {...common} role="img" aria-label="Ilustração de redação com folha, linhas e caneta">
+          <rect x="76" y="42" width="186" height="216" rx="16" fill={S} stroke={M} strokeWidth="2" />
+          <path d="M112 96h108M112 128h126M112 160h96M112 192h118" stroke={M} strokeWidth="6" strokeLinecap="round" />
+          <path d="M236 86l42 42-92 92-48 14 14-48 84-100z" fill={P} opacity="0.18" stroke={P} strokeWidth="5" strokeLinejoin="round" />
+          <path d="M236 86l42 42" stroke={A} strokeWidth="8" strokeLinecap="round" />
+          <circle cx="96" cy="78" r="8" fill={A} opacity="0.8" />
+        </svg>
+      );
+    case "tech":
+      return (
+        <svg {...common} role="img" aria-label="Ilustração de informática com tela e código">
+          <rect x="62" y="62" width="236" height="148" rx="16" fill={S} stroke={M} strokeWidth="2" />
+          <path d="M112 236h136M156 210l-12 26M204 210l12 26" stroke={F} strokeWidth="6" strokeLinecap="round" opacity="0.65" />
+          <path d="M132 122l-28 24 28 24M228 122l28 24-28 24" stroke={P} strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M196 112l-32 72" stroke={A} strokeWidth="7" strokeLinecap="round" />
+          <circle cx="88" cy="88" r="5" fill={A} /><circle cx="106" cy="88" r="5" fill={P} /><circle cx="124" cy="88" r="5" fill={M} />
+        </svg>
+      );
     default:
-      // linhas/parágrafos como ilustração de "conteúdo"
       return (
-        <svg {...common} role="img" aria-label="Conteúdo">
-          <rect x="50" y="50" width="220" height="14" rx="4" fill={P} opacity="0.7" />
-          {[80, 105, 130, 155].map((y, i) => (
-            <rect key={i} x="50" y={y} width={200 - i * 18} height="8" rx="3" fill={M} />
-          ))}
-          <circle cx="260" cy="180" r="22" fill={A} opacity="0.85" />
+        <svg {...common} role="img" aria-label="Ilustração de estudo com livros e quadro">
+          <rect x="76" y="58" width="208" height="126" rx="18" fill={S} stroke={M} strokeWidth="2" />
+          <path d="M112 104h92M112 132h128" stroke={M} strokeWidth="6" strokeLinecap="round" />
+          <rect x="78" y="210" width="82" height="28" rx="6" fill={P} opacity="0.75" />
+          <rect x="152" y="194" width="92" height="28" rx="6" fill={A} opacity="0.72" />
+          <rect x="224" y="220" width="62" height="22" rx="6" fill={P} opacity="0.5" />
+          <circle cx="258" cy="84" r="14" fill={A} opacity="0.85" />
         </svg>
       );
   }
 }
 
-function SceneVisual({ kind, image }: { kind: string; image?: string; showChart?: boolean }) {
+function SceneVisual({ kind, image, context = "" }: { kind: string; image?: string; context?: string }) {
   const kicker = SCENE_KICKERS[kind] || SCENE_KICKERS.text;
   const [imgFailed, setImgFailed] = useState(false);
   useEffect(() => { setImgFailed(false); }, [image]);
@@ -204,10 +234,10 @@ function SceneVisual({ kind, image }: { kind: string; image?: string; showChart?
           </div>
         </>
       ) : (
-        <div className="ilp-visual-graphic-wrap" key={kind}>
+        <div className="ilp-visual-graphic-wrap" key={`${kind}-${context}`}>
           <span className="ilp-visual-kicker">{kicker}</span>
           <div className="ilp-visual-graphic">
-            <SceneGraphic kind={kind} />
+            <TopicIllustration kind={kind} context={context || kind} />
           </div>
         </div>
       )}
@@ -417,7 +447,9 @@ function ExerciseCard({ ex, label, tema, blocoTitulo }: { ex: Exercise; label?: 
         body: { action: "lesson_guided_solution", data: { tema, pergunta: ex.pergunta, alternativaCorreta: opts[ex.correta], explicacao: ex.explicacao } },
       });
       if (data?.ok && Array.isArray(data.passos)) setPassos(data.passos);
-    } catch {} finally { setPassosLoading(false); }
+    } catch {
+      // Ignora falhas pontuais da ajuda guiada para não travar o exercício.
+    } finally { setPassosLoading(false); }
   };
 
   const pickAnswer = async (i: number) => {
@@ -430,7 +462,9 @@ function ExerciseCard({ ex, label, tema, blocoTitulo }: { ex: Exercise; label?: 
           body: { action: "lesson_reinforce", data: { tema, blocoTitulo, pergunta: ex.pergunta, alternativaErrada: opts[i], alternativaCorreta: opts[ex.correta], explicacao: ex.explicacao } },
         });
         if (data?.ok && data.reforco) setReforco(data.reforco as ReforcoData);
-      } catch {} finally { setReforcoLoading(false); }
+      } catch {
+        // Ignora falhas pontuais do reforço para manter a resposta do aluno visível.
+      } finally { setReforcoLoading(false); }
     }
   };
 
@@ -576,7 +610,9 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
   const toggleSound = useCallback(() => {
     setSoundOn((v) => {
       const nv = !v;
-      try { localStorage.setItem("ilp-sound", nv ? "on" : "off"); } catch {}
+      try { localStorage.setItem("ilp-sound", nv ? "on" : "off"); } catch {
+        // O modo privado pode bloquear localStorage.
+      }
       return nv;
     });
   }, []);
@@ -720,6 +756,9 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
 
   const progress = currentStep / totalScenes;
   const resumo = Array.isArray(lesson.resumo) ? lesson.resumo : (typeof lesson.resumo === "string" ? [lesson.resumo] : []);
+  const visualContext = [lesson.titulo, cur?.titulo, cur?.conteudo, curScene?.text]
+    .filter(Boolean)
+    .join(" | ");
 
   // keyboard navigation (Keynote-style)
   useEffect(() => {
@@ -765,7 +804,7 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
       </div>
 
       <div className="ilp-layout">
-        {/* ── Painel visual (esquerda) — ícone + chart + ilustração ── */}
+        {/* ── Painel visual (esquerda) — ilustração temática ── */}
         <SceneVisual
           kind={
             stage === "intro" ? "intro"
@@ -774,11 +813,7 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
             : stage === "done" ? "done"
             : (curScene?.kind || "text")
           }
-          image={
-            currentSceneImg ||
-            pickTopicImage(lesson.titulo, cur?.titulo, curScene?.text)
-          }
-          showChart={stage === "intro" || stage === "done" || stage === "final"}
+          context={visualContext}
         />
         {/* ── Stage canvas ── */}
         <div className="ilp-stage">
