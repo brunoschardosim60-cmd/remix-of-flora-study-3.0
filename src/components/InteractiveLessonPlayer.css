@@ -863,7 +863,7 @@
 }
 .ilp-visual-caption-strip {
   position: absolute; bottom: 16px; left: 16px;
-  z-index: 2;
+  z-index: 3;
   padding: 6px 12px; border-radius: 999px;
   background: hsl(var(--background) / 0.7);
   backdrop-filter: blur(8px);
