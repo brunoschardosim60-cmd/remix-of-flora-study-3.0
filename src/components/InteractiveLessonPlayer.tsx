@@ -603,6 +603,18 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
       </div>
 
       <div className="ilp-layout">
+        {/* ── Painel visual (esquerda) — ícone + chart + ilustração ── */}
+        <SceneVisual
+          kind={
+            stage === "intro" ? "intro"
+            : stage === "exercises" ? "exercises"
+            : stage === "final" ? "final"
+            : stage === "done" ? "done"
+            : (curScene?.kind || "text")
+          }
+          image={currentSceneImg || undefined}
+          showChart={stage === "intro" || stage === "done" || stage === "final"}
+        />
         {/* ── Stage canvas ── */}
         <div className="ilp-stage">
           {stage === "intro" && (
