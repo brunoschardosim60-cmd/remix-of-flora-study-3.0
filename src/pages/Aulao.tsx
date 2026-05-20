@@ -252,6 +252,10 @@ export default function Aulao() {
   };
 
   const handleTopicSelect = (topic: AulaoTopic) => {
+    if (topic.id === "cursos-prontos") {
+      navigate("/cursos");
+      return;
+    }
     setSelectedTopic(topic);
     setMode(topic.mode);
     setGeneratedLesson(null);
