@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { CustomThemeDialog } from "@/components/CustomThemeDialog";
 import { DashboardCustomizer } from "@/components/DashboardCustomizer";
+import { TwoFactorPanel } from "@/components/TwoFactorPanel";
 import { Sun, Moon, CircleDot, LogOut, ArrowLeft, Shield, User, Target, Sparkles, Bell, BellOff, Loader2, Save, LayoutDashboard, Calendar, Download } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Globe, Copy } from "lucide-react";
