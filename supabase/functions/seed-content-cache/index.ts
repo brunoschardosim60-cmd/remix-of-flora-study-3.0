@@ -25,32 +25,75 @@ const POPULAR_TOPICS: Array<{ materia: string; tema: string }> = [
   { materia: "Matemática", tema: "Função Quadrática" },
   { materia: "Matemática", tema: "Razão e Proporção" },
   { materia: "Matemática", tema: "Juros Simples e Compostos" },
+  { materia: "Matemática", tema: "Probabilidade" },
+  { materia: "Matemática", tema: "Análise Combinatória" },
+  { materia: "Matemática", tema: "Estatística - Média, Mediana e Moda" },
+  { materia: "Matemática", tema: "Geometria Plana - Áreas" },
+  { materia: "Matemática", tema: "Geometria Espacial - Volumes" },
+  { materia: "Matemática", tema: "Trigonometria no Triângulo Retângulo" },
+  { materia: "Matemática", tema: "Logaritmos" },
+  { materia: "Matemática", tema: "Progressão Aritmética e Geométrica" },
   // Português
   { materia: "Português", tema: "Crase" },
   { materia: "Português", tema: "Concordância Verbal e Nominal" },
   { materia: "Português", tema: "Interpretação de Texto" },
   { materia: "Português", tema: "Regência Verbal" },
+  { materia: "Português", tema: "Figuras de Linguagem" },
+  { materia: "Português", tema: "Funções da Linguagem" },
+  { materia: "Português", tema: "Pontuação" },
+  { materia: "Português", tema: "Classes Gramaticais" },
+  { materia: "Português", tema: "Coesão e Coerência" },
   // Redação
   { materia: "Redação", tema: "Estrutura da Redação ENEM" },
   { materia: "Redação", tema: "Como Fazer uma Boa Introdução" },
   { materia: "Redação", tema: "Como Fazer uma Boa Conclusão (Proposta de Intervenção)" },
+  { materia: "Redação", tema: "Repertórios Sociocultural Coringa" },
+  { materia: "Redação", tema: "Competência 2 - Repertório Produtivo" },
+  { materia: "Redação", tema: "Competência 4 - Conectivos e Coesão" },
   // História
   { materia: "História", tema: "Revolução Francesa" },
   { materia: "História", tema: "Guerra Fria" },
   { materia: "História", tema: "Era Vargas" },
+  { materia: "História", tema: "Revolução Industrial" },
+  { materia: "História", tema: "Ditadura Militar no Brasil" },
+  { materia: "História", tema: "Idade Média e Feudalismo" },
+  { materia: "História", tema: "Brasil Colônia" },
   // Biologia
   { materia: "Biologia", tema: "Mitose e Meiose" },
   { materia: "Biologia", tema: "Genética Básica - Leis de Mendel" },
   { materia: "Biologia", tema: "Ecologia - Cadeia Alimentar" },
+  { materia: "Biologia", tema: "Citologia - Organelas" },
+  { materia: "Biologia", tema: "Evolução" },
+  { materia: "Biologia", tema: "Sistema Imunológico" },
+  { materia: "Biologia", tema: "Vírus e Bactérias" },
   // Física
   { materia: "Física", tema: "Cinemática - MRU e MRUV" },
   { materia: "Física", tema: "Leis de Newton" },
+  { materia: "Física", tema: "Trabalho e Energia" },
+  { materia: "Física", tema: "Eletrodinâmica - Circuitos" },
+  { materia: "Física", tema: "Termologia - Calorimetria" },
+  { materia: "Física", tema: "Ondulatória" },
+  { materia: "Física", tema: "Óptica Geométrica" },
   // Química
   { materia: "Química", tema: "Tabela Periódica" },
   { materia: "Química", tema: "Ligações Químicas" },
+  { materia: "Química", tema: "Estequiometria" },
+  { materia: "Química", tema: "Soluções e Concentração" },
+  { materia: "Química", tema: "Ácidos e Bases" },
+  { materia: "Química", tema: "Química Orgânica - Funções" },
+  { materia: "Química", tema: "Termoquímica" },
   // Geografia
   { materia: "Geografia", tema: "Globalização" },
   { materia: "Geografia", tema: "Climas do Brasil" },
+  { materia: "Geografia", tema: "Urbanização e Problemas Urbanos" },
+  { materia: "Geografia", tema: "Geopolítica Mundial" },
+  { materia: "Geografia", tema: "Hidrografia do Brasil" },
+  { materia: "Geografia", tema: "Crise Ambiental e Sustentabilidade" },
+  // Filosofia/Sociologia
+  { materia: "Filosofia", tema: "Filósofos Pré-Socráticos" },
+  { materia: "Filosofia", tema: "Ética e Moral" },
+  { materia: "Sociologia", tema: "Sociologia Clássica - Marx, Weber, Durkheim" },
+  { materia: "Sociologia", tema: "Movimentos Sociais" },
 ];
 
 // Conceitos visuais didáticos por matéria (curados, ~30 itens)
@@ -124,8 +167,8 @@ serve(async (req) => {
     }
 
     const body = await req.json().catch(() => ({}));
-    // kind: "lesson" (padrão) | "questions" | "images"
-    const kind: "lesson" | "questions" | "images" = body.kind || "lesson";
+    // kind: "lesson" (padrão) | "questions" | "images" | "quiz" | "flashcards"
+    const kind: "lesson" | "questions" | "images" | "quiz" | "flashcards" = body.kind || "lesson";
     const mode: "rapida" | "completa" | "masterclass" = body.mode || "completa";
     const level: "enem" | "concurso" | "basico" = body.level || "enem";
     const onlyMissing: boolean = body.onlyMissing !== false; // default true
@@ -134,6 +177,68 @@ serve(async (req) => {
 
     const results: any[] = [];
     let okCount = 0, skipCount = 0, errCount = 0;
+
+    // ─── KIND: QUIZ / FLASHCARDS ─ chama flora-engine, que já popula cache ──
+    if (kind === "quiz" || kind === "flashcards") {
+      const action = kind === "quiz" ? "generate_quiz" : "generate_flashcards";
+      const difficulty = body.difficulty || "medio";
+      const questionCount = Number(body.questionCount) || 5;
+      const objetivo = level === "concurso" ? "concurso" : "enem";
+
+      for (const t of topics) {
+        const materia = t.materia || "Geral";
+        const tema = t.tema || "";
+
+        // Chave que o flora-engine usa pra ler/gravar
+        const cacheKey = kind === "quiz"
+          ? buildCacheKey({ k: "quiz", materia, tema, dif: difficulty, banca: "", obj: objetivo, n: String(questionCount) })
+          : buildCacheKey({ k: "flashcards", materia, tema, obj: objetivo });
+
+        if (onlyMissing) {
+          const { data: exists } = await supabase
+            .from("content_cache").select("id").eq("cache_key", cacheKey).maybeSingle();
+          if (exists?.id) { skipCount++; results.push({ materia, tema, status: "skip" }); continue; }
+        }
+
+        try {
+          const payload = kind === "quiz"
+            ? { action, data: { materia, tema, difficulty, questionCount } }
+            : { action, data: { materia, tema } };
+
+          const resp = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/flora-engine`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": authHeader,
+              "apikey": Deno.env.get("SUPABASE_ANON_KEY") || "",
+            },
+            body: JSON.stringify(payload),
+          });
+
+          if (!resp.ok) {
+            const txt = await resp.text();
+            throw new Error(`flora-engine ${resp.status}: ${txt.slice(0, 200)}`);
+          }
+          const json = await resp.json().catch(() => ({}));
+          const ok = kind === "quiz"
+            ? Array.isArray(json?.questions) && json.questions.length > 0
+            : Array.isArray(json?.flashcards) && json.flashcards.length > 0;
+          if (!ok) throw new Error("Resposta sem conteúdo");
+          okCount++;
+          results.push({ materia, tema, status: "ok" });
+        } catch (e: any) {
+          errCount++;
+          results.push({ materia, tema, status: "error", error: String(e?.message || e) });
+        }
+        // ritmo para evitar rate limit
+        await new Promise(r => setTimeout(r, 500));
+      }
+
+      return new Response(JSON.stringify({
+        ok: true, kind, level,
+        total: topics.length, created: okCount, skipped: skipCount, errors: errCount, results,
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     // ─── KIND: QUESTIONS — popular cache com questões reais do banco ────────
     if (kind === "questions") {

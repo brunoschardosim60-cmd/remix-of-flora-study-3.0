@@ -17,7 +17,7 @@ type SeedResult = {
 export function AdminCachePanel() {
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<"rapida" | "completa" | "masterclass">("completa");
-  const [kind, setKind] = useState<"lesson" | "questions" | "images">("lesson");
+  const [kind, setKind] = useState<"lesson" | "questions" | "images" | "quiz" | "flashcards">("lesson");
   const [level, setLevel] = useState<"enem" | "concurso">("enem");
   const [result, setResult] = useState<SeedResult | null>(null);
   const [stats, setStats] = useState<{ total: number; lessons: number; quizzes: number; questions: number; images: number } | null>(null);
@@ -82,6 +82,8 @@ export function AdminCachePanel() {
           <div className="flex flex-wrap gap-2">
             {([
               ["lesson", "Aulas"],
+              ["quiz", "Quizzes"],
+              ["flashcards", "Flashcards"],
               ["questions", "Questões reais (ENEM/concurso)"],
               ["images", "Catálogo de imagens didáticas"],
             ] as const).map(([k, label]) => (
@@ -124,6 +126,8 @@ export function AdminCachePanel() {
           {loading
             ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Populando…</>
             : kind === "lesson" ? "Popular aulas agora"
+            : kind === "quiz" ? "Popular quizzes agora"
+            : kind === "flashcards" ? "Popular flashcards agora"
             : kind === "questions" ? "Popular questões reais"
             : "Popular catálogo de imagens"}
         </Button>
