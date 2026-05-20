@@ -9,6 +9,7 @@ type Item = { path: string; label: string; icon: any; isAction?: boolean };
 const BASE_ITEMS: Item[] = [
   { path: "/", label: "Início", icon: Home },
   { path: "/cursos", label: "Cursos", icon: GraduationCap },
+  { path: "/redacao", label: "Redação", icon: FileText },
   { path: "flora", label: "Flora", icon: Sparkles, isAction: true },
   { path: "/aulao", label: "Aulão", icon: BookOpen },
   { path: "/analise", label: "Análise", icon: BarChart3 },
@@ -17,6 +18,7 @@ const BASE_ITEMS: Item[] = [
 const CONCURSO_ITEMS: Item[] = [
   { path: "/", label: "Início", icon: Home },
   { path: "/cursos", label: "Cursos", icon: GraduationCap },
+  { path: "/banco-concurso", label: "Banco", icon: Library },
   { path: "flora", label: "Flora", icon: Sparkles, isAction: true },
   { path: "/aulao", label: "Aulão", icon: BookOpen },
   { path: "/analise", label: "Análise", icon: BarChart3 },
