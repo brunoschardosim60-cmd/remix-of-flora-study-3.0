@@ -447,7 +447,9 @@ function ExerciseCard({ ex, label, tema, blocoTitulo }: { ex: Exercise; label?: 
         body: { action: "lesson_guided_solution", data: { tema, pergunta: ex.pergunta, alternativaCorreta: opts[ex.correta], explicacao: ex.explicacao } },
       });
       if (data?.ok && Array.isArray(data.passos)) setPassos(data.passos);
-    } catch {} finally { setPassosLoading(false); }
+    } catch {
+      // Ignora falhas pontuais da ajuda guiada para não travar o exercício.
+    } finally { setPassosLoading(false); }
   };
 
   const pickAnswer = async (i: number) => {
@@ -460,7 +462,9 @@ function ExerciseCard({ ex, label, tema, blocoTitulo }: { ex: Exercise; label?: 
           body: { action: "lesson_reinforce", data: { tema, blocoTitulo, pergunta: ex.pergunta, alternativaErrada: opts[i], alternativaCorreta: opts[ex.correta], explicacao: ex.explicacao } },
         });
         if (data?.ok && data.reforco) setReforco(data.reforco as ReforcoData);
-      } catch {} finally { setReforcoLoading(false); }
+      } catch {
+        // Ignora falhas pontuais do reforço para manter a resposta do aluno visível.
+      } finally { setReforcoLoading(false); }
     }
   };
 
@@ -606,7 +610,9 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
   const toggleSound = useCallback(() => {
     setSoundOn((v) => {
       const nv = !v;
-      try { localStorage.setItem("ilp-sound", nv ? "on" : "off"); } catch {}
+      try { localStorage.setItem("ilp-sound", nv ? "on" : "off"); } catch {
+        // O modo privado pode bloquear localStorage.
+      }
       return nv;
     });
   }, []);
