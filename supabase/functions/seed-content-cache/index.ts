@@ -167,8 +167,8 @@ serve(async (req) => {
     }
 
     const body = await req.json().catch(() => ({}));
-    // kind: "lesson" (padrão) | "questions" | "images"
-    const kind: "lesson" | "questions" | "images" = body.kind || "lesson";
+    // kind: "lesson" (padrão) | "questions" | "images" | "quiz" | "flashcards"
+    const kind: "lesson" | "questions" | "images" | "quiz" | "flashcards" = body.kind || "lesson";
     const mode: "rapida" | "completa" | "masterclass" = body.mode || "completa";
     const level: "enem" | "concurso" | "basico" = body.level || "enem";
     const onlyMissing: boolean = body.onlyMissing !== false; // default true
@@ -177,6 +177,68 @@ serve(async (req) => {
 
     const results: any[] = [];
     let okCount = 0, skipCount = 0, errCount = 0;
+
+    // ─── KIND: QUIZ / FLASHCARDS ─ chama flora-engine, que já popula cache ──
+    if (kind === "quiz" || kind === "flashcards") {
+      const action = kind === "quiz" ? "generate_quiz" : "generate_flashcards";
+      const difficulty = body.difficulty || "medio";
+      const questionCount = Number(body.questionCount) || 5;
+      const objetivo = level === "concurso" ? "concurso" : "enem";
+
+      for (const t of topics) {
+        const materia = t.materia || "Geral";
+        const tema = t.tema || "";
+
+        // Chave que o flora-engine usa pra ler/gravar
+        const cacheKey = kind === "quiz"
+          ? buildCacheKey({ k: "quiz", materia, tema, dif: difficulty, banca: "", obj: objetivo, n: String(questionCount) })
+          : buildCacheKey({ k: "flashcards", materia, tema, obj: objetivo });
+
+        if (onlyMissing) {
+          const { data: exists } = await supabase
+            .from("content_cache").select("id").eq("cache_key", cacheKey).maybeSingle();
+          if (exists?.id) { skipCount++; results.push({ materia, tema, status: "skip" }); continue; }
+        }
+
+        try {
+          const payload = kind === "quiz"
+            ? { action, data: { materia, tema, difficulty, questionCount } }
+            : { action, data: { materia, tema } };
+
+          const resp = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/flora-engine`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": authHeader,
+              "apikey": Deno.env.get("SUPABASE_ANON_KEY") || "",
+            },
+            body: JSON.stringify(payload),
+          });
+
+          if (!resp.ok) {
+            const txt = await resp.text();
+            throw new Error(`flora-engine ${resp.status}: ${txt.slice(0, 200)}`);
+          }
+          const json = await resp.json().catch(() => ({}));
+          const ok = kind === "quiz"
+            ? Array.isArray(json?.questions) && json.questions.length > 0
+            : Array.isArray(json?.flashcards) && json.flashcards.length > 0;
+          if (!ok) throw new Error("Resposta sem conteúdo");
+          okCount++;
+          results.push({ materia, tema, status: "ok" });
+        } catch (e: any) {
+          errCount++;
+          results.push({ materia, tema, status: "error", error: String(e?.message || e) });
+        }
+        // ritmo para evitar rate limit
+        await new Promise(r => setTimeout(r, 500));
+      }
+
+      return new Response(JSON.stringify({
+        ok: true, kind, level,
+        total: topics.length, created: okCount, skipped: skipCount, errors: errCount, results,
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     // ─── KIND: QUESTIONS — popular cache com questões reais do banco ────────
     if (kind === "questions") {
