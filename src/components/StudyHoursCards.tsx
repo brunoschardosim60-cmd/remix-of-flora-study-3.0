@@ -7,6 +7,18 @@ import { loadNumberStorage } from "@/lib/storage";
 
 const DAY_LABELS = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
 
+function formatHM(ms: number): string {
+  if (!ms || ms < 60000) {
+    const s = Math.floor((ms || 0) / 1000);
+    return `${s}s`;
+  }
+  const totalMin = Math.floor(ms / 60000);
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  if (h === 0) return `${m}min`;
+  return `${h}h ${String(m).padStart(2, "0")}min`;
+}
+
 function getMonday(date: Date): Date {
   const d = new Date(date);
   const day = d.getDay();
@@ -49,6 +61,7 @@ function getWeekData(sessions: StudySession[], monday: Date) {
       day: label,
       date: dateStr,
       hours: Math.round((totalMs / 3600000) * 10) / 10,
+      ms: totalMs,
     };
   });
   return data;
@@ -80,14 +93,26 @@ export function StudyHoursCards({ todayHours, weekHours, monthHours, sessions }:
   viewMonday.setDate(currentMonday.getDate() + weekOffset * 7);
 
   const weekData = getWeekData(sessions, viewMonday);
-  const weekTotal = Math.round(weekData.reduce((s, d) => s + d.hours, 0) * 10) / 10;
+  const weekTotalMs = weekData.reduce((s, d) => s + d.ms, 0);
   const todayStr = toLocalDate(new Date());
   const isCurrentWeek = weekOffset === 0;
 
+  const nowDate = new Date();
+  let todayMs = 0;
+  let monthMs = 0;
+  for (const s of sessions) {
+    if (!s.durationMs) continue;
+    const sd = new Date(s.start);
+    if (toLocalDate(sd) === todayStr) todayMs += s.durationMs;
+    if (sd.getFullYear() === nowDate.getFullYear() && sd.getMonth() === nowDate.getMonth()) {
+      monthMs += s.durationMs;
+    }
+  }
+
   const summaryItems = [
-    { label: "Hoje", value: `${todayHours}h` },
-    { label: "Semana", value: `${weekTotal}h` },
-    { label: "Mês", value: `${monthHours}h` },
+    { label: "Hoje", value: formatHM(todayMs) },
+    { label: "Semana", value: formatHM(weekTotalMs) },
+    { label: "Mês", value: formatHM(monthMs) },
   ];
 
   return (
@@ -144,7 +169,7 @@ export function StudyHoursCards({ todayHours, weekHours, monthHours, sessions }:
               allowDecimals={false}
             />
             <Tooltip
-              formatter={(value: number) => [`${value}h`, "Tempo estudado"]}
+              formatter={(value: number) => [formatHM(Math.round(value * 3600000)), "Tempo estudado"]}
               contentStyle={{
                 background: "hsl(var(--card))",
                 border: "1px solid hsl(var(--border))",

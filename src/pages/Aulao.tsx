@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, BookOpen, Lightbulb, PenTool, Search, Loader2, Leaf, Clock } from "lucide-react";
+import { ArrowLeft, BookOpen, Lightbulb, PenTool, Search, Loader2, Leaf, Clock, GraduationCap } from "lucide-react";
 import { FloraThinkingLoader } from "@/components/FloraThinkingLoader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,6 +44,13 @@ const AULAO_TOPICS: AulaoTopic[] = [
     mode: "lesson",
     defaultLevel: "enem",
     defaultDidacticStyle: "macetes",
+  },
+  {
+    id: "cursos-prontos",
+    title: "Aulas prontas (Cursos)",
+    description: "Catálogo de aulas já preparadas pela Flora — abre na hora, sem esperar gerar.",
+    icon: <GraduationCap size={24} />,
+    mode: "lesson",
   },
   {
     id: "essay-enem",
@@ -245,6 +252,10 @@ export default function Aulao() {
   };
 
   const handleTopicSelect = (topic: AulaoTopic) => {
+    if (topic.id === "cursos-prontos") {
+      navigate("/cursos");
+      return;
+    }
     setSelectedTopic(topic);
     setMode(topic.mode);
     setGeneratedLesson(null);
