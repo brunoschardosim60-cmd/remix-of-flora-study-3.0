@@ -74,7 +74,7 @@ export default function SharedNotebook() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className="flex min-h-dvh items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -82,7 +82,7 @@ export default function SharedNotebook() {
 
   if (error) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <div className="flex min-h-dvh items-center justify-center bg-background px-4">
         <div className="text-center space-y-4 max-w-sm">
           <AlertTriangle className="h-12 w-12 text-destructive mx-auto" />
           <h1 className="font-heading text-xl font-bold">Caderno indisponível</h1>
@@ -96,7 +96,7 @@ export default function SharedNotebook() {
   const page = pages[currentPage];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-dvh bg-background">
       {/* Minimal header — clean reading mode */}
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border/50">
         <div className="mx-auto max-w-3xl px-4 py-4 flex items-center gap-3">

@@ -137,7 +137,7 @@ export default function Admin() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-dvh bg-background">
       <div className="mx-auto max-w-7xl px-3 py-4 sm:px-4 sm:py-6">
         <div className="mb-4 flex flex-wrap items-center gap-3">
           <Button variant="outline" size="icon" onClick={() => navigate("/")}>

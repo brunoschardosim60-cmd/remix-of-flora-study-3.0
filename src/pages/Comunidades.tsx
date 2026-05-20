@@ -318,7 +318,7 @@ export default function Comunidades() {
   // ============ TELA DE COMUNIDADE ATIVA ============
   if (activeCommunity) {
     return (
-      <div className="flex flex-col h-screen bg-background">
+      <div className="flex flex-col h-dvh bg-background">
         {/* Header */}
         <div className="border-b border-border bg-card sticky top-0 z-10">
           <div className="container max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
@@ -476,7 +476,7 @@ export default function Comunidades() {
 
   // ============ TELA DE LISTAGEM ============
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-dvh bg-background">
       {/* Header */}
       <div className="border-b border-border bg-card sticky top-0 z-10">
         <div className="container max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">

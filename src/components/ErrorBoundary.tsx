@@ -45,7 +45,7 @@ export class ErrorBoundary extends Component<Props, State> {
     const message = this.state.error?.message ?? "Erro inesperado";
 
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+      <div className="min-h-dvh bg-background flex items-center justify-center p-6">
         <div className="max-w-md w-full glass-card rounded-2xl p-8 text-center space-y-5">
           <div className="w-14 h-14 mx-auto rounded-2xl bg-destructive/10 flex items-center justify-center">
             <AlertTriangle className="w-7 h-7 text-destructive" />

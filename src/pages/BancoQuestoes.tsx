@@ -658,7 +658,7 @@ export default function BancoQuestoes() {
   const pct = stats.total > 0 ? Math.round((stats.acertos / stats.total) * 100) : 0;
 
   return (
-    <div className="min-h-screen bg-background pb-20 md:pb-6">
+    <div className="min-h-dvh bg-background pb-20 md:pb-6">
 
       {/* Header */}
       <div className="border-b border-border bg-card sticky top-0 z-10 shadow-sm">

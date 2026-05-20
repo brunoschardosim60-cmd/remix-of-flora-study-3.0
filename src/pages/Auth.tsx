@@ -92,7 +92,7 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen flex bg-[hsl(var(--background))]">
+    <div className="min-h-dvh flex bg-[hsl(var(--background))]">
       {/* ─── Left: Hero ─── */}
       <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-10 xl:p-16 relative overflow-hidden">
         {/* Subtle background decoration */}
