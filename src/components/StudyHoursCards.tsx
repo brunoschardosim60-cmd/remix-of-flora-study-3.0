@@ -169,7 +169,7 @@ export function StudyHoursCards({ todayHours, weekHours, monthHours, sessions }:
               allowDecimals={false}
             />
             <Tooltip
-              formatter={(value: number) => [`${value}h`, "Tempo estudado"]}
+              formatter={(value: number) => [formatHM(Math.round(value * 3600000)), "Tempo estudado"]}
               contentStyle={{
                 background: "hsl(var(--card))",
                 border: "1px solid hsl(var(--border))",
