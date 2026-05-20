@@ -415,7 +415,7 @@ export default function Redacao() {
 
   if (authLoading || !user) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className="flex min-h-dvh items-center justify-center bg-background">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
       </div>
     );
@@ -435,7 +435,7 @@ export default function Redacao() {
   const paragrafos = feedbackComp?._paragrafos;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-dvh bg-background">
       <div className="mx-auto max-w-7xl px-3 py-4 sm:px-4 sm:py-6">
         {/* Header */}
         <div className="mb-4 flex flex-wrap items-center gap-3">

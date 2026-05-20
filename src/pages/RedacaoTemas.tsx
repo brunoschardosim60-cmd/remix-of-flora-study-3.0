@@ -72,7 +72,7 @@ export default function RedacaoTemas() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20 md:pb-6">
+    <div className="min-h-dvh bg-background pb-20 md:pb-6">
       <div className="border-b border-border bg-card sticky top-0 z-10">
         <div className="container max-w-5xl mx-auto px-3 sm:px-4 py-3 flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>

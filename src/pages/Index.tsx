@@ -224,14 +224,14 @@ export default function Index() {
 
   if (!hydrated || (user && !onboardingChecked)) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-dvh bg-background flex items-center justify-center">
         <Loader2Icon className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background pb-16 md:pb-0">
+    <div className="min-h-dvh bg-background pb-16 md:pb-0">
       <DashboardHeader user={user} bancoRoute={bancoRoute} bancoLabel={bancoLabel} onSignOut={signOut} />
       <main className="container max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
         <DashboardHero

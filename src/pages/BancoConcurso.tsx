@@ -1050,7 +1050,7 @@ export default function BancoConcurso() {
   }, [examQueue, examAnswers]);
 
   return (
-    <div className="min-h-screen bg-background pb-20 md:pb-6">
+    <div className="min-h-dvh bg-background pb-20 md:pb-6">
       {/* Header */}
       <div className="border-b border-border bg-card sticky top-0 z-10 shadow-sm">
         <div className="container max-w-7xl mx-auto px-3 sm:px-4 py-3 flex items-center gap-3">

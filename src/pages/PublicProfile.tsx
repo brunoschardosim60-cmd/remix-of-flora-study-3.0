@@ -68,11 +68,11 @@ export default function PublicProfile() {
   }, [profile]);
 
   if (loading) {
-    return <div className="min-h-screen grid place-items-center bg-background"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
+    return <div className="min-h-dvh grid place-items-center bg-background"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
   }
   if (notFound || !profile) {
     return (
-      <div className="min-h-screen grid place-items-center bg-background p-6 text-center">
+      <div className="min-h-dvh grid place-items-center bg-background p-6 text-center">
         <div className="space-y-3">
           <h1 className="font-heading text-2xl font-bold">Perfil não encontrado</h1>
           <p className="text-muted-foreground text-sm">Este usuário não existe ou tem perfil privado.</p>
@@ -89,7 +89,7 @@ export default function PublicProfile() {
   const displayName = profile.display_name || profile.username || "Estudante";
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-dvh bg-background">
       <header className="border-b border-border bg-card">
         <div className="container max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link to="/" className="font-heading font-bold text-base">StudyFlow</Link>

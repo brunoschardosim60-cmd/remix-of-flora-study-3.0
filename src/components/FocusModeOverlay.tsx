@@ -97,7 +97,7 @@ export function FocusModeOverlay({
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.08),_transparent_35%)]" />
 
       {viewMode === "minimal" ? (
-        <div className="relative flex min-h-screen items-center justify-center p-6">
+        <div className="relative flex min-h-dvh items-center justify-center p-6">
           <div className="text-center select-none">
             {topicName && (
               <p className="mb-6 text-sm uppercase tracking-[0.2em] text-muted-foreground">{topicName}</p>
@@ -143,7 +143,7 @@ export function FocusModeOverlay({
           )}
         </div>
       ) : (
-        <div className="relative flex min-h-screen items-center justify-center p-4 md:p-6">
+        <div className="relative flex min-h-dvh items-center justify-center p-4 md:p-6">
           <div className="w-full max-w-4xl rounded-[2rem] border border-white/10 bg-card/70 p-6 text-center shadow-2xl backdrop-blur-2xl md:p-10">
             <div className="flex items-start justify-between gap-4">
               <div className="space-y-2 text-left">

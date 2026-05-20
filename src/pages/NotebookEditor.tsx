@@ -1189,14 +1189,14 @@ export default function NotebookEditor() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-dvh bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className={`min-h-screen bg-background flex flex-col ${expandedEditor ? "fixed inset-0 z-50 overflow-auto" : ""}`}
+    <div className={`min-h-dvh bg-background flex flex-col ${expandedEditor ? "fixed inset-0 z-50 overflow-auto" : ""}`}
       style={expandedEditor ? { touchAction: "pan-x pan-y pinch-zoom" } : undefined}
     >
       {/* Floating back button + mode dock in fullscreen */}

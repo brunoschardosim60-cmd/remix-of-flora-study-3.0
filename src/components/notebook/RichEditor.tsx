@@ -116,7 +116,7 @@ export function RichEditor({ content, onChange, userId, notebookId, darkMode, on
             transformOrigin: "top center",
           }}
         >
-          <EditorContent editor={editor} className="min-h-screen" />
+          <EditorContent editor={editor} className="min-h-dvh" />
           {paperOverlay}
         </div>
       </div>

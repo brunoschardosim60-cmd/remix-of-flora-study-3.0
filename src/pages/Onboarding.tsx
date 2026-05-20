@@ -111,7 +111,7 @@ export default function Onboarding() {
   // ─── Tela de conclusão ───────────────────────────────────────────────────
   if (done) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
+      <div className="min-h-dvh bg-background flex flex-col items-center justify-center p-6">
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -132,7 +132,7 @@ export default function Onboarding() {
   const progress = ((step) / TOTAL) * 100;
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-dvh bg-background flex flex-col">
       {/* Progress bar */}
       <div className="h-1 bg-muted w-full">
         <motion.div

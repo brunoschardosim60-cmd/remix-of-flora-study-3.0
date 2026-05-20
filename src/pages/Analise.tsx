@@ -266,7 +266,7 @@ export default function Analise() {
 
   // ─── Render ────────────────────────────────────────────────────────────────
   if (authLoading || !user) {
-    return <div className="flex min-h-screen items-center justify-center bg-background"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
+    return <div className="flex min-h-dvh items-center justify-center bg-background"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
   }
 
   const hasData = sessions.length > 0 || perfs.length > 0 || topics.length > 0;
@@ -281,7 +281,7 @@ export default function Analise() {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-dvh bg-background">
       <div className="mx-auto max-w-6xl px-3 py-4 sm:px-4 sm:py-6">
 
         {/* Header */}
