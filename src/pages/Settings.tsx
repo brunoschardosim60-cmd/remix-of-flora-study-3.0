@@ -325,6 +325,9 @@ export default function Settings() {
           </section>
         )}
 
+        {/* 2FA */}
+        {user && <TwoFactorPanel />}
+
         {/* Objetivo */}
         <section className="rounded-2xl border border-border bg-card p-4 sm:p-5 space-y-4">
           <h2 className="font-heading font-semibold text-base flex items-center gap-2">
