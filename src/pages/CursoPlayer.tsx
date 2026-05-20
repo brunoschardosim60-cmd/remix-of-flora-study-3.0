@@ -65,17 +65,17 @@ export default function CursoPlayer() {
   }
 
   return (
-    <div className="min-h-dvh bg-background">
-      <header className="sticky top-0 z-10 bg-background/90 backdrop-blur border-b border-border">
-        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-3">
+    <div className="h-dvh flex flex-col bg-background overflow-hidden">
+      <header className="shrink-0 bg-background/90 backdrop-blur border-b border-border">
+        <div className="px-4 py-2 flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => nav("/cursos")}><ArrowLeft size={20} /></Button>
           <div className="min-w-0">
             <p className="text-xs text-muted-foreground truncate">{row.subject}</p>
-            <h1 className="text-base font-semibold truncate">{row.title}</h1>
+            <h1 className="text-sm font-semibold truncate">{row.title}</h1>
           </div>
         </div>
       </header>
-      <main className="max-w-4xl mx-auto px-4 py-4">
+      <main className="flex-1 min-h-0 overflow-hidden">
         <InteractiveLessonPlayer lesson={row.content} onComplete={handleComplete} />
       </main>
     </div>
