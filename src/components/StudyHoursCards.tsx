@@ -61,6 +61,7 @@ function getWeekData(sessions: StudySession[], monday: Date) {
       day: label,
       date: dateStr,
       hours: Math.round((totalMs / 3600000) * 10) / 10,
+      ms: totalMs,
     };
   });
   return data;
