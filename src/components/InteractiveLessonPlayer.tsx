@@ -762,6 +762,25 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
                       ))}
                     </div>
                   )}
+
+                  {/* Tarefa rápida: marca compreensão ou pede ajuda */}
+                  <div className="ilp-task-row">
+                    <button
+                      className="ilp-task-btn ok"
+                      onClick={() => { playTone(880, 0.1, "sine", 0.05); next(); }}
+                    >
+                      <CheckCircle2 size={16} /> Entendi, avançar
+                    </button>
+                    <button
+                      className="ilp-task-btn confuso"
+                      onClick={() => {
+                        setDuvidaText(`Não entendi a parte sobre "${cur?.titulo || "isso"}". Explica de outro jeito?`);
+                        setDuvidaOpen(true);
+                      }}
+                    >
+                      <HelpCircle size={16} /> Confuso, explica de novo
+                    </button>
+                  </div>
                 </>
               )}
             </div>
