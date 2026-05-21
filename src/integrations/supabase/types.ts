@@ -674,6 +674,7 @@ export type Database = {
         Row: {
           content: Json
           cover_emoji: string | null
+          cover_image_url: string | null
           created_at: string
           created_by: string | null
           description: string | null
@@ -689,6 +690,7 @@ export type Database = {
         Insert: {
           content?: Json
           cover_emoji?: string | null
+          cover_image_url?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -704,6 +706,7 @@ export type Database = {
         Update: {
           content?: Json
           cover_emoji?: string | null
+          cover_image_url?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null

@@ -6,9 +6,11 @@ import {
   Loader2, Send, ChevronLeft, ChevronRight,
   Lightbulb, AlertTriangle, MessageCircleQuestion, CheckCircle2, XCircle,
   Sparkles, Brain, HelpCircle, ListChecks, ChevronDown, Leaf, Zap, Target,
-  Volume2, VolumeX, Eye, Share2, Trophy, Flame,
+  Volume2, VolumeX, Eye, Share2, Trophy, Flame, Radio,
 } from "lucide-react";
 import { generateDidacticImage } from "@/lib/floraImages";
+import { useImageSearch } from "@/hooks/useImageSearch";
+import { RichMediaPanel } from "@/components/RichMediaPanel";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -262,7 +264,7 @@ interface Lesson {
   titulo: string; introducao: string; blocos: LessonBlock[];
   resumo: string | string[]; exercicios?: Exercise[]; exercicio_final: Exercise;
 }
-interface Props { lesson: Lesson; onComplete?: () => void; enableVoice?: boolean; personality?: "padrao" | "amiga_motivadora" | "professora_rigorosa" | "tutor_engracado"; loadingBlockIndices?: number[]; }
+interface Props { lesson: Lesson; onComplete?: () => void; enableVoice?: boolean; personality?: "padrao" | "amiga_motivadora" | "professora_rigorosa" | "tutor_engracado"; loadingBlockIndices?: number[]; materia?: string; }
 
 function MD({ children }: { children: string }) {
   return (
@@ -564,7 +566,7 @@ function RevealScene({
 }
 
 /* ─── Main player ─────────────────────────────────────── */
-export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, loadingBlockIndices }) => {
+export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, loadingBlockIndices, materia }) => {
   const { user } = useAuth();
   const [stage, setStage] = useState<"intro" | "block" | "exercises" | "final" | "done">("intro");
   const [idx, setIdx] = useState(0);
@@ -578,6 +580,7 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
   // Ilustrações contextuais automáticas por cena
   const [sceneImages, setSceneImages] = useState<Record<string, string>>({});
   const [sceneImgLoading, setSceneImgLoading] = useState<Record<string, boolean>>({});
+  const [richMediaOpen, setRichMediaOpen] = useState(false);
 
   // Direção da transição (forward/back) e som
   const [direction, setDirection] = useState<"forward" | "backward">("forward");
@@ -625,6 +628,10 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
   const lessonSeed = useMemo(() => strHash(lesson.titulo || ""), [lesson.titulo]);
   const scenes = useMemo(() => (cur ? buildScenes(cur, idx, lessonSeed) : []), [cur, idx, lessonSeed]);
   const curScene = scenes[sceneIdx];
+
+  // Busca foto temática (Unsplash → Pexels → Pixabay) como fallback do DALL-E por cena.
+  const blockImageQuery = cur ? `${cur.titulo} ${lesson.titulo}` : "";
+  const { url: blockSearchUrl } = useImageSearch(blockImageQuery, !!cur && !!blockImageQuery);
 
   // Chave estável da cena atual (cacheia por título do bloco + tipo + início do texto)
   const sceneImgKey = useMemo(() => {
@@ -813,6 +820,7 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
             : stage === "done" ? "done"
             : (curScene?.kind || "text")
           }
+          image={stage === "block" ? (blockSearchUrl || undefined) : undefined}
           context={visualContext}
         />
         {/* ── Stage canvas ── */}
@@ -834,7 +842,18 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
               {sceneIdx === 0 && curScene?.kind !== "impact" && (
                 <div className="ilp-scene-head">
                   <span className="ilp-block-tag">Bloco {idx + 1} · {blocos.length}</span>
-                  <h2 className="ilp-block-title">{cur.titulo}</h2>
+                  <div className="flex items-center gap-2">
+                    <h2 className="ilp-block-title">{cur.titulo}</h2>
+                    <button
+                      type="button"
+                      onClick={() => setRichMediaOpen((v) => !v)}
+                      className="ilp-media-btn"
+                      title="Abrir mídia educacional (foto, vídeo, mapa, dados)"
+                      aria-label="Abrir mídia educacional"
+                    >
+                      <Radio size={14} />
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -1101,6 +1120,17 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
               </button>
             </div>
           )}
+        </div>
+      )}
+
+      {richMediaOpen && cur && (
+        <div className="ilp-rich-media-panel">
+          <RichMediaPanel
+            subject={materia || "Geral"}
+            topic={`${cur.titulo} ${lesson.titulo}`}
+            onClose={() => setRichMediaOpen(false)}
+            showInsert={false}
+          />
         </div>
       )}
     </div>

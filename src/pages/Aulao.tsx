@@ -406,6 +406,7 @@ export default function Aulao() {
                 personality="amiga_motivadora"
                 loadingBlockIndices={pendingBlocks}
                 onComplete={handleLessonComplete}
+                materia={lessonSubjectInput || "Geral"}
               />
             )}
           </div>
