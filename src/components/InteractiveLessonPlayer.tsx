@@ -566,7 +566,7 @@ function RevealScene({
 }
 
 /* ─── Main player ─────────────────────────────────────── */
-export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, loadingBlockIndices, materia }) => {
+export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, onExit, loadingBlockIndices, materia }) => {
   const { user } = useAuth();
   const [stage, setStage] = useState<"intro" | "block" | "exercises" | "final" | "done">("intro");
   const [idx, setIdx] = useState(0);
