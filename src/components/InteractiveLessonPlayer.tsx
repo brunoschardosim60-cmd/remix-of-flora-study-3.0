@@ -1015,6 +1015,14 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, o
           <div className="ilp-header-right">
             <button
               className="ilp-icon-btn"
+              onClick={toggleVisualMode}
+              aria-label={visualMode === "real" ? "Usar ilustrações" : "Usar imagens reais"}
+              title={visualMode === "real" ? "Visual: imagens reais (clique para ilustrações)" : "Visual: ilustrações (clique para imagens reais)"}
+            >
+              {visualMode === "real" ? <ImageIcon size={14} /> : <Palette size={14} />}
+            </button>
+            <button
+              className="ilp-icon-btn"
               onClick={toggleSound}
               aria-label={soundOn ? "Desativar sons" : "Ativar sons"}
               title={soundOn ? "Sons ativados" : "Sons desativados"}
