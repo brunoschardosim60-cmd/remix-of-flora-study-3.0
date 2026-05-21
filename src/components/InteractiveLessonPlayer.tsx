@@ -6,9 +6,11 @@ import {
   Loader2, Send, ChevronLeft, ChevronRight,
   Lightbulb, AlertTriangle, MessageCircleQuestion, CheckCircle2, XCircle,
   Sparkles, Brain, HelpCircle, ListChecks, ChevronDown, Leaf, Zap, Target,
-  Volume2, VolumeX, Eye, Share2, Trophy, Flame,
+  Volume2, VolumeX, Eye, Share2, Trophy, Flame, Radio,
 } from "lucide-react";
 import { generateDidacticImage } from "@/lib/floraImages";
+import { useImageSearch } from "@/hooks/useImageSearch";
+import { RichMediaPanel } from "@/components/RichMediaPanel";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -262,7 +264,7 @@ interface Lesson {
   titulo: string; introducao: string; blocos: LessonBlock[];
   resumo: string | string[]; exercicios?: Exercise[]; exercicio_final: Exercise;
 }
-interface Props { lesson: Lesson; onComplete?: () => void; enableVoice?: boolean; personality?: "padrao" | "amiga_motivadora" | "professora_rigorosa" | "tutor_engracado"; loadingBlockIndices?: number[]; }
+interface Props { lesson: Lesson; onComplete?: () => void; enableVoice?: boolean; personality?: "padrao" | "amiga_motivadora" | "professora_rigorosa" | "tutor_engracado"; loadingBlockIndices?: number[]; materia?: string; }
 
 function MD({ children }: { children: string }) {
   return (
