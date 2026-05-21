@@ -842,7 +842,18 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
               {sceneIdx === 0 && curScene?.kind !== "impact" && (
                 <div className="ilp-scene-head">
                   <span className="ilp-block-tag">Bloco {idx + 1} · {blocos.length}</span>
-                  <h2 className="ilp-block-title">{cur.titulo}</h2>
+                  <div className="flex items-center gap-2">
+                    <h2 className="ilp-block-title">{cur.titulo}</h2>
+                    <button
+                      type="button"
+                      onClick={() => setRichMediaOpen((v) => !v)}
+                      className="ilp-media-btn"
+                      title="Abrir mídia educacional (foto, vídeo, mapa, dados)"
+                      aria-label="Abrir mídia educacional"
+                    >
+                      <Radio size={14} />
+                    </button>
+                  </div>
                 </div>
               )}
 
