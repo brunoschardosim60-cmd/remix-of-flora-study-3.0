@@ -1045,7 +1045,8 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, o
             : stage === "done" ? "done"
             : (curScene?.kind || "text")
           }
-          image={stage === "block" ? (blockSearchUrl || undefined) : undefined}
+          image={stage === "done" ? undefined : (blockSearchUrl || undefined)}
+          mode={visualMode}
           context={visualContext}
         />
         {/* ── Stage canvas ── */}
