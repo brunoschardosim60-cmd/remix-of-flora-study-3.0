@@ -1122,6 +1122,17 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
           )}
         </div>
       )}
+
+      {richMediaOpen && cur && (
+        <div className="ilp-rich-media-panel">
+          <RichMediaPanel
+            subject={materia || "Geral"}
+            topic={`${cur.titulo} ${lesson.titulo}`}
+            onClose={() => setRichMediaOpen(false)}
+            showInsert={false}
+          />
+        </div>
+      )}
     </div>
   );
 };
