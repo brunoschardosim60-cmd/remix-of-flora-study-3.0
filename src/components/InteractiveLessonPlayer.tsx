@@ -848,8 +848,28 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
               key={`b${idx}-s${sceneIdx}-${direction}`}
               data-direction={direction}
             >
-              {/* Block title: só na primeira cena que NÃO seja impact */}
-              {sceneIdx === 0 && curScene?.kind !== "impact" && (
+              {/* Block title: só na primeira cena que NÃO seja impact.
+                  Omite quando o título do bloco repete o título da aula (já mostrado no header). */}
+              {sceneIdx === 0 && curScene?.kind !== "impact" && (() => {
+                const norm = (s: string) => (s || "").toLowerCase().replace(/\s+/g, " ").trim();
+                const isDup = norm(cur.titulo) === norm(lesson.titulo);
+                if (isDup) {
+                  return (
+                    <div className="ilp-scene-head">
+                      <span className="ilp-block-tag">Bloco {idx + 1} · {blocos.length}</span>
+                      <button
+                        type="button"
+                        onClick={() => setRichMediaOpen((v) => !v)}
+                        className="ilp-media-btn"
+                        title="Abrir mídia educacional (foto, vídeo, mapa, dados)"
+                        aria-label="Abrir mídia educacional"
+                      >
+                        <Radio size={14} />
+                      </button>
+                    </div>
+                  );
+                }
+                return (
                 <div className="ilp-scene-head">
                   <span className="ilp-block-tag">Bloco {idx + 1} · {blocos.length}</span>
                   <div className="flex items-center gap-2">
@@ -865,7 +885,8 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
                     </button>
                   </div>
                 </div>
-              )}
+                );
+              })()}
 
               {isCurLoading ? <BlockSkeleton /> : curScene && (
                 <>
@@ -992,24 +1013,8 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
                     </div>
                   )}
 
-                  {/* Tarefa rápida: marca compreensão ou pede ajuda */}
-                  <div className="ilp-task-row">
-                    <button
-                      className="ilp-task-btn ok"
-                      onClick={() => { playTone(880, 0.1, "sine", 0.05); next(); }}
-                    >
-                      <CheckCircle2 size={16} /> Entendi, avançar
-                    </button>
-                    <button
-                      className="ilp-task-btn confuso"
-                      onClick={() => {
-                        setDuvidaText(`Não entendi a parte sobre "${cur?.titulo || "isso"}". Explica de outro jeito?`);
-                        setDuvidaOpen(true);
-                      }}
-                    >
-                      <HelpCircle size={16} /> Confuso, explica de novo
-                    </button>
-                  </div>
+                  {/* Os botões de "Entendi/Confuso" eram redundantes com Continuar/Tirar dúvida no rodapé.
+                      Removidos para limpar a interface. */}
                 </>
               )}
             </div>
