@@ -139,27 +139,38 @@ export function RichMediaPanel({ subject, topic, onClose, onInsertToNotebook, sh
           media.video.error || !media.video.data ? <ErrorState msg="Nenhum vídeo encontrado. Verifique se YOUTUBE_API_KEY está configurada." /> : (
             <div className="p-4 space-y-3">
               <div className="relative w-full rounded-lg overflow-hidden bg-black" style={{ paddingTop: "56.25%" }}>
-                <iframe
-                  src={media.video.data.embedUrl}
-                  className="absolute inset-0 w-full h-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  title={media.video.data.title}
-                />
+                {media.video.data.embedUrl.endsWith(".mp4") ? (
+                  <video
+                    src={media.video.data.embedUrl}
+                    controls
+                    className="absolute inset-0 w-full h-full"
+                    poster={media.video.data.thumbnail}
+                  />
+                ) : (
+                  <iframe
+                    src={media.video.data.embedUrl}
+                    className="absolute inset-0 w-full h-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    title={media.video.data.title}
+                  />
+                )}
               </div>
               <div>
                 <p className="text-sm font-medium leading-snug">{media.video.data.title}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">{media.video.data.channelTitle}</p>
               </div>
-              <a
-                href={`https://youtu.be/${media.video.data.videoId}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1 text-xs text-primary"
-              >
-                <ExternalLink size={11} />
-                Abrir no YouTube
-              </a>
+              {!media.video.data.embedUrl.endsWith(".mp4") && (
+                <a
+                  href={`https://youtu.be/${media.video.data.videoId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-xs text-primary"
+                >
+                  <ExternalLink size={11} />
+                  Abrir no YouTube
+                </a>
+              )}
             </div>
           )
         )}
