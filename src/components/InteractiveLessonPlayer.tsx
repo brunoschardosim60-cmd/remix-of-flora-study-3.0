@@ -1125,8 +1125,8 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, o
 
       {/* ── Minimal footer ── */}
       <div className="ilp-controls">
-        <button className="ilp-nav ghost" onClick={prev} disabled={stage === "intro"}>
-          <ChevronLeft size={16} /> <span>Voltar</span>
+        <button className="ilp-nav ghost" onClick={prev} disabled={stage === "done"}>
+          <ChevronLeft size={16} /> <span>{stage === "intro" ? "Sair" : "Voltar"}</span>
         </button>
         <button className="ilp-nav ghost" onClick={() => setDuvidaOpen((v) => !v)}>
           <MessageCircleQuestion size={16} /> <span>Tirar dúvida</span>
