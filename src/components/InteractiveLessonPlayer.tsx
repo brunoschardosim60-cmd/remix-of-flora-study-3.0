@@ -755,6 +755,19 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, o
   const [sceneImgLoading, setSceneImgLoading] = useState<Record<string, boolean>>({});
   const [richMediaOpen, setRichMediaOpen] = useState(false);
 
+  // Modo do painel visual da esquerda: "real" tenta foto real, "illust" usa SVG.
+  const [visualMode, setVisualMode] = useState<"real" | "illust">(() => {
+    if (typeof window === "undefined") return "real";
+    return (localStorage.getItem("ilp-visual-mode") as "real" | "illust") || "real";
+  });
+  const toggleVisualMode = useCallback(() => {
+    setVisualMode((m) => {
+      const nv: "real" | "illust" = m === "real" ? "illust" : "real";
+      try { localStorage.setItem("ilp-visual-mode", nv); } catch { /* ignore */ }
+      return nv;
+    });
+  }, []);
+
   // Auto-abre o painel de mídia em temas com dados (economia, clima, demografia, etc.)
   // só na 1ª vez por aula, e respeita se o usuário fechou manualmente.
   const autoOpenedRef = useRef(false);
