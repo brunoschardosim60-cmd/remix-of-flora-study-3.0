@@ -629,6 +629,10 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
   const scenes = useMemo(() => (cur ? buildScenes(cur, idx, lessonSeed) : []), [cur, idx, lessonSeed]);
   const curScene = scenes[sceneIdx];
 
+  // Busca foto temática (Unsplash → Pexels → Pixabay) como fallback do DALL-E por cena.
+  const blockImageQuery = cur ? `${cur.titulo} ${lesson.titulo}` : "";
+  const { url: blockSearchUrl } = useImageSearch(blockImageQuery, !!cur && !!blockImageQuery);
+
   // Chave estável da cena atual (cacheia por título do bloco + tipo + início do texto)
   const sceneImgKey = useMemo(() => {
     if (!curScene || !cur) return "";
