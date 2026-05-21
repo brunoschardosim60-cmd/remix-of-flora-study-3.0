@@ -292,12 +292,13 @@ async function generateDalle(concept: string, context: string, style: string): P
   const r = await fetch("https://api.openai.com/v1/images/generations", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${OPENAI_KEY}` },
-    body: JSON.stringify({ model: "dall-e-3", prompt: buildDallePrompt(concept, context, style), n: 1, size: "1024x1024" }),
+    body: JSON.stringify({ model: "gpt-image-1", prompt: buildDallePrompt(concept, context, style), n: 1, size: "1024x1024" }),
     signal: AbortSignal.timeout(30000),
   });
   if (!r.ok) { const t = await r.text().catch(() => ""); throw new Error(`DALL-E ${r.status}: ${t.slice(0, 200)}`); }
   const d = await r.json();
-  const url = d?.data?.[0]?.url;
+  const item = d?.data?.[0];
+  const url = item?.url || (item?.b64_json ? `data:image/png;base64,${item.b64_json}` : null);
   if (!url) throw new Error("DALL-E: sem URL");
   return url;
 }
