@@ -35,7 +35,12 @@ const SCENE_KICKERS: Record<string, string> = {
   done: "Concluído",
 };
 
-type TopicCategory = "ecology" | "math" | "biology" | "chemistry" | "physics" | "history" | "geography" | "law" | "writing" | "tech" | "study";
+type TopicCategory =
+  | "ecology" | "food-chain" | "ecosystem" | "math" | "statistics" | "trigonometry"
+  | "biology" | "chemistry" | "physics" | "history" | "geography" | "law"
+  | "writing" | "tech" | "study";
+
+type MathOp = "equation" | "division" | "root" | "percent" | "geometry" | "generic";
 
 function normalizeTopicText(s: string): string {
   return (s || "")
@@ -48,17 +53,32 @@ function resolveTopicCategory(context: string): TopicCategory {
   const hay = normalizeTopicText(context);
   const match = (terms: string[]) => terms.some((term) => hay.includes(term));
 
-  if (match(["ecolog", "ecossist", "meio ambiente", "bioma", "cadeia alimentar", "sustent", "biodivers", "populacao"])) return "ecology";
-  if (match(["matemat", "algebra", "equac", "funcao", "geometr", "trigon", "raiz", "logarit", "porcent", "probabil", "estatist"])) return "math";
+  if (match(["cadeia alimentar", "teia alimentar", "predador", "presa", "produtor", "consumidor", "decompositor", "herbivor", "carnivor"])) return "food-chain";
+  if (match(["ecossist", "bioma", "habitat", "nicho ecologico", "fauna e flora", "comunidade ecolog"])) return "ecosystem";
+  if (match(["ecolog", "meio ambiente", "sustent", "biodivers", "populacao animal", "desmatamento", "polui"])) return "ecology";
+  if (match(["estatist", "media", "mediana", "moda", "desvio padrao", "variancia", "histograma", "grafico de barras", "dispersao", "probabil"])) return "statistics";
+  if (match(["trigon", "seno", "cosseno", "tangente", "triangulo retangulo", "hipotenusa", "cateto", "angulo"])) return "trigonometry";
+  if (match(["matemat", "algebra", "equac", "funcao", "geometr", "raiz", "logarit", "porcent", "fracao", "divisao", "multiplica", "soma", "subtra"])) return "math";
   if (match(["biolog", "celul", "dna", "genetic", "anatom", "fisiolog", "evolu", "especie"])) return "biology";
   if (match(["quimic", "reacao", "molecul", "atomo", "organica", "carbono", "estequiometr"])) return "chemistry";
   if (match(["fisica", "newton", "energia", "forca", "cinemat", "mecanica", "eletric", "circuito", "ondas"])) return "physics";
   if (match(["historia", "guerra", "revolu", "imperio", "colon", "republica", "idade media"])) return "history";
-  if (match(["geograf", "mapa", "clima", "relevo", "urban", "territorio", "globalizacao"])) return "geography";
+  if (match(["geograf", "mapa", "clima", "relevo", "urban", "territorio", "globalizacao", "demograf"])) return "geography";
   if (match(["direito", "constitui", "jurid", "lei", "penal", "civil", "administrativo"])) return "law";
   if (match(["redac", "portugues", "gramat", "literat", "texto", "argument", "interpret", "sintax"])) return "writing";
   if (match(["informat", "comput", "tecnolog", "internet", "software", "hardware", "algorit"])) return "tech";
   return "study";
+}
+
+function resolveMathOperation(context: string): MathOp {
+  const hay = normalizeTopicText(context);
+  const has = (terms: string[]) => terms.some((t) => hay.includes(t));
+  if (has(["divisao", "dividir", "divisor", "dividendo", "quociente", "fracao", "fração"])) return "division";
+  if (has(["raiz quadrada", "raiz cubica", "radical", "raiz de", "√"])) return "root";
+  if (has(["porcent", "percentual", "%", "desconto", "juros", "acrescim"])) return "percent";
+  if (has(["equac", "incognita", "resolver equa", "x =", "x="])) return "equation";
+  if (has(["geometr", "area", "perimetro", "volume", "poligono", "circulo"])) return "geometry";
+  return "generic";
 }
 
 function TopicIllustration({ context, kind }: { context: string; kind: string }) {
