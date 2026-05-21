@@ -50,6 +50,17 @@ export function useFloraChatStream({ isOpen, onClose }: Options) {
     });
   }, []);
 
+  // Permite que outras partes do app (ex.: executor de ações) adicionem mensagens no chat
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { role?: "user" | "assistant"; content?: string } | undefined;
+      if (!detail?.content) return;
+      setMessages((prev) => [...prev, { role: detail.role || "assistant", content: detail.content! }]);
+    };
+    window.addEventListener("flora-chat-append", handler);
+    return () => window.removeEventListener("flora-chat-append", handler);
+  }, []);
+
   const queueAssistantText = useCallback((content: string) => {
     pendingAssistantTextRef.current = content;
     if (assistantFlushTimerRef.current !== null) return;

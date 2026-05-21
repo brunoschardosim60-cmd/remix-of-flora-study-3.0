@@ -46,8 +46,13 @@ export function useFloraActionExecutor(onClose: () => void) {
           toast.success(`Conteúdo adicionado ao caderno!`);
         } else {
           toast.success(`Caderno "${data.titulo || "Novo"}" criado.`);
-          navigate(`/notebooks/${data.notebookId}`);
-          onClose();
+          // Mostra prévia (imagem + link) no chat
+          const previewParts: string[] = [];
+          if (data.imageUrl) previewParts.push(`![${data.titulo || "Caderno"}](${data.imageUrl})`);
+          previewParts.push(`📓 [Abrir caderno "${data.titulo || "Novo"}"](/notebooks/${data.notebookId})`);
+          window.dispatchEvent(new CustomEvent("flora-chat-append", {
+            detail: { role: "assistant", content: previewParts.join("\n\n") },
+          }));
         }
       } else if (data?.type === "meta_dia") {
         window.dispatchEvent(new CustomEvent("flora-meta-dia", { detail: data }));
