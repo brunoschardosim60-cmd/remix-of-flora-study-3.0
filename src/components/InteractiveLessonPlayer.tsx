@@ -102,6 +102,54 @@ function TopicIllustration({ context, kind }: { context: string; kind: string })
   }
 
   switch (category) {
+    case "food-chain":
+      return (
+        <svg {...common} role="img" aria-label="Cadeia alimentar: produtor, herbívoro, carnívoro">
+          <path d="M36 240h288" stroke={M} strokeWidth="3" strokeLinecap="round" />
+          {/* produtor (folha) */}
+          <g transform="translate(60 170)">
+            <path d="M0 50c20-50 50-50 70 0-20 14-50 14-70 0z" fill={P} opacity="0.7" />
+            <path d="M35 50V8" stroke={F} strokeWidth="4" strokeLinecap="round" opacity="0.6" />
+          </g>
+          {/* herbívoro */}
+          <g transform="translate(160 160)">
+            <ellipse cx="40" cy="38" rx="42" ry="22" fill={A} opacity="0.78" />
+            <circle cx="74" cy="28" r="14" fill={A} opacity="0.78" />
+            <path d="M14 60v18M34 60v18M52 60v18M70 60v18" stroke={F} strokeWidth="4" strokeLinecap="round" opacity="0.7" />
+          </g>
+          {/* carnívoro */}
+          <g transform="translate(260 160)">
+            <path d="M10 70c0-30 18-46 40-46s40 16 40 46v6H10z" fill={P} opacity="0.85" />
+            <circle cx="36" cy="46" r="3" fill={B} /><circle cx="64" cy="46" r="3" fill={B} />
+            <path d="M20 30l-6-14M80 30l6-14" stroke={F} strokeWidth="4" strokeLinecap="round" opacity="0.65" />
+          </g>
+          {/* setas */}
+          <path d="M138 200l28-12" stroke={F} strokeWidth="3" markerEnd="url(#fcArrow)" />
+          <path d="M250 200l28-12" stroke={F} strokeWidth="3" markerEnd="url(#fcArrow)" />
+          <defs>
+            <marker id="fcArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M0 0l10 5-10 5z" fill={F} />
+            </marker>
+          </defs>
+          <circle cx="300" cy="58" r="22" fill={A} opacity="0.55" />
+        </svg>
+      );
+    case "ecosystem":
+      return (
+        <svg {...common} role="img" aria-label="Ecossistema com vegetação, água e fauna">
+          <circle cx="300" cy="60" r="24" fill={A} opacity="0.55" />
+          <path d="M0 220c60-30 120-30 180 0s120 30 180 0v80H0z" fill={P} opacity="0.18" />
+          <ellipse cx="180" cy="248" rx="120" ry="16" fill={A} opacity="0.3" />
+          {[70, 130, 240, 300].map((x, i) => (
+            <g key={x}>
+              <path d={`M${x} 220v-${30 + (i % 2) * 14}`} stroke={F} strokeWidth="6" strokeLinecap="round" opacity="0.7" />
+              <circle cx={x - 12} cy={180 - i * 6} r="18" fill={P} opacity="0.7" />
+              <circle cx={x + 14} cy={172 - i * 6} r="20" fill={A} opacity="0.7" />
+            </g>
+          ))}
+          <path d="M50 132c30-30 70-30 100 0" stroke={A} strokeWidth="4" strokeLinecap="round" opacity="0.6" />
+        </svg>
+      );
     case "ecology":
       return (
         <svg {...common} role="img" aria-label="Ilustração de ecologia com árvores, ciclo e curva populacional">
@@ -122,19 +170,94 @@ function TopicIllustration({ context, kind }: { context: string; kind: string })
           <path d="M219 48l-1 24 22-11" fill={M} />
         </svg>
       );
-    case "math":
+    case "math": {
+      const op = resolveMathOperation(context);
+      const exprByOp: Record<MathOp, string> = {
+        division: "84 ÷ 7 = 12",
+        root: "√144 = 12",
+        percent: "30% de 250 = 75",
+        equation: "2x + 5 = 17",
+        geometry: "A = π · r²",
+        generic: "f(x) = 2x + 5",
+      };
+      const symbolByOp: Record<MathOp, string> = {
+        division: "÷", root: "√", percent: "%", equation: "=", geometry: "△", generic: "ƒ",
+      };
       return (
-        <svg {...common} role="img" aria-label="Ilustração matemática com operação e plano cartesiano">
+        <svg {...common} role="img" aria-label={`Ilustração matemática (${op})`}>
           <rect x="46" y="42" width="268" height="184" rx="18" fill={S} stroke={M} strokeWidth="2" />
-          <path d="M86 190h152M86 190V78" stroke={M} strokeWidth="3" strokeLinecap="round" />
-          <path d="M90 170c34-54 64-70 96-44 25 21 43 18 69-30" stroke={P} strokeWidth="5" strokeLinecap="round" />
-          <circle cx="90" cy="170" r="6" fill={A} /><circle cx="186" cy="126" r="6" fill={A} /><circle cx="255" cy="96" r="6" fill={A} />
-          <rect x="96" y="70" width="166" height="46" rx="12" fill={B} stroke={P} strokeWidth="2" />
-          <text x="179" y="100" textAnchor="middle" fontSize="23" fontWeight="800" fill={F}>2x + 5 = 17</text>
-          <text x="98" y="250" fontSize="34" fontWeight="800" fill={P}>÷</text>
-          <text x="154" y="250" fontSize="34" fontWeight="800" fill={A}>×</text>
-          <text x="210" y="250" fontSize="34" fontWeight="800" fill={P}>√</text>
-          <text x="262" y="250" fontSize="30" fontWeight="800" fill={A}>π</text>
+          <rect x="76" y="74" width="206" height="56" rx="14" fill={B} stroke={P} strokeWidth="2" />
+          <text x="179" y="112" textAnchor="middle" fontSize="26" fontWeight="800" fill={F}>{exprByOp[op]}</text>
+          {op === "division" && (
+            <g>
+              <circle cx="120" cy="180" r="14" fill={P} opacity="0.85" />
+              <circle cx="160" cy="180" r="14" fill={P} opacity="0.85" />
+              <circle cx="200" cy="180" r="14" fill={A} opacity="0.85" />
+              <circle cx="240" cy="180" r="14" fill={A} opacity="0.85" />
+              <path d="M140 198h80" stroke={F} strokeWidth="3" strokeDasharray="4 4" />
+            </g>
+          )}
+          {op === "root" && (
+            <path d="M90 200l24 14 30-60 110 0" stroke={P} strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+          )}
+          {op === "percent" && (
+            <g>
+              <rect x="86" y="172" width="188" height="22" rx="11" fill={M} opacity="0.35" />
+              <rect x="86" y="172" width="56" height="22" rx="11" fill={P} />
+              <text x="180" y="220" textAnchor="middle" fontSize="14" fontWeight="700" fill={F}>30% preenchido</text>
+            </g>
+          )}
+          {op === "equation" && (
+            <g>
+              <path d="M86 200h152M86 200V150" stroke={M} strokeWidth="3" />
+              <path d="M90 195c30-40 70-40 100 0 20 22 40 22 70-12" stroke={P} strokeWidth="5" strokeLinecap="round" fill="none" />
+              <circle cx="190" cy="180" r="6" fill={A} />
+            </g>
+          )}
+          {op === "geometry" && (
+            <g>
+              <circle cx="180" cy="186" r="40" fill={P} opacity="0.2" stroke={P} strokeWidth="3" />
+              <line x1="180" y1="186" x2="220" y2="186" stroke={F} strokeWidth="3" />
+              <text x="200" y="180" fontSize="12" fontWeight="700" fill={F}>r</text>
+            </g>
+          )}
+          {op === "generic" && (
+            <g>
+              <path d="M86 200h152M86 200V150" stroke={M} strokeWidth="3" />
+              <path d="M90 200c30-50 70-50 100 0 20 30 40 30 70-20" stroke={P} strokeWidth="5" strokeLinecap="round" fill="none" />
+            </g>
+          )}
+          <text x="304" y="260" textAnchor="end" fontSize="36" fontWeight="900" fill={A} opacity="0.85">{symbolByOp[op]}</text>
+        </svg>
+      );
+    }
+    case "statistics":
+      return (
+        <svg {...common} role="img" aria-label="Ilustração de estatística com gráfico de barras">
+          <rect x="46" y="42" width="268" height="200" rx="18" fill={S} stroke={M} strokeWidth="2" />
+          <path d="M76 218h208M76 218V72" stroke={M} strokeWidth="3" strokeLinecap="round" />
+          {[
+            { x: 96, h: 42, c: P }, { x: 134, h: 86, c: A }, { x: 172, h: 64, c: P },
+            { x: 210, h: 122, c: A }, { x: 248, h: 92, c: P }, { x: 286, h: 56, c: A },
+          ].map((b, i) => (
+            <rect key={i} x={b.x} y={218 - b.h} width="24" height={b.h} rx="4" fill={b.c} opacity="0.85" />
+          ))}
+          <path d="M96 178l38-30 38 16 38-46 38 24 38-12" stroke={F} strokeWidth="3" fill="none" opacity="0.55" />
+          <text x="100" y="260" fontSize="14" fontWeight="700" fill={F} opacity="0.7">x̄ · σ · Md</text>
+        </svg>
+      );
+    case "trigonometry":
+      return (
+        <svg {...common} role="img" aria-label="Ilustração de trigonometria com triângulo retângulo">
+          <rect x="46" y="42" width="268" height="200" rx="18" fill={S} stroke={M} strokeWidth="2" />
+          <path d="M90 210L270 210L270 92Z" fill={P} opacity="0.18" stroke={P} strokeWidth="4" strokeLinejoin="round" />
+          <path d="M250 210v-20h20" stroke={F} strokeWidth="3" fill="none" />
+          <text x="170" y="232" textAnchor="middle" fontSize="14" fontWeight="700" fill={F}>cateto adjacente</text>
+          <text x="284" y="156" textAnchor="middle" fontSize="14" fontWeight="700" fill={F} transform="rotate(90 284 156)">cateto oposto</text>
+          <text x="160" y="146" fontSize="14" fontWeight="700" fill={A} transform="rotate(-32 160 146)">hipotenusa</text>
+          <path d="M110 210a22 22 0 0 1 16-22" stroke={A} strokeWidth="3" fill="none" />
+          <text x="130" y="200" fontSize="14" fontWeight="800" fill={A}>θ</text>
+          <text x="62" y="76" fontSize="16" fontWeight="800" fill={P}>sen · cos · tan</text>
         </svg>
       );
     case "biology":
