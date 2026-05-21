@@ -630,7 +630,17 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
   const curScene = scenes[sceneIdx];
 
   // Busca foto temática (Unsplash → Pexels → Pixabay) como fallback do DALL-E por cena.
-  const blockImageQuery = cur ? `${cur.titulo} ${lesson.titulo}` : "";
+  // Inclui a matéria pra ancorar o tema (sem isso, títulos abstratos como
+  // "Quem come quem" devolvem fotos aleatórias). Limpa parênteses e fluff.
+  const cleanForSearch = (s: string) =>
+    (s || "")
+      .replace(/\([^)]*\)/g, " ")
+      .replace(/[:?!]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  const blockImageQuery = cur
+    ? `${materia || ""} ${cleanForSearch(lesson.titulo)} ${cleanForSearch(cur.titulo)}`.trim()
+    : "";
   const { url: blockSearchUrl } = useImageSearch(blockImageQuery, !!cur && !!blockImageQuery);
 
   // Chave estável da cena atual (cacheia por título do bloco + tipo + início do texto)
