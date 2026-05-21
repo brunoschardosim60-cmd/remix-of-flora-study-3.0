@@ -264,7 +264,7 @@ interface Lesson {
   titulo: string; introducao: string; blocos: LessonBlock[];
   resumo: string | string[]; exercicios?: Exercise[]; exercicio_final: Exercise;
 }
-interface Props { lesson: Lesson; onComplete?: () => void; enableVoice?: boolean; personality?: "padrao" | "amiga_motivadora" | "professora_rigorosa" | "tutor_engracado"; loadingBlockIndices?: number[]; materia?: string; }
+interface Props { lesson: Lesson; onComplete?: () => void; onExit?: () => void; enableVoice?: boolean; personality?: "padrao" | "amiga_motivadora" | "professora_rigorosa" | "tutor_engracado"; loadingBlockIndices?: number[]; materia?: string; }
 
 function MD({ children }: { children: string }) {
   return (
