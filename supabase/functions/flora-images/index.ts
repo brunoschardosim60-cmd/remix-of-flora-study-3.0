@@ -377,22 +377,25 @@ serve(async (req: Request) => {
     }
 
     // ── generate (DALL-E legado) ──────────────────────────────────
-    const { concept, context, style = "educational", userId } = body;
-    if (!concept || !context || !userId) return json({ error: "Missing required fields" }, 400);
+    // ── generate / default: usa busca de foto real (Pixabay → Unsplash → Pexels) ──
+    // A IA NÃO gera imagem. Apenas bancos de foto reais, com cache permanente
+    // da melhor foto encontrada por conceito.
+    const { concept, context } = body;
+    if (!concept) return json({ error: "concept obrigatório" }, 400);
+    const queryRaw = `${concept} ${context || ""}`.trim();
+    const enQuery = toEn(queryRaw);
+    const cacheKey = `img-search:${normCacheStr(enQuery)}`;
+    const cached = await cacheLookup(supabase, cacheKey);
+    if (cached?.imageUrl) {
+      return json({ success: true, imageUrl: cached.imageUrl, provider: cached.provider, concept, cached: true });
+    }
     try {
-      const imageUrl = await generateDalle(concept, context, style);
-      await supabase.from("flora_usage_logs").insert({ user_id: userId, action: "image_generation", concept, model: "gemini-image", timestamp: new Date().toISOString() }).then(() => {}).catch(() => {});
-      return json({ success: true, imageUrl, concept, prompt: buildDallePrompt(concept, context, style) });
+      const { imageUrl, provider } = await searchPhoto(queryRaw);
+      await cacheStore(supabase, cacheKey, { tipo: "image_search", tema: queryRaw }, { imageUrl, provider, query: enQuery }, 30 * 24 * 3600);
+      return json({ success: true, imageUrl, provider, concept });
     } catch (e) {
-      // Fallback: tenta foto de banco (Pixabay/Unsplash/Pexels) em vez de quebrar.
       const msg = e instanceof Error ? e.message : String(e);
-      console.warn("[flora-images] generate falhou, tentando search:", msg);
-      try {
-        const { imageUrl, provider } = await searchPhoto(`${concept} ${context}`);
-        return json({ success: true, imageUrl, provider, concept, fallback: true, reason: msg.slice(0, 120) });
-      } catch {
-        return json({ success: false, error: "image_unavailable", reason: msg.slice(0, 120) });
-      }
+      return json({ success: false, error: "image_unavailable", reason: msg.slice(0, 120) });
     }
 
   } catch (error) {
