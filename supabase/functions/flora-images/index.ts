@@ -21,6 +21,7 @@ const OPENAI_KEY    = Deno.env.get("OPENAI_API_KEY");
 const UNSPLASH_KEY  = Deno.env.get("UNSPLASH_ACCESS_KEY");
 const PEXELS_KEY    = Deno.env.get("PEXELS_API_KEY");
 const PIXABAY_KEY   = Deno.env.get("PIXABAY_API_KEY");
+const PIXABAY_VIDEO_KEY = Deno.env.get("PIXABAY_VIDEO_API_KEY") || Deno.env.get("PIXABAY_API_KEY");
 const YOUTUBE_KEY   = Deno.env.get("YOUTUBE_API_KEY");
 const SUPA_URL      = Deno.env.get("SUPABASE_URL")!;
 const SUPA_ANON     = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -119,9 +120,9 @@ async function searchPixabay(q: string): Promise<string | null> {
 async function searchPhoto(query: string): Promise<{ imageUrl: string; provider: string }> {
   const q = toEn(query);
   for (const [name, fn] of [
+    ["pixabay",  () => searchPixabay(q)],
     ["unsplash", () => searchUnsplash(q)],
     ["pexels",   () => searchPexels(q)],
-    ["pixabay",  () => searchPixabay(q)],
   ] as [string, () => Promise<string | null>][]) {
     try {
       const url = await fn();
@@ -141,7 +142,35 @@ export interface VideoResult {
 }
 
 async function searchVideo(query: string, lang = "pt"): Promise<VideoResult | null> {
-  if (!YOUTUBE_KEY) { console.warn("[flora-images] YOUTUBE_API_KEY ausente"); return null; }
+  // 1ª tentativa: Pixabay Videos (sem necessidade de embed externo)
+  if (PIXABAY_VIDEO_KEY) {
+    try {
+      const q = encodeURIComponent(toEn(query));
+      const r = await fetch(`https://pixabay.com/api/videos/?key=${PIXABAY_VIDEO_KEY}&q=${q}&per_page=5&safesearch=true`,
+        { signal: AbortSignal.timeout(8000) });
+      if (r.ok) {
+        const d = await r.json();
+        const hits: any[] = d?.hits || [];
+        if (hits.length) {
+          const pick = hits[0];
+          const v = pick.videos?.medium || pick.videos?.small || pick.videos?.tiny || pick.videos?.large;
+          if (v?.url) {
+            return {
+              videoId: String(pick.id),
+              title: (pick.tags || query).split(",")[0].trim(),
+              channelTitle: pick.user || "Pixabay",
+              thumbnail: v.thumbnail || "",
+              embedUrl: v.url, // MP4 direto — usar em <video src="..."> ou iframe
+            };
+          }
+        }
+      } else {
+        console.warn(`[flora-images] Pixabay video ${r.status}`);
+      }
+    } catch (e) { console.warn("[flora-images] Pixabay video falhou:", e instanceof Error ? e.message : e); }
+  }
+  // Fallback: YouTube se a chave estiver presente
+  if (!YOUTUBE_KEY) { console.warn("[flora-images] sem provedor de vídeo"); return null; }
   // Busca em PT-BR primeiro, depois EN como fallback
   const q = encodeURIComponent(`${query} aula explicação`);
   const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${q}&type=video&videoEmbeddable=true&relevanceLanguage=${lang}&safeSearch=strict&maxResults=5&key=${YOUTUBE_KEY}`;
@@ -263,7 +292,7 @@ async function generateDalle(concept: string, context: string, style: string): P
   const r = await fetch("https://api.openai.com/v1/images/generations", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${OPENAI_KEY}` },
-    body: JSON.stringify({ model: "dall-e-3", prompt: buildDallePrompt(concept, context, style), n: 1, size: "1024x1024", quality: "standard", style: "natural" }),
+    body: JSON.stringify({ model: "dall-e-3", prompt: buildDallePrompt(concept, context, style), n: 1, size: "1024x1024" }),
     signal: AbortSignal.timeout(30000),
   });
   if (!r.ok) { const t = await r.text().catch(() => ""); throw new Error(`DALL-E ${r.status}: ${t.slice(0, 200)}`); }
