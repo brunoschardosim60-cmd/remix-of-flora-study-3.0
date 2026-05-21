@@ -582,6 +582,26 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
   const [sceneImgLoading, setSceneImgLoading] = useState<Record<string, boolean>>({});
   const [richMediaOpen, setRichMediaOpen] = useState(false);
 
+  // Auto-abre o painel de mídia em temas com dados (economia, clima, demografia, etc.)
+  // só na 1ª vez por aula, e respeita se o usuário fechou manualmente.
+  const autoOpenedRef = useRef(false);
+  useEffect(() => {
+    if (autoOpenedRef.current) return;
+    const hay = `${materia || ""} ${lesson.titulo || ""}`.normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    const dataKeywords = [
+      "econom", "pib", "renda", "desigualdade", "inflac", "juros",
+      "clima", "co2", "emissao", "aquecimento", "efeito estufa", "temperatura",
+      "demograf", "populac", "expectativa de vida", "mortalidade", "natalidade",
+      "desmatamento", "biodiversidade", "energia", "eletricidade", "renovavel",
+      "alfabetiz", "escolaridade", "educacao",
+    ];
+    if (dataKeywords.some((k) => hay.includes(k))) {
+      autoOpenedRef.current = true;
+      setRichMediaOpen(true);
+    }
+  }, [materia, lesson.titulo]);
+
   // Direção da transição (forward/back) e som
   const [direction, setDirection] = useState<"forward" | "backward">("forward");
   const [soundOn, setSoundOn] = useState<boolean>(() => {
