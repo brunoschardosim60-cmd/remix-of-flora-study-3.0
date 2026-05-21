@@ -356,23 +356,53 @@ function TopicIllustration({ context, kind }: { context: string; kind: string })
   }
 }
 
-function SceneVisual({ kind, image, context = "" }: { kind: string; image?: string; context?: string }) {
+function SceneVisual({
+  kind, image, context = "", mode = "real",
+}: {
+  kind: string;
+  image?: string;
+  context?: string;
+  mode?: "real" | "illust";
+}) {
   const kicker = SCENE_KICKERS[kind] || SCENE_KICKERS.text;
   const [imgFailed, setImgFailed] = useState(false);
-  useEffect(() => { setImgFailed(false); }, [image]);
-  const showImage = !!image && !imgFailed;
+  const [imgLoaded, setImgLoaded] = useState(false);
+  useEffect(() => { setImgFailed(false); setImgLoaded(false); }, [image]);
+
+  // Pré-carrega para garantir que só mostramos quando o bitmap está pronto;
+  // se falhar, cai para o SVG sem deixar a aside em branco.
+  useEffect(() => {
+    if (!image || mode !== "real") return;
+    const probe = new Image();
+    probe.onload = () => setImgLoaded(true);
+    probe.onerror = () => setImgFailed(true);
+    probe.src = image;
+    return () => { probe.onload = null; probe.onerror = null; };
+  }, [image, mode]);
+
+  const showImage = mode === "real" && !!image && !imgFailed;
   return (
     <aside className="ilp-visual" aria-hidden>
       {showImage ? (
         <>
           <img
             className="ilp-visual-img"
+            style={{ opacity: imgLoaded ? 1 : 0, transition: "opacity 280ms ease" }}
             src={image}
             alt=""
             loading="eager"
+            decoding="async"
             referrerPolicy="no-referrer"
+            onLoad={() => setImgLoaded(true)}
             onError={() => setImgFailed(true)}
           />
+          {!imgLoaded && (
+            <div className="ilp-visual-graphic-wrap" key={`${kind}-${context}-fallback`} style={{ position: "absolute", inset: 0 }}>
+              <div className="ilp-visual-graphic">
+                <TopicIllustration kind={kind} context={context || kind} />
+              </div>
+            </div>
+          )}
           <div className="ilp-visual-overlay" />
           <div className="ilp-visual-caption-strip">
             <span className="ilp-visual-kicker">{kicker}</span>
