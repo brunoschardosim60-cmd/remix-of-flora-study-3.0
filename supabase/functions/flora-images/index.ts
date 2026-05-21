@@ -303,9 +303,16 @@ async function generateDalle(concept: string, context: string, style: string): P
   });
   if (!r.ok) { const t = await r.text().catch(() => ""); throw new Error(`Image gen ${r.status}: ${t.slice(0, 200)}`); }
   const d = await r.json();
-  const img = d?.choices?.[0]?.message?.images?.[0]?.image_url?.url
-           || d?.choices?.[0]?.message?.images?.[0]?.url;
-  if (!img) throw new Error("Image gen: sem URL");
+  const msg = d?.choices?.[0]?.message;
+  const img =
+    msg?.images?.[0]?.image_url?.url ||
+    msg?.images?.[0]?.url ||
+    (Array.isArray(msg?.content) ? msg.content.find((c: any) => c?.image_url?.url)?.image_url?.url : null) ||
+    (typeof msg?.content === "string" && msg.content.match(/data:image\/[a-z]+;base64,[A-Za-z0-9+/=]+/)?.[0]);
+  if (!img) {
+    console.error("[flora-images] image gen response:", JSON.stringify(d).slice(0, 800));
+    throw new Error("Image gen: sem URL");
+  }
   return img;
 }
 
