@@ -264,7 +264,7 @@ interface Lesson {
   titulo: string; introducao: string; blocos: LessonBlock[];
   resumo: string | string[]; exercicios?: Exercise[]; exercicio_final: Exercise;
 }
-interface Props { lesson: Lesson; onComplete?: () => void; enableVoice?: boolean; personality?: "padrao" | "amiga_motivadora" | "professora_rigorosa" | "tutor_engracado"; loadingBlockIndices?: number[]; materia?: string; }
+interface Props { lesson: Lesson; onComplete?: () => void; onExit?: () => void; enableVoice?: boolean; personality?: "padrao" | "amiga_motivadora" | "professora_rigorosa" | "tutor_engracado"; loadingBlockIndices?: number[]; materia?: string; }
 
 function MD({ children }: { children: string }) {
   return (
@@ -566,7 +566,7 @@ function RevealScene({
 }
 
 /* ─── Main player ─────────────────────────────────────── */
-export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, loadingBlockIndices, materia }) => {
+export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, onExit, loadingBlockIndices, materia }) => {
   const { user } = useAuth();
   const [stage, setStage] = useState<"intro" | "block" | "exercises" | "final" | "done">("intro");
   const [idx, setIdx] = useState(0);
@@ -759,6 +759,7 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
     setDuvidaOpen(false); setDuvidaResp(""); setDuvidaText("");
     setDirection("backward");
     playTone(440, 0.05, "sine", 0.03);
+    if (stage === "intro") { onExit?.(); return; }
     if (stage === "block") {
       if (sceneIdx > 0) { setSceneIdx((s) => s - 1); return; }
       if (idx > 0) { setIdx((i) => i - 1); return; }
@@ -1124,8 +1125,8 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
 
       {/* ── Minimal footer ── */}
       <div className="ilp-controls">
-        <button className="ilp-nav ghost" onClick={prev} disabled={stage === "intro"}>
-          <ChevronLeft size={16} /> <span>Voltar</span>
+        <button className="ilp-nav ghost" onClick={prev} disabled={stage === "done"}>
+          <ChevronLeft size={16} /> <span>{stage === "intro" ? "Sair" : "Voltar"}</span>
         </button>
         <button className="ilp-nav ghost" onClick={() => setDuvidaOpen((v) => !v)}>
           <MessageCircleQuestion size={16} /> <span>Tirar dúvida</span>
