@@ -6,7 +6,7 @@ import {
   Loader2, Send, ChevronLeft, ChevronRight,
   Lightbulb, AlertTriangle, MessageCircleQuestion, CheckCircle2, XCircle,
   Sparkles, Brain, HelpCircle, ListChecks, ChevronDown, Leaf, Zap, Target,
-  Volume2, VolumeX, Eye, Share2, Trophy, Flame, Radio,
+  Volume2, VolumeX, Eye, Share2, Trophy, Flame, Radio, Image as ImageIcon, Palette,
 } from "lucide-react";
 import { generateDidacticImage } from "@/lib/floraImages";
 import { useImageSearch } from "@/hooks/useImageSearch";
@@ -35,7 +35,12 @@ const SCENE_KICKERS: Record<string, string> = {
   done: "Concluído",
 };
 
-type TopicCategory = "ecology" | "math" | "biology" | "chemistry" | "physics" | "history" | "geography" | "law" | "writing" | "tech" | "study";
+type TopicCategory =
+  | "ecology" | "food-chain" | "ecosystem" | "math" | "statistics" | "trigonometry"
+  | "biology" | "chemistry" | "physics" | "history" | "geography" | "law"
+  | "writing" | "tech" | "study";
+
+type MathOp = "equation" | "division" | "root" | "percent" | "geometry" | "generic";
 
 function normalizeTopicText(s: string): string {
   return (s || "")
@@ -48,17 +53,32 @@ function resolveTopicCategory(context: string): TopicCategory {
   const hay = normalizeTopicText(context);
   const match = (terms: string[]) => terms.some((term) => hay.includes(term));
 
-  if (match(["ecolog", "ecossist", "meio ambiente", "bioma", "cadeia alimentar", "sustent", "biodivers", "populacao"])) return "ecology";
-  if (match(["matemat", "algebra", "equac", "funcao", "geometr", "trigon", "raiz", "logarit", "porcent", "probabil", "estatist"])) return "math";
+  if (match(["cadeia alimentar", "teia alimentar", "predador", "presa", "produtor", "consumidor", "decompositor", "herbivor", "carnivor"])) return "food-chain";
+  if (match(["ecossist", "bioma", "habitat", "nicho ecologico", "fauna e flora", "comunidade ecolog"])) return "ecosystem";
+  if (match(["ecolog", "meio ambiente", "sustent", "biodivers", "populacao animal", "desmatamento", "polui"])) return "ecology";
+  if (match(["estatist", "media", "mediana", "moda", "desvio padrao", "variancia", "histograma", "grafico de barras", "dispersao", "probabil"])) return "statistics";
+  if (match(["trigon", "seno", "cosseno", "tangente", "triangulo retangulo", "hipotenusa", "cateto", "angulo"])) return "trigonometry";
+  if (match(["matemat", "algebra", "equac", "funcao", "geometr", "raiz", "logarit", "porcent", "fracao", "divisao", "multiplica", "soma", "subtra"])) return "math";
   if (match(["biolog", "celul", "dna", "genetic", "anatom", "fisiolog", "evolu", "especie"])) return "biology";
   if (match(["quimic", "reacao", "molecul", "atomo", "organica", "carbono", "estequiometr"])) return "chemistry";
   if (match(["fisica", "newton", "energia", "forca", "cinemat", "mecanica", "eletric", "circuito", "ondas"])) return "physics";
   if (match(["historia", "guerra", "revolu", "imperio", "colon", "republica", "idade media"])) return "history";
-  if (match(["geograf", "mapa", "clima", "relevo", "urban", "territorio", "globalizacao"])) return "geography";
+  if (match(["geograf", "mapa", "clima", "relevo", "urban", "territorio", "globalizacao", "demograf"])) return "geography";
   if (match(["direito", "constitui", "jurid", "lei", "penal", "civil", "administrativo"])) return "law";
   if (match(["redac", "portugues", "gramat", "literat", "texto", "argument", "interpret", "sintax"])) return "writing";
   if (match(["informat", "comput", "tecnolog", "internet", "software", "hardware", "algorit"])) return "tech";
   return "study";
+}
+
+function resolveMathOperation(context: string): MathOp {
+  const hay = normalizeTopicText(context);
+  const has = (terms: string[]) => terms.some((t) => hay.includes(t));
+  if (has(["divisao", "dividir", "divisor", "dividendo", "quociente", "fracao", "fração"])) return "division";
+  if (has(["raiz quadrada", "raiz cubica", "radical", "raiz de", "√"])) return "root";
+  if (has(["porcent", "percentual", "%", "desconto", "juros", "acrescim"])) return "percent";
+  if (has(["equac", "incognita", "resolver equa", "x =", "x="])) return "equation";
+  if (has(["geometr", "area", "perimetro", "volume", "poligono", "circulo"])) return "geometry";
+  return "generic";
 }
 
 function TopicIllustration({ context, kind }: { context: string; kind: string }) {
@@ -82,6 +102,54 @@ function TopicIllustration({ context, kind }: { context: string; kind: string })
   }
 
   switch (category) {
+    case "food-chain":
+      return (
+        <svg {...common} role="img" aria-label="Cadeia alimentar: produtor, herbívoro, carnívoro">
+          <path d="M36 240h288" stroke={M} strokeWidth="3" strokeLinecap="round" />
+          {/* produtor (folha) */}
+          <g transform="translate(60 170)">
+            <path d="M0 50c20-50 50-50 70 0-20 14-50 14-70 0z" fill={P} opacity="0.7" />
+            <path d="M35 50V8" stroke={F} strokeWidth="4" strokeLinecap="round" opacity="0.6" />
+          </g>
+          {/* herbívoro */}
+          <g transform="translate(160 160)">
+            <ellipse cx="40" cy="38" rx="42" ry="22" fill={A} opacity="0.78" />
+            <circle cx="74" cy="28" r="14" fill={A} opacity="0.78" />
+            <path d="M14 60v18M34 60v18M52 60v18M70 60v18" stroke={F} strokeWidth="4" strokeLinecap="round" opacity="0.7" />
+          </g>
+          {/* carnívoro */}
+          <g transform="translate(260 160)">
+            <path d="M10 70c0-30 18-46 40-46s40 16 40 46v6H10z" fill={P} opacity="0.85" />
+            <circle cx="36" cy="46" r="3" fill={B} /><circle cx="64" cy="46" r="3" fill={B} />
+            <path d="M20 30l-6-14M80 30l6-14" stroke={F} strokeWidth="4" strokeLinecap="round" opacity="0.65" />
+          </g>
+          {/* setas */}
+          <path d="M138 200l28-12" stroke={F} strokeWidth="3" markerEnd="url(#fcArrow)" />
+          <path d="M250 200l28-12" stroke={F} strokeWidth="3" markerEnd="url(#fcArrow)" />
+          <defs>
+            <marker id="fcArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M0 0l10 5-10 5z" fill={F} />
+            </marker>
+          </defs>
+          <circle cx="300" cy="58" r="22" fill={A} opacity="0.55" />
+        </svg>
+      );
+    case "ecosystem":
+      return (
+        <svg {...common} role="img" aria-label="Ecossistema com vegetação, água e fauna">
+          <circle cx="300" cy="60" r="24" fill={A} opacity="0.55" />
+          <path d="M0 220c60-30 120-30 180 0s120 30 180 0v80H0z" fill={P} opacity="0.18" />
+          <ellipse cx="180" cy="248" rx="120" ry="16" fill={A} opacity="0.3" />
+          {[70, 130, 240, 300].map((x, i) => (
+            <g key={x}>
+              <path d={`M${x} 220v-${30 + (i % 2) * 14}`} stroke={F} strokeWidth="6" strokeLinecap="round" opacity="0.7" />
+              <circle cx={x - 12} cy={180 - i * 6} r="18" fill={P} opacity="0.7" />
+              <circle cx={x + 14} cy={172 - i * 6} r="20" fill={A} opacity="0.7" />
+            </g>
+          ))}
+          <path d="M50 132c30-30 70-30 100 0" stroke={A} strokeWidth="4" strokeLinecap="round" opacity="0.6" />
+        </svg>
+      );
     case "ecology":
       return (
         <svg {...common} role="img" aria-label="Ilustração de ecologia com árvores, ciclo e curva populacional">
@@ -102,19 +170,94 @@ function TopicIllustration({ context, kind }: { context: string; kind: string })
           <path d="M219 48l-1 24 22-11" fill={M} />
         </svg>
       );
-    case "math":
+    case "math": {
+      const op = resolveMathOperation(context);
+      const exprByOp: Record<MathOp, string> = {
+        division: "84 ÷ 7 = 12",
+        root: "√144 = 12",
+        percent: "30% de 250 = 75",
+        equation: "2x + 5 = 17",
+        geometry: "A = π · r²",
+        generic: "f(x) = 2x + 5",
+      };
+      const symbolByOp: Record<MathOp, string> = {
+        division: "÷", root: "√", percent: "%", equation: "=", geometry: "△", generic: "ƒ",
+      };
       return (
-        <svg {...common} role="img" aria-label="Ilustração matemática com operação e plano cartesiano">
+        <svg {...common} role="img" aria-label={`Ilustração matemática (${op})`}>
           <rect x="46" y="42" width="268" height="184" rx="18" fill={S} stroke={M} strokeWidth="2" />
-          <path d="M86 190h152M86 190V78" stroke={M} strokeWidth="3" strokeLinecap="round" />
-          <path d="M90 170c34-54 64-70 96-44 25 21 43 18 69-30" stroke={P} strokeWidth="5" strokeLinecap="round" />
-          <circle cx="90" cy="170" r="6" fill={A} /><circle cx="186" cy="126" r="6" fill={A} /><circle cx="255" cy="96" r="6" fill={A} />
-          <rect x="96" y="70" width="166" height="46" rx="12" fill={B} stroke={P} strokeWidth="2" />
-          <text x="179" y="100" textAnchor="middle" fontSize="23" fontWeight="800" fill={F}>2x + 5 = 17</text>
-          <text x="98" y="250" fontSize="34" fontWeight="800" fill={P}>÷</text>
-          <text x="154" y="250" fontSize="34" fontWeight="800" fill={A}>×</text>
-          <text x="210" y="250" fontSize="34" fontWeight="800" fill={P}>√</text>
-          <text x="262" y="250" fontSize="30" fontWeight="800" fill={A}>π</text>
+          <rect x="76" y="74" width="206" height="56" rx="14" fill={B} stroke={P} strokeWidth="2" />
+          <text x="179" y="112" textAnchor="middle" fontSize="26" fontWeight="800" fill={F}>{exprByOp[op]}</text>
+          {op === "division" && (
+            <g>
+              <circle cx="120" cy="180" r="14" fill={P} opacity="0.85" />
+              <circle cx="160" cy="180" r="14" fill={P} opacity="0.85" />
+              <circle cx="200" cy="180" r="14" fill={A} opacity="0.85" />
+              <circle cx="240" cy="180" r="14" fill={A} opacity="0.85" />
+              <path d="M140 198h80" stroke={F} strokeWidth="3" strokeDasharray="4 4" />
+            </g>
+          )}
+          {op === "root" && (
+            <path d="M90 200l24 14 30-60 110 0" stroke={P} strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+          )}
+          {op === "percent" && (
+            <g>
+              <rect x="86" y="172" width="188" height="22" rx="11" fill={M} opacity="0.35" />
+              <rect x="86" y="172" width="56" height="22" rx="11" fill={P} />
+              <text x="180" y="220" textAnchor="middle" fontSize="14" fontWeight="700" fill={F}>30% preenchido</text>
+            </g>
+          )}
+          {op === "equation" && (
+            <g>
+              <path d="M86 200h152M86 200V150" stroke={M} strokeWidth="3" />
+              <path d="M90 195c30-40 70-40 100 0 20 22 40 22 70-12" stroke={P} strokeWidth="5" strokeLinecap="round" fill="none" />
+              <circle cx="190" cy="180" r="6" fill={A} />
+            </g>
+          )}
+          {op === "geometry" && (
+            <g>
+              <circle cx="180" cy="186" r="40" fill={P} opacity="0.2" stroke={P} strokeWidth="3" />
+              <line x1="180" y1="186" x2="220" y2="186" stroke={F} strokeWidth="3" />
+              <text x="200" y="180" fontSize="12" fontWeight="700" fill={F}>r</text>
+            </g>
+          )}
+          {op === "generic" && (
+            <g>
+              <path d="M86 200h152M86 200V150" stroke={M} strokeWidth="3" />
+              <path d="M90 200c30-50 70-50 100 0 20 30 40 30 70-20" stroke={P} strokeWidth="5" strokeLinecap="round" fill="none" />
+            </g>
+          )}
+          <text x="304" y="260" textAnchor="end" fontSize="36" fontWeight="900" fill={A} opacity="0.85">{symbolByOp[op]}</text>
+        </svg>
+      );
+    }
+    case "statistics":
+      return (
+        <svg {...common} role="img" aria-label="Ilustração de estatística com gráfico de barras">
+          <rect x="46" y="42" width="268" height="200" rx="18" fill={S} stroke={M} strokeWidth="2" />
+          <path d="M76 218h208M76 218V72" stroke={M} strokeWidth="3" strokeLinecap="round" />
+          {[
+            { x: 96, h: 42, c: P }, { x: 134, h: 86, c: A }, { x: 172, h: 64, c: P },
+            { x: 210, h: 122, c: A }, { x: 248, h: 92, c: P }, { x: 286, h: 56, c: A },
+          ].map((b, i) => (
+            <rect key={i} x={b.x} y={218 - b.h} width="24" height={b.h} rx="4" fill={b.c} opacity="0.85" />
+          ))}
+          <path d="M96 178l38-30 38 16 38-46 38 24 38-12" stroke={F} strokeWidth="3" fill="none" opacity="0.55" />
+          <text x="100" y="260" fontSize="14" fontWeight="700" fill={F} opacity="0.7">x̄ · σ · Md</text>
+        </svg>
+      );
+    case "trigonometry":
+      return (
+        <svg {...common} role="img" aria-label="Ilustração de trigonometria com triângulo retângulo">
+          <rect x="46" y="42" width="268" height="200" rx="18" fill={S} stroke={M} strokeWidth="2" />
+          <path d="M90 210L270 210L270 92Z" fill={P} opacity="0.18" stroke={P} strokeWidth="4" strokeLinejoin="round" />
+          <path d="M250 210v-20h20" stroke={F} strokeWidth="3" fill="none" />
+          <text x="170" y="232" textAnchor="middle" fontSize="14" fontWeight="700" fill={F}>cateto adjacente</text>
+          <text x="284" y="156" textAnchor="middle" fontSize="14" fontWeight="700" fill={F} transform="rotate(90 284 156)">cateto oposto</text>
+          <text x="160" y="146" fontSize="14" fontWeight="700" fill={A} transform="rotate(-32 160 146)">hipotenusa</text>
+          <path d="M110 210a22 22 0 0 1 16-22" stroke={A} strokeWidth="3" fill="none" />
+          <text x="130" y="200" fontSize="14" fontWeight="800" fill={A}>θ</text>
+          <text x="62" y="76" fontSize="16" fontWeight="800" fill={P}>sen · cos · tan</text>
         </svg>
       );
     case "biology":
@@ -213,23 +356,53 @@ function TopicIllustration({ context, kind }: { context: string; kind: string })
   }
 }
 
-function SceneVisual({ kind, image, context = "" }: { kind: string; image?: string; context?: string }) {
+function SceneVisual({
+  kind, image, context = "", mode = "real",
+}: {
+  kind: string;
+  image?: string;
+  context?: string;
+  mode?: "real" | "illust";
+}) {
   const kicker = SCENE_KICKERS[kind] || SCENE_KICKERS.text;
   const [imgFailed, setImgFailed] = useState(false);
-  useEffect(() => { setImgFailed(false); }, [image]);
-  const showImage = !!image && !imgFailed;
+  const [imgLoaded, setImgLoaded] = useState(false);
+  useEffect(() => { setImgFailed(false); setImgLoaded(false); }, [image]);
+
+  // Pré-carrega para garantir que só mostramos quando o bitmap está pronto;
+  // se falhar, cai para o SVG sem deixar a aside em branco.
+  useEffect(() => {
+    if (!image || mode !== "real") return;
+    const probe = new Image();
+    probe.onload = () => setImgLoaded(true);
+    probe.onerror = () => setImgFailed(true);
+    probe.src = image;
+    return () => { probe.onload = null; probe.onerror = null; };
+  }, [image, mode]);
+
+  const showImage = mode === "real" && !!image && !imgFailed;
   return (
     <aside className="ilp-visual" aria-hidden>
       {showImage ? (
         <>
           <img
             className="ilp-visual-img"
+            style={{ opacity: imgLoaded ? 1 : 0, transition: "opacity 280ms ease" }}
             src={image}
             alt=""
             loading="eager"
+            decoding="async"
             referrerPolicy="no-referrer"
+            onLoad={() => setImgLoaded(true)}
             onError={() => setImgFailed(true)}
           />
+          {!imgLoaded && (
+            <div className="ilp-visual-graphic-wrap" key={`${kind}-${context}-fallback`} style={{ position: "absolute", inset: 0 }}>
+              <div className="ilp-visual-graphic">
+                <TopicIllustration kind={kind} context={context || kind} />
+              </div>
+            </div>
+          )}
           <div className="ilp-visual-overlay" />
           <div className="ilp-visual-caption-strip">
             <span className="ilp-visual-kicker">{kicker}</span>
@@ -582,6 +755,19 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, o
   const [sceneImgLoading, setSceneImgLoading] = useState<Record<string, boolean>>({});
   const [richMediaOpen, setRichMediaOpen] = useState(false);
 
+  // Modo do painel visual da esquerda: "real" tenta foto real, "illust" usa SVG.
+  const [visualMode, setVisualMode] = useState<"real" | "illust">(() => {
+    if (typeof window === "undefined") return "real";
+    return (localStorage.getItem("ilp-visual-mode") as "real" | "illust") || "real";
+  });
+  const toggleVisualMode = useCallback(() => {
+    setVisualMode((m) => {
+      const nv: "real" | "illust" = m === "real" ? "illust" : "real";
+      try { localStorage.setItem("ilp-visual-mode", nv); } catch { /* ignore */ }
+      return nv;
+    });
+  }, []);
+
   // Auto-abre o painel de mídia em temas com dados (economia, clima, demografia, etc.)
   // só na 1ª vez por aula, e respeita se o usuário fechou manualmente.
   const autoOpenedRef = useRef(false);
@@ -658,10 +844,8 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, o
       .replace(/[:?!]/g, " ")
       .replace(/\s+/g, " ")
       .trim();
-  const blockImageQuery = cur
-    ? `${materia || ""} ${cleanForSearch(lesson.titulo)} ${cleanForSearch(cur.titulo)}`.trim()
-    : "";
-  const { url: blockSearchUrl } = useImageSearch(blockImageQuery, !!cur && !!blockImageQuery);
+  const blockImageQuery = `${materia || ""} ${cleanForSearch(lesson.titulo)} ${cur ? cleanForSearch(cur.titulo) : ""}`.trim();
+  const { url: blockSearchUrl } = useImageSearch(blockImageQuery, !!blockImageQuery);
 
   // Chave estável da cena atual (cacheia por título do bloco + tipo + início do texto)
   const sceneImgKey = useMemo(() => {
@@ -829,6 +1013,14 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, o
           <div className="ilp-header-right">
             <button
               className="ilp-icon-btn"
+              onClick={toggleVisualMode}
+              aria-label={visualMode === "real" ? "Usar ilustrações" : "Usar imagens reais"}
+              title={visualMode === "real" ? "Visual: imagens reais (clique para ilustrações)" : "Visual: ilustrações (clique para imagens reais)"}
+            >
+              {visualMode === "real" ? <ImageIcon size={14} /> : <Palette size={14} />}
+            </button>
+            <button
+              className="ilp-icon-btn"
               onClick={toggleSound}
               aria-label={soundOn ? "Desativar sons" : "Ativar sons"}
               title={soundOn ? "Sons ativados" : "Sons desativados"}
@@ -851,7 +1043,8 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, o
             : stage === "done" ? "done"
             : (curScene?.kind || "text")
           }
-          image={stage === "block" ? (blockSearchUrl || undefined) : undefined}
+          image={stage === "done" ? undefined : (blockSearchUrl || undefined)}
+          mode={visualMode}
           context={visualContext}
         />
         {/* ── Stage canvas ── */}
