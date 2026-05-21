@@ -379,9 +379,21 @@ serve(async (req: Request) => {
     // ── generate (DALL-E legado) ──────────────────────────────────
     const { concept, context, style = "educational", userId } = body;
     if (!concept || !context || !userId) return json({ error: "Missing required fields" }, 400);
-    const imageUrl = await generateDalle(concept, context, style);
-    await supabase.from("flora_usage_logs").insert({ user_id: userId, action: "image_generation", concept, model: "dall-e-3", timestamp: new Date().toISOString() }).then(() => {}).catch(() => {});
-    return json({ success: true, imageUrl, concept, prompt: buildDallePrompt(concept, context, style) });
+    try {
+      const imageUrl = await generateDalle(concept, context, style);
+      await supabase.from("flora_usage_logs").insert({ user_id: userId, action: "image_generation", concept, model: "gemini-image", timestamp: new Date().toISOString() }).then(() => {}).catch(() => {});
+      return json({ success: true, imageUrl, concept, prompt: buildDallePrompt(concept, context, style) });
+    } catch (e) {
+      // Fallback: tenta foto de banco (Pixabay/Unsplash/Pexels) em vez de quebrar.
+      const msg = e instanceof Error ? e.message : String(e);
+      console.warn("[flora-images] generate falhou, tentando search:", msg);
+      try {
+        const { imageUrl, provider } = await searchPhoto(`${concept} ${context}`);
+        return json({ success: true, imageUrl, provider, concept, fallback: true, reason: msg.slice(0, 120) });
+      } catch {
+        return json({ success: false, error: "image_unavailable", reason: msg.slice(0, 120) });
+      }
+    }
 
   } catch (error) {
     console.error("[flora-images] erro:", error);
