@@ -18,6 +18,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import { cacheLookup, cacheStore, normCacheStr } from "../_shared/cache.ts";
 
 const OPENAI_KEY    = Deno.env.get("OPENAI_API_KEY");
+const LOVABLE_KEY   = Deno.env.get("LOVABLE_API_KEY");
 const UNSPLASH_KEY  = Deno.env.get("UNSPLASH_ACCESS_KEY");
 const PEXELS_KEY    = Deno.env.get("PEXELS_API_KEY");
 const PIXABAY_KEY   = Deno.env.get("PIXABAY_API_KEY");
@@ -288,19 +289,24 @@ function buildDallePrompt(concept: string, context: string, style: string): stri
 }
 
 async function generateDalle(concept: string, context: string, style: string): Promise<string> {
-  if (!OPENAI_KEY) throw new Error("OPENAI_API_KEY ausente");
-  const r = await fetch("https://api.openai.com/v1/images/generations", {
+  if (!LOVABLE_KEY) throw new Error("LOVABLE_API_KEY ausente");
+  const prompt = buildDallePrompt(concept, context, style);
+  const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${OPENAI_KEY}` },
-    body: JSON.stringify({ model: "gpt-image-1", prompt: buildDallePrompt(concept, context, style), n: 1, size: "1024x1024" }),
-    signal: AbortSignal.timeout(30000),
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${LOVABLE_KEY}` },
+    body: JSON.stringify({
+      model: "google/gemini-2.5-flash-image",
+      messages: [{ role: "user", content: prompt }],
+      modalities: ["image", "text"],
+    }),
+    signal: AbortSignal.timeout(45000),
   });
-  if (!r.ok) { const t = await r.text().catch(() => ""); throw new Error(`DALL-E ${r.status}: ${t.slice(0, 200)}`); }
+  if (!r.ok) { const t = await r.text().catch(() => ""); throw new Error(`Image gen ${r.status}: ${t.slice(0, 200)}`); }
   const d = await r.json();
-  const item = d?.data?.[0];
-  const url = item?.url || (item?.b64_json ? `data:image/png;base64,${item.b64_json}` : null);
-  if (!url) throw new Error("DALL-E: sem URL");
-  return url;
+  const img = d?.choices?.[0]?.message?.images?.[0]?.image_url?.url
+           || d?.choices?.[0]?.message?.images?.[0]?.url;
+  if (!img) throw new Error("Image gen: sem URL");
+  return img;
 }
 
 // ─── Handler principal ────────────────────────────────────────────────────────
