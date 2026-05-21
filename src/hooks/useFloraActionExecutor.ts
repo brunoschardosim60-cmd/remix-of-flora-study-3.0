@@ -53,8 +53,6 @@ export function useFloraActionExecutor(onClose: () => void) {
           window.dispatchEvent(new CustomEvent("flora-chat-append", {
             detail: { role: "assistant", content: previewParts.join("\n\n") },
           }));
-          navigate(`/notebooks/${data.notebookId}`);
-          onClose();
         }
       } else if (data?.type === "meta_dia") {
         window.dispatchEvent(new CustomEvent("flora-meta-dia", { detail: data }));
