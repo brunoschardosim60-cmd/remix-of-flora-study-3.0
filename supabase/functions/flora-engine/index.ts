@@ -1086,11 +1086,33 @@ Responda SOMENTE com JSON: {"resumo":"...","flashcards":[{"frente":"...","verso"
         const { titulo, materia, conteudo } = data.payload;
         const notebookId = crypto.randomUUID(); const pageId = crypto.randomUUID();
         const notebookTitle = typeof titulo === "string" && titulo.trim() ? titulo.trim() : "Novo Caderno";
-        const notebookContent = typeof conteudo === "string" && conteudo.trim() ? conteudo.trim() : "<p></p>";
+        // Remove <img> hallucinados pela IA — vamos colocar uma foto real abaixo
+        let cleanContent = typeof conteudo === "string" && conteudo.trim() ? conteudo.trim() : "<p></p>";
+        cleanContent = cleanContent.replace(/<img[^>]*>/gi, "").replace(/<figure[^>]*>[\s\S]*?<\/figure>/gi, "");
+
+        // Busca foto real (Pixabay → Unsplash → Pexels) via flora-images
+        let realImageUrl: string | null = null;
+        try {
+          const imgRes = await fetch(`${supabaseUrl}/functions/v1/flora-images`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${supabaseAnonKey}`, apikey: supabaseAnonKey },
+            body: JSON.stringify({ action: "search", query: `${notebookTitle} ${materia || ""}`.trim() }),
+          });
+          if (imgRes.ok) {
+            const j = await imgRes.json();
+            if (j?.success && j?.imageUrl) realImageUrl = j.imageUrl;
+          }
+        } catch (e) { console.warn("[flora] search image falhou:", e instanceof Error ? e.message : e); }
+
+        const imageBlock = realImageUrl
+          ? `<figure style="margin:0 0 1rem 0;"><img src="${realImageUrl}" alt="${notebookTitle.replace(/"/g, "&quot;")}" style="max-width:100%;border-radius:8px;" /></figure>`
+          : "";
+        const notebookContent = imageBlock + cleanContent;
+
         await supabase.from("notebooks").insert({ id: notebookId, user_id: userId, title: notebookTitle, subject: materia || null, cover_color: "hsl(217 91% 60%)" });
         await supabase.from("notebook_pages").insert({ id: pageId, notebook_id: notebookId, user_id: userId, page_number: 1, content: notebookContent });
         await supabase.from("user_actions").insert({ user_id: userId, action: "flora_create_notebook", metadata: { titulo: notebookTitle, materia, notebookId, pageId } });
-        return jsonResponse({ ok: true, type: "notebook", notebookId, pageId, titulo: notebookTitle, materia: materia || null });
+        return jsonResponse({ ok: true, type: "notebook", notebookId, pageId, titulo: notebookTitle, materia: materia || null, imageUrl: realImageUrl });
       }
 
       if (actionType === "META_DIA" && data?.payload) {
