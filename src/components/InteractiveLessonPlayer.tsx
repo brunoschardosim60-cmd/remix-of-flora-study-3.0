@@ -759,6 +759,7 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, o
     setDuvidaOpen(false); setDuvidaResp(""); setDuvidaText("");
     setDirection("backward");
     playTone(440, 0.05, "sine", 0.03);
+    if (stage === "intro") { onExit?.(); return; }
     if (stage === "block") {
       if (sceneIdx > 0) { setSceneIdx((s) => s - 1); return; }
       if (idx > 0) { setIdx((i) => i - 1); return; }
