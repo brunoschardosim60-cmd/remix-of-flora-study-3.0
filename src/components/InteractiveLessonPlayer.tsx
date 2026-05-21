@@ -844,10 +844,8 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, o
       .replace(/[:?!]/g, " ")
       .replace(/\s+/g, " ")
       .trim();
-  const blockImageQuery = cur
-    ? `${materia || ""} ${cleanForSearch(lesson.titulo)} ${cleanForSearch(cur.titulo)}`.trim()
-    : "";
-  const { url: blockSearchUrl } = useImageSearch(blockImageQuery, !!cur && !!blockImageQuery);
+  const blockImageQuery = `${materia || ""} ${cleanForSearch(lesson.titulo)} ${cur ? cleanForSearch(cur.titulo) : ""}`.trim();
+  const { url: blockSearchUrl } = useImageSearch(blockImageQuery, !!blockImageQuery);
 
   // Chave estável da cena atual (cacheia por título do bloco + tipo + início do texto)
   const sceneImgKey = useMemo(() => {
