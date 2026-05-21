@@ -566,7 +566,7 @@ function RevealScene({
 }
 
 /* ─── Main player ─────────────────────────────────────── */
-export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, loadingBlockIndices }) => {
+export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, loadingBlockIndices, materia }) => {
   const { user } = useAuth();
   const [stage, setStage] = useState<"intro" | "block" | "exercises" | "final" | "done">("intro");
   const [idx, setIdx] = useState(0);
@@ -580,6 +580,7 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({ lesson, onComplete, l
   // Ilustrações contextuais automáticas por cena
   const [sceneImages, setSceneImages] = useState<Record<string, string>>({});
   const [sceneImgLoading, setSceneImgLoading] = useState<Record<string, boolean>>({});
+  const [richMediaOpen, setRichMediaOpen] = useState(false);
 
   // Direção da transição (forward/back) e som
   const [direction, setDirection] = useState<"forward" | "backward">("forward");
