@@ -14,6 +14,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { loadGamificationForUser, saveGamificationForUser } from "@/lib/gamificationStore";
 import { ensureDailyReset, registerStudySession } from "@/lib/gamification";
 import "./Aulao.css";
+import { saveLesson, loadLesson, listCachedLessons, removeLesson, type LessonCacheEntry } from "@/lib/lessonCache";
 
 type AulaoMode = "selection" | "lesson" | "essay" | "search";
 
@@ -94,9 +95,14 @@ export default function Aulao() {
   const [mode, setMode] = useState<AulaoMode>("selection");
   const [selectedTopic, setSelectedTopic] = useState<AulaoTopic | null>(null);
   const [recent, setRecent] = useState<RecentLesson[]>([]);
+  const [cachedLessons, setCachedLessons] = useState<LessonCacheEntry[]>([]);
+  const [resumeEntry, setResumeEntry] = useState<LessonCacheEntry | null>(null);
   const lessonStartRef = useRef<number | null>(null);
 
-  useEffect(() => { setRecent(loadRecentLessons()); }, [mode]);
+  useEffect(() => {
+    setRecent(loadRecentLessons());
+    setCachedLessons(listCachedLessons());
+  }, [mode]);
 
   // Lesson
   const [lessonTopicInput, setLessonTopicInput] = useState("");
@@ -149,6 +155,7 @@ export default function Aulao() {
       setPendingBlocks(titulos.map((_, i) => i));
       setLoadingLesson(false);
       pushRecentLesson({ topic: tema, subject: materia, at: Date.now() });
+      saveLesson(tema, materia, initialLesson);
 
       // FASE 2 — Gera blocos em paralelo (limite 3 por vez pra não estourar quota).
       const total = titulos.length;
@@ -169,7 +176,9 @@ export default function Aulao() {
               if (!prev) return prev;
               const blocos = [...prev.blocos];
               blocos[i] = { ...blocos[i], ...block };
-              return { ...prev, blocos };
+              const updated = { ...prev, blocos };
+              saveLesson(tema, materia, updated);
+              return updated;
             });
           } catch (e) {
             console.warn(`[lesson stream] bloco ${i} falhou:`, e);
@@ -221,8 +230,24 @@ export default function Aulao() {
     } finally {
       setMode("selection");
       setGeneratedLesson(null);
+      setResumeEntry(null);
       lessonStartRef.current = null;
+      setCachedLessons(listCachedLessons());
     }
+  };
+
+  const handleResumeLesson = (entry: LessonCacheEntry) => {
+    const lessonTopic = AULAO_TOPICS.find((t) => t.mode === "lesson");
+    if (!lessonTopic) return;
+    setSelectedTopic(lessonTopic);
+    setMode("lesson");
+    setLessonTopicInput(entry.tema);
+    setLessonSubjectInput(entry.materia);
+    setGeneratedLesson(entry.lesson);
+    setResumeEntry(entry);
+    setPendingBlocks([]);
+    setLoadingLesson(false);
+    lessonStartRef.current = Date.now();
   };
 
   const handleSearch = async () => {
@@ -327,6 +352,34 @@ export default function Aulao() {
               </div>
             )}
 
+            {cachedLessons.length > 0 && (
+              <div className="aulao-cached">
+                <p className="aulao-recent-title">Aulas salvas — continue de onde parou</p>
+                <div className="aulao-cached-list">
+                  {cachedLessons.map((entry) => {
+                    const blocosOk = entry.lesson.blocos.filter((b) => b.conteudo).length;
+                    const total = entry.lesson.blocos.length;
+                    const pct = total > 0 ? Math.round((blocosOk / total) * 100) : 0;
+                    return (
+                      <div key={entry.tema + entry.materia} className="aulao-cached-card">
+                        <div className="aulao-cached-info" onClick={() => handleResumeLesson(entry)}>
+                          <span className="aulao-cached-topic">{entry.lesson.titulo || entry.tema}</span>
+                          <span className="aulao-cached-meta">{entry.materia} · {blocosOk}/{total} blocos</span>
+                          <div className="aulao-cached-bar">
+                            <div className="aulao-cached-fill" style={{ width: `${pct}%` }} />
+                          </div>
+                        </div>
+                        <button className="aulao-cached-remove" onClick={() => {
+                          removeLesson(entry.tema, entry.materia);
+                          setCachedLessons(listCachedLessons());
+                        }} aria-label="Remover do cache" title="Remover">✕</button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <div className="selection-intro">
               <Lightbulb size={32} className="intro-icon" />
               <h2>Como você quer estudar hoje?</h2>
@@ -402,10 +455,14 @@ export default function Aulao() {
             {generatedLesson && !loadingLesson && (
               <InteractiveLessonPlayer
                 lesson={generatedLesson}
-                enableVoice={false}
+                enableVoice={true}
                 personality="amiga_motivadora"
                 loadingBlockIndices={pendingBlocks}
                 onComplete={handleLessonComplete}
+                onExit={() => {
+                  setGeneratedLesson(null);
+                  setLessonTopicInput("");
+                }}
                 materia={lessonSubjectInput || "Geral"}
               />
             )}

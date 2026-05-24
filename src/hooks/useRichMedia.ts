@@ -93,8 +93,9 @@ interface UseRichMediaOptions {
 const EMPTY_SLOT = { data: null, loading: false, error: false };
 
 export function useRichMedia({ subject, topic, enabled = true }: UseRichMediaOptions): RichMediaResult {
-  const key = slug(`${subject}-${topic}`);
   const types = detectTypes(subject, topic);
+  const typesKey = types.join(",");
+  const key = slug(`${subject}-${topic}`);
 
   const [photo, setPhoto] = useState<MediaSlot<{ imageUrl: string; provider: string }>>(EMPTY_SLOT);
   const [video, setVideo] = useState<MediaSlot<VideoResult>>(EMPTY_SLOT);
@@ -156,9 +157,9 @@ export function useRichMedia({ subject, topic, enabled = true }: UseRichMediaOpt
           .catch(() => setData({ data: null, loading: false, error: false })); // silencioso se não há dataset
       }
     }
-  }, [key, enabled]);
+  }, [key, typesKey, enabled]);
 
-  useEffect(() => { fetched.current = false; }, [key]);
+  useEffect(() => { fetched.current = false; }, [key, typesKey]);
 
   return { types, photo, video, map, data };
 }
