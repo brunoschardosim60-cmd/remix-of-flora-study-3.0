@@ -63,7 +63,6 @@ export function useImageSearch(query: string, enabled = true): UseImageSearchRes
     let cancelled = false;
     setLoading(true);
     setError(false);
-    const key = slugKey(query);
 
     supabase.functions
       .invoke("flora-images", { body: { action: "search", query } })
