@@ -25,7 +25,15 @@ function sessionSet(key: string, url: string) {
   try { sessionStorage.setItem(SESSION_PREFIX + key, url); } catch { /* cheio */ }
 }
 function slugKey(q: string) {
-  return (q || "").toLowerCase().replace(/\s+/g, "-").slice(0, 80);
+  // Remove seed numérico do fim (adicionado pelo sidebarRefreshKey) antes de usar como chave de cache.
+  // Ex: "biologia fotossíntese 2" → "biologia-fotossintese"
+  // Isso garante que o refresh force nova busca (não acha no cache) e que
+  // o resultado seja cacheado pela query base, não pelo seed.
+  const base = (q || "").replace(/\s+\d+$/, "").trim();
+  return base.toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, "-")
+    .slice(0, 80);
 }
 
 interface UseImageSearchResult {
@@ -44,13 +52,18 @@ export function useImageSearch(query: string, enabled = true): UseImageSearchRes
   useEffect(() => {
     if (!enabled || !query.trim()) return;
 
+    const hasRefreshSeed = /\s+\d+$/.test(query.trim());
     const key = slugKey(query);
-    const cached = sessionGet(key);
-    if (cached) { setUrl(cached); return; }
+    // Só usa cache se NÃO for uma busca de refresh (com seed numérico)
+    if (!hasRefreshSeed) {
+      const cached = sessionGet(key);
+      if (cached) { setUrl(cached); return; }
+    }
 
     let cancelled = false;
     setLoading(true);
     setError(false);
+    const key = slugKey(query);
 
     supabase.functions
       .invoke("flora-images", { body: { action: "search", query } })
