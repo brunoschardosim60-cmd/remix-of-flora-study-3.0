@@ -1395,3 +1395,68 @@
   transition: transform 0.6s ease, opacity 280ms ease;
 }
 
+/* ─── Layout guard: Aulão embed without overlap ─────────── */
+.lesson-container .ilp-root {
+  height: 100%;
+  min-height: 0;
+  border-radius: 0;
+}
+
+.lesson-container .ilp-layout {
+  flex: 1 1 auto;
+}
+
+.ilp-header-left,
+.ilp-header-right,
+.ilp-scene-head,
+.ilp-block-title,
+.ilp-md,
+.ilp-md-lg {
+  min-width: 0;
+}
+
+.ilp-scene-head > .flex {
+  min-width: 0;
+  align-items: flex-start;
+}
+
+.ilp-block-title {
+  overflow-wrap: anywhere;
+}
+
+.ilp-md,
+.ilp-md-lg {
+  overflow-wrap: anywhere;
+}
+
+.ilp-controls {
+  flex-shrink: 0;
+  min-height: 58px;
+}
+
+@media (max-width: 768px) {
+  .lesson-container .ilp-root { min-height: 0; }
+  .ilp-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(120px, 26vh) minmax(0, 1fr);
+  }
+  .ilp-stage { min-height: 0; }
+  .ilp-header-row { align-items: flex-start; }
+  .ilp-header-right { gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+  .ilp-step-tag { line-height: 30px; }
+}
+
+@media (max-width: 520px) {
+  .ilp-controls {
+    gap: 6px;
+    padding: 10px 10px 12px;
+  }
+  .ilp-nav {
+    min-width: 0;
+    padding: 9px 10px;
+    font-size: 12px;
+  }
+  .ilp-nav.primary { padding: 10px 12px; }
+  .ilp-nav svg { flex-shrink: 0; }
+}
+

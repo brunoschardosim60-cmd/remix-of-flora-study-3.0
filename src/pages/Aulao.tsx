@@ -316,7 +316,7 @@ export default function Aulao() {
         </div>
       </header>
 
-      <main className="aulao-main">
+      <main className={`aulao-main aulao-main--${mode}`}>
         {mode === "selection" && (
           <div className="aulao-selection">
             <div className="aulao-flora-card">
@@ -552,11 +552,7 @@ export default function Aulao() {
                     <div className="flex items-start gap-3">
                       <div className="space-y-1 flex-1">
                         <div className="flex items-center gap-2">
-                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                            r.tipo === "questao" ? "bg-blue-500/10 text-blue-600"
-                            : r.tipo === "flashcard" ? "bg-purple-500/10 text-purple-600"
-                            : "bg-green-500/10 text-green-600"
-                          }`}>{r.tipo}</span>
+                          <span className={`search-result-type search-result-type--${r.tipo}`}>{r.tipo}</span>
                           <span className="text-xs text-muted-foreground">{r.materia}</span>
                         </div>
                         <p className="font-medium text-sm">{r.titulo}</p>
