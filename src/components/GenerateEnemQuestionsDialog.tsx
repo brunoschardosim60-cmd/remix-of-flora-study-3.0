@@ -157,7 +157,7 @@ export function GenerateEnemQuestionsDialog({
         {current && (
           <div className="space-y-3 py-2">
             <div className="rounded-lg border border-border bg-card p-3 text-sm leading-relaxed">
-              <MathText text={current.enunciado} />
+              <MathText>{current.enunciado}</MathText>
             </div>
             <div className="space-y-2">
               {current.alternativas.map((a) => {
@@ -176,7 +176,7 @@ export function GenerateEnemQuestionsDialog({
                     }`}
                   >
                     <span className="font-semibold shrink-0">{a.letra})</span>
-                    <span className="flex-1"><MathText text={a.texto} /></span>
+                    <span className="flex-1"><MathText inline>{a.texto}</MathText></span>
                     {isCorrect && <Check className="w-4 h-4 text-emerald-600 shrink-0" />}
                     {isWrong && <X className="w-4 h-4 text-destructive shrink-0" />}
                   </button>
@@ -186,7 +186,7 @@ export function GenerateEnemQuestionsDialog({
             {chosen && current.explicacao && (
               <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">
                 <p className="font-semibold mb-1 text-primary">Explicação</p>
-                <MathText text={current.explicacao} />
+                <MathText>{current.explicacao}</MathText>
               </div>
             )}
           </div>
