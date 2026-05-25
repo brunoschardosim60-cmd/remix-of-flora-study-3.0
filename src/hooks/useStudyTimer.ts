@@ -10,18 +10,40 @@ interface UseStudyTimerParams {
 
 const TIMER_STORAGE_KEY = "studyflow.timer.v1";
 
+function readInitialTimerState(): { running: boolean; elapsed: number } {
+  if (typeof window === "undefined") return { running: false, elapsed: 0 };
+  try {
+    const saved = loadJsonStorage<{ running: boolean; elapsed: number; savedAt: number }>(TIMER_STORAGE_KEY);
+    if (!saved) return { running: false, elapsed: 0 };
+    if (saved.running) {
+      return {
+        running: true,
+        elapsed: (saved.elapsed || 0) + Math.max(0, Date.now() - (saved.savedAt || Date.now())),
+      };
+    }
+    return { running: false, elapsed: saved.elapsed || 0 };
+  } catch {
+    return { running: false, elapsed: 0 };
+  }
+}
+
 export function useStudyTimer({
   onSessionEnd,
   activeTopicId,
   activeSubject,
 }: UseStudyTimerParams) {
-  const [running, setRunning] = useState(false);
-  const [elapsed, setElapsed] = useState(0);
+  // Inicialização síncrona evita corrida em que os efeitos de persistência
+  // gravam (false, 0) sobre o estado salvo antes do restore completar quando
+  // o hook é remontado (ex.: voltar de /banco para /).
+  const initialStateRef = useRef<{ running: boolean; elapsed: number } | null>(null);
+  if (initialStateRef.current === null) initialStateRef.current = readInitialTimerState();
+  const [running, setRunning] = useState(initialStateRef.current.running);
+  const [elapsed, setElapsed] = useState(initialStateRef.current.elapsed);
   const [isFocusModeOpen, setIsFocusModeOpen] = useState(false);
 
   const startRef = useRef<number | null>(null);
   const intervalRef = useRef<number | null>(null);
-  const elapsedRef = useRef(0);
+  const elapsedRef = useRef(initialStateRef.current.elapsed);
 
   // Refs para acessar valores atuais dentro do tick sem recriar o intervalo
   const onSessionEndRef = useRef(onSessionEnd);
@@ -41,22 +63,8 @@ export function useStudyTimer({
     } catch {}
   }, []);
 
-  // Restore timer state on mount
+  // Limpeza do intervalo ao desmontar
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const saved = loadJsonStorage<{ running: boolean; elapsed: number; savedAt: number }>(TIMER_STORAGE_KEY);
-      if (saved) {
-        if (saved.running) {
-          const recovered = saved.elapsed + Math.max(0, Date.now() - saved.savedAt);
-          setElapsed(recovered);
-          setRunning(true);
-        } else {
-          setElapsed(saved.elapsed || 0);
-        }
-      }
-    } catch {}
-
     return () => {
       if (intervalRef.current) window.clearInterval(intervalRef.current);
     };

@@ -662,17 +662,21 @@ export default function BancoQuestoes() {
     <div className="min-h-dvh bg-background pb-20 md:pb-6">
 
       {/* Header */}
-      <div className="border-b border-border bg-card sticky top-0 z-10 shadow-sm">
+      <div className="border-b border-border/60 bg-gradient-to-b from-card via-card to-card/80 backdrop-blur-md sticky top-0 z-10 shadow-sm">
         <div className="container max-w-7xl mx-auto px-3 sm:px-4 py-3 flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="rounded-full">
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+          <div className="relative w-11 h-11 rounded-2xl bg-gradient-to-br from-primary/20 via-primary/10 to-transparent ring-1 ring-primary/20 flex items-center justify-center shrink-0 shadow-sm">
             <BookOpen className="w-5 h-5 text-primary" />
+            <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-primary/80 ring-2 ring-card" />
           </div>
           <div className="flex-1 min-w-0">
-            <h1 className="text-lg font-semibold leading-tight">Banco de Questões</h1>
-            <p className="text-xs text-muted-foreground">{questions.length} questões oficiais do ENEM</p>
+            <h1 className="text-lg sm:text-xl font-heading font-semibold leading-tight tracking-tight">Banco de Questões</h1>
+            <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+              <Sparkles className="w-3 h-3 text-primary/70" />
+              {questions.length} questões oficiais do ENEM
+            </p>
           </div>
           <GenerateEnemQuestionsDialog
             defaultDisciplina={disciplina !== "Todas" ? disciplina : undefined}
@@ -684,14 +688,14 @@ export default function BancoQuestoes() {
 
         {/* Stats */}
         {stats.total > 0 ? (
-          <Card className="p-4 flex flex-wrap items-center gap-4">
+          <Card className="p-4 sm:p-5 flex flex-wrap items-center gap-4 bg-gradient-to-br from-primary/5 via-card to-card border-primary/15 shadow-sm">
             <div className="flex-1 min-w-[160px] space-y-1.5">
               <div className="flex justify-between text-xs text-muted-foreground">
                 <span>{stats.total} respondidas</span>
-                <span className="font-medium text-foreground">{pct}% de acerto</span>
+                <span className="font-semibold text-foreground text-sm tabular-nums">{pct}% de acerto</span>
               </div>
-              <div className="h-2 rounded-full bg-muted overflow-hidden">
-                <div className="h-full rounded-full bg-emerald-500 transition-all duration-500" style={{ width: `${pct}%` }} />
+              <div className="h-2.5 rounded-full bg-muted/70 overflow-hidden ring-1 ring-border/40">
+                <div className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500 transition-all duration-700 shadow-[0_0_12px_-2px_rgba(16,185,129,0.6)]" style={{ width: `${pct}%` }} />
               </div>
               <div className="flex gap-3 text-xs">
                 <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
@@ -706,15 +710,18 @@ export default function BancoQuestoes() {
               <Button size="sm" variant={onlyErrors ? "default" : "outline"} onClick={() => setOnlyErrors((v) => !v)} disabled={stats.erros === 0}>
                 <RotateCcw className="w-4 h-4 mr-1.5" /> Refazer erros
               </Button>
-              <Button size="sm" onClick={startExam}>
+              <Button size="sm" onClick={startExam} className="bg-gradient-to-r from-primary to-primary/85 hover:opacity-95 shadow-sm">
                 <Timer className="w-4 h-4 mr-1.5" /> Simular prova
               </Button>
             </div>
           </Card>
         ) : (
-          <Card className="p-4 flex flex-wrap items-center gap-3">
-            <p className="text-sm text-muted-foreground flex-1">Resolva questões para acompanhar seu progresso.</p>
-            <Button size="sm" onClick={startExam}>
+          <Card className="p-4 sm:p-5 flex flex-wrap items-center gap-3 bg-gradient-to-br from-primary/5 via-card to-card border-primary/15 shadow-sm">
+            <div className="flex-1 min-w-[200px]">
+              <p className="text-sm font-medium text-foreground">Comece sua jornada</p>
+              <p className="text-xs text-muted-foreground">Resolva questões para acompanhar seu progresso.</p>
+            </div>
+            <Button size="sm" onClick={startExam} className="bg-gradient-to-r from-primary to-primary/85 hover:opacity-95 shadow-sm">
               <Timer className="w-4 h-4 mr-1.5" /> Simular prova ENEM
             </Button>
           </Card>
@@ -776,7 +783,7 @@ export default function BancoQuestoes() {
             <Loader2 className="w-7 h-7 animate-spin text-primary" />
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {filtered.slice(0, 200).map((q) => {
               const att = attempts[q.id];
               const hasImg = !!q.imagem_urls?.[0];
@@ -789,12 +796,13 @@ export default function BancoQuestoes() {
                 <button
                   key={q.id}
                   onClick={() => { setOpened(q); setExplanation(""); }}
-                  className="text-left group"
+                  className="text-left group focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl"
                   aria-label={ariaLabel}
                 >
-                  <Card className={`p-4 hover:border-primary/60 transition-all duration-150 h-full flex flex-col gap-3 relative ${
-                    att?.acertou ? "border-emerald-500/40 bg-emerald-500/[0.03]" : att && !att.acertou ? "border-destructive/40 bg-destructive/[0.03]" : ""
+                  <Card className={`p-4 hover:border-primary/60 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 h-full flex flex-col gap-3 relative overflow-hidden ${
+                    att?.acertou ? "border-emerald-500/40 bg-gradient-to-br from-emerald-500/[0.05] to-transparent" : att && !att.acertou ? "border-destructive/40 bg-gradient-to-br from-destructive/[0.05] to-transparent" : "group-hover:bg-gradient-to-br group-hover:from-primary/[0.03] group-hover:to-transparent"
                   }`}>
+                    <span className={`absolute inset-x-0 top-0 h-0.5 ${att?.acertou ? "bg-emerald-500/70" : att ? "bg-destructive/70" : "bg-gradient-to-r from-transparent via-primary/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"}`} />
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <Badge variant="secondary" className="text-[11px] px-2 py-0.5">ENEM {q.ano}</Badge>
                       <Badge variant="outline" className="text-[11px] px-2 py-0.5">Q{q.numero}</Badge>
