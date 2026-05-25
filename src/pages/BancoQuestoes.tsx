@@ -16,6 +16,7 @@ import { BottomNav } from "@/components/BottomNav";
 import { MathText } from "@/components/MathText";
 import { ShareExamResult } from "@/components/ShareExamResult";
 import { getCachedExplanation, setCachedExplanation } from "@/lib/explainCache";
+import { GenerateEnemQuestionsDialog } from "@/components/GenerateEnemQuestionsDialog";
 
 type Question = {
   id: string;
@@ -673,6 +674,9 @@ export default function BancoQuestoes() {
             <h1 className="text-lg font-semibold leading-tight">Banco de Questões</h1>
             <p className="text-xs text-muted-foreground">{questions.length} questões oficiais do ENEM</p>
           </div>
+          <GenerateEnemQuestionsDialog
+            defaultDisciplina={disciplina !== "Todas" ? disciplina : undefined}
+          />
         </div>
       </div>
 
