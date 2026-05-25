@@ -26,6 +26,7 @@ import {
 import { reportError, toErrorMessage } from "@/lib/errorHandling";
 import { AdminAITierPanel } from "@/components/admin/AdminAITierPanel";
 import { AdminQuestionsPanel } from "@/components/admin/AdminQuestionsPanel";
+import { AdminTemaClassifierPanel } from "@/components/admin/AdminTemaClassifierPanel";
 import { AdminConcursoQuestionsPanel } from "@/components/admin/AdminConcursoQuestionsPanel";
 import { AdminPdfReprocessPanel } from "@/components/admin/AdminPdfReprocessPanel";
 import { AdminPdfBatchPanel } from "@/components/admin/AdminPdfBatchPanel";
@@ -642,6 +643,7 @@ export default function Admin() {
           <p className="text-xs text-muted-foreground mb-3">
             Encontre questões quebradas (alternativas faltando, sem gabarito, enunciado vazio…) e corrija manualmente.
           </p>
+          <AdminTemaClassifierPanel />
           <AdminQuestionsPanel />
         </section>
           </TabsContent>
