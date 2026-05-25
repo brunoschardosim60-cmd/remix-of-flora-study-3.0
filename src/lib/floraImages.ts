@@ -64,17 +64,27 @@ export async function generateMultipleImages(
 }
 
 export function getCachedImage(concept: string): string | null {
-  // Implementar cache local se necessário
-  const cached = localStorage.getItem(`flora-image-${concept}`);
-  return cached ? JSON.parse(cached).url : null;
+  if (typeof window === "undefined") return null;
+  try {
+    const cached = localStorage.getItem(`flora-image-${concept}`);
+    if (!cached) return null;
+    const parsed = JSON.parse(cached);
+    return typeof parsed?.url === "string" ? parsed.url : null;
+  } catch {
+    // Entrada corrompida — limpa para evitar repetir o erro
+    try { localStorage.removeItem(`flora-image-${concept}`); } catch { /* ignore */ }
+    return null;
+  }
 }
 
 export function cacheImage(concept: string, imageUrl: string): void {
-  localStorage.setItem(
-    `flora-image-${concept}`,
-    JSON.stringify({
-      url: imageUrl,
-      timestamp: Date.now(),
-    })
-  );
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(
+      `flora-image-${concept}`,
+      JSON.stringify({ url: imageUrl, timestamp: Date.now() })
+    );
+  } catch {
+    // localStorage cheio ou desabilitado — silencioso
+  }
 }
