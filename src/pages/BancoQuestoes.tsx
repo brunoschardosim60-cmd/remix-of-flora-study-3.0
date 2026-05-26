@@ -636,10 +636,54 @@ export default function BancoQuestoes() {
     }
   }
 
-  function startExam() {
-    const pool = filtered.length >= 10 ? filtered : questions;
-    const shuffled = [...pool].sort(() => Math.random() - 0.5).slice(0, 10);
-    setExamQueue(shuffled);
+  // Mapeamento ENEM oficial: disciplina → área da prova
+  const DAY1_LINGUAGENS = new Set([
+    "linguagens", "português", "literatura", "inglês", "espanhol",
+    "artes", "educação física"
+  ]);
+  const DAY1_HUMANAS = new Set([
+    "humanas", "ciências humanas", "história", "geografia", "filosofia", "sociologia"
+  ]);
+  const DAY2_MATEMATICA = new Set(["matemática"]);
+  const DAY2_NATUREZA = new Set([
+    "natureza", "ciências da natureza", "biologia", "química", "física"
+  ]);
+
+  function norm(s: string) { return (s || "").toLowerCase().trim(); }
+
+  function pickBalanced(pool: Question[], groups: Set<string>[], perGroup: number): Question[] {
+    const out: Question[] = [];
+    for (const g of groups) {
+      const inGroup = pool.filter((q) => g.has(norm(q.disciplina)));
+      const shuffled = [...inGroup].sort(() => Math.random() - 0.5).slice(0, perGroup);
+      out.push(...shuffled);
+      // Se faltarem questões nesse grupo, completa com aleatórias quaisquer
+      if (shuffled.length < perGroup) {
+        const remaining = pool.filter((q) => !out.includes(q));
+        const extra = [...remaining].sort(() => Math.random() - 0.5).slice(0, perGroup - shuffled.length);
+        out.push(...extra);
+      }
+    }
+    return out;
+  }
+
+  function startExam(kind: ExamKind = "quick") {
+    setShowExamPicker(false);
+    setExamKind(kind);
+    let queue: Question[] = [];
+    if (kind === "quick") {
+      const pool = filtered.length >= 10 ? filtered : questions;
+      queue = [...pool].sort(() => Math.random() - 0.5).slice(0, 10);
+    } else if (kind === "day1") {
+      queue = pickBalanced(questions, [DAY1_LINGUAGENS, DAY1_HUMANAS], 45);
+    } else {
+      queue = pickBalanced(questions, [DAY2_MATEMATICA, DAY2_NATUREZA], 45);
+    }
+    if (queue.length === 0) {
+      toast.error("Nenhuma questão disponível para este simulado.");
+      return;
+    }
+    setExamQueue(queue);
     setExamAnswers({});
     setExamIndex(0);
     setExamStartedAt(Date.now());
