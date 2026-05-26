@@ -771,43 +771,41 @@ export default function BancoQuestoes() {
 
         {/* Stats */}
         {stats.total > 0 ? (
-          <Card className="p-4 sm:p-5 flex flex-wrap items-center gap-4 bg-gradient-to-br from-primary/5 via-card to-card border-primary/15 shadow-sm">
-            <div className="flex-1 min-w-[160px] space-y-1.5">
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>{stats.total} respondidas</span>
-                <span className="font-semibold text-foreground text-sm tabular-nums">{pct}% de acerto</span>
-              </div>
-              <div className="h-2.5 rounded-full bg-muted/70 overflow-hidden ring-1 ring-border/40">
-                <div className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500 transition-all duration-700 shadow-[0_0_12px_-2px_rgba(16,185,129,0.6)]" style={{ width: `${pct}%` }} />
-              </div>
-              <div className="flex gap-3 text-xs">
-                <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                  <Check className="w-3 h-3" />{stats.acertos} certas
-                </span>
-                <span className="flex items-center gap-1 text-destructive">
-                  <X className="w-3 h-3" />{stats.erros} erradas
-                </span>
-              </div>
+          <div className="flex items-center gap-3 px-1">
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-base font-semibold tabular-nums">{pct}%</span>
+              <span className="text-[11px] text-muted-foreground">de acerto</span>
             </div>
-            <div className="flex flex-wrap items-center gap-2 ml-auto">
-              <Button size="sm" variant={onlyErrors ? "default" : "outline"} onClick={() => setOnlyErrors((v) => !v)} disabled={stats.erros === 0}>
-                <RotateCcw className="w-4 h-4 mr-1.5" /> Refazer erros
+            <span className="text-[11px] text-muted-foreground">·</span>
+            <span className="text-[11px] text-muted-foreground tabular-nums">{stats.total} resp.</span>
+            <span className="text-[11px] text-emerald-600 dark:text-emerald-400 tabular-nums">{stats.acertos}✓</span>
+            <span className="text-[11px] text-destructive tabular-nums">{stats.erros}✗</span>
+            <div className="ml-auto flex items-center gap-1.5">
+              <Button
+                size="sm"
+                variant={onlyErrors ? "default" : "ghost"}
+                onClick={() => setOnlyErrors((v) => !v)}
+                disabled={stats.erros === 0}
+                className="h-7 px-2.5 text-xs"
+              >
+                <RotateCcw className="w-3.5 h-3.5 mr-1" /> Refazer erros
               </Button>
-              <Button size="sm" onClick={() => setShowExamPicker(true)} className="bg-gradient-to-r from-primary to-primary/85 hover:opacity-95 shadow-sm">
-                <Timer className="w-4 h-4 mr-1.5" /> Simular prova
+              <Button
+                size="sm"
+                onClick={() => setShowExamPicker(true)}
+                className="h-7 px-3 text-xs"
+              >
+                <Timer className="w-3.5 h-3.5 mr-1" /> Simular prova
               </Button>
             </div>
-          </Card>
+          </div>
         ) : (
-          <Card className="p-4 sm:p-5 flex flex-wrap items-center gap-3 bg-gradient-to-br from-primary/5 via-card to-card border-primary/15 shadow-sm">
-            <div className="flex-1 min-w-[200px]">
-              <p className="text-sm font-medium text-foreground">Comece sua jornada</p>
-              <p className="text-xs text-muted-foreground">Resolva questões para acompanhar seu progresso.</p>
-            </div>
-            <Button size="sm" onClick={() => setShowExamPicker(true)} className="bg-gradient-to-r from-primary to-primary/85 hover:opacity-95 shadow-sm">
-              <Timer className="w-4 h-4 mr-1.5" /> Simular prova ENEM
+          <div className="flex items-center gap-3 px-1">
+            <p className="text-xs text-muted-foreground">Comece a resolver questões para acompanhar seu progresso.</p>
+            <Button size="sm" onClick={() => setShowExamPicker(true)} className="h-7 px-3 text-xs ml-auto">
+              <Timer className="w-3.5 h-3.5 mr-1" /> Simular prova
             </Button>
-          </Card>
+          </div>
         )}
 
         {/* Filtros */}
