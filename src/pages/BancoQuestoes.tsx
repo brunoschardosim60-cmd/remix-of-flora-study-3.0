@@ -909,6 +909,7 @@ export default function BancoQuestoes() {
                 : "max-w-2xl w-full my-4 sm:my-8 rounded-2xl border border-border bg-card shadow-2xl"
             }
             onClick={(e) => e.stopPropagation()}
+            style={readingMode ? ({ ["--reading-scale" as any]: readingFont, ["--reading-leading" as any]: readingLead }) : undefined}
           >
             {/* Cabeçalho */}
             <div className={`flex items-start justify-between gap-3 px-5 py-4 border-b border-border bg-card/95 backdrop-blur ${
@@ -934,6 +935,37 @@ export default function BancoQuestoes() {
                   {readingMode ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
                   <span className="text-xs font-medium">{readingMode ? "Sair" : "Foco"}</span>
                 </Button>
+                {readingMode && (
+                  <div className="hidden sm:flex items-center gap-1 rounded-full border border-border bg-muted/40 px-1.5 py-0.5">
+                    <button
+                      type="button"
+                      onClick={() => setReadingFont((v) => Math.max(0.85, +(v - 0.05).toFixed(2)))}
+                      className="h-7 w-7 inline-flex items-center justify-center rounded-full text-xs font-semibold hover:bg-muted disabled:opacity-40"
+                      disabled={readingFont <= 0.85}
+                      aria-label="Diminuir fonte"
+                      title="Diminuir fonte"
+                    >A−</button>
+                    <span className="text-[10px] tabular-nums text-muted-foreground w-8 text-center">{Math.round(readingFont * 100)}%</span>
+                    <button
+                      type="button"
+                      onClick={() => setReadingFont((v) => Math.min(1.4, +(v + 0.05).toFixed(2)))}
+                      className="h-7 w-7 inline-flex items-center justify-center rounded-full text-xs font-semibold hover:bg-muted disabled:opacity-40"
+                      disabled={readingFont >= 1.4}
+                      aria-label="Aumentar fonte"
+                      title="Aumentar fonte"
+                    >A+</button>
+                    <span className="w-px h-4 bg-border mx-0.5" />
+                    <button
+                      type="button"
+                      onClick={() => setReadingLead((v) => (v >= 1.2 ? 0.9 : +(v + 0.1).toFixed(2)))}
+                      className="h-7 inline-flex items-center justify-center px-2 rounded-full hover:bg-muted"
+                      aria-label="Ajustar espaçamento entre linhas"
+                      title={`Espaçamento (atual ${Math.round(readingLead * 100)}%) — clique para alternar`}
+                    >
+                      <Type className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
                 <Button
                   variant="ghost"
                   size="icon"
