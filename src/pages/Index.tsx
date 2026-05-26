@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from "react
 import { useNavigate } from "react-router-dom";
 import { CalendarDays, LayoutGrid } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { createTopic, StudyTopic, WeeklySlot, ALL_SUBJECTS, Subject } from "@/lib/studyData";
+import { createTopic, StudyTopic, WeeklySlot, ALL_SUBJECTS, Subject, CONCURSO_SUBJECTS, ENEM_SUBJECTS } from "@/lib/studyData";
 import { DashboardHero } from "@/components/DashboardHero";
 import { AddTopicForm } from "@/components/AddTopicForm";
 import { StudyTimer } from "@/components/StudyTimer";
