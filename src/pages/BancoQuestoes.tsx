@@ -1169,50 +1169,76 @@ export default function BancoQuestoes() {
           aria-modal="true"
         >
           <div
-            className="w-full max-w-md rounded-2xl border border-border bg-card shadow-2xl p-5 space-y-4"
+            className="w-full max-w-sm rounded-2xl border border-border bg-card shadow-2xl p-6 space-y-5"
             onClick={(e) => e.stopPropagation()}
           >
-            <div>
-              <h3 className="text-base font-heading font-semibold">Escolha seu simulado</h3>
-              <p className="text-xs text-muted-foreground mt-0.5">Treine rápido ou faça uma prova oficial completa.</p>
+            <h3 className="text-sm font-heading font-semibold tracking-tight">Simular prova</h3>
+
+            {/* Ano */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Ano</label>
+              <div className="flex flex-wrap gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setExamYear("mix")}
+                  className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+                    examYear === "mix"
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "border-border hover:border-primary/40"
+                  }`}
+                >
+                  Misturar
+                </button>
+                {anos.filter((a) => a !== "Todos").map((a) => (
+                  <button
+                    key={a}
+                    type="button"
+                    onClick={() => setExamYear(a)}
+                    className={`px-2.5 py-1 rounded-full text-xs font-medium border tabular-nums transition-colors ${
+                      examYear === a
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "border-border hover:border-primary/40"
+                    }`}
+                  >
+                    {a}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="space-y-2">
-              <button
-                type="button"
-                onClick={() => startExam("quick")}
-                className="w-full text-left rounded-xl border border-border hover:border-primary/50 hover:bg-primary/[0.03] transition-colors p-4 flex items-start gap-3"
-              >
-                <Timer className="w-5 h-5 text-primary mt-0.5 shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-semibold">Simulado rápido</div>
-                  <div className="text-xs text-muted-foreground">10 questões mistas · ~15 min · sem cronômetro oficial</div>
-                </div>
-              </button>
-              <button
-                type="button"
-                onClick={() => startExam("day1")}
-                className="w-full text-left rounded-xl border border-border hover:border-primary/50 hover:bg-primary/[0.03] transition-colors p-4 flex items-start gap-3"
-              >
-                <BookOpen className="w-5 h-5 text-primary mt-0.5 shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-semibold">Prova completa — Dia 1</div>
-                  <div className="text-xs text-muted-foreground">90 questões · 5h30 · Linguagens (45) + Humanas (45)</div>
-                </div>
-              </button>
-              <button
-                type="button"
-                onClick={() => startExam("day2")}
-                className="w-full text-left rounded-xl border border-border hover:border-primary/50 hover:bg-primary/[0.03] transition-colors p-4 flex items-start gap-3"
-              >
-                <BookOpen className="w-5 h-5 text-primary mt-0.5 shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-semibold">Prova completa — Dia 2</div>
-                  <div className="text-xs text-muted-foreground">90 questões · 5h00 · Matemática (45) + Natureza (45)</div>
-                </div>
-              </button>
+
+            {/* Modo */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Modo</label>
+              <div className="divide-y divide-border rounded-xl border border-border overflow-hidden">
+                {[
+                  { kind: "quick" as const, title: "Rápido", meta: "10 questões" },
+                  { kind: "day1" as const, title: "Dia 1", meta: "90q · 5h30 · Linguagens + Humanas" },
+                  { kind: "day2" as const, title: "Dia 2", meta: "90q · 5h00 · Matemática + Natureza" },
+                ].map((o) => (
+                  <button
+                    key={o.kind}
+                    type="button"
+                    onClick={() => startExam(o.kind)}
+                    className="w-full text-left px-4 py-3 flex items-center justify-between gap-3 hover:bg-muted/40 transition-colors"
+                  >
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium">{o.title}</div>
+                      <div className="text-[11px] text-muted-foreground truncate">{o.meta}</div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="flex justify-end pt-1">
-              <Button variant="ghost" size="sm" onClick={() => setShowExamPicker(false)}>Cancelar</Button>
+
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowExamPicker(false)}
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Cancelar
+              </button>
             </div>
           </div>
         </div>
