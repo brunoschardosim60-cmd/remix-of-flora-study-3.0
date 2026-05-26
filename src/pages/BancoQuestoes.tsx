@@ -1171,7 +1171,7 @@ export default function BancoQuestoes() {
             </button>
 
             {/* Ano (expandable) */}
-            <div className="rounded-xl border border-border overflow-hidden">
+            <div className="relative rounded-xl border border-border">
               <button
                 type="button"
                 onClick={() => setExamYearOpen((v) => !v)}
@@ -1186,10 +1186,10 @@ export default function BancoQuestoes() {
                 </span>
               </button>
               {examYearOpen && (
-                <div className="max-h-48 overflow-y-auto border-t border-border divide-y divide-border">
+                <div className="absolute left-0 right-0 top-full mt-1 z-20 max-h-48 overflow-y-auto rounded-xl border border-border bg-popover shadow-lg divide-y divide-border">
                   <button
                     type="button"
-                    onClick={() => setExamYear("mix")}
+                    onClick={() => { setExamYear("mix"); setExamYearOpen(false); }}
                     className={`w-full px-3 py-2 text-left text-xs font-medium transition-colors ${
                       examYear === "mix"
                         ? "bg-primary/10 text-primary"
@@ -1202,7 +1202,7 @@ export default function BancoQuestoes() {
                     <button
                       key={a}
                       type="button"
-                      onClick={() => setExamYear(a)}
+                      onClick={() => { setExamYear(a); setExamYearOpen(false); }}
                       className={`w-full px-3 py-2 text-left text-xs font-medium tabular-nums transition-colors ${
                         examYear === a
                           ? "bg-primary/10 text-primary"
