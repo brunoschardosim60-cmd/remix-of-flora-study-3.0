@@ -469,7 +469,20 @@ export default function BancoQuestoes() {
   }, [search]);
 
   const disciplinas = useMemo(() => {
-    const set = new Set(questions.map((q) => q.disciplina).filter(Boolean));
+    // Remove valores que são na verdade áreas (evita duplicação com o filtro "Área").
+    const AREA_LIKE = new Set([
+      "Linguagens",
+      "Ciências Humanas",
+      "Ciências da Natureza",
+      "Humanas",
+      "Natureza",
+      "Matemática",
+    ]);
+    const set = new Set(
+      questions
+        .map((q) => q.disciplina)
+        .filter((d) => d && !AREA_LIKE.has(d)),
+    );
     return ["Todas", ...Array.from(set).sort()];
   }, [questions]);
 
