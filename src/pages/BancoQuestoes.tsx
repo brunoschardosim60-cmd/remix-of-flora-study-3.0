@@ -1145,6 +1145,64 @@ export default function BancoQuestoes() {
         </div>
       )}
 
+      {/* Picker de tipo de simulado */}
+      {showExamPicker && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setShowExamPicker(false)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="w-full max-w-md rounded-2xl border border-border bg-card shadow-2xl p-5 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div>
+              <h3 className="text-base font-heading font-semibold">Escolha seu simulado</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">Treine rápido ou faça uma prova oficial completa.</p>
+            </div>
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => startExam("quick")}
+                className="w-full text-left rounded-xl border border-border hover:border-primary/50 hover:bg-primary/[0.03] transition-colors p-4 flex items-start gap-3"
+              >
+                <Timer className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-semibold">Simulado rápido</div>
+                  <div className="text-xs text-muted-foreground">10 questões mistas · ~15 min · sem cronômetro oficial</div>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => startExam("day1")}
+                className="w-full text-left rounded-xl border border-border hover:border-primary/50 hover:bg-primary/[0.03] transition-colors p-4 flex items-start gap-3"
+              >
+                <BookOpen className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-semibold">Prova completa — Dia 1</div>
+                  <div className="text-xs text-muted-foreground">90 questões · 5h30 · Linguagens (45) + Humanas (45)</div>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => startExam("day2")}
+                className="w-full text-left rounded-xl border border-border hover:border-primary/50 hover:bg-primary/[0.03] transition-colors p-4 flex items-start gap-3"
+              >
+                <BookOpen className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-semibold">Prova completa — Dia 2</div>
+                  <div className="text-xs text-muted-foreground">90 questões · 5h00 · Matemática (45) + Natureza (45)</div>
+                </div>
+              </button>
+            </div>
+            <div className="flex justify-end pt-1">
+              <Button variant="ghost" size="sm" onClick={() => setShowExamPicker(false)}>Cancelar</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modo Prova */}
       {examMode && (
         <div className="fixed inset-0 z-50 bg-background overflow-y-auto">
