@@ -694,9 +694,16 @@ export default function BancoQuestoes() {
 
   useEffect(() => {
     if (!examMode || examFinished || !examStartedAt) return;
-    const t = setInterval(() => setExamElapsed(Math.floor((Date.now() - examStartedAt) / 1000)), 1000);
+    const t = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - examStartedAt) / 1000);
+      setExamElapsed(elapsed);
+      const limit = examKind === "day1" ? 5 * 3600 + 30 * 60 : examKind === "day2" ? 5 * 3600 : null;
+      if (limit && elapsed >= limit) {
+        setExamFinished(true);
+      }
+    }, 1000);
     return () => clearInterval(t);
-  }, [examMode, examFinished, examStartedAt]);
+  }, [examMode, examFinished, examStartedAt, examKind]);
 
   function answerExam(letter: string) {
     const q = examQueue[examIndex];
