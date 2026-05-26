@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Loader2, Sparkles, Wand2, Check, X, ChevronRight, RotateCcw } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Loader2, Sparkles, Wand2, Check, X, ChevronRight, ChevronLeft, RotateCcw, History } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
