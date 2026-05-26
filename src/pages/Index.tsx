@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from "react
 import { useNavigate } from "react-router-dom";
 import { CalendarDays, LayoutGrid } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { createTopic, StudyTopic, WeeklySlot, ALL_SUBJECTS, Subject } from "@/lib/studyData";
+import { createTopic, StudyTopic, WeeklySlot, ALL_SUBJECTS, Subject, CONCURSO_SUBJECTS, ENEM_SUBJECTS } from "@/lib/studyData";
 import { DashboardHero } from "@/components/DashboardHero";
 import { AddTopicForm } from "@/components/AddTopicForm";
 import { StudyTimer } from "@/components/StudyTimer";
@@ -84,6 +84,7 @@ export default function Index() {
 
   // Objetivo do aluno → rota/label do "Banco"
   const { objetivo, isConcurso, bancoRoute, bancoLabel } = useStudentObjetivo(user);
+  const subjectOptions = isConcurso ? CONCURSO_SUBJECTS : ENEM_SUBJECTS;
 
   const {
     topics,
@@ -402,7 +403,7 @@ export default function Index() {
         >
           {tab === "revisao" ? (
             <div className="space-y-4">
-              <AddTopicForm onAdd={handleAdd} openSignal={addTopicOpenSignal} />
+              <AddTopicForm onAdd={handleAdd} openSignal={addTopicOpenSignal} subjects={subjectOptions} />
               <Suspense fallback={<SectionSkeleton className="min-h-[200px]" />}>
                 <RevisionTable
                   topics={topics}
@@ -417,7 +418,7 @@ export default function Index() {
             </div>
           ) : (
             <Suspense fallback={<SectionSkeleton className="min-h-[300px]" />}>
-              <WeeklySchedule slots={weekly} onChange={setWeekly} />
+              <WeeklySchedule slots={weekly} onChange={setWeekly} subjects={subjectOptions} />
             </Suspense>
           )}
         </div>

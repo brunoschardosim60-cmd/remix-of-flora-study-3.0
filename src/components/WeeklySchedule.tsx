@@ -16,9 +16,11 @@ const DEFAULT_HORARIOS = [
 interface WeeklyScheduleProps {
   slots: WeeklySlot[];
   onChange: (slots: WeeklySlot[]) => void;
+  subjects?: Subject[];
 }
 
-export function WeeklySchedule({ slots, onChange }: WeeklyScheduleProps) {
+export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProps) {
+  const subjectOptions = subjects && subjects.length ? subjects : ALL_SUBJECTS;
   const [editingSlot, setEditingSlot] = useState<string | null>(null);
   const [hoveredSlot, setHoveredSlot] = useState<string | null>(null);
   const [showAddRow, setShowAddRow] = useState(false);
@@ -164,7 +166,7 @@ export function WeeklySchedule({ slots, onChange }: WeeklyScheduleProps) {
                                 className="w-full text-xs px-2 py-1.5 rounded-lg bg-muted border border-border focus:ring-2 focus:ring-primary/30 outline-none"
                               >
                                 <option value="">— Matéria —</option>
-                                {ALL_SUBJECTS.map((s) => (
+                                {subjectOptions.map((s) => (
                                   <option key={s} value={s}>{s}</option>
                                 ))}
                               </select>
