@@ -84,6 +84,7 @@ export default function Index() {
 
   // Objetivo do aluno → rota/label do "Banco"
   const { objetivo, isConcurso, bancoRoute, bancoLabel } = useStudentObjetivo(user);
+  const subjectOptions = isConcurso ? CONCURSO_SUBJECTS : ENEM_SUBJECTS;
 
   const {
     topics,
