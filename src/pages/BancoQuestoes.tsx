@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import {
   AlertTriangle, ArrowLeft, BookOpen, Check, ChevronLeft, Filter, ImageIcon,
-  Loader2, RotateCcw, Search, Sparkles, Star, Timer, X, ChevronRight, Maximize2, Minimize2, Type
+  Loader2, RotateCcw, Search, Sparkles, Star, Timer, X, ChevronRight, ChevronDown, Maximize2, Minimize2, Type
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
