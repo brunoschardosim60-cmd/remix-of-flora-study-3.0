@@ -778,7 +778,7 @@ export default function BancoQuestoes() {
               <Button size="sm" variant={onlyErrors ? "default" : "outline"} onClick={() => setOnlyErrors((v) => !v)} disabled={stats.erros === 0}>
                 <RotateCcw className="w-4 h-4 mr-1.5" /> Refazer erros
               </Button>
-              <Button size="sm" onClick={startExam} className="bg-gradient-to-r from-primary to-primary/85 hover:opacity-95 shadow-sm">
+              <Button size="sm" onClick={() => setShowExamPicker(true)} className="bg-gradient-to-r from-primary to-primary/85 hover:opacity-95 shadow-sm">
                 <Timer className="w-4 h-4 mr-1.5" /> Simular prova
               </Button>
             </div>
@@ -789,7 +789,7 @@ export default function BancoQuestoes() {
               <p className="text-sm font-medium text-foreground">Comece sua jornada</p>
               <p className="text-xs text-muted-foreground">Resolva questões para acompanhar seu progresso.</p>
             </div>
-            <Button size="sm" onClick={startExam} className="bg-gradient-to-r from-primary to-primary/85 hover:opacity-95 shadow-sm">
+            <Button size="sm" onClick={() => setShowExamPicker(true)} className="bg-gradient-to-r from-primary to-primary/85 hover:opacity-95 shadow-sm">
               <Timer className="w-4 h-4 mr-1.5" /> Simular prova ENEM
             </Button>
           </Card>
@@ -1234,7 +1234,7 @@ export default function BancoQuestoes() {
                   <span className="flex items-center gap-1.5 text-destructive"><X className="w-4 h-4" />{examQueue.length - examScore} erradas</span>
                 </div>
                 <div className="flex flex-wrap gap-3 justify-center">
-                  <Button variant="outline" onClick={startExam}><Timer className="w-4 h-4 mr-1.5" /> Novo simulado</Button>
+                  <Button variant="outline" onClick={() => setShowExamPicker(true)}><Timer className="w-4 h-4 mr-1.5" /> Novo simulado</Button>
                   <Button onClick={closeExam}>Voltar ao banco</Button>
                 </div>
                 <div className="pt-2">
