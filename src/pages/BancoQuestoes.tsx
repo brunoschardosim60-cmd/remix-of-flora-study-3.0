@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import {
   AlertTriangle, ArrowLeft, BookOpen, Check, ChevronLeft, Filter, ImageIcon,
-  Loader2, RotateCcw, Search, Sparkles, Star, Timer, X, ChevronRight
+  Loader2, RotateCcw, Search, Sparkles, Star, Timer, X, ChevronRight, Maximize2, Minimize2
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -331,6 +331,7 @@ export default function BancoQuestoes() {
   const [ano, setAno] = useState("Todos");
   const [disciplina, setDisciplina] = useState(() => searchParams.get("disciplina") ?? "Todas");
   const [opened, setOpened] = useState<Question | null>(null);
+  const [readingMode, setReadingMode] = useState(false);
   const [revealed, setRevealed] = useState<Record<string, string>>({});
   const [attempts, setAttempts] = useState<Record<string, Attempt>>({});
   const [onlyErrors, setOnlyErrors] = useState(false);
