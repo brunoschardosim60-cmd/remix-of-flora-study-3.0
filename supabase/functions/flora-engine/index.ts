@@ -1858,14 +1858,47 @@ SEMPRE em português brasileiro.` },
         .maybeSingle();
       if (!decision) return jsonResponse({ error: "Decision not found" }, 404);
 
-      // Log the acceptance
+      let appliedSummary = "";
+      const applied: Record<string, unknown> = {};
+
+      // reduce_load: empurra revisões atrasadas +3 dias pra aliviar a fila
+      if (decision.decision_type === "reduce_load") {
+        const todayISO = new Date().toISOString().slice(0, 10);
+        const { data: overdue } = await supabase
+          .from("spaced_reviews")
+          .select("id, scheduled_date")
+          .eq("user_id", userId)
+          .eq("completed", false)
+          .lt("scheduled_date", todayISO);
+        const ids = (overdue || []).map((r: any) => r.id);
+        if (ids.length > 0) {
+          const newDate = new Date();
+          newDate.setDate(newDate.getDate() + 3);
+          const newISO = newDate.toISOString().slice(0, 10);
+          await supabase
+            .from("spaced_reviews")
+            .update({ scheduled_date: newISO })
+            .in("id", ids);
+          appliedSummary = `${ids.length} revisão(ões) atrasada(s) foram remarcadas para daqui 3 dias.`;
+          applied.rescheduled = ids.length;
+        } else {
+          appliedSummary = "Você não tem revisões atrasadas. Carga já está equilibrada.";
+        }
+      } else if (decision.decision_type === "increase_difficulty") {
+        appliedSummary = "Vou aumentar o nível das próximas questões e revisões.";
+      } else if (decision.decision_type === "adjust_plan") {
+        appliedSummary = "Cronograma marcado para ajuste. Abra o cronograma para conferir.";
+      } else {
+        appliedSummary = "Sugestão registrada. Vamos focar nessa direção.";
+      }
+
       await supabase.from("user_actions").insert({
         user_id: userId,
         action: "flora_decision_accepted",
-        metadata: { decisionId, type: decision.decision_type, recommendation },
+        metadata: { decisionId, type: decision.decision_type, recommendation, appliedSummary, applied },
       });
 
-      return jsonResponse({ ok: true, applied: true });
+      return jsonResponse({ ok: true, applied: true, summary: appliedSummary, ...applied });
     }
 
     if (action === "generate_initial_plan") {
