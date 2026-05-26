@@ -473,6 +473,17 @@ export default function BancoQuestoes() {
     return ["Todas", ...Array.from(set).sort()];
   }, [questions]);
 
+  // Temas disponíveis dependem da disciplina selecionada (ou de todas).
+  const temas = useMemo(() => {
+    const set = new Set<string>();
+    for (const q of questions) {
+      if (disciplina !== "Todas" && q.disciplina !== disciplina) continue;
+      const t = (q.tema || "").trim();
+      if (t) set.add(t);
+    }
+    return ["Todos", ...Array.from(set).sort((a, b) => a.localeCompare(b, "pt-BR"))];
+  }, [questions, disciplina]);
+
   // Pré-computa enunciado limpo, preview e haystack de busca por questão.
   // Evita rodar cleanPdfArtifacts toda hora durante render/filter.
   const cleanedById = useMemo(() => {
@@ -523,6 +534,7 @@ export default function BancoQuestoes() {
       if (area !== "Todas" && q.area !== area) return false;
       if (ano !== "Todos" && String(q.ano) !== ano) return false;
       if (disciplina !== "Todas" && q.disciplina !== disciplina) return false;
+      if (tema !== "Todos" && (q.tema || "").trim() !== tema) return false;
       if (s) {
         const hay = cleanedById.get(q.id)?.haystack ?? "";
         if (!hay.includes(s)) return false;
