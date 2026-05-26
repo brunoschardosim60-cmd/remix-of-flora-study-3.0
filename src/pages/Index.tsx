@@ -403,7 +403,7 @@ export default function Index() {
         >
           {tab === "revisao" ? (
             <div className="space-y-4">
-              <AddTopicForm onAdd={handleAdd} openSignal={addTopicOpenSignal} />
+              <AddTopicForm onAdd={handleAdd} openSignal={addTopicOpenSignal} subjects={subjectOptions} />
               <Suspense fallback={<SectionSkeleton className="min-h-[200px]" />}>
                 <RevisionTable
                   topics={topics}
@@ -418,7 +418,7 @@ export default function Index() {
             </div>
           ) : (
             <Suspense fallback={<SectionSkeleton className="min-h-[300px]" />}>
-              <WeeklySchedule slots={weekly} onChange={setWeekly} />
+              <WeeklySchedule slots={weekly} onChange={setWeekly} subjects={subjectOptions} />
             </Suspense>
           )}
         </div>
