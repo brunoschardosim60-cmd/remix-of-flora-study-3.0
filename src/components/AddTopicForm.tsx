@@ -5,11 +5,13 @@ import { Plus } from "lucide-react";
 interface AddTopicFormProps {
   onAdd: (tema: string, materia: Subject, data: string, skipWeekends: boolean) => void;
   openSignal?: number;
+  subjects?: Subject[];
 }
 
-export function AddTopicForm({ onAdd, openSignal = 0 }: AddTopicFormProps) {
+export function AddTopicForm({ onAdd, openSignal = 0, subjects }: AddTopicFormProps) {
+  const subjectOptions = subjects && subjects.length ? subjects : ALL_SUBJECTS;
   const [tema, setTema] = useState("");
-  const [materia, setMateria] = useState<Subject>("Matemática");
+  const [materia, setMateria] = useState<Subject>(subjectOptions[0] ?? "Matemática");
   const [data, setData] = useState(new Date().toISOString().split("T")[0]);
   const [skipWeekends, setSkipWeekends] = useState(false);
   const [open, setOpen] = useState(false);
@@ -63,7 +65,7 @@ export function AddTopicForm({ onAdd, openSignal = 0 }: AddTopicFormProps) {
           onChange={(e) => setMateria(e.target.value as Subject)}
           className="px-3 py-2 rounded-lg bg-muted border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
         >
-          {ALL_SUBJECTS.map((s) => (
+          {subjectOptions.map((s) => (
             <option key={s} value={s}>{s}</option>
           ))}
         </select>
