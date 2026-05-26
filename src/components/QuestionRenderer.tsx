@@ -148,7 +148,36 @@ export function parseQuestionBlocks(raw: string): Block[] {
     blocks.push({ kind: "prose", text: p, label });
   });
 
-  return blocks;
+  // Pós-processamento: unifica estrofes / blocos curtos pertencentes ao mesmo
+  // poema. Questões como ENEM 2024 Q11 (Feijoada à minha moda) trazem cada
+  // estrofe separada por linha em branco — sem essa unificação cada estrofe
+  // vira um card amarelo separado, quebrando a leitura.
+  const merged: Block[] = [];
+  const isShortLines = (t: string) => {
+    const ls = t.split("\n").map((l) => l.trim()).filter(Boolean);
+    if (!ls.length) return false;
+    const avg = ls.reduce((a, l) => a + l.length, 0) / ls.length;
+    const shortRatio = ls.filter((l) => l.length <= 70).length / ls.length;
+    return avg <= 65 && shortRatio >= 0.7;
+  };
+  for (const b of blocks) {
+    const last = merged[merged.length - 1];
+    const canMerge =
+      last &&
+      last.kind !== "prompt" &&
+      b.kind !== "prompt" &&
+      (last.kind === "poem" || b.kind === "poem") &&
+      !b.label &&
+      // só mescla se ambos têm cara de verso (linhas curtas)
+      isShortLines(last.text) && isShortLines(b.text);
+    if (canMerge) {
+      last.text = `${last.text}\n\n${b.text}`;
+      last.kind = "poem";
+    } else {
+      merged.push({ ...b });
+    }
+  }
+  return merged;
 }
 
 // ────────────────────────────────────────────────────────────────────────────────
