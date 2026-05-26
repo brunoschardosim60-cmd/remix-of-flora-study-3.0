@@ -673,14 +673,19 @@ export default function BancoQuestoes() {
   function startExam(kind: ExamKind = "quick") {
     setShowExamPicker(false);
     setExamKind(kind);
+    const yearPool = examYear === "mix"
+      ? questions
+      : questions.filter((q) => String(q.ano) === examYear);
     let queue: Question[] = [];
     if (kind === "quick") {
-      const pool = filtered.length >= 10 ? filtered : questions;
+      const pool = examYear === "mix"
+        ? (filtered.length >= 10 ? filtered : questions)
+        : yearPool;
       queue = [...pool].sort(() => Math.random() - 0.5).slice(0, 10);
     } else if (kind === "day1") {
-      queue = pickBalanced(questions, [DAY1_LINGUAGENS, DAY1_HUMANAS], 45);
+      queue = pickBalanced(yearPool, [DAY1_LINGUAGENS, DAY1_HUMANAS], 45);
     } else {
-      queue = pickBalanced(questions, [DAY2_MATEMATICA, DAY2_NATUREZA], 45);
+      queue = pickBalanced(yearPool, [DAY2_MATEMATICA, DAY2_NATUREZA], 45);
     }
     if (queue.length === 0) {
       toast.error("Nenhuma questão disponível para este simulado.");
