@@ -1175,15 +1175,23 @@ export default function BancoQuestoes() {
                   })()}
                 </p>
               </div>
-              <div className="hidden sm:flex gap-1 items-center">
-                {examQueue.map((q, i) => (
-                  <div key={q.id} className={`h-1.5 w-5 rounded-full transition-colors ${
-                    i < examIndex
-                      ? examAnswers[q.id] === q.correta ? "bg-emerald-500" : "bg-destructive"
-                      : i === examIndex ? "bg-primary" : "bg-muted"
-                  }`} />
-                ))}
-              </div>
+              {examQueue.length <= 15 ? (
+                <div className="hidden sm:flex gap-1 items-center">
+                  {examQueue.map((q, i) => (
+                    <div key={q.id} className={`h-1.5 w-5 rounded-full transition-colors ${
+                      i < examIndex
+                        ? examAnswers[q.id] === q.correta ? "bg-emerald-500" : "bg-destructive"
+                        : i === examIndex ? "bg-primary" : "bg-muted"
+                    }`} />
+                  ))}
+                </div>
+              ) : (
+                <div className="hidden sm:flex items-center w-32">
+                  <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                    <div className="h-full bg-primary transition-all" style={{ width: `${(examIndex / Math.max(1, examQueue.length - 1)) * 100}%` }} />
+                  </div>
+                </div>
+              )}
               <Button variant="ghost" size="sm" onClick={closeExam}>Sair</Button>
             </div>
           </div>
