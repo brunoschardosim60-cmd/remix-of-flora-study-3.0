@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useEffect, useState } from "react";
 import { Loader2, Sparkles, Wand2, Check, X, ChevronRight, ChevronLeft, RotateCcw, History } from "lucide-react";
 import { toast } from "sonner";
