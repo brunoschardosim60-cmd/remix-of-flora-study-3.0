@@ -356,6 +356,9 @@ export default function BancoQuestoes() {
   const [examElapsed, setExamElapsed] = useState(0);
   const [examFinished, setExamFinished] = useState(false);
   const [examAnswers, setExamAnswers] = useState<Record<string, string>>({});
+  type ExamKind = "quick" | "day1" | "day2";
+  const [examKind, setExamKind] = useState<ExamKind>("quick");
+  const [showExamPicker, setShowExamPicker] = useState(false);
   const { user } = useAuth();
   const [favorites, setFavorites] = useState<Set<string>>(() => loadFavoritesLocal());
   const [favoritesLoaded, setFavoritesLoaded] = useState(false);
@@ -633,10 +636,54 @@ export default function BancoQuestoes() {
     }
   }
 
-  function startExam() {
-    const pool = filtered.length >= 10 ? filtered : questions;
-    const shuffled = [...pool].sort(() => Math.random() - 0.5).slice(0, 10);
-    setExamQueue(shuffled);
+  // Mapeamento ENEM oficial: disciplina → área da prova
+  const DAY1_LINGUAGENS = new Set([
+    "linguagens", "português", "literatura", "inglês", "espanhol",
+    "artes", "educação física"
+  ]);
+  const DAY1_HUMANAS = new Set([
+    "humanas", "ciências humanas", "história", "geografia", "filosofia", "sociologia"
+  ]);
+  const DAY2_MATEMATICA = new Set(["matemática"]);
+  const DAY2_NATUREZA = new Set([
+    "natureza", "ciências da natureza", "biologia", "química", "física"
+  ]);
+
+  function norm(s: string) { return (s || "").toLowerCase().trim(); }
+
+  function pickBalanced(pool: Question[], groups: Set<string>[], perGroup: number): Question[] {
+    const out: Question[] = [];
+    for (const g of groups) {
+      const inGroup = pool.filter((q) => g.has(norm(q.disciplina)));
+      const shuffled = [...inGroup].sort(() => Math.random() - 0.5).slice(0, perGroup);
+      out.push(...shuffled);
+      // Se faltarem questões nesse grupo, completa com aleatórias quaisquer
+      if (shuffled.length < perGroup) {
+        const remaining = pool.filter((q) => !out.includes(q));
+        const extra = [...remaining].sort(() => Math.random() - 0.5).slice(0, perGroup - shuffled.length);
+        out.push(...extra);
+      }
+    }
+    return out;
+  }
+
+  function startExam(kind: ExamKind = "quick") {
+    setShowExamPicker(false);
+    setExamKind(kind);
+    let queue: Question[] = [];
+    if (kind === "quick") {
+      const pool = filtered.length >= 10 ? filtered : questions;
+      queue = [...pool].sort(() => Math.random() - 0.5).slice(0, 10);
+    } else if (kind === "day1") {
+      queue = pickBalanced(questions, [DAY1_LINGUAGENS, DAY1_HUMANAS], 45);
+    } else {
+      queue = pickBalanced(questions, [DAY2_MATEMATICA, DAY2_NATUREZA], 45);
+    }
+    if (queue.length === 0) {
+      toast.error("Nenhuma questão disponível para este simulado.");
+      return;
+    }
+    setExamQueue(queue);
     setExamAnswers({});
     setExamIndex(0);
     setExamStartedAt(Date.now());
@@ -647,9 +694,16 @@ export default function BancoQuestoes() {
 
   useEffect(() => {
     if (!examMode || examFinished || !examStartedAt) return;
-    const t = setInterval(() => setExamElapsed(Math.floor((Date.now() - examStartedAt) / 1000)), 1000);
+    const t = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - examStartedAt) / 1000);
+      setExamElapsed(elapsed);
+      const limit = examKind === "day1" ? 5 * 3600 + 30 * 60 : examKind === "day2" ? 5 * 3600 : null;
+      if (limit && elapsed >= limit) {
+        setExamFinished(true);
+      }
+    }, 1000);
     return () => clearInterval(t);
-  }, [examMode, examFinished, examStartedAt]);
+  }, [examMode, examFinished, examStartedAt, examKind]);
 
   function answerExam(letter: string) {
     const q = examQueue[examIndex];
@@ -731,7 +785,7 @@ export default function BancoQuestoes() {
               <Button size="sm" variant={onlyErrors ? "default" : "outline"} onClick={() => setOnlyErrors((v) => !v)} disabled={stats.erros === 0}>
                 <RotateCcw className="w-4 h-4 mr-1.5" /> Refazer erros
               </Button>
-              <Button size="sm" onClick={startExam} className="bg-gradient-to-r from-primary to-primary/85 hover:opacity-95 shadow-sm">
+              <Button size="sm" onClick={() => setShowExamPicker(true)} className="bg-gradient-to-r from-primary to-primary/85 hover:opacity-95 shadow-sm">
                 <Timer className="w-4 h-4 mr-1.5" /> Simular prova
               </Button>
             </div>
@@ -742,7 +796,7 @@ export default function BancoQuestoes() {
               <p className="text-sm font-medium text-foreground">Comece sua jornada</p>
               <p className="text-xs text-muted-foreground">Resolva questões para acompanhar seu progresso.</p>
             </div>
-            <Button size="sm" onClick={startExam} className="bg-gradient-to-r from-primary to-primary/85 hover:opacity-95 shadow-sm">
+            <Button size="sm" onClick={() => setShowExamPicker(true)} className="bg-gradient-to-r from-primary to-primary/85 hover:opacity-95 shadow-sm">
               <Timer className="w-4 h-4 mr-1.5" /> Simular prova ENEM
             </Button>
           </Card>
@@ -1098,6 +1152,64 @@ export default function BancoQuestoes() {
         </div>
       )}
 
+      {/* Picker de tipo de simulado */}
+      {showExamPicker && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setShowExamPicker(false)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="w-full max-w-md rounded-2xl border border-border bg-card shadow-2xl p-5 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div>
+              <h3 className="text-base font-heading font-semibold">Escolha seu simulado</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">Treine rápido ou faça uma prova oficial completa.</p>
+            </div>
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => startExam("quick")}
+                className="w-full text-left rounded-xl border border-border hover:border-primary/50 hover:bg-primary/[0.03] transition-colors p-4 flex items-start gap-3"
+              >
+                <Timer className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-semibold">Simulado rápido</div>
+                  <div className="text-xs text-muted-foreground">10 questões mistas · ~15 min · sem cronômetro oficial</div>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => startExam("day1")}
+                className="w-full text-left rounded-xl border border-border hover:border-primary/50 hover:bg-primary/[0.03] transition-colors p-4 flex items-start gap-3"
+              >
+                <BookOpen className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-semibold">Prova completa — Dia 1</div>
+                  <div className="text-xs text-muted-foreground">90 questões · 5h30 · Linguagens (45) + Humanas (45)</div>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => startExam("day2")}
+                className="w-full text-left rounded-xl border border-border hover:border-primary/50 hover:bg-primary/[0.03] transition-colors p-4 flex items-start gap-3"
+              >
+                <BookOpen className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-semibold">Prova completa — Dia 2</div>
+                  <div className="text-xs text-muted-foreground">90 questões · 5h00 · Matemática (45) + Natureza (45)</div>
+                </div>
+              </button>
+            </div>
+            <div className="flex justify-end pt-1">
+              <Button variant="ghost" size="sm" onClick={() => setShowExamPicker(false)}>Cancelar</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modo Prova */}
       {examMode && (
         <div className="fixed inset-0 z-50 bg-background overflow-y-auto">
@@ -1106,21 +1218,45 @@ export default function BancoQuestoes() {
               <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                 <Timer className="w-4 h-4 text-primary" />
               </div>
-              <div className="flex-1">
-                <p className="text-sm font-semibold leading-tight">Simulado ENEM · 10 questões</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold leading-tight truncate">
+                  {examKind === "day1" && "Prova ENEM · Dia 1 (Linguagens + Humanas)"}
+                  {examKind === "day2" && "Prova ENEM · Dia 2 (Matemática + Natureza)"}
+                  {examKind === "quick" && "Simulado rápido · 10 questões"}
+                </p>
                 <p className="text-xs text-muted-foreground">
-                  Questão {Math.min(examIndex + 1, examQueue.length)} de {examQueue.length} · {String(Math.floor(examElapsed / 60)).padStart(2, "0")}:{String(examElapsed % 60).padStart(2, "0")}
+                  Questão {Math.min(examIndex + 1, examQueue.length)} de {examQueue.length}
+                  {" · "}
+                  {(() => {
+                    const limit = examKind === "day1" ? 5 * 3600 + 30 * 60 : examKind === "day2" ? 5 * 3600 : null;
+                    if (limit) {
+                      const remaining = Math.max(0, limit - examElapsed);
+                      const h = Math.floor(remaining / 3600);
+                      const m = Math.floor((remaining % 3600) / 60);
+                      const s = remaining % 60;
+                      return <>Restam {String(h).padStart(2, "0")}:{String(m).padStart(2, "0")}:{String(s).padStart(2, "0")}</>;
+                    }
+                    return <>{String(Math.floor(examElapsed / 60)).padStart(2, "0")}:{String(examElapsed % 60).padStart(2, "0")}</>;
+                  })()}
                 </p>
               </div>
-              <div className="hidden sm:flex gap-1 items-center">
-                {examQueue.map((q, i) => (
-                  <div key={q.id} className={`h-1.5 w-5 rounded-full transition-colors ${
-                    i < examIndex
-                      ? examAnswers[q.id] === q.correta ? "bg-emerald-500" : "bg-destructive"
-                      : i === examIndex ? "bg-primary" : "bg-muted"
-                  }`} />
-                ))}
-              </div>
+              {examQueue.length <= 15 ? (
+                <div className="hidden sm:flex gap-1 items-center">
+                  {examQueue.map((q, i) => (
+                    <div key={q.id} className={`h-1.5 w-5 rounded-full transition-colors ${
+                      i < examIndex
+                        ? examAnswers[q.id] === q.correta ? "bg-emerald-500" : "bg-destructive"
+                        : i === examIndex ? "bg-primary" : "bg-muted"
+                    }`} />
+                  ))}
+                </div>
+              ) : (
+                <div className="hidden sm:flex items-center w-32">
+                  <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                    <div className="h-full bg-primary transition-all" style={{ width: `${(examIndex / Math.max(1, examQueue.length - 1)) * 100}%` }} />
+                  </div>
+                </div>
+              )}
               <Button variant="ghost" size="sm" onClick={closeExam}>Sair</Button>
             </div>
           </div>
@@ -1187,7 +1323,7 @@ export default function BancoQuestoes() {
                   <span className="flex items-center gap-1.5 text-destructive"><X className="w-4 h-4" />{examQueue.length - examScore} erradas</span>
                 </div>
                 <div className="flex flex-wrap gap-3 justify-center">
-                  <Button variant="outline" onClick={startExam}><Timer className="w-4 h-4 mr-1.5" /> Novo simulado</Button>
+                  <Button variant="outline" onClick={() => setShowExamPicker(true)}><Timer className="w-4 h-4 mr-1.5" /> Novo simulado</Button>
                   <Button onClick={closeExam}>Voltar ao banco</Button>
                 </div>
                 <div className="pt-2">
