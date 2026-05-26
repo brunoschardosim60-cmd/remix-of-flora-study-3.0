@@ -771,41 +771,47 @@ export default function BancoQuestoes() {
 
         {/* Stats */}
         {stats.total > 0 ? (
-          <div className="flex items-center gap-3 px-1">
+          <Card className="px-4 py-2.5 flex flex-wrap items-center gap-x-4 gap-y-2 border-border/60">
             <div className="flex items-baseline gap-1.5">
-              <span className="text-base font-semibold tabular-nums">{pct}%</span>
-              <span className="text-[11px] text-muted-foreground">de acerto</span>
+              <span className="text-lg font-semibold tabular-nums leading-none">{pct}%</span>
+              <span className="text-[11px] text-muted-foreground">acerto</span>
             </div>
-            <span className="text-[11px] text-muted-foreground">·</span>
-            <span className="text-[11px] text-muted-foreground tabular-nums">{stats.total} resp.</span>
-            <span className="text-[11px] text-emerald-600 dark:text-emerald-400 tabular-nums">{stats.acertos}✓</span>
-            <span className="text-[11px] text-destructive tabular-nums">{stats.erros}✗</span>
+            <div className="h-4 w-px bg-border" />
+            <div className="flex items-center gap-3 text-xs text-muted-foreground tabular-nums">
+              <span>{stats.total} resp.</span>
+              <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                <Check className="w-3 h-3" />{stats.acertos}
+              </span>
+              <span className="flex items-center gap-1 text-destructive">
+                <X className="w-3 h-3" />{stats.erros}
+              </span>
+            </div>
             <div className="ml-auto flex items-center gap-1.5">
               <Button
                 size="sm"
-                variant={onlyErrors ? "default" : "ghost"}
+                variant={onlyErrors ? "default" : "outline"}
                 onClick={() => setOnlyErrors((v) => !v)}
                 disabled={stats.erros === 0}
-                className="h-7 px-2.5 text-xs"
+                className="h-8 px-3 text-xs"
               >
-                <RotateCcw className="w-3.5 h-3.5 mr-1" /> Refazer erros
+                <RotateCcw className="w-3.5 h-3.5 mr-1.5" /> Refazer erros
               </Button>
               <Button
                 size="sm"
                 onClick={() => setShowExamPicker(true)}
-                className="h-7 px-3 text-xs"
+                className="h-8 px-3 text-xs"
               >
-                <Timer className="w-3.5 h-3.5 mr-1" /> Simular prova
+                <Timer className="w-3.5 h-3.5 mr-1.5" /> Simular prova
               </Button>
             </div>
-          </div>
+          </Card>
         ) : (
-          <div className="flex items-center gap-3 px-1">
-            <p className="text-xs text-muted-foreground">Comece a resolver questões para acompanhar seu progresso.</p>
-            <Button size="sm" onClick={() => setShowExamPicker(true)} className="h-7 px-3 text-xs ml-auto">
-              <Timer className="w-3.5 h-3.5 mr-1" /> Simular prova
+          <Card className="px-4 py-2.5 flex items-center gap-3 border-border/60">
+            <p className="text-xs text-muted-foreground">Resolva questões para acompanhar seu progresso.</p>
+            <Button size="sm" onClick={() => setShowExamPicker(true)} className="h-8 px-3 text-xs ml-auto">
+              <Timer className="w-3.5 h-3.5 mr-1.5" /> Simular prova
             </Button>
-          </div>
+          </Card>
         )}
 
         {/* Filtros */}
