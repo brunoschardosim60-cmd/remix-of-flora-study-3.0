@@ -95,6 +95,12 @@ function cleanPdfArtifacts(raw: string): string {
   // Remove marcadores [[placeholder]] que vazam do banco quando há imagem no enunciado
   t = t.replace(/\[\[placeholder\]\]/gi, "").trim();
 
+  // Remove descrições textuais de imagem — o aluno deve interpretar a imagem sozinho.
+  // Cobre padrões como: [Imagem: ...], (Imagem: ...), [Figura 1: ...], <Descrição da imagem: ...>,
+  // "Descrição da imagem: ...\n", "Legenda: ...\n", etc.
+  t = t.replace(/[\[\(<]\s*(?:imagem|figura|foto|ilustra[çc][ãa]o|gr[áa]fico|charge|tirinha|quadrinho|mapa|tabela|esquema|diagrama|descri[çc][ãa]o(?:\s+da\s+imagem)?|legenda)\b[^\]\)>]*[\]\)>]/gi, "");
+  t = t.replace(/^\s*(?:descri[çc][ãa]o(?:\s+da\s+imagem)?|legenda(?:\s+da\s+imagem)?)\s*[:\-–][^\n]*\n?/gim, "");
+
   // Remove headings Markdown (## ## ###) que às vezes vazam do PDF
   t = t.replace(/^#{1,6}\s+/gm, "");
 
