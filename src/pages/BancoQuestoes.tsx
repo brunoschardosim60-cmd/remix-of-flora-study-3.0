@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import {
   AlertTriangle, ArrowLeft, BookOpen, Check, ChevronLeft, Filter, ImageIcon,
-  Loader2, RotateCcw, Search, Sparkles, Star, Timer, X, ChevronRight, Maximize2, Minimize2
+  Loader2, RotateCcw, Search, Sparkles, Star, Timer, X, ChevronRight, Maximize2, Minimize2, Type
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -332,6 +332,18 @@ export default function BancoQuestoes() {
   const [disciplina, setDisciplina] = useState(() => searchParams.get("disciplina") ?? "Todas");
   const [opened, setOpened] = useState<Question | null>(null);
   const [readingMode, setReadingMode] = useState(false);
+  const [readingFont, setReadingFont] = useState<number>(() => {
+    if (typeof window === "undefined") return 1;
+    const v = parseFloat(localStorage.getItem("banco.readingFont") || "1");
+    return Number.isFinite(v) && v >= 0.85 && v <= 1.4 ? v : 1;
+  });
+  const [readingLead, setReadingLead] = useState<number>(() => {
+    if (typeof window === "undefined") return 1;
+    const v = parseFloat(localStorage.getItem("banco.readingLead") || "1");
+    return Number.isFinite(v) && v >= 0.9 && v <= 1.2 ? v : 1;
+  });
+  useEffect(() => { try { localStorage.setItem("banco.readingFont", String(readingFont)); } catch { /* ignore */ } }, [readingFont]);
+  useEffect(() => { try { localStorage.setItem("banco.readingLead", String(readingLead)); } catch { /* ignore */ } }, [readingLead]);
   const [revealed, setRevealed] = useState<Record<string, string>>({});
   const [attempts, setAttempts] = useState<Record<string, Attempt>>({});
   const [onlyErrors, setOnlyErrors] = useState(false);
