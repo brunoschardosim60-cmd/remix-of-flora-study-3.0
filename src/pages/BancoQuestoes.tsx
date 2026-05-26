@@ -17,6 +17,7 @@ import { MathText } from "@/components/MathText";
 import { ShareExamResult } from "@/components/ShareExamResult";
 import { getCachedExplanation, setCachedExplanation } from "@/lib/explainCache";
 import { GenerateEnemQuestionsDialog } from "@/components/GenerateEnemQuestionsDialog";
+import { QuestionRenderer } from "@/components/QuestionRenderer";
 
 type Question = {
   id: string;
@@ -957,13 +958,12 @@ export default function BancoQuestoes() {
                 </div>
               )}
 
-              {/* 1. Enunciado */}
-              <MathText className="text-[15px] leading-relaxed text-foreground select-text">
-                {cleanedById.get(opened.id)?.cleaned ?? normalizeEnunciado(opened.enunciado, getAlternativas(opened).length === 5)}
-              </MathText>
-
-              {/* 2. Imagens — entre enunciado e alternativas */}
-              <QuestionImages urls={opened.imagem_urls || []} label={`Questão ${opened.numero} ENEM ${opened.ano}`} />
+              {/* 1. Texto de apoio + imagens + enunciado (renderizador hierárquico) */}
+              <QuestionRenderer
+                enunciado={cleanedById.get(opened.id)?.cleaned ?? normalizeEnunciado(opened.enunciado, getAlternativas(opened).length === 5)}
+                imagens={opened.imagem_urls || []}
+                label={`Questão ${opened.numero} ENEM ${opened.ano}`}
+              />
 
               {/* 3. Alternativas */}
               <AlternativasPanel
@@ -1052,13 +1052,12 @@ export default function BancoQuestoes() {
                     <Badge variant="outline">{q.disciplina}</Badge>
                   </div>
 
-                  {/* Enunciado */}
-                  <MathText className="text-[15px] leading-relaxed text-foreground select-text">
-                    {cleanedById.get(q.id)?.cleaned ?? normalizeEnunciado(q.enunciado, getAlternativas(q).length === 5)}
-                  </MathText>
-
-                  {/* Imagens — antes das alternativas */}
-                  <QuestionImages urls={q.imagem_urls || []} label={`Questão ${q.numero} ENEM ${q.ano}`} />
+                  {/* Texto de apoio + imagens + enunciado */}
+                  <QuestionRenderer
+                    enunciado={cleanedById.get(q.id)?.cleaned ?? normalizeEnunciado(q.enunciado, getAlternativas(q).length === 5)}
+                    imagens={q.imagem_urls || []}
+                    label={`Questão ${q.numero} ENEM ${q.ano}`}
+                  />
 
                   {/* Alternativas */}
                   <AlternativasPanel q={q} chosen={chosen} onAnswer={answerExam} />
