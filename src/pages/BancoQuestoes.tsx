@@ -1324,7 +1324,108 @@ export default function BancoQuestoes() {
                   <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400"><Check className="w-4 h-4" />{examScore} certas</span>
                   <span className="flex items-center gap-1.5 text-destructive"><X className="w-4 h-4" />{examQueue.length - examScore} erradas</span>
                 </div>
+                {/* Desempenho por área */}
+                {(() => {
+                  const byArea: Record<string, { acertos: number; total: number }> = {};
+                  examQueue.forEach((q) => {
+                    const k = q.disciplina || "Outras";
+                    if (!byArea[k]) byArea[k] = { acertos: 0, total: 0 };
+                    byArea[k].total++;
+                    if (examAnswers[q.id] === q.correta) byArea[k].acertos++;
+                  });
+                  const rows = Object.entries(byArea).sort((a, b) => b[1].total - a[1].total);
+                  if (rows.length === 0) return null;
+                  return (
+                    <div className="mx-auto max-w-md w-full text-left rounded-xl border border-border bg-card/60 p-4 space-y-2">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Desempenho por área</p>
+                      {rows.map(([area, s]) => {
+                        const pct = s.total > 0 ? Math.round((s.acertos / s.total) * 100) : 0;
+                        return (
+                          <div key={area} className="space-y-1">
+                            <div className="flex justify-between text-xs">
+                              <span className="font-medium">{area}</span>
+                              <span className="tabular-nums text-muted-foreground">{s.acertos}/{s.total} · {pct}%</span>
+                            </div>
+                            <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                              <div className="h-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+
+                {/* Gabarito */}
+                <details className="mx-auto max-w-md w-full text-left rounded-xl border border-border bg-card/60">
+                  <summary className="cursor-pointer select-none px-4 py-3 text-sm font-semibold">Ver gabarito completo</summary>
+                  <div className="px-4 pb-4 max-h-72 overflow-y-auto">
+                    <table className="w-full text-xs">
+                      <thead className="text-muted-foreground">
+                        <tr className="border-b border-border">
+                          <th className="text-left py-1.5 font-medium">Q</th>
+                          <th className="text-left py-1.5 font-medium">Disciplina</th>
+                          <th className="text-center py-1.5 font-medium">Sua</th>
+                          <th className="text-center py-1.5 font-medium">Gab.</th>
+                          <th className="text-center py-1.5 font-medium">✓</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {examQueue.map((q, i) => {
+                          const marcada = examAnswers[q.id];
+                          const acertou = marcada === q.correta;
+                          return (
+                            <tr key={q.id} className="border-b border-border/40 last:border-0">
+                              <td className="py-1.5 tabular-nums">{q.numero ?? i + 1}</td>
+                              <td className="py-1.5 truncate max-w-[120px]">{q.disciplina}</td>
+                              <td className="py-1.5 text-center font-mono">{marcada || "—"}</td>
+                              <td className="py-1.5 text-center font-mono font-semibold">{q.correta}</td>
+                              <td className={`py-1.5 text-center ${acertou ? "text-emerald-600" : marcada ? "text-destructive" : "text-muted-foreground"}`}>
+                                {acertou ? "✓" : marcada ? "✗" : "—"}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </details>
+
                 <div className="flex flex-wrap gap-3 justify-center">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      const byArea: Record<string, { acertos: number; total: number }> = {};
+                      examQueue.forEach((q) => {
+                        const k = q.disciplina || "Outras";
+                        if (!byArea[k]) byArea[k] = { acertos: 0, total: 0 };
+                        byArea[k].total++;
+                        if (examAnswers[q.id] === q.correta) byArea[k].acertos++;
+                      });
+                      const titulo =
+                        examKind === "day1" ? "Prova ENEM - Dia 1" :
+                        examKind === "day2" ? "Prova ENEM - Dia 2" :
+                        "Simulado rapido ENEM";
+                      exportExamGabaritoPdf({
+                        titulo,
+                        geradoEm: new Date(),
+                        duracaoSegundos: examElapsed,
+                        total: examQueue.length,
+                        acertos: examScore,
+                        porArea: Object.entries(byArea).map(([area, s]) => ({ area, ...s })),
+                        linhas: examQueue.map((q, i) => ({
+                          numero: q.numero ?? i + 1,
+                          ano: q.ano,
+                          disciplina: q.disciplina,
+                          marcada: examAnswers[q.id] ?? null,
+                          correta: q.correta,
+                          acertou: examAnswers[q.id] === q.correta,
+                        })),
+                      }).catch(() => toast.error("Erro ao gerar PDF"));
+                    }}
+                  >
+                    <Download className="w-4 h-4 mr-1.5" /> Baixar PDF
+                  </Button>
                   <Button variant="outline" onClick={() => setShowExamPicker(true)}><Timer className="w-4 h-4 mr-1.5" /> Novo simulado</Button>
                   <Button onClick={closeExam}>Voltar ao banco</Button>
                 </div>
