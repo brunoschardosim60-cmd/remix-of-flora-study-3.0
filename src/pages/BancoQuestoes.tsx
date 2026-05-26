@@ -769,50 +769,14 @@ export default function BancoQuestoes() {
 
       <div className="container max-w-7xl mx-auto px-3 sm:px-4 py-4 space-y-4">
 
-        {/* Stats */}
-        {stats.total > 0 ? (
-          <Card className="px-4 py-2.5 flex flex-wrap items-center gap-x-4 gap-y-2 border-border/60">
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-lg font-semibold tabular-nums leading-none">{pct}%</span>
-              <span className="text-[11px] text-muted-foreground">acerto</span>
-            </div>
-            <div className="h-4 w-px bg-border" />
-            <div className="flex items-center gap-3 text-xs text-muted-foreground tabular-nums">
-              <span>{stats.total} resp.</span>
-              <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                <Check className="w-3 h-3" />{stats.acertos}
-              </span>
-              <span className="flex items-center gap-1 text-destructive">
-                <X className="w-3 h-3" />{stats.erros}
-              </span>
-            </div>
-            <div className="ml-auto flex items-center gap-1.5">
-              <Button
-                size="sm"
-                variant={onlyErrors ? "default" : "outline"}
-                onClick={() => setOnlyErrors((v) => !v)}
-                disabled={stats.erros === 0}
-                className="h-8 px-3 text-xs"
-              >
-                <RotateCcw className="w-3.5 h-3.5 mr-1.5" /> Refazer erros
-              </Button>
-              <Button
-                size="sm"
-                onClick={() => setShowExamPicker(true)}
-                className="h-8 px-3 text-xs"
-              >
-                <Timer className="w-3.5 h-3.5 mr-1.5" /> Simular prova
-              </Button>
-            </div>
-          </Card>
-        ) : (
-          <Card className="px-4 py-2.5 flex items-center gap-3 border-border/60">
-            <p className="text-xs text-muted-foreground">Resolva questões para acompanhar seu progresso.</p>
-            <Button size="sm" onClick={() => setShowExamPicker(true)} className="h-8 px-3 text-xs ml-auto">
-              <Timer className="w-3.5 h-3.5 mr-1.5" /> Simular prova
-            </Button>
-          </Card>
-        )}
+        {/* Simular prova */}
+        <Button
+          size="sm"
+          onClick={() => setShowExamPicker(true)}
+          className="h-9 px-4 text-xs"
+        >
+          <Timer className="w-3.5 h-3.5 mr-1.5" /> Simular prova
+        </Button>
 
         {/* Filtros */}
         <Card className="p-3 sm:p-4 space-y-3">
