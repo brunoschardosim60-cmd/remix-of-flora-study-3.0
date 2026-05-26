@@ -911,17 +911,28 @@ export default function BancoQuestoes() {
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-1 shrink-0 -mr-1">
+              <div className="flex items-center gap-1.5 shrink-0 -mr-1">
+                <Button
+                  variant={readingMode ? "secondary" : "outline"}
+                  size="sm"
+                  className="rounded-full h-8 px-3 gap-1.5 hidden sm:inline-flex"
+                  onClick={() => setReadingMode((v) => !v)}
+                  title={readingMode ? "Sair do modo leitura" : "Modo leitura — tela cheia, sem scroll interno"}
+                >
+                  {readingMode ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+                  <span className="text-xs font-medium">{readingMode ? "Sair" : "Foco"}</span>
+                </Button>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="rounded-full"
+                  className="rounded-full sm:hidden"
                   onClick={() => setReadingMode((v) => !v)}
                   title={readingMode ? "Sair do modo leitura" : "Modo leitura"}
                   aria-label={readingMode ? "Sair do modo leitura" : "Modo leitura"}
                 >
                   {readingMode ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
                 </Button>
+                <span className="hidden sm:block w-px h-5 bg-border mx-0.5" aria-hidden />
                 <Button
                   variant="ghost"
                   size="icon"
