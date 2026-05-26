@@ -1153,10 +1153,26 @@ export default function BancoQuestoes() {
               <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                 <Timer className="w-4 h-4 text-primary" />
               </div>
-              <div className="flex-1">
-                <p className="text-sm font-semibold leading-tight">Simulado ENEM · 10 questões</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold leading-tight truncate">
+                  {examKind === "day1" && "Prova ENEM · Dia 1 (Linguagens + Humanas)"}
+                  {examKind === "day2" && "Prova ENEM · Dia 2 (Matemática + Natureza)"}
+                  {examKind === "quick" && "Simulado rápido · 10 questões"}
+                </p>
                 <p className="text-xs text-muted-foreground">
-                  Questão {Math.min(examIndex + 1, examQueue.length)} de {examQueue.length} · {String(Math.floor(examElapsed / 60)).padStart(2, "0")}:{String(examElapsed % 60).padStart(2, "0")}
+                  Questão {Math.min(examIndex + 1, examQueue.length)} de {examQueue.length}
+                  {" · "}
+                  {(() => {
+                    const limit = examKind === "day1" ? 5 * 3600 + 30 * 60 : examKind === "day2" ? 5 * 3600 : null;
+                    if (limit) {
+                      const remaining = Math.max(0, limit - examElapsed);
+                      const h = Math.floor(remaining / 3600);
+                      const m = Math.floor((remaining % 3600) / 60);
+                      const s = remaining % 60;
+                      return <>Restam {String(h).padStart(2, "0")}:{String(m).padStart(2, "0")}:{String(s).padStart(2, "0")}</>;
+                    }
+                    return <>{String(Math.floor(examElapsed / 60)).padStart(2, "0")}:{String(examElapsed % 60).padStart(2, "0")}</>;
+                  })()}
                 </p>
               </div>
               <div className="hidden sm:flex gap-1 items-center">
