@@ -798,18 +798,22 @@ export default function BancoQuestoes() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
             <Input placeholder="Buscar por enunciado ou tema…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <Select value={ano} onValueChange={setAno}>
               <SelectTrigger><SelectValue placeholder="Ano" /></SelectTrigger>
               <SelectContent>{anos.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent>
             </Select>
-            <Select value={area} onValueChange={(v) => { setArea(v); setDisciplina("Todas"); }}>
+            <Select value={area} onValueChange={(v) => { setArea(v); setDisciplina("Todas"); setTema("Todos"); }}>
               <SelectTrigger><SelectValue placeholder="Área" /></SelectTrigger>
               <SelectContent>{AREAS.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent>
             </Select>
-            <Select value={disciplina} onValueChange={setDisciplina}>
+            <Select value={disciplina} onValueChange={(v) => { setDisciplina(v); setTema("Todos"); }}>
               <SelectTrigger><SelectValue placeholder="Disciplina" /></SelectTrigger>
               <SelectContent>{disciplinas.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+            </Select>
+            <Select value={tema} onValueChange={setTema} disabled={temas.length <= 1}>
+              <SelectTrigger><SelectValue placeholder="Tema" /></SelectTrigger>
+              <SelectContent className="max-h-72">{temas.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
