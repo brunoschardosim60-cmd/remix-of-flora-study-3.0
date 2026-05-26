@@ -6,6 +6,29 @@ import { initializeAppStorageVersion, repairCorruptedAppStorage } from "./lib/st
 initializeAppStorageVersion();
 repairCorruptedAppStorage();
 
+// Recarrega automaticamente quando um chunk dinâmico antigo falha (deploy novo
+// invalida hashes; HTML antigo tenta importar arquivo que não existe mais).
+const CHUNK_RELOAD_KEY = "studyflow.chunk-reload-at";
+function maybeReloadOnChunkError(message: string) {
+  if (!/Failed to fetch dynamically imported module|Importing a module script failed|ChunkLoadError/i.test(message)) {
+    return;
+  }
+  try {
+    const last = Number(sessionStorage.getItem(CHUNK_RELOAD_KEY) || 0);
+    if (Date.now() - last < 10_000) return; // evita loop
+    sessionStorage.setItem(CHUNK_RELOAD_KEY, String(Date.now()));
+  } catch { /* ignore */ }
+  window.location.reload();
+}
+window.addEventListener("error", (e) => {
+  maybeReloadOnChunkError(String(e?.message || ""));
+});
+window.addEventListener("unhandledrejection", (e) => {
+  const reason = e?.reason;
+  const msg = typeof reason === "string" ? reason : reason?.message || "";
+  maybeReloadOnChunkError(String(msg));
+});
+
 // Register service worker for background Pomodoro notifications.
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
