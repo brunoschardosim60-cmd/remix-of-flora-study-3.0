@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Loader2, Sparkles, Wand2, Check, X, ChevronRight, RotateCcw } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Loader2, Sparkles, Wand2, Check, X, ChevronRight, ChevronLeft, RotateCcw, History } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,32 @@ type GenQuestion = {
   disciplina?: string;
 };
 
+const LS_LAST_SESSION = "enem-gen-last-session-v1";
+
+type SavedSession = {
+  questions: GenQuestion[];
+  answers: Record<string, string>;
+  index: number;
+  materia: string;
+  assunto: string;
+  nivel: "facil" | "medio" | "dificil";
+  savedAt: number;
+};
+
+function loadLastSession(): SavedSession | null {
+  try {
+    const raw = localStorage.getItem(LS_LAST_SESSION);
+    if (!raw) return null;
+    const p = JSON.parse(raw);
+    if (!Array.isArray(p?.questions) || !p.questions.length) return null;
+    return p as SavedSession;
+  } catch { return null; }
+}
+
+function saveSession(s: SavedSession) {
+  try { localStorage.setItem(LS_LAST_SESSION, JSON.stringify(s)); } catch { /* ignore */ }
+}
+
 export function GenerateEnemQuestionsDialog({
   defaultDisciplina,
   defaultTema,
@@ -45,9 +71,41 @@ export function GenerateEnemQuestionsDialog({
   const [questions, setQuestions] = useState<GenQuestion[] | null>(null);
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [hasSaved, setHasSaved] = useState(false);
+
+  useEffect(() => { setHasSaved(!!loadLastSession()); }, [open]);
+
+  // Persiste a sessão atual a cada mudança
+  useEffect(() => {
+    if (!questions) return;
+    saveSession({ questions, answers, index, materia, assunto, nivel, savedAt: Date.now() });
+    setHasSaved(true);
+  }, [questions, answers, index, materia, assunto, nivel]);
 
   function reset() {
     setQuestions(null); setIndex(0); setAnswers({});
+  }
+
+  function resumeLast() {
+    const s = loadLastSession();
+    if (!s) return;
+    setMateria(s.materia);
+    setAssunto(s.assunto);
+    setNivel(s.nivel);
+    setQuestions(s.questions);
+    setAnswers(s.answers || {});
+    setIndex(Math.min(s.index || 0, s.questions.length - 1));
+  }
+
+  function redoLast() {
+    const s = loadLastSession();
+    if (!s) return;
+    setMateria(s.materia);
+    setAssunto(s.assunto);
+    setNivel(s.nivel);
+    setQuestions(s.questions);
+    setAnswers({});
+    setIndex(0);
   }
 
   async function handleGenerate() {
@@ -113,6 +171,17 @@ export function GenerateEnemQuestionsDialog({
 
         {!questions && (
           <div className="space-y-3 py-2">
+            {hasSaved && (
+              <div className="flex items-center justify-between gap-2 rounded-lg border border-primary/30 bg-primary/5 p-2.5 text-xs">
+                <span className="flex items-center gap-1.5 text-muted-foreground">
+                  <History className="w-3.5 h-3.5" /> Você tem uma sessão anterior salva
+                </span>
+                <div className="flex gap-1.5">
+                  <Button size="sm" variant="outline" className="h-7 text-xs" onClick={resumeLast}>Continuar</Button>
+                  <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={redoLast}>Refazer</Button>
+                </div>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>Disciplina</Label>
@@ -155,8 +224,8 @@ export function GenerateEnemQuestionsDialog({
         )}
 
         {current && (
-          <div className="space-y-3 py-2">
-            <div className="rounded-lg border border-border bg-card p-3 text-sm leading-relaxed">
+          <div className="space-y-3 py-2 min-w-0">
+            <div className="rounded-lg border border-border bg-card p-3 text-sm leading-relaxed break-words whitespace-pre-wrap overflow-x-auto">
               <MathText>{current.enunciado}</MathText>
             </div>
             <div className="space-y-2">
@@ -168,7 +237,7 @@ export function GenerateEnemQuestionsDialog({
                     key={a.letra}
                     onClick={() => answer(a.letra)}
                     disabled={!!chosen}
-                    className={`w-full text-left rounded-lg border p-2.5 text-sm transition-colors flex gap-2 items-start ${
+                    className={`w-full text-left rounded-lg border p-2.5 text-sm transition-colors flex gap-2 items-start break-words ${
                       isCorrect ? "border-emerald-500 bg-emerald-500/10"
                       : isWrong ? "border-destructive bg-destructive/10"
                       : chosen ? "border-border opacity-60"
@@ -176,7 +245,7 @@ export function GenerateEnemQuestionsDialog({
                     }`}
                   >
                     <span className="font-semibold shrink-0">{a.letra})</span>
-                    <span className="flex-1"><MathText inline>{a.texto}</MathText></span>
+                    <span className="flex-1 min-w-0 break-words"><MathText inline>{a.texto}</MathText></span>
                     {isCorrect && <Check className="w-4 h-4 text-emerald-600 shrink-0" />}
                     {isWrong && <X className="w-4 h-4 text-destructive shrink-0" />}
                   </button>
@@ -184,7 +253,7 @@ export function GenerateEnemQuestionsDialog({
               })}
             </div>
             {chosen && current.explicacao && (
-              <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">
+              <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm break-words whitespace-pre-wrap">
                 <p className="font-semibold mb-1 text-primary">Explicação</p>
                 <MathText>{current.explicacao}</MathText>
               </div>
@@ -204,18 +273,28 @@ export function GenerateEnemQuestionsDialog({
           )}
           {questions && (
             <>
-              <Button variant="ghost" onClick={reset}>
-                <RotateCcw className="w-4 h-4 mr-1.5" /> Novas questões
+              <Button variant="ghost" size="sm" onClick={reset}>
+                <RotateCcw className="w-4 h-4 mr-1.5" /> Novas
               </Button>
-              {!allDone ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIndex((i) => Math.max(i - 1, 0))}
+                disabled={index === 0}
+              >
+                <ChevronLeft className="w-4 h-4 mr-1.5" /> Anterior
+              </Button>
+              {index < questions.length - 1 ? (
                 <Button
+                  size="sm"
                   onClick={() => setIndex((i) => Math.min(i + 1, questions.length - 1))}
-                  disabled={!chosen}
                 >
                   Próxima <ChevronRight className="w-4 h-4 ml-1.5" />
                 </Button>
               ) : (
-                <Button onClick={() => setOpen(false)}>Concluir ({acertos}/{questions.length})</Button>
+                <Button size="sm" onClick={() => setOpen(false)} disabled={!allDone}>
+                  {allDone ? `Concluir (${acertos}/${questions.length})` : "Responda todas"}
+                </Button>
               )}
             </>
           )}
