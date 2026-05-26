@@ -1,0 +1,1 @@
+ALTER FUNCTION public.classify_question_tema(text, text) SET search_path = public;

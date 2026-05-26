@@ -332,6 +332,7 @@ export default function BancoQuestoes() {
   const [area, setArea] = useState("Todas");
   const [ano, setAno] = useState("Todos");
   const [disciplina, setDisciplina] = useState(() => searchParams.get("disciplina") ?? "Todas");
+  const [tema, setTema] = useState<string>("Todos");
   const [opened, setOpened] = useState<Question | null>(null);
   const [readingMode, setReadingMode] = useState(false);
   const [readingFont, setReadingFont] = useState<number>(() => {
@@ -472,6 +473,17 @@ export default function BancoQuestoes() {
     return ["Todas", ...Array.from(set).sort()];
   }, [questions]);
 
+  // Temas disponíveis dependem da disciplina selecionada (ou de todas).
+  const temas = useMemo(() => {
+    const set = new Set<string>();
+    for (const q of questions) {
+      if (disciplina !== "Todas" && q.disciplina !== disciplina) continue;
+      const t = (q.tema || "").trim();
+      if (t) set.add(t);
+    }
+    return ["Todos", ...Array.from(set).sort((a, b) => a.localeCompare(b, "pt-BR"))];
+  }, [questions, disciplina]);
+
   // Pré-computa enunciado limpo, preview e haystack de busca por questão.
   // Evita rodar cleanPdfArtifacts toda hora durante render/filter.
   const cleanedById = useMemo(() => {
@@ -522,6 +534,7 @@ export default function BancoQuestoes() {
       if (area !== "Todas" && q.area !== area) return false;
       if (ano !== "Todos" && String(q.ano) !== ano) return false;
       if (disciplina !== "Todas" && q.disciplina !== disciplina) return false;
+      if (tema !== "Todos" && (q.tema || "").trim() !== tema) return false;
       if (s) {
         const hay = cleanedById.get(q.id)?.haystack ?? "";
         if (!hay.includes(s)) return false;
@@ -531,7 +544,7 @@ export default function BancoQuestoes() {
       if (q.incomplete && !showIncomplete) return false;
       return true;
     });
-  }, [questions, debouncedSearch, area, ano, disciplina, onlyErrors, onlyFavorites, showIncomplete, favorites, attempts, cleanedById]);
+  }, [questions, debouncedSearch, area, ano, disciplina, tema, onlyErrors, onlyFavorites, showIncomplete, favorites, attempts, cleanedById]);
 
   // Índice da questão aberta dentro da lista filtrada → navegação ←/→.
   const openedIndex = useMemo(
@@ -785,18 +798,22 @@ export default function BancoQuestoes() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
             <Input placeholder="Buscar por enunciado ou tema…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <Select value={ano} onValueChange={setAno}>
               <SelectTrigger><SelectValue placeholder="Ano" /></SelectTrigger>
               <SelectContent>{anos.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent>
             </Select>
-            <Select value={area} onValueChange={(v) => { setArea(v); setDisciplina("Todas"); }}>
+            <Select value={area} onValueChange={(v) => { setArea(v); setDisciplina("Todas"); setTema("Todos"); }}>
               <SelectTrigger><SelectValue placeholder="Área" /></SelectTrigger>
               <SelectContent>{AREAS.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent>
             </Select>
-            <Select value={disciplina} onValueChange={setDisciplina}>
+            <Select value={disciplina} onValueChange={(v) => { setDisciplina(v); setTema("Todos"); }}>
               <SelectTrigger><SelectValue placeholder="Disciplina" /></SelectTrigger>
               <SelectContent>{disciplinas.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+            </Select>
+            <Select value={tema} onValueChange={setTema} disabled={temas.length <= 1}>
+              <SelectTrigger><SelectValue placeholder="Tema" /></SelectTrigger>
+              <SelectContent className="max-h-72">{temas.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">

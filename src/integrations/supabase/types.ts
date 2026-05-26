@@ -1586,6 +1586,10 @@ export type Database = {
         Args: { p_action: string; p_user_id: string }
         Returns: Json
       }
+      classify_question_tema: {
+        Args: { p_disciplina: string; p_enunciado: string }
+        Returns: string
+      }
       is_admin_user: { Args: never; Returns: boolean }
       question_stats: {
         Args: never
