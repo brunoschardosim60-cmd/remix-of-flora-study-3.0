@@ -68,7 +68,7 @@ export function parseFloraActions(text: string): { cleanText: string; actions: F
     .replace(/[,\s]*\{["'\s]*(dia|dayOfWeek|horario|startTime|materia|subject|workMin|slots|frente|verso|pergunta|alternativas)["'\s]*\s*:[\s\S]*?\}(\s*\})?/g, "")
     .replace(/\[\s*\{["'\s]*(dia|dayOfWeek|horario|startTime|materia|subject|frente|pergunta)[\s\S]*?\]\s*/g, "")
     .replace(/```[\s\S]*?```/g, "")
-    .replace(/^\s*[\]\}]+\s*/gm, "")
+    .replace(/^\s*[\]}]+\s*/gm, "")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
   return { cleanText, actions };

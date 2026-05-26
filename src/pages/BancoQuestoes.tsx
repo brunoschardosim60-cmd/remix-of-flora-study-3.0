@@ -149,7 +149,7 @@ function cleanPdfArtifacts(raw: string): string {
 function stripTrailingAlternativas(t: string): string {
   // Procura por A)...B)...C)...D)...E) (ou variações com . ) na cauda do texto.
   // Exige A,B,C,D,E em ordem dentro do trecho final pra ter certeza de que é bloco.
-  const re = /\n\s*A\s*[\).]\s[\s\S]+?\n\s*B\s*[\).]\s[\s\S]+?\n\s*C\s*[\).]\s[\s\S]+?\n\s*D\s*[\).]\s[\s\S]+?\n\s*E\s*[\).]\s/;
+  const re = /\n\s*A\s*[).]\s[\s\S]+?\n\s*B\s*[).]\s[\s\S]+?\n\s*C\s*[).]\s[\s\S]+?\n\s*D\s*[).]\s[\s\S]+?\n\s*E\s*[).]\s/;
   const m = t.match(re);
   if (m && m.index !== undefined) {
     return t.slice(0, m.index).trimEnd();
@@ -169,7 +169,7 @@ function normalizeAlternativaTexto(raw: string): string {
   if (!raw) return "";
   let t = cleanPdfArtifacts(raw);
   // Remove "A) " duplicado no início (já exibimos a letra separado)
-  t = t.replace(/^\s*[A-Ea-e]\s*[\).]\s*/u, "");
+  t = t.replace(/^\s*[A-Ea-e]\s*[).]\s*/u, "");
   // Junta quebras internas de linha (alternativa deve ser 1 parágrafo)
   t = t.replace(/\n+/g, " ");
   // Numa alternativa nunca queremos blocos LaTeX em display ($$...$$ ou \[...\])
