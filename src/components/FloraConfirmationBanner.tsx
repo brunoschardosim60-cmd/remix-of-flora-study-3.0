@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { FloraIcon } from "@/components/FloraIcon";
-import { Check, X, AlertTriangle, TrendingUp, TrendingDown, CalendarClock } from "lucide-react";
+import { Check, X, AlertTriangle, TrendingUp, TrendingDown, CalendarClock, ArrowRight, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 interface PendingDecision {
@@ -21,10 +22,57 @@ const DECISION_META: Record<string, { icon: typeof TrendingUp; label: string; co
   proactive_suggestion: { icon: AlertTriangle, label: "Sugestão da Flora", color: "text-primary" },
 };
 
+// Tenta extrair a primeira matéria mencionada no texto da sugestão
+function detectMateria(text: string): string | null {
+  const materias = [
+    "Matemática","Português","Redação","Física","Química","Biologia","História","Geografia","Filosofia","Sociologia","Inglês","Espanhol","Literatura","Artes",
+    "Direito Constitucional","Direito Administrativo","Direito Penal","Direito Civil","Raciocínio Lógico","Informática","Atualidades","Contabilidade","Administração Pública",
+  ];
+  const found = materias.find((m) => new RegExp(`\\b${m}\\b`, "i").test(text));
+  return found ?? null;
+}
+
+interface NextStep {
+  label: string;
+  route: string;
+  primary?: boolean;
+}
+
+function nextStepsFor(decision: PendingDecision): NextStep[] {
+  const text = `${decision.reasoning} ${JSON.stringify(decision.recommendation || {})}`;
+  const materia = detectMateria(text);
+  switch (decision.decision_type) {
+    case "reduce_load":
+      return [
+        { label: "Ver revisões pendentes", route: "/", primary: true },
+        { label: "Abrir cronograma", route: "/" },
+      ];
+    case "increase_difficulty":
+      return [
+        { label: "Fazer quiz mais difícil", route: "/banco-questoes", primary: true },
+        { label: "Ver desempenho", route: "/analise" },
+      ];
+    case "adjust_plan":
+      return [
+        { label: "Abrir cronograma", route: "/", primary: true },
+      ];
+    case "proactive_suggestion":
+    default:
+      return [
+        materia
+          ? { label: `Estudar ${materia} agora`, route: "/banco-questoes", primary: true }
+          : { label: "Começar agora", route: "/", primary: true },
+        { label: "Falar com a Flora", route: "/?flora=1" },
+      ];
+  }
+}
+
 export function FloraConfirmationBanner() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [pending, setPending] = useState<PendingDecision[]>([]);
   const [responding, setResponding] = useState<string | null>(null);
+  const [acceptedInfo, setAcceptedInfo] = useState<Record<string, { summary: string; steps: NextStep[]; meta: typeof DECISION_META[string] }>>({});
 
   const loadPending = useCallback(async () => {
     if (!user) return;
@@ -61,15 +109,24 @@ export function FloraConfirmationBanner() {
 
       if (accepted) {
         const decision = pending.find(d => d.id === id);
+        let summary = "Flora aplicou a mudança.";
         if (decision) {
-          // Execute the accepted recommendation
           try {
-            await supabase.functions.invoke("flora-engine", {
+            const { data: resp } = await supabase.functions.invoke("flora-engine", {
               body: { action: "apply_decision", data: { decisionId: id, recommendation: decision.recommendation } },
             });
+            if (resp?.summary) summary = resp.summary as string;
           } catch { /* non-critical */ }
+          const meta = DECISION_META[decision.decision_type] || DECISION_META.proactive_suggestion;
+          setAcceptedInfo((prev) => ({ ...prev, [id]: { summary, steps: nextStepsFor(decision), meta } }));
+          // Mantém o card visível mostrando o estado "feito"; removerá depois
+          setTimeout(() => {
+            setAcceptedInfo((prev) => { const n = { ...prev }; delete n[id]; return n; });
+            setPending(prev => prev.filter(d => d.id !== id));
+          }, 8000);
+          toast.success("Sugestão aceita!");
+          return;
         }
-        toast.success("Sugestão aceita! Flora aplicou a mudança.");
       } else {
         toast("Sugestão rejeitada. Flora vai manter o plano atual.");
       }
@@ -90,6 +147,8 @@ export function FloraConfirmationBanner() {
         const Icon = meta.icon;
         const rec = decision.recommendation as Record<string, unknown>;
         const isLoading = responding === decision.id;
+        const accepted = acceptedInfo[decision.id];
+        const steps = nextStepsFor(decision);
 
         return (
           <div
@@ -103,37 +162,81 @@ export function FloraConfirmationBanner() {
               <div className="flex-1 min-w-0 space-y-2">
                 <div className="flex items-center gap-2">
                   <Icon className={`w-4 h-4 ${meta.color}`} />
-                  <span className="text-sm font-semibold">{meta.label}</span>
+                  <span className="text-sm font-semibold">{accepted ? "Feito pela Flora" : meta.label}</span>
                 </div>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {decision.reasoning}
-                </p>
-                {rec.details && (
-                  <p className="text-xs text-muted-foreground/80 italic">
-                    {String(rec.details)}
-                  </p>
+                {accepted ? (
+                  <>
+                    <p className="text-sm text-foreground leading-relaxed flex items-start gap-1.5">
+                      <Check className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
+                      <span>{accepted.summary}</span>
+                    </p>
+                    <div className="pt-1">
+                      <p className="text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1">
+                        <Sparkles className="w-3 h-3" /> Primeiros passos
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {accepted.steps.map((s, i) => (
+                          <Button
+                            key={i}
+                            size="sm"
+                            variant={s.primary ? "default" : "outline"}
+                            className="gap-1.5"
+                            onClick={() => navigate(s.route)}
+                          >
+                            {s.label}
+                            <ArrowRight className="w-3.5 h-3.5" />
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      {decision.reasoning}
+                    </p>
+                    {rec.changes && typeof (rec.changes as any).description === "string" && (
+                      <div className="rounded-lg bg-muted/50 px-3 py-2 border border-border/50">
+                        <p className="text-xs font-medium text-muted-foreground mb-0.5">O que a Flora vai fazer</p>
+                        <p className="text-xs text-foreground leading-relaxed">{(rec.changes as any).description}</p>
+                      </div>
+                    )}
+                    {/* Preview dos primeiros passos para deixar claro o que acontece ao aceitar */}
+                    <div className="pt-0.5">
+                      <p className="text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1">
+                        <Sparkles className="w-3 h-3" /> Primeiros passos sugeridos
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {steps.map((s, i) => (
+                          <span key={i} className="text-[11px] px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                            {s.label}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="flex gap-2 pt-1">
+                      <Button
+                        size="sm"
+                        className="gap-1.5"
+                        onClick={() => respond(decision.id, true)}
+                        disabled={isLoading}
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        Aceitar
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-1.5"
+                        onClick={() => respond(decision.id, false)}
+                        disabled={isLoading}
+                      >
+                        <X className="w-3.5 h-3.5" />
+                        Manter atual
+                      </Button>
+                    </div>
+                  </>
                 )}
-                <div className="flex gap-2 pt-1">
-                  <Button
-                    size="sm"
-                    className="gap-1.5"
-                    onClick={() => respond(decision.id, true)}
-                    disabled={isLoading}
-                  >
-                    <Check className="w-3.5 h-3.5" />
-                    Aceitar
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="gap-1.5"
-                    onClick={() => respond(decision.id, false)}
-                    disabled={isLoading}
-                  >
-                    <X className="w-3.5 h-3.5" />
-                    Manter atual
-                  </Button>
-                </div>
               </div>
             </div>
           </div>
