@@ -1812,10 +1812,31 @@ SEMPRE em português brasileiro.` },
 
       if (!result?.type || result.type === "nenhuma") return jsonResponse({ ok: true, suggestions: 0 });
 
+      // Validações rígidas pra não criar sugestões com números falsos / sem base real.
+      const todayISO = new Date().toISOString().slice(0, 10);
+      const overdueReal = reviews.filter((r: any) => {
+        const sd = String(r?.scheduled_date || "").slice(0, 10);
+        return sd && sd < todayISO;
+      }).length;
+      const lastSession = sessions[0];
+      const daysSinceLast = lastSession?.created_at
+        ? Math.floor((Date.now() - new Date(lastSession.created_at).getTime()) / 86400000)
+        : 999;
+      if (result.type === "reduce_load" && overdueReal < 10 && daysSinceLast < 3) {
+        return jsonResponse({ ok: true, suggestions: 0, reason: "reduce_load_gate" });
+      }
+      // Sanitiza qualquer número alucinado no reasoning trocando por valor real.
+      let safeReasoning = String(result.reasoning || "");
+      if (result.type === "reduce_load") {
+        safeReasoning = safeReasoning
+          .replace(/\b\d+\s+(revis[oõ]es?\s+(pendentes|atrasadas?))/gi, `${overdueReal} $1`)
+          .replace(/\b\d+\s+revis[oõ]es?\b/gi, `${overdueReal} revisões`);
+      }
+
       await supabase.from("flora_decisions").insert({
         user_id: userId,
         decision_type: result.type,
-        reasoning: result.reasoning || "",
+        reasoning: safeReasoning,
         recommendation: { details: result.details, changes: result.changes },
         accepted: null,
       });
