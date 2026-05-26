@@ -19,15 +19,23 @@ interface Block {
 const TEXT_LABEL_RE = /^\s*(TEXTO|TEXT|FRAGMENTO|POEMA|CAN[ÇC][ÃA]O|TIRINHA|CHARGE|HQ|QUADRINHO|TABELA|GR[ÁA]FICO|FIGURA|IMAGEM|EXCERTO)\s*([IVX0-9]{0,4})?\s*[:\-–]?\s*$/i;
 
 const PROMPT_PATTERNS = [
-  /^(de\s+acordo\s+com|com\s+base\s+(?:no|na|nos|nas)|a\s+partir\s+(?:do|da|dos|das)|considerando\s+(?:o|a|os|as)|tendo\s+em\s+vista|segundo\s+(?:o|a|os|as)|no\s+texto|nos\s+textos|o\s+texto|os\s+textos|a\s+partir\s+da\s+leitura|a\s+leitura\s+do\s+texto|levando\s+em\s+(?:conta|considera[çc][ãa]o))/i,
-  /^(assinale|marque|julgue|indique|identifique|aponte|qual|quais|que\s+|por\s+que|com\s+rela[çc][ãa]o)/i,
-  /\b(alternativa\s+correta|op[çc][ãa]o\s+correta)\b/i,
+  /^(de\s+acordo\s+com|com\s+base\s+(?:no|na|nos|nas)|a\s+partir\s+(?:do|da|dos|das|de)|considerando\s+(?:o|a|os|as|que)|tendo\s+em\s+vista|segundo\s+(?:o|a|os|as)|no\s+texto|nos\s+textos|o\s+texto|os\s+textos|a\s+partir\s+da\s+leitura|a\s+leitura\s+do\s+texto|levando\s+em\s+(?:conta|considera[çc][ãa]o)|diante\s+(?:do|da|dos|das|disso)|com\s+rela[çc][ãa]o\s+(?:ao|a|aos|as)|em\s+rela[çc][ãa]o\s+(?:ao|a|aos|as))/i,
+  /^(ness[ae]|nest[ae]|ness[ae]s|nest[ae]s|nest[ae]\s+(?:texto|trecho|fragmento|contexto|cen[áa]rio|poema|can[çc][ãa]o|charge|tirinha|imagem|gr[áa]fico|tabela|excerto))/i,
+  /^(no\s+(?:fragmento|trecho|excerto|poema|cen[áa]rio|contexto|caso|exemplo|gr[áa]fico|esquema|quadro))/i,
+  /^(a\s+(?:imagem|charge|tirinha|figura|tabela|cena|letra|m[úu]sica|can[çc][ãa]o|hist[óo]ria|narrativa|propaganda|campanha)|as\s+(?:imagens|figuras|cenas|charges|tirinhas))/i,
+  /^(esse|essa|esses|essas|este|esta|estes|estas)\s+(?:texto|trecho|fragmento|poema|can[çc][ãa]o|excerto|argumento|coment[áa]rio|relato|dado|gr[áa]fico|quadro)/i,
+  /^(o\s+(?:autor|fragmento|trecho|poema|cartaz|cartum|cordel|relato|dado|gr[áa]fico|esquema|excerto|coment[áa]rio|enunciado|t[íi]tulo|verso|narrador)|os\s+(?:autores|versos|textos|dados))/i,
+  /^(assinale|marque|julgue|indique|identifique|aponte|qual|quais|que\s+|por\s+que|com\s+rela[çc][ãa]o|infere\-se|depreende\-se|conclui\-se|observa\-se|verifica\-se|nota\-se|percebe\-se)/i,
+  /\b(alternativa\s+correta|op[çc][ãa]o\s+correta|tem(?:\s+como)?\s+objetivo|introduz\s+a\s+ideia|tem\s+por\s+(?:objetivo|finalidade)|cumpre\s+a\s+fun[çc][ãa]o)\b/i,
+  /(introduz\s+a\s+ideia\s+de\s*$|expressa\s+a\s+ideia\s+de\s*$|refere\-se\s+(?:a|ao)\s*$)/i,
 ];
 
 function isLikelyPrompt(p: string): boolean {
   const t = p.trim();
   if (t.length < 20) return false;
   if (t.endsWith("?")) return true;
+  // Comandos típicos terminam com ":" ou com construções abertas tipo "introduz a ideia de"
+  if (/:\s*$/.test(t) && t.length < 350) return true;
   return PROMPT_PATTERNS.some((re) => re.test(t));
 }
 
@@ -54,11 +62,43 @@ function detectQuote(paragraph: string): boolean {
 }
 
 function splitParagraphs(raw: string): string[] {
-  return raw
-    .replace(/\r\n/g, "\n")
-    .split(/\n{2,}/)
-    .map((p) => p.replace(/^\s+|\s+$/g, ""))
-    .filter(Boolean);
+  const normalized = raw.replace(/\r\n/g, "\n");
+  // 1) split por parágrafos "fortes" (linha em branco)
+  let paras = normalized.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
+
+  // 2) Se vier tudo num parágrafo só mas com várias linhas curtas (típico de
+  //    letras de música/poemas extraídos sem dupla-quebra), tentar isolar o
+  //    bloco "tipo poema" e separar do resto do texto.
+  const refined: string[] = [];
+  for (const p of paras) {
+    const lines = p.split("\n").map((l) => l.trim()).filter(Boolean);
+    if (lines.length < 4) { refined.push(p); continue; }
+    const avg = lines.reduce((a, l) => a + l.length, 0) / lines.length;
+    const shortRatio = lines.filter((l) => l.length <= 70).length / lines.length;
+    // Bloco majoritariamente curto → tratar cada "região" curta como um parágrafo
+    if (avg <= 60 && shortRatio >= 0.7) {
+      // Junta linhas longas (provável prosa / comando) em parágrafos próprios,
+      // mantém as curtas como o bloco poético.
+      let buf: string[] = [];
+      let mode: "poem" | "prose" | null = null;
+      const flush = () => {
+        if (!buf.length) return;
+        refined.push(buf.join(mode === "poem" ? "\n" : " ").trim());
+        buf = [];
+      };
+      for (const l of lines) {
+        const isShort = l.length <= 70 && !/[.!?]$/.test(l);
+        const next: "poem" | "prose" = isShort ? "poem" : "prose";
+        if (mode && next !== mode) flush();
+        mode = next;
+        buf.push(l);
+      }
+      flush();
+    } else {
+      refined.push(p);
+    }
+  }
+  return refined;
 }
 
 export function parseQuestionBlocks(raw: string): Block[] {
@@ -72,10 +112,27 @@ export function parseQuestionBlocks(raw: string): Block[] {
   for (let i = paragraphs.length - 1; i >= 0; i--) {
     if (isLikelyPrompt(paragraphs[i])) { promptIdx = i; break; }
   }
-  // Se não achou, o último parágrafo curtinho costuma ser o enunciado
+  // Fallback: o último parágrafo costuma ser o enunciado em questões com
+  // alternativas. Aceita até 500 chars (comandos do ENEM podem ser longos).
   if (promptIdx === -1 && paragraphs.length > 1) {
     const last = paragraphs[paragraphs.length - 1];
-    if (last.length < 400) promptIdx = paragraphs.length - 1;
+    if (last.length < 500) promptIdx = paragraphs.length - 1;
+  }
+  // Última cartada: se nada foi marcado e só existe 1 parágrafo, ainda assim
+  // tentamos extrair a "última frase" como prompt destacado.
+  if (promptIdx === -1 && paragraphs.length === 1) {
+    const only = paragraphs[0];
+    // Procura a última fronteira de sentença razoável
+    const m = only.match(/([^.!?\n]{20,400})\s*$/);
+    if (m && m[1] && m[1].trim().length < only.length - 40) {
+      const tail = m[1].trim();
+      const head = only.slice(0, only.length - tail.length).trim();
+      if (head.length > 30) {
+        paragraphs[0] = head;
+        paragraphs.push(tail);
+        promptIdx = 1;
+      }
+    }
   }
 
   paragraphs.forEach((p, i) => {
