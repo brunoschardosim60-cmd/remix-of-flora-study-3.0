@@ -350,28 +350,6 @@ export function QuestionRenderer({
 
   return (
     <article className={`${wide ? "max-w-3xl" : "max-w-[680px]"} mx-auto w-full space-y-6 sm:space-y-8`}>
-      {isLong && (
-        <nav aria-label="Estrutura da questão" className="flex flex-wrap items-center gap-2 text-[11px] font-medium text-muted-foreground">
-          {supportBlocks.length > 0 && (
-            <a href="#q-apoio" className="px-2.5 py-1 rounded-full bg-muted hover:bg-muted/70 transition-colors">Texto de apoio</a>
-          )}
-          {hasImages && (
-            <>
-              <span aria-hidden>→</span>
-              <a href="#q-imagens" className="px-2.5 py-1 rounded-full bg-muted hover:bg-muted/70 transition-colors">Imagem</a>
-            </>
-          )}
-          {promptBlock && (
-            <>
-              <span aria-hidden>→</span>
-              <a href="#q-pergunta" className="px-2.5 py-1 rounded-full bg-primary/10 text-primary hover:bg-primary/15 transition-colors">Pergunta</a>
-            </>
-          )}
-          <span aria-hidden>→</span>
-          <a href="#q-alternativas" className="px-2.5 py-1 rounded-full bg-muted hover:bg-muted/70 transition-colors">Alternativas</a>
-        </nav>
-      )}
-
       {supportBlocks.length > 0 && (
         <section id="q-apoio" className="space-y-5 scroll-mt-20">
           <header className="flex items-center gap-2">
