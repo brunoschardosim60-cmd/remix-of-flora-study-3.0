@@ -164,16 +164,34 @@ serve(async (req) => {
       );
     }
 
-    // Temas que o usuário mais erra
-    let errosRecentes: string[] = [];
-    try {
-      const { data: perf } = await callerClient
+    // Paraleliza as 3 queries de personalização (eram sequenciais, ~3x mais lentas)
+    const [perfRes, iaHistRes, histIaRes] = await Promise.allSettled([
+      callerClient
         .from("student_performance")
         .select("topic_id,erros,acertos,materia")
         .eq("user_id", userId)
         .ilike("materia", `%${materia}%`)
         .order("erros", { ascending: false })
-        .limit(5);
+        .limit(5),
+      callerClient
+        .from("concurso_ia_attempts")
+        .select("tema,acertou")
+        .eq("user_id", userId)
+        .eq("disciplina", materia)
+        .order("created_at", { ascending: false })
+        .limit(200),
+      callerClient
+        .from("concurso_ia_attempts")
+        .select("enunciado")
+        .eq("user_id", userId)
+        .eq("disciplina", materia)
+        .order("created_at", { ascending: false })
+        .limit(40),
+    ]);
+
+    let errosRecentes: string[] = [];
+    try {
+      const perf = perfRes.status === "fulfilled" ? perfRes.value.data : null;
       errosRecentes = (perf ?? [])
         .filter((p: any) => (p.erros ?? 0) > (p.acertos ?? 0))
         .map((p: any) => {
@@ -185,13 +203,7 @@ serve(async (req) => {
     } catch (_) { /* não bloqueia */ }
 
     try {
-      const { data: iaHist } = await callerClient
-        .from("concurso_ia_attempts")
-        .select("tema,acertou")
-        .eq("user_id", userId)
-        .eq("disciplina", materia)
-        .order("created_at", { ascending: false })
-        .limit(200);
+      const iaHist = iaHistRes.status === "fulfilled" ? iaHistRes.value.data : null;
       if (iaHist && iaHist.length) {
         const stat: Record<string, { e: number; a: number }> = {};
         for (const r of iaHist as any[]) {
@@ -212,13 +224,7 @@ serve(async (req) => {
 
     // Enriquecer lista de enunciados a evitar
     try {
-      const { data: histIa } = await callerClient
-        .from("concurso_ia_attempts")
-        .select("enunciado")
-        .eq("user_id", userId)
-        .eq("disciplina", materia)
-        .order("created_at", { ascending: false })
-        .limit(40);
+      const histIa = histIaRes.status === "fulfilled" ? histIaRes.value.data : null;
       for (const r of (histIa ?? []) as any[]) {
         const t = String(r.enunciado || "").trim();
         if (t.length > 10 && !evitarEnunciados.includes(t)) evitarEnunciados.push(t);
