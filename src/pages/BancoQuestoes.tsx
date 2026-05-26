@@ -494,6 +494,7 @@ export default function BancoQuestoes() {
     if (explanation && !confirm("Fechar e descartar a explicação da Flora?")) return;
     setOpened(null);
     setExplanation("");
+    setReadingMode(false);
   }
 
   const filtered = useMemo(() => {
