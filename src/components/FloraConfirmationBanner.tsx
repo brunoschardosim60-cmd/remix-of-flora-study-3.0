@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { FloraIcon } from "@/components/FloraIcon";
 import { Check, X, AlertTriangle, TrendingUp, TrendingDown, CalendarClock, ArrowRight, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { useStudentObjetivo } from "@/hooks/useStudentObjetivo";
 
 interface PendingDecision {
   id: string;
@@ -38,7 +39,7 @@ interface NextStep {
   primary?: boolean;
 }
 
-function nextStepsFor(decision: PendingDecision): NextStep[] {
+function nextStepsFor(decision: PendingDecision, bancoRoute: string): NextStep[] {
   const text = `${decision.reasoning} ${JSON.stringify(decision.recommendation || {})}`;
   const materia = detectMateria(text);
   switch (decision.decision_type) {
@@ -49,7 +50,7 @@ function nextStepsFor(decision: PendingDecision): NextStep[] {
       ];
     case "increase_difficulty":
       return [
-        { label: "Fazer quiz mais difícil", route: "/banco-questoes", primary: true },
+        { label: "Fazer quiz mais difícil", route: bancoRoute, primary: true },
         { label: "Ver desempenho", route: "/analise" },
       ];
     case "adjust_plan":
@@ -60,7 +61,7 @@ function nextStepsFor(decision: PendingDecision): NextStep[] {
     default:
       return [
         materia
-          ? { label: `Estudar ${materia} agora`, route: "/banco-questoes", primary: true }
+          ? { label: `Estudar ${materia} agora`, route: bancoRoute, primary: true }
           : { label: "Começar agora", route: "/", primary: true },
         { label: "Falar com a Flora", route: "/?flora=1" },
       ];
@@ -70,6 +71,7 @@ function nextStepsFor(decision: PendingDecision): NextStep[] {
 export function FloraConfirmationBanner() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { bancoRoute } = useStudentObjetivo(user);
   const [pending, setPending] = useState<PendingDecision[]>([]);
   const [responding, setResponding] = useState<string | null>(null);
   const [acceptedInfo, setAcceptedInfo] = useState<Record<string, { summary: string; steps: NextStep[]; meta: typeof DECISION_META[string] }>>({});
@@ -118,7 +120,7 @@ export function FloraConfirmationBanner() {
             if (resp?.summary) summary = resp.summary as string;
           } catch { /* non-critical */ }
           const meta = DECISION_META[decision.decision_type] || DECISION_META.proactive_suggestion;
-          setAcceptedInfo((prev) => ({ ...prev, [id]: { summary, steps: nextStepsFor(decision), meta } }));
+          setAcceptedInfo((prev) => ({ ...prev, [id]: { summary, steps: nextStepsFor(decision, bancoRoute), meta } }));
           // Mantém o card visível mostrando o estado "feito"; removerá depois
           setTimeout(() => {
             setAcceptedInfo((prev) => { const n = { ...prev }; delete n[id]; return n; });
@@ -148,7 +150,7 @@ export function FloraConfirmationBanner() {
         const rec = decision.recommendation as Record<string, unknown>;
         const isLoading = responding === decision.id;
         const accepted = acceptedInfo[decision.id];
-        const steps = nextStepsFor(decision);
+        const steps = nextStepsFor(decision, bancoRoute);
 
         return (
           <div
