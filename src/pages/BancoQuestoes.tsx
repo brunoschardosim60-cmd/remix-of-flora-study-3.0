@@ -18,6 +18,8 @@ import { ShareExamResult } from "@/components/ShareExamResult";
 import { getCachedExplanation, setCachedExplanation } from "@/lib/explainCache";
 import { GenerateEnemQuestionsDialog } from "@/components/GenerateEnemQuestionsDialog";
 import { QuestionRenderer } from "@/components/QuestionRenderer";
+import { exportExamGabaritoPdf } from "@/lib/examPdfExport";
+import { Download } from "lucide-react";
 
 type Question = {
   id: string;
