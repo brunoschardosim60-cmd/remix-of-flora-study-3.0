@@ -332,6 +332,7 @@ export default function BancoQuestoes() {
   const [area, setArea] = useState("Todas");
   const [ano, setAno] = useState("Todos");
   const [disciplina, setDisciplina] = useState(() => searchParams.get("disciplina") ?? "Todas");
+  const [tema, setTema] = useState<string>("Todos");
   const [opened, setOpened] = useState<Question | null>(null);
   const [readingMode, setReadingMode] = useState(false);
   const [readingFont, setReadingFont] = useState<number>(() => {
