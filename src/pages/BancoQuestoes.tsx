@@ -1140,38 +1140,79 @@ export default function BancoQuestoes() {
             className="w-full max-w-sm rounded-2xl border border-border bg-card shadow-2xl p-6 space-y-5"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-sm font-heading font-semibold tracking-tight">Simular prova</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-heading font-semibold tracking-tight">Simular prova</h3>
+              {stats.total > 0 && (
+                <span className="text-[11px] text-muted-foreground tabular-nums">
+                  {Math.round((stats.erros / stats.total) * 100)}% de erros
+                </span>
+              )}
+            </div>
 
-            {/* Ano */}
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Ano</label>
-              <div className="flex flex-wrap gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => setExamYear("mix")}
-                  className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
-                    examYear === "mix"
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "border-border hover:border-primary/40"
-                  }`}
-                >
-                  Misturar
-                </button>
-                {anos.filter((a) => a !== "Todos").map((a) => (
+            {/* Refazer erros */}
+            <button
+              type="button"
+              onClick={() => stats.erros > 0 && setOnlyErrors((v) => !v)}
+              disabled={stats.erros === 0}
+              className={`w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                onlyErrors
+                  ? "bg-primary/10 border-primary/40"
+                  : "border-border hover:border-primary/40"
+              }`}
+            >
+              <span className="flex items-center gap-2 text-xs font-medium">
+                <RotateCcw className="w-3.5 h-3.5" />
+                Refazer erros
+              </span>
+              <span className="text-[11px] text-muted-foreground tabular-nums">
+                {stats.erros}
+              </span>
+            </button>
+
+            {/* Ano (expandable) */}
+            <div className="rounded-xl border border-border overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setExamYearOpen((v) => !v)}
+                className="w-full flex items-center justify-between gap-3 px-3 py-2.5 hover:bg-muted/40 transition-colors"
+              >
+                <span className="text-xs font-medium">Ano</span>
+                <span className="flex items-center gap-2">
+                  <span className="text-[11px] text-muted-foreground tabular-nums">
+                    {examYear === "mix" ? "Misturar" : examYear}
+                  </span>
+                  <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${examYearOpen ? "rotate-180" : ""}`} />
+                </span>
+              </button>
+              {examYearOpen && (
+                <div className="px-3 pb-3 pt-1 flex flex-wrap gap-1.5 border-t border-border">
                   <button
-                    key={a}
                     type="button"
-                    onClick={() => setExamYear(a)}
-                    className={`px-2.5 py-1 rounded-full text-xs font-medium border tabular-nums transition-colors ${
-                      examYear === a
+                    onClick={() => setExamYear("mix")}
+                    className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+                      examYear === "mix"
                         ? "bg-primary text-primary-foreground border-primary"
                         : "border-border hover:border-primary/40"
                     }`}
                   >
-                    {a}
+                    Misturar
                   </button>
-                ))}
-              </div>
+                  {anos.filter((a) => a !== "Todos").map((a) => (
+                    <button
+                      key={a}
+                      type="button"
+                      onClick={() => setExamYear(a)}
+                      className={`px-2.5 py-1 rounded-full text-xs font-medium border tabular-nums transition-colors ${
+                        examYear === a
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "border-border hover:border-primary/40"
+                      }`}
+                    >
+                      {a}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Modo */}
