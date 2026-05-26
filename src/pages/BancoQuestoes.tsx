@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { BottomNav } from "@/components/BottomNav";
 import { MathText } from "@/components/MathText";
+import { EnunciadoBody } from "@/components/EnunciadoBody";
 import { ShareExamResult } from "@/components/ShareExamResult";
 import { getCachedExplanation, setCachedExplanation } from "@/lib/explainCache";
 import { GenerateEnemQuestionsDialog } from "@/components/GenerateEnemQuestionsDialog";
@@ -958,9 +959,10 @@ export default function BancoQuestoes() {
               )}
 
               {/* 1. Enunciado */}
-              <MathText className="text-[15px] leading-relaxed text-foreground select-text">
-                {cleanedById.get(opened.id)?.cleaned ?? normalizeEnunciado(opened.enunciado, getAlternativas(opened).length === 5)}
-              </MathText>
+              <EnunciadoBody
+                className="text-[15px] leading-relaxed text-foreground select-text"
+                text={cleanedById.get(opened.id)?.cleaned ?? normalizeEnunciado(opened.enunciado, getAlternativas(opened).length === 5)}
+              />
 
               {/* 2. Imagens — entre enunciado e alternativas */}
               <QuestionImages urls={opened.imagem_urls || []} label={`Questão ${opened.numero} ENEM ${opened.ano}`} />
@@ -1053,9 +1055,10 @@ export default function BancoQuestoes() {
                   </div>
 
                   {/* Enunciado */}
-                  <MathText className="text-[15px] leading-relaxed text-foreground select-text">
-                    {cleanedById.get(q.id)?.cleaned ?? normalizeEnunciado(q.enunciado, getAlternativas(q).length === 5)}
-                  </MathText>
+                  <EnunciadoBody
+                    className="text-[15px] leading-relaxed text-foreground select-text"
+                    text={cleanedById.get(q.id)?.cleaned ?? normalizeEnunciado(q.enunciado, getAlternativas(q).length === 5)}
+                  />
 
                   {/* Imagens — antes das alternativas */}
                   <QuestionImages urls={q.imagem_urls || []} label={`Questão ${q.numero} ENEM ${q.ano}`} />
