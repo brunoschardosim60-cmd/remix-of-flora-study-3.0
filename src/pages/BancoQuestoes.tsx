@@ -544,7 +544,7 @@ export default function BancoQuestoes() {
       if (q.incomplete && !showIncomplete) return false;
       return true;
     });
-  }, [questions, debouncedSearch, area, ano, disciplina, onlyErrors, onlyFavorites, showIncomplete, favorites, attempts, cleanedById]);
+  }, [questions, debouncedSearch, area, ano, disciplina, tema, onlyErrors, onlyFavorites, showIncomplete, favorites, attempts, cleanedById]);
 
   // Índice da questão aberta dentro da lista filtrada → navegação ←/→.
   const openedIndex = useMemo(
