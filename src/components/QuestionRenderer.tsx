@@ -175,7 +175,7 @@ function ProseBlock({ block }: { block: Block }) {
     <div className="rounded-2xl border border-border bg-muted/30 px-5 py-5 sm:px-7 sm:py-6">
       {block.label && <BlockLabel label={block.label} kind={block.kind} />}
       <MathText
-        className={`block text-[16px] leading-[1.85] text-foreground/90 whitespace-pre-wrap break-words [text-wrap:pretty] ${
+        className={`block text-[calc(16px*var(--reading-scale,1))] leading-[calc(1.85*var(--reading-leading,1))] text-foreground/90 whitespace-pre-wrap break-words [text-wrap:pretty] ${
           showCollapse ? "max-h-72 overflow-hidden [mask-image:linear-gradient(to_bottom,black_70%,transparent)]" : ""
         }`}
       >
@@ -199,7 +199,7 @@ function PoemBlock({ block }: { block: Block }) {
   return (
     <div className="rounded-2xl border border-border bg-amber-50/40 dark:bg-amber-950/10 px-6 py-6 sm:px-8 sm:py-7">
       {block.label && <BlockLabel label={block.label} kind="poem" />}
-      <pre className="font-serif text-[16px] leading-[2.05] text-foreground/90 whitespace-pre-wrap break-words m-0 [font-feature-settings:'liga','onum']">
+      <pre className="font-serif text-[calc(16px*var(--reading-scale,1))] leading-[calc(2.05*var(--reading-leading,1))] text-foreground/90 whitespace-pre-wrap break-words m-0 [font-feature-settings:'liga','onum']">
         {block.text}
       </pre>
     </div>
@@ -210,7 +210,7 @@ function QuoteBlock({ block }: { block: Block }) {
   return (
     <blockquote className="relative rounded-2xl border-l-4 border-primary/60 bg-muted/30 pl-6 pr-5 py-5">
       {block.label && <BlockLabel label={block.label} kind="quote" />}
-      <MathText className="block font-serif italic text-[16px] leading-[1.9] text-foreground/90 whitespace-pre-wrap break-words">
+      <MathText className="block font-serif italic text-[calc(16px*var(--reading-scale,1))] leading-[calc(1.9*var(--reading-leading,1))] text-foreground/90 whitespace-pre-wrap break-words">
         {block.text}
       </MathText>
     </blockquote>
@@ -226,7 +226,7 @@ function PromptBlock({ block }: { block: Block }) {
           Pergunta
         </span>
       </div>
-      <MathText className="block text-[17px] sm:text-[18px] leading-[1.75] font-semibold text-foreground whitespace-pre-wrap break-words [text-wrap:pretty]">
+      <MathText className="block text-[calc(17px*var(--reading-scale,1))] sm:text-[calc(18px*var(--reading-scale,1))] leading-[calc(1.75*var(--reading-leading,1))] font-semibold text-foreground whitespace-pre-wrap break-words [text-wrap:pretty]">
         {block.text}
       </MathText>
     </div>
