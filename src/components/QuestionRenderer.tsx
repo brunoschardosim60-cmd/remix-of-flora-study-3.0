@@ -290,10 +290,6 @@ export function QuestionImagesV2({ urls, label }: { urls: string[]; label: strin
               className="w-full h-auto object-contain max-h-[460px] mx-auto bg-white dark:bg-zinc-900 cursor-zoom-in"
               onClick={() => setZoom(url)}
             />
-            <figcaption className="px-3 py-1.5 text-[11px] text-muted-foreground flex items-center gap-1.5 border-t border-border bg-card/60">
-              <ImageIcon className="w-3 h-3" />
-              Imagem da prova {urls.length > 1 ? `(${i + 1}/${urls.length})` : ""}
-            </figcaption>
           </figure>
         ))}
       </div>
@@ -312,12 +308,20 @@ export function QuestionImagesV2({ urls, label }: { urls: string[]; label: strin
           >
             <X className="w-5 h-5" />
           </button>
-          <img
-            src={zoom}
-            alt={label}
-            className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+          <div
+            className="flex flex-col items-center gap-3 max-w-full max-h-full"
             onClick={(e) => e.stopPropagation()}
-          />
+          >
+            <img
+              src={zoom}
+              alt={label}
+              className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl"
+            />
+            <figcaption className="px-3 py-1.5 text-[11px] text-white/80 flex items-center gap-1.5 bg-white/10 rounded-full">
+              <ImageIcon className="w-3 h-3" />
+              Imagem da prova — {label}
+            </figcaption>
+          </div>
         </div>
       )}
     </>
