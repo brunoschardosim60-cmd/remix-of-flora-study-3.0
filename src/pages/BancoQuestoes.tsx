@@ -879,18 +879,28 @@ export default function BancoQuestoes() {
       {/* Modal questão */}
       {opened && !examMode && (
         <div
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-start justify-center p-3 sm:p-6 overflow-y-auto"
+          className={`fixed inset-0 z-50 overflow-y-auto ${
+            readingMode
+              ? "bg-background"
+              : "bg-black/60 backdrop-blur-sm flex items-start justify-center p-3 sm:p-6"
+          }`}
           onClick={closeModal}
           role="dialog"
           aria-modal="true"
           aria-labelledby="question-modal-title"
         >
           <div
-            className="max-w-2xl w-full my-4 sm:my-8 rounded-2xl border border-border bg-card shadow-2xl flex flex-col overflow-hidden"
+            className={
+              readingMode
+                ? "w-full min-h-full bg-background"
+                : "max-w-2xl w-full my-4 sm:my-8 rounded-2xl border border-border bg-card shadow-2xl"
+            }
             onClick={(e) => e.stopPropagation()}
           >
             {/* Cabeçalho */}
-            <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-border bg-muted/40">
+            <div className={`flex items-start justify-between gap-3 px-5 py-4 border-b border-border bg-card/95 backdrop-blur ${
+              readingMode ? "sticky top-0 z-20" : "bg-muted/40"
+            }`}>
               <div className="flex flex-wrap items-center gap-2 min-w-0">
                 <Badge variant="secondary" id="question-modal-title">ENEM {opened.ano} · Q{opened.numero}</Badge>
                 {opened.disciplina && <Badge variant="outline">{opened.disciplina}</Badge>}
@@ -901,6 +911,16 @@ export default function BancoQuestoes() {
                 )}
               </div>
               <div className="flex items-center gap-1 shrink-0 -mr-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full"
+                  onClick={() => setReadingMode((v) => !v)}
+                  title={readingMode ? "Sair do modo leitura" : "Modo leitura"}
+                  aria-label={readingMode ? "Sair do modo leitura" : "Modo leitura"}
+                >
+                  {readingMode ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                </Button>
                 <Button
                   variant="ghost"
                   size="icon"
@@ -944,7 +964,7 @@ export default function BancoQuestoes() {
             </div>
 
             {/* Corpo */}
-            <div className="p-5 sm:p-6 space-y-5 overflow-y-auto">
+            <div className={`space-y-8 sm:space-y-10 ${readingMode ? "px-4 sm:px-8 py-8 sm:py-12" : "px-5 sm:px-7 py-6 sm:py-8"}`}>
 
               {/* Aviso de incompleta */}
               {opened.incomplete && (
@@ -964,21 +984,29 @@ export default function BancoQuestoes() {
                 enunciado={cleanedById.get(opened.id)?.cleaned ?? normalizeEnunciado(opened.enunciado, getAlternativas(opened).length === 5)}
                 imagens={opened.imagem_urls || []}
                 label={`Questão ${opened.numero} ENEM ${opened.ano}`}
+                wide={readingMode}
               />
 
               {/* 3. Alternativas */}
-              <AlternativasPanel
-                q={opened}
-                chosen={revealed[opened.id] || attempts[opened.id]?.alternativa_marcada}
-                onAnswer={(letter) => handleAnswer(opened, letter)}
-              />
+              <section id="q-alternativas" className={`scroll-mt-20 mx-auto w-full ${readingMode ? "max-w-3xl" : "max-w-[680px]"}`}>
+                <header className="flex items-center gap-2 mb-4">
+                  <span className="h-px flex-1 bg-border" />
+                  <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Alternativas</span>
+                  <span className="h-px flex-1 bg-border" />
+                </header>
+                <AlternativasPanel
+                  q={opened}
+                  chosen={revealed[opened.id] || attempts[opened.id]?.alternativa_marcada}
+                  onAnswer={(letter) => handleAnswer(opened, letter)}
+                />
+              </section>
 
               {/* 4. Resultado */}
               {(revealed[opened.id] || attempts[opened.id]) && (() => {
                 const chosen = revealed[opened.id] || attempts[opened.id]?.alternativa_marcada;
                 const acertou = chosen === opened.correta;
                 return (
-                  <div className={`rounded-xl px-4 py-3 flex items-center gap-3 ${acertou ? "bg-emerald-500/10 border border-emerald-500/30" : "bg-destructive/10 border border-destructive/30"}`}>
+                  <div className={`mx-auto w-full ${readingMode ? "max-w-3xl" : "max-w-[680px]"} rounded-xl px-4 py-3 flex items-center gap-3 ${acertou ? "bg-emerald-500/10 border border-emerald-500/30" : "bg-destructive/10 border border-destructive/30"}`}>
                     <span className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${acertou ? "bg-emerald-500" : "bg-destructive"}`}>
                       {acertou ? <Check className="w-4 h-4 text-white" /> : <X className="w-4 h-4 text-white" />}
                     </span>
@@ -991,7 +1019,7 @@ export default function BancoQuestoes() {
               })()}
 
               {/* 5. Flora explica */}
-              <div className="flex flex-wrap gap-2">
+              <div className={`mx-auto w-full ${readingMode ? "max-w-3xl" : "max-w-[680px]"} flex flex-wrap gap-2`}>
                 <Button variant="secondary" size="sm" onClick={() => explainWithFlora(opened)} disabled={explaining}>
                   {explaining ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <Sparkles className="w-4 h-4 mr-1.5" />}
                   Flora explica
@@ -999,7 +1027,7 @@ export default function BancoQuestoes() {
               </div>
 
               {(explanation || explaining) && (
-                <div className="rounded-xl border border-primary/25 bg-primary/5 p-4 space-y-2">
+                <div className={`mx-auto w-full ${readingMode ? "max-w-3xl" : "max-w-[680px]"} rounded-xl border border-primary/25 bg-primary/5 p-4 space-y-2`}>
                   <div className="flex items-center gap-2 text-xs font-semibold text-primary">
                     <Sparkles className="w-3.5 h-3.5" /> Flora
                   </div>
