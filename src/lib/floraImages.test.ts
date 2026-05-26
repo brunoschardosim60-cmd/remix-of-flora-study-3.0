@@ -37,8 +37,7 @@ describe("floraImages cache", () => {
 
     it("returns null when window is undefined (SSR)", () => {
       const originalWindow = globalThis.window;
-      // @ts-expect-error simulate SSR
-      delete globalThis.window;
+      delete (globalThis as any).window;
       try {
         expect(getCachedImage("ssr")).toBeNull();
       } finally {
@@ -67,8 +66,7 @@ describe("floraImages cache", () => {
 
     it("does not throw when window is undefined (SSR)", () => {
       const originalWindow = globalThis.window;
-      // @ts-expect-error simulate SSR
-      delete globalThis.window;
+      delete (globalThis as any).window;
       try {
         expect(() => cacheImage("ssr", "https://example.com/x.png")).not.toThrow();
       } finally {
