@@ -362,6 +362,7 @@ export default function BancoQuestoes() {
   const [examKind, setExamKind] = useState<ExamKind>("quick");
   const [showExamPicker, setShowExamPicker] = useState(false);
   const [examYear, setExamYear] = useState<string>("mix"); // "mix" | "2024" | ...
+  const [examYearOpen, setExamYearOpen] = useState(false);
   const { user } = useAuth();
   const [favorites, setFavorites] = useState<Set<string>>(() => loadFavoritesLocal());
   const [favoritesLoaded, setFavoritesLoaded] = useState(false);
