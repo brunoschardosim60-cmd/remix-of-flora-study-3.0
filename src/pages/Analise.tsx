@@ -102,6 +102,8 @@ export default function Analise() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"geral" | "vivo" | "evolucao" | "enem" | "revisoes" | "relatorio">("geral");
   const [period, setPeriod] = useState<"7d" | "30d" | "all">("7d");
+  const [exporting, setExporting] = useState(false);
+
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth", { replace: true });
