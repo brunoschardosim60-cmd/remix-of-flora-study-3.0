@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from "react";
+import { useState, useEffect, useCallback, useMemo, lazy, Suspense, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { CalendarDays, LayoutGrid } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
@@ -75,6 +75,12 @@ type Tab = "revisao" | "semanal";
 export default function Index() {
   const { user, profile, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
+  const mounted = useRef(false);
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
 
   // Bootstrap: deep-link, custom colors, idle prefetch, análise Flora
   useDashboardBootstrap(user);
