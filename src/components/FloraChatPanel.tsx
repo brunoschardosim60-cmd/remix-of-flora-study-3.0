@@ -32,7 +32,8 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
   const chips = getSuggestionChips(objetivo);
 
   return (
-    <div className="fixed bottom-0 right-0 w-full h-[80vh] sm:bottom-20 sm:right-4 sm:w-[380px] sm:h-[500px] sm:max-w-[calc(100vw-2rem)] sm:max-h-[calc(100vh-6rem)] z-50 sm:rounded-2xl rounded-t-2xl border border-border bg-card shadow-2xl flex flex-col overflow-hidden">
+    <div className="fixed bottom-0 right-0 w-full h-[80vh] sm:bottom-20 sm:right-4 sm:w-[380px] sm:h-[500px] sm:max-w-[calc(100vw-2rem)] sm:max-h-[calc(100vh-6rem)] z-50 sm:rounded-2xl rounded-t-2xl border border-border bg-card shadow-2xl flex flex-col overflow-hidden transition-all duration-300">
+      <div className="w-12 h-1.5 bg-muted rounded-full mx-auto my-2 sm:hidden shrink-0" />
       {/* Header */}
       <div className="flex items-center gap-2 p-4 border-b border-border bg-primary/5">
         <FloraIcon className="w-6 h-6 text-primary" />

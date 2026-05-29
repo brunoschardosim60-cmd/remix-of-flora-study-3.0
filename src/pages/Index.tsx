@@ -17,7 +17,7 @@ import { useFloraEvents } from "@/hooks/useFloraEvents";
 import { useStudyNow } from "@/hooks/useStudyNow";
 import { useDashboardDialogs } from "@/hooks/useDashboardDialogs";
 import { useDashboardBootstrap } from "@/hooks/useDashboardBootstrap";
-import { useStudentObjetivo } from "@/hooks/useStudentObjetivo";
+import { useStudentConfig } from "@/hooks/useStudentConfig";
 import { useDashboardHeroData } from "@/hooks/useDashboardHeroData";
 import { useDashboardPrimaryAction } from "@/hooks/useDashboardPrimaryAction";
 import { loadStringStorage } from "@/lib/storage";
@@ -82,8 +82,11 @@ export default function Index() {
   // Force onboarding for logged-in users who haven't completed it (admins skip)
   const onboardingChecked = useOnboardingGuard(user, isAdmin);
 
-  // Objetivo do aluno → rota/label do "Banco"
-  const { objetivo, isConcurso, bancoRoute, bancoLabel } = useStudentObjetivo(user);
+  // Objetivo do aluno → rota/label do "Banco" do contexto global
+  const { config: studentConfig } = useStudentConfig();
+  const isConcurso = studentConfig?.isConcurso ?? false;
+  const bancoRoute = studentConfig?.bancoRoute ?? "/banco";
+  const bancoLabel = studentConfig?.bancoLabel ?? "Questões ENEM";
   const subjectOptions = isConcurso ? CONCURSO_SUBJECTS : ENEM_SUBJECTS;
 
   const {

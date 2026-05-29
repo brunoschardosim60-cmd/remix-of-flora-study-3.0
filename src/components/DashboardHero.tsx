@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -45,14 +46,28 @@ export function DashboardHero({
   onPrimaryAction,
   primaryLabel,
 }: DashboardHeroProps) {
+  const statusLabel = useMemo(() => {
+    if (!isLoggedIn) return "Estude agora";
+    if (comebackMode) return "Bora recuperar?";
+    if (streakDays > 7) return "Ritmo imparável!";
+    if (streakDays > 0) return "Ritmo em dia";
+    return "Comece sua sequência!";
+  }, [isLoggedIn, comebackMode, streakDays]);
+
+  const statusVariant = useMemo(() => {
+    if (comebackMode) return "destructive";
+    if (streakDays > 7) return "default";
+    return "secondary";
+  }, [comebackMode, streakDays]);
+
   return (
-    <section className="relative overflow-hidden rounded-[28px] border border-border/60 bg-gradient-to-br from-primary/12 via-card to-accent/10 p-5 sm:p-7">
+    <section className="relative overflow-hidden rounded-[28px] border border-border/60 bg-gradient-to-br from-primary/12 via-card to-accent/10 p-5 sm:p-7 w-full">
       <div className="absolute inset-y-0 right-0 w-1/2 bg-[radial-gradient(circle_at_top_right,hsl(var(--primary)/0.10),transparent_55%)]" />
       <div className="relative space-y-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="space-y-3 max-w-2xl">
-            <Badge variant="secondary" className="w-fit">
-              Ritmo em dia
+            <Badge variant={statusVariant as any} className="w-fit">
+              {statusLabel}
             </Badge>
             <div className="space-y-1">
               <h2 className="font-heading text-2xl font-bold sm:text-3xl">{greetingLabel(firstName, isLoggedIn)}</h2>
