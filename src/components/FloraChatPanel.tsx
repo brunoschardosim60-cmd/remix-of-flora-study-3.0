@@ -98,12 +98,23 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
           </div>
         )}
 
-        {messages.map((msg, i) => (
+        {hasMore && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full text-xs text-muted-foreground hover:text-primary"
+            onClick={() => setPage(p => p + 1)}
+          >
+            Carregar mensagens anteriores
+          </Button>
+        )}
+
+        {paginatedMessages.map((msg, i) => (
           <div key={i} className="animate-fade-in">
             <div className={`rounded-xl px-3 py-2 text-sm overflow-hidden break-words ${
               msg.role === "user"
-                ? "bg-primary text-primary-foreground ml-8"
-                : "bg-muted mr-8"
+                ? "bg-primary text-primary-foreground ml-8 shadow-sm"
+                : "bg-muted mr-8 shadow-xs border border-border/50"
             }`}>
               {msg.role === "assistant" ? (
                 <div className="prose prose-sm max-w-none dark:prose-invert [overflow-wrap:anywhere]">
@@ -117,7 +128,7 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
         ))}
 
         {isSending && messages[messages.length - 1]?.role === "user" && (
-          <div className="bg-muted rounded-xl px-3 py-3 mr-8 animate-fade-in">
+          <div className="bg-muted rounded-xl px-3 py-3 mr-8 animate-fade-in border border-border/50">
             <div className="flex items-center gap-1.5">
               <FloraIcon className="w-4 h-4 text-primary" />
               <span className="text-xs text-muted-foreground">Flora pensando</span>
@@ -132,7 +143,7 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
       </div>
 
       {/* Input */}
-      <div className="p-3 border-t border-border">
+      <div className="p-3 border-t border-border bg-background">
         <form onSubmit={(e) => { e.preventDefault(); send(); }} className="flex items-end gap-2">
           <textarea
             value={input}
@@ -145,16 +156,17 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
               if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
             }}
             placeholder={isSending ? "Flora pensando..." : "Fala comigo..."}
-            className="flex-1 text-sm resize-none rounded-md border border-input bg-background px-3 py-2 ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-default disabled:opacity-100"
+            className="flex-1 text-sm resize-none rounded-xl border border-input bg-background px-3 py-2 ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-default disabled:opacity-100"
             disabled={isSending}
             rows={1}
             style={{ minHeight: "38px", maxHeight: "120px" }}
           />
-          <Button type="submit" size="icon" className="shrink-0" disabled={!input.trim() || isSending}>
+          <Button type="submit" size="icon" className="shrink-0 rounded-xl" disabled={!input.trim() || isSending}>
             <Send className="w-4 h-4" />
           </Button>
         </form>
       </div>
-    </div>
+    </motion.div>
+    </AnimatePresence>
   );
 }
