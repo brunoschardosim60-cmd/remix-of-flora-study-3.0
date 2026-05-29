@@ -1634,6 +1634,15 @@ export default function BancoConcurso() {
               />
             </div>
             <div className="space-y-1.5 col-span-2">
+              <Label className="text-xs">Órgão (Opcional)</Label>
+              <Input
+                value={iaOrgao}
+                onChange={(e) => setIaOrgao(e.target.value)}
+                placeholder="Ex: Receita Federal, INSS, TJSP…"
+                maxLength={100}
+              />
+            </div>
+            <div className="space-y-1.5 col-span-2">
               <Label className="text-xs">Quantidade: <span className="font-semibold">{iaQtd}</span></Label>
               <input
                 type="range" min={1} max={5} value={iaQtd}
