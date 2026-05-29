@@ -259,8 +259,8 @@ export default function Index() {
             comebackMode={momentum.comebackMode}
             onPrimaryAction={handlePrimaryAction}
             primaryLabel={primaryLabel}
-            className="flex-1"
           />
+
           <Button 
             variant="outline" 
             size="sm" 
