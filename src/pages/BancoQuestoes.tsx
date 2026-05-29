@@ -833,8 +833,12 @@ export default function BancoQuestoes() {
     const q = examQueue[examIndex];
     if (!q || examAnswers[q.id]) return;
     setExamAnswers((a) => ({ ...a, [q.id]: letter }));
-    recordAttempt(q, letter, "prova");
+    // No modo "Real", não gravamos tentativa na hora para não dar feedback visual imediato no progresso global
+    if (!examRealMode) {
+      recordAttempt(q, letter, "prova");
+    }
   }
+
 
   function nextExam() {
     if (examIndex < examQueue.length - 1) setExamIndex((i) => i + 1);
