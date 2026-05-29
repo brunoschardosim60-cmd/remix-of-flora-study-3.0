@@ -1400,6 +1400,19 @@ export default function NotebookEditor() {
                   Gerar Quiz
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => fileInputRef.current?.click()} disabled={ocrLoading}>
+                  <Camera className="w-4 h-4 mr-2" />
+                  Digitalizar foto (OCR)
+                </DropdownMenuItem>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleOCR}
+                />
+
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleCreateTopicFromPage}>
                   <BookPlus className="w-4 h-4 mr-2" />
                   Criar Tópico a partir da página
