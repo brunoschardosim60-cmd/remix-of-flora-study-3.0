@@ -311,6 +311,7 @@ export default function BancoConcurso() {
   const [iaBanca, setIaBanca] = useState("FGV");
   const [iaMateria, setIaMateria] = useState("Português");
   const [iaAssunto, setIaAssunto] = useState("");
+  const [iaOrgao, setIaOrgao] = useState("Qualquer");
   const [iaNivel, setIaNivel] = useState<"facil" | "medio" | "dificil">("medio");
   const [iaTipo, setIaTipo] = useState<"multipla_escolha" | "certo_errado">("multipla_escolha");
   const [iaQtd, setIaQtd] = useState(3);
