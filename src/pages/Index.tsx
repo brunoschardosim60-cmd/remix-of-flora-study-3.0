@@ -361,7 +361,7 @@ export default function Index() {
              </div>
           </div>
         </div>
-
+        <div className="space-y-4 sm:space-y-6">
           {/* Painéis específicos de concurso */}
           {isConcurso && (
             <>
