@@ -39,19 +39,33 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
   const chips = getSuggestionChips(objetivo);
 
   return (
-    <div className="fixed bottom-0 right-0 w-full h-[80vh] sm:bottom-20 sm:right-4 sm:w-[380px] sm:h-[500px] sm:max-w-[calc(100vw-2rem)] sm:max-h-[calc(100vh-6rem)] z-50 sm:rounded-2xl rounded-t-2xl border border-border bg-card shadow-2xl flex flex-col overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center gap-2 p-4 border-b border-border bg-primary/5">
-        <FloraIcon className="w-6 h-6 text-primary" />
-        <div className="flex-1 min-w-0">
-          <p className="font-heading font-semibold text-sm">Flora</p>
-          <p className="text-xs text-muted-foreground">Sua professora parceira</p>
+    <AnimatePresence>
+      <motion.div
+        drag="y"
+        dragConstraints={{ top: 0, bottom: 0 }}
+        dragElastic={0.2}
+        onDragEnd={(_, info) => {
+          if (info.offset.y > 100) setIsMinimized(true);
+          else if (info.offset.y < -100) setIsMinimized(false);
+        }}
+        animate={isMinimized ? { y: "calc(100% - 60px)" } : { y: 0 }}
+        className="fixed bottom-0 right-0 w-full h-[85vh] sm:bottom-20 sm:right-4 sm:w-[400px] sm:h-[600px] sm:max-w-[calc(100vw-2rem)] sm:max-h-[calc(100vh-6rem)] z-50 sm:rounded-2xl rounded-t-2xl border border-border bg-card shadow-2xl flex flex-col overflow-hidden"
+      >
+        {/* Header - Draggable Area */}
+        <div className="flex items-center gap-2 p-4 border-b border-border bg-primary/5 cursor-grab active:cursor-grabbing">
+          <FloraIcon className="w-6 h-6 text-primary" />
+          <div className="flex-1 min-w-0" onClick={() => setIsMinimized(!isMinimized)}>
+            <p className="font-heading font-semibold text-sm">Flora</p>
+            <p className="text-xs text-muted-foreground">Sua professora parceira</p>
+          </div>
+          <FloraQuotaIndicator action="chat" />
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsMinimized(!isMinimized)}>
+            {isMinimized ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}>
+            <X className="w-4 h-4" />
+          </Button>
         </div>
-        <FloraQuotaIndicator action="chat" />
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}>
-          <X className="w-4 h-4" />
-        </Button>
-      </div>
 
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">
