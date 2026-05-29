@@ -469,22 +469,22 @@ export default function BancoQuestoes() {
   }, [search]);
 
   const disciplinas = useMemo(() => {
-    // Remove valores que são na verdade áreas (evita duplicação com o filtro "Área").
+    // Filtramos disciplinas baseadas na área se houver uma selecionada,
+    // mas garantimos que as disciplinas mapeadas em diferentes áreas apareçam.
+    const set = new Set<string>();
     const AREA_LIKE = new Set([
-      "Linguagens",
-      "Ciências Humanas",
-      "Ciências da Natureza",
-      "Humanas",
-      "Natureza",
-      "Matemática",
+      "Linguagens", "Ciências Humanas", "Ciências da Natureza", 
+      "Humanas", "Natureza", "Matemática", "Linguagens e Códigos"
     ]);
-    const set = new Set(
-      questions
-        .map((q) => q.disciplina)
-        .filter((d) => d && !AREA_LIKE.has(d)),
-    );
+
+    for (const q of questions) {
+      if (area !== "Todas" && q.area !== area) continue;
+      const d = (q.disciplina || "").trim();
+      if (d && !AREA_LIKE.has(d)) set.add(d);
+    }
     return ["Todas", ...Array.from(set).sort()];
-  }, [questions]);
+  }, [questions, area]);
+
 
   // Temas disponíveis dependem da disciplina selecionada (ou de todas).
   // Temas disponíveis: agora mostramos TODOS os temas presentes no banco para facilitar a busca,
