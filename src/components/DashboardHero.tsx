@@ -66,17 +66,35 @@ export function DashboardHero({
       <div className="relative space-y-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="space-y-3 max-w-2xl">
-            <Badge variant={statusVariant as any} className="w-fit">
-              {statusLabel}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant={statusVariant as any} className="w-fit">
+                {statusLabel}
+              </Badge>
+              {isLoggedIn && (
+                <Badge variant="outline" className="bg-primary/5 border-primary/20 text-primary gap-1">
+                  Nível {currentLevel}
+                </Badge>
+              )}
+            </div>
             <div className="space-y-1">
-              <h2 className="font-heading text-2xl font-bold sm:text-3xl">{greetingLabel(firstName, isLoggedIn)}</h2>
+              <div className="flex items-baseline gap-2">
+                <h2 className="font-heading text-2xl font-bold sm:text-3xl">{greetingLabel(firstName, isLoggedIn)}</h2>
+              </div>
               <p className="text-sm text-muted-foreground sm:text-base">
                 {isLoggedIn
                   ? "Hoje está tudo organizado para você seguir sem pensar demais no próximo passo."
                   : "Escolhe um bloco e começa."}
               </p>
             </div>
+            {isLoggedIn && (
+               <div className="w-full max-w-xs space-y-1.5">
+                  <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-0.5">
+                    <span>Progresso de Nível</span>
+                    <span>{xpProgress}%</span>
+                  </div>
+                  <Progress value={xpProgress} className="h-1.5" />
+               </div>
+            )}
             <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3">
               <Button size="lg" className="w-full sm:w-auto sm:min-w-[180px]" onClick={onPrimaryAction}>
                 {primaryLabel}
