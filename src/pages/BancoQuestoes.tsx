@@ -547,29 +547,37 @@ export default function BancoQuestoes() {
   const filtered = useMemo(() => {
     const s = debouncedSearch.trim().toLowerCase();
     return questions.filter((q) => {
-      // Se o usuário selecionou um TEMA específico, o tema manda mais que a disciplina.
-      // Isso permite encontrar "Citologia" mesmo se estiver em "Biologia" ou "Natureza".
+      // Filtro de Ano sempre se aplica de forma independente (captura todos os anos do banco)
+      if (ano !== "Todos" && String(q.ano) !== ano) return false;
+
+      // Hierarquia de filtros de conteúdo:
+      // 1. Tema (Busca global por tema selecionado)
       if (tema !== "Todos") {
         if ((q.tema || "").trim() !== tema) return false;
-        // Se selecionou tema, ignoramos filtros de área/disciplina para ser mais abrangente,
-        // mas ainda respeitamos o ano se estiver filtrado.
-        if (ano !== "Todos" && String(q.ano) !== ano) return false;
       } else {
-        if (area !== "Todas" && q.area !== area) return false;
-        if (ano !== "Todos" && String(q.ano) !== ano) return false;
-        if (disciplina !== "Todas" && q.disciplina !== disciplina) return false;
+        // 2. Disciplina (Se tema for Todos)
+        if (disciplina !== "Todas") {
+          if (q.disciplina !== disciplina) return false;
+        } else {
+          // 3. Área (Se disciplina for Todas)
+          if (area !== "Todas" && q.area !== area) return false;
+        }
       }
 
+      // Filtro de busca textual
       if (s) {
         const hay = cleanedById.get(q.id)?.haystack ?? "";
         if (!hay.includes(s)) return false;
       }
+
+      // Filtros de estado (erros, favoritos, incompletas)
       if (onlyErrors && attempts[q.id]?.acertou !== false) return false;
       if (onlyFavorites && !favorites.has(q.id)) return false;
       if (q.incomplete && !showIncomplete) return false;
       return true;
     });
   }, [questions, debouncedSearch, area, ano, disciplina, tema, onlyErrors, onlyFavorites, showIncomplete, favorites, attempts, cleanedById]);
+
 
   // Índice da questão aberta dentro da lista filtrada → navegação ←/→.
   const openedIndex = useMemo(
