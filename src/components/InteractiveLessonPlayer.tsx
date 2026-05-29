@@ -8,9 +8,8 @@ import {
   Loader2, Send, ChevronLeft, ChevronRight,
   Lightbulb, AlertTriangle, MessageCircleQuestion, CheckCircle2, XCircle,
   Sparkles, Brain, HelpCircle, ListChecks, ChevronDown, Leaf, Zap, Target,
-  Volume2, VolumeX, Eye, Share2, Trophy, Flame, Radio, Image as ImageIcon, Palette, BookPlus,
+  Volume2, VolumeX, Eye, Share2, Trophy, Flame, Radio, Image as ImageIcon, Palette,
   RefreshCw, ZoomIn, X as XIcon, Bookmark, BookmarkCheck, Maximize2,
-
 } from "lucide-react";
 import { generateDidacticImage } from "@/lib/floraImages";
 import { LessonChart } from "@/components/LessonChart";
@@ -530,11 +529,6 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({
   const [duvidaLoading, setDuvidaLoading] = useState(false);
   const [duvidaResp, setDuvidaResp] = useState("");
 
-  const [glossaryOpen, setGlossaryOpen] = useState(false);
-  const [glossaryLoading, setGlossaryLoading] = useState(false);
-  const [glossaryTerms, setGlossaryTerms] = useState<Array<{ term: string; definition: string }>>([]);
-
-
   // Ilustrações por cena
   const [sceneImages, setSceneImages] = useState<Record<string, string>>({});
   const [sceneImgLoading, setSceneImgLoading] = useState<Record<string, boolean>>({});
@@ -605,29 +599,6 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({
   const lessonSeed = useMemo(() => strHash(lesson.titulo || ""), [lesson.titulo]);
   const scenes = useMemo(() => (cur ? buildScenes(cur, idx, lessonSeed) : []), [cur, idx, lessonSeed]);
   const curScene = scenes[sceneIdx];
-
-  const fetchGlossary = async () => {
-    if (!curScene?.text || glossaryLoading) return;
-    setGlossaryOpen(true);
-    setGlossaryLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("flora-glossary", {
-        body: { text: curScene.text, context: lesson.titulo }
-      });
-      if (error) throw error;
-      setGlossaryTerms(data.terms || []);
-    } catch (e) {
-      console.error(e);
-      toast.error("Não consegui carregar o glossário agora.");
-    } finally {
-      setGlossaryLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    setGlossaryTerms([]);
-  }, [idx, sceneIdx]);
-
 
   // ── Sidebar image query — por CENA, com refresh seed ──────
   const sceneSearchQuery = useMemo(() => {
@@ -891,14 +862,7 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({
               title={visualMode === "real" ? "Visual: fotos (clique para ilustrações)" : "Visual: ilustrações (clique para fotos)"}>
               {visualMode === "real" ? <ImageIcon size={14}/> : <Palette size={14}/>}
             </button>
-            {curScene && stage === "block" && (
-              <button className={`ilp-icon-btn ${glossaryOpen ? "ilp-icon-btn--active" : ""}`} onClick={fetchGlossary}
-                aria-label="Glossário" title="Glossário de termos">
-                <BookPlus size={14}/>
-              </button>
-            )}
             {enableVoice && curScene && stage === "block" && (
-
               <button
                 className={`ilp-icon-btn ${voice.playing ? "ilp-icon-btn--active" : ""}`}
                 onClick={() => voice.toggle(curScene.text, "amiga")}
@@ -1160,38 +1124,6 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({
         </div>
       )}
 
-      {/* ── Glossary ── */}
-      {glossaryOpen && (
-        <div className="ilp-modal-overlay" onClick={() => setGlossaryOpen(false)}>
-          <div className="ilp-modal-content max-w-sm" onClick={(e) => e.stopPropagation()}>
-            <div className="ilp-modal-head">
-              <BookPlus size={16} className="text-primary" />
-              <strong>Dicionário Flora</strong>
-              <button className="ilp-modal-close" onClick={() => setGlossaryOpen(false)}><XIcon size={16}/></button>
-            </div>
-            <div className="p-4 space-y-4">
-              {glossaryLoading ? (
-                <div className="flex flex-col items-center justify-center py-6 gap-3">
-                  <Loader2 size={24} className="ilp-spin text-primary" />
-                  <p className="text-xs text-muted-foreground">Analisando termos técnicos...</p>
-                </div>
-              ) : glossaryTerms.length > 0 ? (
-                <div className="space-y-4">
-                  {glossaryTerms.map((t, i) => (
-                    <div key={i} className="space-y-1">
-                      <p className="text-sm font-bold text-primary">{t.term}</p>
-                      <p className="text-xs text-muted-foreground leading-relaxed">{t.definition}</p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-center text-xs text-muted-foreground py-4">Nenhum termo complexo identificado nesta cena.</p>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* ── Rich media panel ── */}
       {richMediaOpen && cur && (
         <div className="ilp-rich-media-panel">
@@ -1202,4 +1134,3 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({
     </div>
   );
 };
-
