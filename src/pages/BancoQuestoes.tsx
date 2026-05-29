@@ -608,30 +608,6 @@ export default function BancoQuestoes() {
   }, [questions, debouncedSearch, area, ano, disciplina, tema, onlyErrors, onlyFavorites, showIncomplete, favorites, attempts, cleanedById]);
 
 
-      // 4. Filtro de Área
-      if (area !== "Todas") {
-        const selectedArea = area.toLowerCase();
-        const areaMap: Record<string, string[]> = {
-          "linguagens": ["linguagens", "português", "literatura", "inglês", "espanhol", "artes", "educação física"],
-          "ciências humanas": ["humanas", "história", "geografia", "filosofia", "sociologia"],
-          "ciências da natureza": ["natureza", "biologia", "física", "química"],
-          "matemática": ["matemática"]
-        };
-        const targets = areaMap[selectedArea] || [selectedArea];
-        const isMatch = targets.some(t => areaQ.includes(t) || discQ.includes(t));
-        if (!isMatch) return false;
-      }
-
-      // Filtros de estado
-      if (onlyErrors && attempts[q.id]?.acertou !== false) return false;
-      if (onlyFavorites && !favorites.has(q.id)) return false;
-      if (q.incomplete && !showIncomplete) return false;
-      return true;
-    });
-
-
-  }, [questions, debouncedSearch, area, ano, disciplina, tema, onlyErrors, onlyFavorites, showIncomplete, favorites, attempts, cleanedById]);
-
 
   // Índice da questão aberta dentro da lista filtrada → navegação ←/→.
   const openedIndex = useMemo(
