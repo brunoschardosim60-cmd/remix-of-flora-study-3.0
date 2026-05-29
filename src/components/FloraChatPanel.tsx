@@ -17,6 +17,12 @@ interface FloraChat {
 export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
   const { messages, input, setInput, isSending, objetivo, send } = useFloraChatStream({ isOpen, onClose });
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [page, setPage] = useState(1);
+  const MESSAGES_PER_PAGE = 30;
+
+  const paginatedMessages = messages.slice(-MESSAGES_PER_PAGE * page);
+  const hasMore = messages.length > paginatedMessages.length;
 
   // Pré-preenche input quando abre com mensagem inicial
   useEffect(() => {
