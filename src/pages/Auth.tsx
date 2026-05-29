@@ -31,7 +31,7 @@ export default function Auth() {
   const [socialLoading, setSocialLoading] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const quote = QUOTES[0];
+  const quote = QUOTES[Math.floor(Date.now() / 1000 / 60) % QUOTES.length]; // Rotaciona a cada minuto
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
