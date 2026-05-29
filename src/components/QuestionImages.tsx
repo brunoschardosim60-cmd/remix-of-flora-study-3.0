@@ -1,4 +1,7 @@
-function QuestionImages({ urls, label }: { urls: string[]; label: string }) {
+import { useState, useEffect } from "react";
+import { AlertTriangle, ImageIcon, ChevronRight } from "lucide-react";
+
+export function QuestionImages({ urls, label }: { urls: string[]; label: string }) {
   const [show, setShow] = useState(false);
   const [errorUrls, setErrorUrls] = useState<Set<string>>(new Set());
 
@@ -34,7 +37,11 @@ function QuestionImages({ urls, label }: { urls: string[]; label: string }) {
               key={i}
               src={url}
               alt={`${label} — imagem ${i + 1}`}
-              onError={() => setErrorUrls(prev => new Set(prev).add(url))}
+              onError={() => setErrorUrls(prev => {
+                const n = new Set(prev);
+                n.add(url);
+                return n;
+              })}
               className="w-full h-auto rounded-lg object-contain max-h-[420px]"
             />
           ))}

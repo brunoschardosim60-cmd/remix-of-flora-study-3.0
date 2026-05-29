@@ -599,6 +599,9 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({
   }, []);
 
   const blocos = lesson.blocos || [];
+  const currentBlockIdx = stage === "block" ? idx : stage === "exercises" ? blocos.length : stage === "final" ? blocos.length + 1 : 0;
+  const totalSteps = blocos.length + (lesson.exercicios?.length ? 2 : 1);
+  const progressPercent = Math.min(100, Math.round((currentBlockIdx / totalSteps) * 100));
   const cur = blocos[idx];
   const isLast = idx === blocos.length - 1;
   const isCurLoading = !!loadingBlockIndices?.includes(idx);
