@@ -472,6 +472,11 @@ export default function BancoConcurso() {
     return ["Todas", ...Array.from(set).sort()];
   }, [questions]);
 
+  const orgaos = useMemo(() => {
+    const set = new Set(questions.map((q) => q.orgao).filter(Boolean));
+    return ["Todas", ...Array.from(set).sort()];
+  }, [questions]);
+
   const anos = useMemo(() => {
     const set = new Set<string>();
     for (const q of questions) if (q.ano != null) set.add(String(q.ano));
@@ -482,17 +487,19 @@ export default function BancoConcurso() {
     const s = debouncedSearch.trim().toLowerCase();
     return questions.filter((q) => {
       if (banca !== "Todas" && q.banca !== banca) return false;
+      if (orgao !== "Todas" && q.orgao !== orgao) return false;
       if (disciplina !== "Todas" && q.disciplina !== disciplina) return false;
       if (ano !== "Todos" && String(q.ano) !== ano) return false;
       if (s) {
-        const hay = (q.enunciado + " " + q.tema + " " + q.disciplina).toLowerCase();
+        const hay = (q.enunciado + " " + q.tema + " " + q.disciplina + " " + (q.orgao || "")).toLowerCase();
         if (!hay.includes(s)) return false;
       }
       if (onlyErrors && attempts[q.id]?.acertou !== false) return false;
       if (onlyFavorites && !favorites.has(q.id)) return false;
       return true;
     });
-  }, [questions, debouncedSearch, banca, disciplina, ano, onlyErrors, onlyFavorites, favorites, attempts]);
+  }, [questions, debouncedSearch, banca, orgao, disciplina, ano, onlyErrors, onlyFavorites, favorites, attempts]);
+
 
   const stats = useMemo(() => {
     const arr = Object.values(attempts);
