@@ -1,11 +1,12 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Send, X } from "lucide-react";
+import { Send, X, ChevronUp, ChevronDown } from "lucide-react";
 import { FloraQuotaIndicator } from "@/components/FloraQuotaIndicator";
 import { FloraIcon } from "@/components/FloraIcon";
 import ReactMarkdown from "react-markdown";
 import { getSuggestionChips } from "@/lib/floraChat";
 import { useFloraChatStream } from "@/hooks/useFloraChatStream";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface FloraChat {
   isOpen: boolean;
