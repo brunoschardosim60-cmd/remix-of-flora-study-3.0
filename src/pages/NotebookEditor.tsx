@@ -15,8 +15,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   ArrowLeft, Plus, Trash2, ChevronLeft, ChevronRight, Loader2, Pencil, Type, Maximize2, Minimize2, Share2,
-  Brain, Sparkles, BookPlus, CheckCircle2, XCircle, ZoomIn, ZoomOut, FileText, Cloud, CloudOff, RefreshCw, Eye,
+  Brain, Sparkles, BookPlus, CheckCircle2, XCircle, ZoomIn, ZoomOut, FileText, Cloud, CloudOff, RefreshCw, Eye, Camera,
 } from "lucide-react";
+
 import { toast } from "sonner";
 import { InlineMath } from "react-katex";
 import "katex/dist/katex.min.css";
