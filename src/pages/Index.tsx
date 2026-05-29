@@ -245,20 +245,32 @@ export default function Index() {
     <div className="min-h-dvh bg-background pb-16 md:pb-0">
       <DashboardHeader user={user} bancoRoute={bancoRoute} bancoLabel={bancoLabel} onSignOut={signOut} />
       <main className="container max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
-        <DashboardHero
-          firstName={firstName}
-          isLoggedIn={Boolean(user)}
-          streakDays={momentum.streakDays}
-          weeklyProgressPercent={momentum.weeklyProgressPercent}
-          weeklyCompleted={momentum.weeklyCompleted}
-          weeklyTotal={momentum.weeklyTotal}
-          dailyGoals={dailyGoals}
-          todayMinutes={momentum.todayMinutes}
-          revisionsCompletedToday={momentum.revisionsCompletedToday}
-          comebackMode={momentum.comebackMode}
-          onPrimaryAction={handlePrimaryAction}
-          primaryLabel={primaryLabel}
-        />
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <DashboardHero
+            firstName={firstName}
+            isLoggedIn={Boolean(user)}
+            streakDays={momentum.streakDays}
+            weeklyProgressPercent={momentum.weeklyProgressPercent}
+            weeklyCompleted={momentum.weeklyCompleted}
+            weeklyTotal={momentum.weeklyTotal}
+            dailyGoals={dailyGoals}
+            todayMinutes={momentum.todayMinutes}
+            revisionsCompletedToday={momentum.revisionsCompletedToday}
+            comebackMode={momentum.comebackMode}
+            onPrimaryAction={handlePrimaryAction}
+            primaryLabel={primaryLabel}
+            className="flex-1"
+          />
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setMinimalistMode(!minimalistMode)}
+            className="rounded-xl h-9 text-xs font-medium shrink-0 bg-background/50 backdrop-blur-sm border-dashed"
+          >
+            {minimalistMode ? "Mostrar Widgets" : "Modo Minimalista"}
+          </Button>
+        </div>
+
 
         {/* Flora: confirmações pendentes */}
         {user && <FloraConfirmationBanner />}
