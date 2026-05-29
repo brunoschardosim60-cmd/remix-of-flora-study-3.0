@@ -134,7 +134,7 @@ export default function Analise() {
       supabase.from("student_onboarding").select("objetivo,tempo_disponivel_min").eq("user_id", user.id).maybeSingle(),
       supabase.from("gamification_profiles").select("*").eq("user_id", user.id).maybeSingle(),
 
-    ]).then(([state, { data: sess }, { data: acts }, { data: pf }, { data: rev }, { data: ess }, { data: sl }, { data: onb }]) => {
+    ]).then(([state, { data: sess }, { data: acts }, { data: pf }, { data: rev }, { data: ess }, { data: sl }, { data: onb }, { data: gami }]) => {
       if (cancelled) return;
       setTopics(state?.topics ?? []);
       setSessions((sess ?? []) as StudySession[]);
@@ -144,6 +144,8 @@ export default function Analise() {
       setEssays((ess ?? []) as EssayRow[]);
       setSlots((sl ?? []) as WeeklySlotRow[]);
       setOnboarding((onb ?? null) as OnboardingRow | null);
+      setGamification(gami);
+
     }).catch(() => undefined).finally(() => { if (!cancelled) setLoading(false); });
 
     return () => { cancelled = true; };
