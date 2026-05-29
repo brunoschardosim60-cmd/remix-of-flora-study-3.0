@@ -98,8 +98,8 @@ export default function Onboarding() {
       const payload = {
         user_id: user.id,
         objetivo: objetivo || "aprender",
-        banca: isConcurso ? banca : "",
-        cargo: isConcurso ? cargo.trim() : "",
+        banca: isConcurso ? (banca || "outras") : "",
+        cargo: isConcurso ? (cargo || "").trim() : "",
         orgao: "",
         tempo_disponivel_min: (parseInt(horasDisponiveis) || 4) * 60,
         data_prova: dataProva || null,
@@ -108,14 +108,13 @@ export default function Onboarding() {
         conteudo_estudado: (conteudoEstudado || "").trim(),
         turno_preferido: turnoPreferido || "Manhã",
         objetivos_livre: (objetivosLivre || "").trim(),
-        materias_dificeis: materiasDificeis && materiasDificeis.length > 0 ? materiasDificeis : [],
+        materias_dificeis: (materiasDificeis && materiasDificeis.length > 0) ? materiasDificeis : ["Geral"],
         rotina: (turnoPreferido || "Manhã").toLowerCase(),
         meta_resultado: (metaResultado || objetivosLivre || `Passar em ${objetivo === "enem" ? "ENEM" : objetivo}`).trim() || "Estudar",
         completed: true,
       };
       
-      console.log("Onboarding payload:", payload);
-      const { error } = await supabase.from("student_onboarding").upsert(payload as any);
+      const { error } = await supabase.from("student_onboarding").upsert(payload);
       if (error) throw error;
 
       // Gera plano em background
