@@ -841,9 +841,20 @@ export default function BancoQuestoes() {
 
 
   function nextExam() {
-    if (examIndex < examQueue.length - 1) setExamIndex((i) => i + 1);
-    else setExamFinished(true);
+    if (examIndex < examQueue.length - 1) {
+      setExamIndex((i) => i + 1);
+    } else {
+      // No fim do Modo Real, gravamos todas as tentativas de uma vez para consolidar o histórico
+      if (examRealMode) {
+        examQueue.forEach(q => {
+          const letter = examAnswers[q.id];
+          if (letter) recordAttempt(q, letter, "prova");
+        });
+      }
+      setExamFinished(true);
+    }
   }
+
 
   function closeExam() {
     setExamMode(false);
