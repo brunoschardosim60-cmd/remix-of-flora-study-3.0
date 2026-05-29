@@ -148,8 +148,8 @@ export default function Onboarding() {
     );
   }
 
-  const TOTAL = 3;
-  const progress = ((step) / TOTAL) * 100;
+  const TOTAL = 5;
+  const progress = ((step + 1) / TOTAL) * 100;
 
   return (
     <div className="min-h-dvh bg-background flex flex-col">
