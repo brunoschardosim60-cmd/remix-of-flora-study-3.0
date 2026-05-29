@@ -487,22 +487,18 @@ export default function BancoQuestoes() {
   }, [questions]);
 
   // Temas disponíveis dependem da disciplina selecionada (ou de todas).
+  // Temas disponíveis: agora mostramos TODOS os temas presentes no banco para facilitar a busca,
+  // independente do filtro de disciplina/área atual, pois a mesma matéria (ex: Citologia)
+  // pode estar classificada com disciplinas diferentes (ex: Biologia vs Natureza).
   const temas = useMemo(() => {
     const set = new Set<string>();
-    const isFilteredByDisc = disciplina !== "Todas";
-    const isFilteredByArea = area !== "Todas";
-
     for (const q of questions) {
-      // Se tiver área selecionada, filtra por ela
-      if (isFilteredByArea && q.area !== area) continue;
-      // Se tiver disciplina selecionada, filtra por ela
-      if (isFilteredByDisc && q.disciplina !== disciplina) continue;
-      
       const t = (q.tema || "").trim();
       if (t) set.add(t);
     }
     return ["Todos", ...Array.from(set).sort((a, b) => a.localeCompare(b, "pt-BR"))];
-  }, [questions, disciplina, area]);
+  }, [questions]);
+
 
   // Pré-computa enunciado limpo, preview e haystack de busca por questão.
   // Evita rodar cleanPdfArtifacts toda hora durante render/filter.
@@ -551,10 +547,19 @@ export default function BancoQuestoes() {
   const filtered = useMemo(() => {
     const s = debouncedSearch.trim().toLowerCase();
     return questions.filter((q) => {
-      if (area !== "Todas" && q.area !== area) return false;
-      if (ano !== "Todos" && String(q.ano) !== ano) return false;
-      if (disciplina !== "Todas" && q.disciplina !== disciplina) return false;
-      if (tema !== "Todos" && (q.tema || "").trim() !== tema) return false;
+      // Se o usuário selecionou um TEMA específico, o tema manda mais que a disciplina.
+      // Isso permite encontrar "Citologia" mesmo se estiver em "Biologia" ou "Natureza".
+      if (tema !== "Todos") {
+        if ((q.tema || "").trim() !== tema) return false;
+        // Se selecionou tema, ignoramos filtros de área/disciplina para ser mais abrangente,
+        // mas ainda respeitamos o ano se estiver filtrado.
+        if (ano !== "Todos" && String(q.ano) !== ano) return false;
+      } else {
+        if (area !== "Todas" && q.area !== area) return false;
+        if (ano !== "Todos" && String(q.ano) !== ano) return false;
+        if (disciplina !== "Todas" && q.disciplina !== disciplina) return false;
+      }
+
       if (s) {
         const hay = cleanedById.get(q.id)?.haystack ?? "";
         if (!hay.includes(s)) return false;
