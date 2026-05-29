@@ -189,6 +189,8 @@ function normalizeEnunciado(raw: string, hasStructuredAlts: boolean): string {
 function normalizeAlternativaTexto(raw: string): string {
   if (!raw) return "";
   let t = cleanPdfArtifacts(raw);
+  // Garante primeira letra maiúscula para a alternativa
+  t = t.replace(/^([a-zà-ÿ])/u, (match) => match.toUpperCase());
   // Remove "A) " duplicado no início (já exibimos a letra separado)
   t = t.replace(/^\s*[A-Ea-e]\s*[).]\s*/u, "");
   // Junta quebras internas de linha (alternativa deve ser 1 parágrafo)
@@ -199,6 +201,7 @@ function normalizeAlternativaTexto(raw: string): string {
   t = t.replace(/\\\[([\s\S]+?)\\\]/g, (_m, x) => `\\(${String(x).trim()}\\)`);
   return t.trim();
 }
+
 
 /** Texto puro sem LaTeX para o preview do card (sem renderização KaTeX) */
 function plainPreview(raw: string, hasStructuredAlts: boolean): string {
