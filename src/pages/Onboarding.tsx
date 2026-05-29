@@ -19,6 +19,16 @@ const OBJECTIVES = [
   { value: "aprender",   label: "Aprender por conta", emoji: "🧠", desc: "Sem prova específica" },
 ] as const;
 
+// Nova estrutura de perguntas
+const QUESTIONS = [
+  { id: "data_prova", label: "Data da prova", type: "date" },
+  { id: "horas_disponiveis", label: "Horas por dia", type: "number" },
+  { id: "nivel_atual", label: "Nível atual", type: "select", options: ["Iniciante", "Intermediário", "Avançado"] },
+  { id: "conteudo_estudado", label: "Conteúdo já estudado", type: "text" },
+  { id: "turno_preferido", label: "Turno preferido", type: "select", options: ["Manhã", "Tarde", "Noite", "Madrugada"] },
+  { id: "objetivos_livre", label: "Objetivo detalhado", type: "textarea" },
+] as const;
+
 const ENEM_SUBJECTS = [
   "Matemática", "Português", "Redação", "Biologia", "Física",
   "Química", "História", "Geografia", "Filosofia", "Sociologia", "Inglês",
