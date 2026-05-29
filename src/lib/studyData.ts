@@ -384,6 +384,14 @@ export function createDefaultWeeklySlots(): WeeklySlot[] {
   }
   for (const horario of horarios) {
     for (let dia = 0; dia < 7; dia++) {
+      slots.push({
+        id: crypto.randomUUID(),
+        horario,
+        dia,
+        materia: null,
+        descricao: "",
+        concluido: false,
+      });
     }
   }
   return slots;
