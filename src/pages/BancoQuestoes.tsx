@@ -1188,7 +1188,7 @@ export default function BancoQuestoes() {
               </section>
 
               {/* 4. Resultado */}
-              {(revealed[opened.id] || attempts[opened.id]) && (() => {
+              {(opened && (revealed[opened.id] || attempts[opened.id])) && (() => {
                 const chosen = revealed[opened.id] || attempts[opened.id]?.alternativa_marcada;
                 const acertou = chosen === opened.correta;
                 return (
