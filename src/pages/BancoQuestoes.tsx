@@ -469,22 +469,22 @@ export default function BancoQuestoes() {
   }, [search]);
 
   const disciplinas = useMemo(() => {
-    // Remove valores que são na verdade áreas (evita duplicação com o filtro "Área").
+    // Filtramos disciplinas baseadas na área se houver uma selecionada,
+    // mas garantimos que as disciplinas mapeadas em diferentes áreas apareçam.
+    const set = new Set<string>();
     const AREA_LIKE = new Set([
-      "Linguagens",
-      "Ciências Humanas",
-      "Ciências da Natureza",
-      "Humanas",
-      "Natureza",
-      "Matemática",
+      "Linguagens", "Ciências Humanas", "Ciências da Natureza", 
+      "Humanas", "Natureza", "Matemática", "Linguagens e Códigos"
     ]);
-    const set = new Set(
-      questions
-        .map((q) => q.disciplina)
-        .filter((d) => d && !AREA_LIKE.has(d)),
-    );
+
+    for (const q of questions) {
+      if (area !== "Todas" && q.area !== area) continue;
+      const d = (q.disciplina || "").trim();
+      if (d && !AREA_LIKE.has(d)) set.add(d);
+    }
     return ["Todas", ...Array.from(set).sort()];
-  }, [questions]);
+  }, [questions, area]);
+
 
   // Temas disponíveis dependem da disciplina selecionada (ou de todas).
   // Temas disponíveis: agora mostramos TODOS os temas presentes no banco para facilitar a busca,
@@ -547,29 +547,37 @@ export default function BancoQuestoes() {
   const filtered = useMemo(() => {
     const s = debouncedSearch.trim().toLowerCase();
     return questions.filter((q) => {
-      // Se o usuário selecionou um TEMA específico, o tema manda mais que a disciplina.
-      // Isso permite encontrar "Citologia" mesmo se estiver em "Biologia" ou "Natureza".
+      // Filtro de Ano sempre se aplica de forma independente (captura todos os anos do banco)
+      if (ano !== "Todos" && String(q.ano) !== ano) return false;
+
+      // Hierarquia de filtros de conteúdo:
+      // 1. Tema (Busca global por tema selecionado)
       if (tema !== "Todos") {
         if ((q.tema || "").trim() !== tema) return false;
-        // Se selecionou tema, ignoramos filtros de área/disciplina para ser mais abrangente,
-        // mas ainda respeitamos o ano se estiver filtrado.
-        if (ano !== "Todos" && String(q.ano) !== ano) return false;
       } else {
-        if (area !== "Todas" && q.area !== area) return false;
-        if (ano !== "Todos" && String(q.ano) !== ano) return false;
-        if (disciplina !== "Todas" && q.disciplina !== disciplina) return false;
+        // 2. Disciplina (Se tema for Todos)
+        if (disciplina !== "Todas") {
+          if (q.disciplina !== disciplina) return false;
+        } else {
+          // 3. Área (Se disciplina for Todas)
+          if (area !== "Todas" && q.area !== area) return false;
+        }
       }
 
+      // Filtro de busca textual
       if (s) {
         const hay = cleanedById.get(q.id)?.haystack ?? "";
         if (!hay.includes(s)) return false;
       }
+
+      // Filtros de estado (erros, favoritos, incompletas)
       if (onlyErrors && attempts[q.id]?.acertou !== false) return false;
       if (onlyFavorites && !favorites.has(q.id)) return false;
       if (q.incomplete && !showIncomplete) return false;
       return true;
     });
   }, [questions, debouncedSearch, area, ano, disciplina, tema, onlyErrors, onlyFavorites, showIncomplete, favorites, attempts, cleanedById]);
+
 
   // Índice da questão aberta dentro da lista filtrada → navegação ←/→.
   const openedIndex = useMemo(
