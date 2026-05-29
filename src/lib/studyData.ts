@@ -77,7 +77,7 @@ export const ENEM_SUBJECTS: Subject[] = [
   "Simulado",
 ];
 
-export const REVISION_INTERVALS = [1, 3, 7, 14, 30, 60];
+export const REVISION_INTERVALS = [1, 3, 7, 14, 30, 60, 90, 120];
 
 export interface Flashcard {
   id: string;

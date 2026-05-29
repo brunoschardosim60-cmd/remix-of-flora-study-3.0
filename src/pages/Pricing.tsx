@@ -24,10 +24,10 @@ const PLANS = [
   {
     id: "pro",
     name: "Pro",
-    price: "R$ 19",
+    price: "R$ 29",
     period: "/mês",
     icon: Rocket,
-    desc: "Para quem está a sério no ENEM ou concurso.",
+    desc: "Para quem está focado na aprovação.",
     features: [
       "Tudo do plano Grátis",
       "Flora ilimitada (chat, planos, aulas)",
@@ -42,10 +42,10 @@ const PLANS = [
   {
     id: "premium",
     name: "Premium",
-    price: "R$ 39",
+    price: "R$ 59",
     period: "/mês",
     icon: Crown,
-    desc: "Para quem quer o máximo da Flora.",
+    desc: "Acesso total à inteligência da Flora.",
     features: [
       "Tudo do plano Pro",
       "Modelos de IA Ultra-rápidos",

@@ -206,10 +206,25 @@ function formatTime(date: Date): string {
 export default function Comunidades() {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
+  
+  // Persistência real em banco seria aqui. Por enquanto, usamos localStorage com inicialização robusta.
   const [communities, setCommunities] = useState<Community[]>(() => {
-    const saved = localStorage.getItem("studyflow.communities");
-    return saved ? JSON.parse(saved) : INITIAL_COMMUNITIES;
+    try {
+      const saved = localStorage.getItem("studyflow.communities");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Garante que o autor "Você" seja atualizado para o nome real se existir
+        return parsed.map((c: Community) => ({
+          ...c,
+          posts: c.posts.map(p => p.author === "Você" && profile?.display_name ? { ...p, author: profile.display_name } : p)
+        }));
+      }
+    } catch (e) {
+      console.error("Erro ao carregar comunidades do storage:", e);
+    }
+    return INITIAL_COMMUNITIES;
   });
+  
   const [activeCommunity, setActiveCommunity] = useState<Community | null>(null);
   const [newPost, setNewPost] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
