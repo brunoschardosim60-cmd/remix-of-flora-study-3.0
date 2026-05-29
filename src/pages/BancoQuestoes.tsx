@@ -1449,13 +1449,18 @@ export default function BancoQuestoes() {
               </div>
               {examQueue.length <= 15 ? (
                 <div className="hidden sm:flex gap-1 items-center">
-                  {examQueue.map((q, i) => (
-                    <div key={q.id} className={`h-1.5 w-5 rounded-full transition-colors ${
-                      i < examIndex
-                        ? examAnswers[q.id] === q.correta ? "bg-emerald-500" : "bg-destructive"
-                        : i === examIndex ? "bg-primary" : "bg-muted"
-                    }`} />
-                  ))}
+                  {examQueue.map((q, i) => {
+                    const isAnswered = !!examAnswers[q.id];
+                    const isCorrect = examAnswers[q.id] === q.correta;
+                    return (
+                      <div key={q.id} className={`h-1.5 w-5 rounded-full transition-colors ${
+                        i < examIndex
+                          ? examRealMode ? (isAnswered ? "bg-primary/60" : "bg-muted") : (isCorrect ? "bg-emerald-500" : "bg-destructive")
+                          : i === examIndex ? "bg-primary" : "bg-muted"
+                      }`} />
+                    );
+                  })}
+
                 </div>
               ) : (
                 <div className="hidden sm:flex items-center w-32">
@@ -1491,7 +1496,7 @@ export default function BancoQuestoes() {
                   <AlternativasPanel q={q} chosen={chosen} onAnswer={answerExam} />
 
                   {/* Resultado */}
-                  {chosen && (
+                  {chosen && !examRealMode && (
                     <div className={`rounded-xl px-4 py-3 flex items-center gap-3 ${chosen === q.correta ? "bg-emerald-500/10 border border-emerald-500/30" : "bg-destructive/10 border border-destructive/30"}`}>
                       <span className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${chosen === q.correta ? "bg-emerald-500" : "bg-destructive"}`}>
                         {chosen === q.correta ? <Check className="w-4 h-4 text-white" /> : <X className="w-4 h-4 text-white" />}
@@ -1502,6 +1507,14 @@ export default function BancoQuestoes() {
                       </p>
                     </div>
                   )}
+
+                  {chosen && examRealMode && (
+                    <div className="rounded-xl px-4 py-3 bg-primary/5 border border-primary/20 flex items-center gap-3">
+                      <Check className="w-4 h-4 text-primary" />
+                      <p className="text-sm font-medium text-primary">Questão respondida. Continue focado!</p>
+                    </div>
+                  )}
+
 
                   <div className="flex justify-end">
                     <Button onClick={nextExam} disabled={!chosen} className="rounded-xl px-6">
