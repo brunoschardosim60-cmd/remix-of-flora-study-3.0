@@ -125,9 +125,9 @@ export default function Onboarding() {
 
       setDone(true);
       setTimeout(() => navigate("/"), 2200);
-    } catch (err) {
-      console.error(err);
-      toast.error("Erro ao salvar. Tente novamente.");
+    } catch (err: any) {
+      console.error("Onboarding error:", err);
+      toast.error(err?.message || "Erro ao salvar. Tente novamente.");
     } finally {
       setLoading(false);
     }
