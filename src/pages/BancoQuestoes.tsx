@@ -547,27 +547,40 @@ export default function BancoQuestoes() {
   const filtered = useMemo(() => {
     const s = debouncedSearch.trim().toLowerCase();
     return questions.filter((q) => {
-      // Filtro de Ano sempre se aplica de forma independente (captura todos os anos do banco)
+      // Normalização para busca textual e filtros
+      const temaQ = (q.tema || "").trim().toLowerCase();
+      const discQ = (q.disciplina || "").trim().toLowerCase();
+      const areaQ = (q.area || "").trim().toLowerCase();
+      const searchNormalized = debouncedSearch.trim().toLowerCase();
+
+      // Filtro de Ano (Sempre independente)
       if (ano !== "Todos" && String(q.ano) !== ano) return false;
 
-      // Hierarquia de filtros de conteúdo:
-      // 1. Tema (Busca global por tema selecionado)
-      if (tema !== "Todos") {
-        if ((q.tema || "").trim() !== tema) return false;
-      } else {
-        // 2. Disciplina (Se tema for Todos)
-        if (disciplina !== "Todas") {
-          if (q.disciplina !== disciplina) return false;
-        } else {
-          // 3. Área (Se disciplina for Todas)
-          if (area !== "Todas" && q.area !== area) return false;
-        }
-      }
-
-      // Filtro de busca textual
-      if (s) {
+      // Lógica de Filtro Hierárquico
+      if (searchNormalized) {
+        // Se houver busca textual, ela tem prioridade total (Ignora filtros de tema/disc/área para não restringir)
         const hay = cleanedById.get(q.id)?.haystack ?? "";
-        if (!hay.includes(s)) return false;
+        if (!hay.includes(searchNormalized)) return false;
+      } else if (tema !== "Todos") {
+        // Se selecionou um tema (ex: "Meio Ambiente"), buscamos esse tema exato OU temas relacionados/sinônimos
+        const selectedTema = tema.toLowerCase();
+        
+        // Mapeamento de sinônimos para tornar a busca mais inteligente
+        const synonyms: Record<string, string[]> = {
+          "meio ambiente": ["meio ambiente", "ecologia", "sustentabilidade", "meio-ambiente"],
+          "citologia": ["citologia", "célula", "celular", "biologia celular"],
+          "brasil república": ["brasil república", "brasil republica", "era vargas", "ditadura militar"],
+          "interpretação de texto": ["interpretação de texto", "interpretación de texto", "gêneros textuais", "generos textuais"]
+        };
+
+        const currentSynonyms = synonyms[selectedTema] || [selectedTema];
+        const isMatch = currentSynonyms.some(s => temaQ.includes(s) || (selectedTema === "meio ambiente" && temaQ === ""));
+        
+        if (!isMatch) return false;
+      } else if (disciplina !== "Todas") {
+        if (q.disciplina !== disciplina) return false;
+      } else if (area !== "Todas") {
+        if (q.area !== area) return false;
       }
 
       // Filtros de estado (erros, favoritos, incompletas)
@@ -576,6 +589,7 @@ export default function BancoQuestoes() {
       if (q.incomplete && !showIncomplete) return false;
       return true;
     });
+
   }, [questions, debouncedSearch, area, ano, disciplina, tema, onlyErrors, onlyFavorites, showIncomplete, favorites, attempts, cleanedById]);
 
 
