@@ -143,11 +143,12 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
                   </div>
                 </th>
                 {DIAS.map((dia, i) => (
-                  <th key={dia} className="p-3 font-heading font-semibold text-center">
+                  <th key={dia} className={`p-3 font-heading font-semibold text-center ${activeDayMobile !== i ? "hidden sm:table-cell" : ""}`}>
                     <span className="hidden sm:inline">{dia}</span>
                     <span className="sm:hidden">{DIAS_SHORT[i]}</span>
                   </th>
                 ))}
+
                 <th className="p-2 w-[40px]" />
               </tr>
             </thead>
