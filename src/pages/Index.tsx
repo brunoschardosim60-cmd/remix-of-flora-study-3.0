@@ -197,6 +197,11 @@ export default function Index() {
     window.localStorage.setItem("studyflow.activeTab", tab);
   }, [tab]);
 
+  useEffect(() => {
+    window.localStorage.setItem("studyflow.minimalist", String(minimalistMode));
+  }, [minimalistMode]);
+
+
   const tabs = [
     { id: "revisao" as Tab, label: "Cronograma de Revisao", icon: CalendarDays },
     { id: "semanal" as Tab, label: "Cronograma Semanal", icon: LayoutGrid },
