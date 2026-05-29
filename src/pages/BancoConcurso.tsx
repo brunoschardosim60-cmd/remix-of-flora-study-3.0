@@ -814,7 +814,7 @@ export default function BancoConcurso() {
 
       const { data, error } = await supabase.functions.invoke("generate-questions-user", {
         body: {
-          banca: iaBanca, materia: iaMateria, assunto: iaAssunto.trim(),
+          banca: iaBanca, orgao: iaOrgao, materia: iaMateria, assunto: iaAssunto.trim(),
           quantidade: iaQtd, nivel: iaNivel, tipo: iaTipo,
           focoErros: iaFocoErros,
           evitarEnunciados,
