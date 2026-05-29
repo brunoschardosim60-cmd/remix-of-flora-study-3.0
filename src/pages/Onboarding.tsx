@@ -52,7 +52,7 @@ export default function Onboarding() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const [step, setStep] = useState(0); // 0=objetivo, 1=matérias, 2=meta
+  const [step, setStep] = useState(0); 
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
 
@@ -62,6 +62,12 @@ export default function Onboarding() {
   const [cargo, setCargo] = useState("");
   const [materiasDificeis, setMateriasDificeis] = useState<string[]>([]);
   const [metaResultado, setMetaResultado] = useState("");
+  const [dataProva, setDataProva] = useState("");
+  const [horasDisponiveis, setHorasDisponiveis] = useState("4");
+  const [nivelAtual, setNivelAtual] = useState("Iniciante");
+  const [conteudoEstudado, setConteudoEstudado] = useState("");
+  const [turnoPreferido, setTurnoPreferido] = useState("Manhã");
+  const [objetivosLivre, setObjetivosLivre] = useState("");
 
   const isConcurso = objetivo === "concurso";
   const subjects = isConcurso ? CONCURSO_SUBJECTS : ENEM_SUBJECTS;
