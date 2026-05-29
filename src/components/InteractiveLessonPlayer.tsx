@@ -529,6 +529,11 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({
   const [duvidaLoading, setDuvidaLoading] = useState(false);
   const [duvidaResp, setDuvidaResp] = useState("");
 
+  const [glossaryOpen, setGlossaryOpen] = useState(false);
+  const [glossaryLoading, setGlossaryLoading] = useState(false);
+  const [glossaryTerms, setGlossaryTerms] = useState<Array<{ term: string; definition: string }>>([]);
+
+
   // Ilustrações por cena
   const [sceneImages, setSceneImages] = useState<Record<string, string>>({});
   const [sceneImgLoading, setSceneImgLoading] = useState<Record<string, boolean>>({});
