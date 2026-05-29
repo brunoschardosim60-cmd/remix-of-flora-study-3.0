@@ -99,6 +99,8 @@ export default function Analise() {
   const [actions, setActions] = useState<UserAction[]>([]);
   const [perfs, setPerfs] = useState<StudentPerf[]>([]);
   const [reviews, setReviews] = useState<SpacedReview[]>([]);
+  const [gamification, setGamification] = useState<any>(null);
+
   const [essays, setEssays] = useState<EssayRow[]>([]);
   const [slots, setSlots] = useState<WeeklySlotRow[]>([]);
   const [onboarding, setOnboarding] = useState<OnboardingRow | null>(null);
