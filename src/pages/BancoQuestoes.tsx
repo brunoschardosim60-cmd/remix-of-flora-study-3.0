@@ -555,18 +555,27 @@ export default function BancoQuestoes() {
       if (tema !== "Todos") {
         const selectedTema = tema.toLowerCase();
         const synonyms: Record<string, string[]> = {
-          "meio ambiente": ["meio ambiente", "ecologia", "sustentabilidade", "biomas", "impactos ambientais"],
-          "ecologia": ["ecologia", "meio ambiente", "sustentabilidade"],
-          "citologia": ["citologia", "celular", "célula", "organelas"],
-          "brasil república": ["brasil república", "brasil republica", "era vargas", "ditadura", "populismo"],
-          "interpretação de texto": ["interpretação", "texto", "leitura", "compreensão", "análise"],
-          "funções": ["função", "funções", "afim", "quadrática", "exponencial", "logaritmo"],
-          "geometria": ["geometria", "plana", "espacial", "analítica", "área", "volume", "triângulo"]
+          "meio ambiente": ["meio ambiente", "ecologia", "sustentabilidade", "biomas", "impactos ambientais", "poluição", "recursos naturais"],
+          "ecologia": ["ecologia", "meio ambiente", "sustentabilidade", "bioma", "ecossistema"],
+          "citologia": ["citologia", "celular", "célula", "organelas", "mitocôndria", "membrana"],
+          "brasil república": ["república", "republica", "era vargas", "ditadura", "populismo", "jk", "lula", "fhc"],
+          "interpretação de texto": ["interpretação", "texto", "leitura", "compreensão", "análise", "sentido"],
+          "funções": ["função", "funções", "afim", "quadrática", "exponencial", "logaritmo", "primeiro grau", "segundo grau"],
+          "geometria": ["geometria", "plana", "espacial", "analítica", "área", "volume", "triângulo", "círculo", "esfera"]
         };
         const targets = synonyms[selectedTema] || [selectedTema];
-        const isMatch = targets.some(t => temaQ.includes(t) || discQ.includes(t) || areaQ.includes(t));
+        const hay = cleanedById.get(q.id)?.haystack ?? "";
+        
+        // Match se o tema, disciplina ou enunciado contém algum dos termos relacionados
+        const isMatch = targets.some(t => 
+          temaQ.includes(t) || 
+          discQ.includes(t) || 
+          areaQ.includes(t) ||
+          hay.includes(t)
+        );
         if (!isMatch) return false;
       }
+
 
       // 3. Filtro de Disciplina (Agrupado)
       if (disciplina !== "Todas") {
