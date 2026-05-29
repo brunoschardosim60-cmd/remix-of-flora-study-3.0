@@ -1236,10 +1236,14 @@ export default function BancoConcurso() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
             <Input placeholder="Buscar por enunciado, tema ou disciplina…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <Select value={banca} onValueChange={setBanca}>
               <SelectTrigger><SelectValue placeholder="Banca" /></SelectTrigger>
               <SelectContent>{bancas.map((b) => <SelectItem key={b} value={b}>{b}</SelectItem>)}</SelectContent>
+            </Select>
+            <Select value={orgao} onValueChange={setOrgao}>
+              <SelectTrigger className="truncate"><SelectValue placeholder="Órgão" /></SelectTrigger>
+              <SelectContent>{orgaos.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
             </Select>
             <Select value={disciplina} onValueChange={setDisciplina}>
               <SelectTrigger><SelectValue placeholder="Disciplina" /></SelectTrigger>
@@ -1250,6 +1254,7 @@ export default function BancoConcurso() {
               <SelectContent>{anos.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent>
             </Select>
           </div>
+
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
             <Filter className="w-3.5 h-3.5" />
             <span>{filtered.length} resultado{filtered.length !== 1 && "s"}</span>
