@@ -807,8 +807,58 @@ export default function Analise() {
               </div>
             )}
 
+            {/* ── ABA: RELATÓRIO ────────────────────────────────────── */}
+            {activeTab === "relatorio" && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between gap-4 flex-wrap bg-primary/5 border border-primary/20 rounded-2xl p-5">
+                  <div className="flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
+                      <FileDown className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-primary mb-1">Exportar Relatório Detalhado</h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        Gere um PDF completo com seu progresso, pontos fortes, fracos e predição de nota para salvar ou compartilhar com tutores/pais.
+                      </p>
+                    </div>
+                  </div>
+                  <Button 
+                    onClick={handleExportPDF} 
+                    disabled={exporting}
+                    className="gap-2 rounded-xl"
+                  >
+                    {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
+                    {exporting ? "Gerando..." : "Baixar PDF"}
+                  </Button>
+                </div>
+                
+                <DetailedProgressReport
+                  totalXP={0} // Gamification profile is not directly available here in the same shape
+                  level={1}
+                  streak={streak}
+                  totalStudyHours={Math.round(totalStudyMs / 3600000)}
+                  strongSubjects={perfs.filter(p => p.accuracy >= 75).map(p => p.materia)}
+                  weakSubjects={perfs.filter(p => p.accuracy < 60).map(p => p.materia)}
+                  subjectPerformances={perfs.map(p => ({
+                    subject: p.materia,
+                    accuracy: p.accuracy,
+                    totalQuestions: p.acertos + p.erros,
+                    studyMinutes: Math.round(filteredSessions.filter(s => s.subject === p.materia).reduce((a, s) => a + s.duration_ms, 0) / 60000),
+                    trend: p.accuracy >= 70 ? "up" : p.accuracy < 50 ? "down" : "stable"
+                  }))}
+                  weeklyData={heatmapData.map(d => ({
+                    day: d.label,
+                    minutes: d.min,
+                    questions: filteredActions.filter(a => a.created_at.startsWith(d.date) && (a.action === "quiz_correct" || a.action === "quiz_wrong")).length,
+                    revisions: reviews.filter(r => r.completed_at && r.completed_at.startsWith(d.date)).length
+                  }))}
+                />
+              </div>
+            )}
+
             {/* ── ABA: REVISÕES ────────────────────────────────────── */}
             {activeTab === "revisoes" && (
+
               <div className="space-y-4">
                 <div className="grid gap-3 grid-cols-3">
                   {[
