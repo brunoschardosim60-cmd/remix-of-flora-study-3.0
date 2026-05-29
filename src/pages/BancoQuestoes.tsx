@@ -540,51 +540,51 @@ export default function BancoQuestoes() {
       const temaQ = (q.tema || "").trim().toLowerCase();
       const discQ = (q.disciplina || "").trim().toLowerCase();
       const areaQ = (q.area || "").trim().toLowerCase();
-      const searchNormalized = debouncedSearch.trim().toLowerCase();
+      const hay = cleanedById.get(q.id)?.haystack ?? "";
 
-      // Filtro de Ano (Sempre independente)
+      // 1. Filtro de Ano (Sempre Independente)
       if (ano !== "Todos" && String(q.ano) !== ano) return false;
 
-      // 1. Filtro de Tema (Prioridade)
-      // Se selecionou um tema (ex: "Meio Ambiente"), buscamos por palavras-chave em todo o conteúdo
+      // 2. Filtro de Tema (Inclusivo: Busca por sinônimos e termos relacionados em todo o conteúdo)
       if (tema !== "Todos") {
         const selectedTema = tema.toLowerCase();
         const synonyms: Record<string, string[]> = {
-          "meio ambiente": ["meio ambiente", "ecologia", "sustentabilidade", "poluição", "recursos naturais", "impacto ambiental"],
-          "ecologia": ["ecologia", "meio ambiente", "sustentabilidade", "bioma", "ecossistema"],
-          "citologia": ["citologia", "celular", "célula", "organela", "mitocôndria"],
-          "brasil república": ["república", "era vargas", "ditadura", "democracia", "fhc", "lula", "jk"],
-          "interpretação de texto": ["interpretação", "texto", "leitura", "compreensão", "sentido"],
-          "funções": ["função", "afim", "quadrática", "exponencial", "logaritmo", "grau"],
-          "geometria": ["geometria", "plana", "espacial", "área", "volume", "triângulo", "círculo"]
+          "meio ambiente": ["meio ambiente", "ecologia", "sustentabilidade", "poluição", "recursos naturais", "impacto ambiental", "bioma", "natureza"],
+          "ecologia": ["ecologia", "meio ambiente", "sustentabilidade", "bioma", "ecossistema", "habitat", "população"],
+          "citologia": ["citologia", "celular", "célula", "organela", "mitocôndria", "núcleo", "membrana"],
+          "brasil república": ["república", "era vargas", "ditadura", "democracia", "fhc", "lula", "jk", "populismo", "constituição"],
+          "interpretação de texto": ["interpretação", "texto", "leitura", "compreensão", "sentido", "análise", "gênero"],
+          "funções": ["função", "afim", "quadrática", "exponencial", "logaritmo", "primeiro grau", "segundo grau", "gráfico"],
+          "geometria": ["geometria", "plana", "espacial", "área", "volume", "triângulo", "círculo", "perímetro", "ângulo"]
         };
         const targets = synonyms[selectedTema] || [selectedTema];
-        const hay = cleanedById.get(q.id)?.haystack ?? "";
         const isMatch = targets.some(t => temaQ.includes(t) || discQ.includes(t) || hay.includes(t));
         if (!isMatch) return false;
       }
 
-      // 2. Filtro de Disciplina
-      if (disciplina !== "Todas") {
+      // 3. Filtro de Disciplina (Agrupado por Área se necessário)
+      // Se um tema já foi selecionado, não restringimos pela disciplina para evitar conflitos de classificação.
+      if (tema === "Todos" && disciplina !== "Todas") {
         const selectedDisc = disciplina.toLowerCase();
         const discMap: Record<string, string[]> = {
-          "biologia": ["biologia", "natureza"],
-          "física": ["física", "fisica", "natureza"],
-          "química": ["química", "quimica", "natureza"],
-          "história": ["história", "historia", "humanas"],
-          "geografia": ["geografia", "humanas"],
-          "português": ["português", "portugues", "linguagens", "texto"],
+          "biologia": ["biologia", "natureza", "ciências da natureza"],
+          "física": ["física", "fisica", "natureza", "ciências da natureza"],
+          "química": ["química", "quimica", "natureza", "ciências da natureza"],
+          "história": ["história", "historia", "humanas", "ciências humanas"],
+          "geografia": ["geografia", "humanas", "ciências humanas"],
+          "português": ["português", "portugues", "linguagens", "texto", "gramática"],
           "matemática": ["matemática", "matematica"]
         };
         const targets = discMap[selectedDisc] || [selectedDisc];
         if (!targets.some(t => discQ.includes(t) || areaQ.includes(t))) return false;
       }
 
-      // 3. Filtro de Área
-      if (area !== "Todas") {
+      // 4. Filtro de Área
+      // Se tema ou disciplina foram selecionados, a área torna-se secundária para garantir o retorno.
+      if (tema === "Todos" && disciplina === "Todas" && area !== "Todas") {
         const selectedArea = area.toLowerCase();
         const areaMap: Record<string, string[]> = {
-          "linguagens": ["linguagens", "português", "literatura", "inglês", "espanhol", "artes"],
+          "linguagens": ["linguagens", "português", "literatura", "inglês", "espanhol", "artes", "códigos"],
           "ciências humanas": ["humanas", "história", "geografia", "filosofia", "sociologia"],
           "ciências da natureza": ["natureza", "biologia", "física", "química"],
           "matemática": ["matemática"]
@@ -593,19 +593,17 @@ export default function BancoQuestoes() {
         if (!targets.some(t => areaQ.includes(t) || discQ.includes(t))) return false;
       }
 
-      // 4. Busca Textual Final
-      if (searchNormalized) {
-        const hay = cleanedById.get(q.id)?.haystack ?? "";
-        if (!hay.includes(searchNormalized)) return false;
-      }
+      // 5. Busca Textual Final (Aplica-se sobre o conjunto já filtrado)
+      if (s && !hay.includes(s)) return false;
 
-      // Filtros de estado
+      // Filtros de estado persistentes
       if (onlyErrors && attempts[q.id]?.acertou !== false) return false;
       if (onlyFavorites && !favorites.has(q.id)) return false;
       if (q.incomplete && !showIncomplete) return false;
       return true;
     });
   }, [questions, debouncedSearch, area, ano, disciplina, tema, onlyErrors, onlyFavorites, showIncomplete, favorites, attempts, cleanedById]);
+
 
 
 
