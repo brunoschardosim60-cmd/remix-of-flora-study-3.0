@@ -8,7 +8,7 @@ import { AddTopicForm } from "@/components/AddTopicForm";
 import { StudyTimer } from "@/components/StudyTimer";
 import { FocusMiniPlayer } from "@/components/FocusMiniPlayer";
 import { QuickStartChecklist } from "@/components/QuickStartChecklist";
-import { useDashboardWidgets } from "@/components/DashboardCustomizer";
+import { DashboardCustomizer, useDashboardWidgets } from "@/components/DashboardCustomizer";
 import { BottomNav } from "@/components/BottomNav";
 import { useStudyDashboard } from "@/hooks/useStudyDashboard";
 import { useStudyTimer } from "@/hooks/useStudyTimer";
@@ -261,14 +261,17 @@ export default function Index() {
             primaryLabel={primaryLabel}
           />
 
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => setMinimalistMode(!minimalistMode)}
-            className="rounded-xl h-9 text-xs font-medium shrink-0 bg-background/50 backdrop-blur-sm border-dashed"
-          >
-            {minimalistMode ? "Mostrar Widgets" : "Modo Minimalista"}
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setMinimalistMode(!minimalistMode)}
+              className={`rounded-xl h-9 text-xs font-medium shrink-0 bg-background/50 backdrop-blur-sm border-dashed ${minimalistMode ? "border-primary text-primary" : ""}`}
+            >
+              {minimalistMode ? "Mostrar Widgets" : "Modo Minimalista"}
+            </Button>
+            <DashboardCustomizer />
+          </div>
         </div>
 
 
