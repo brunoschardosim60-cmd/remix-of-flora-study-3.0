@@ -35,6 +35,8 @@ const Pricing = lazy(() => import("./pages/Pricing"));
 const PublicProfile = lazy(() => import("./pages/PublicProfile"));
 const Cursos = lazy(() => import("./pages/Cursos"));
 const CursoPlayer = lazy(() => import("./pages/CursoPlayer"));
+const RedacaoTemplates = lazy(() => import("./pages/RedacaoTemplates"));
+
 
 
 const queryClient = new QueryClient({
