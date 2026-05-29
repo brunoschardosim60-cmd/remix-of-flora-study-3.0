@@ -792,8 +792,10 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({
   const totalScenes = useMemo(() => {
     let t = 1;
     for (let i = 0; i < blocos.length; i++) t += buildScenes(blocos[i], i, lessonSeed).length;
-    if (lesson.exercicios?.length) t += 1; t += 1; return t;
-  }, [blocos, lesson.exercicios, lessonSeed]);
+    if (lesson.exercicios?.length) t += 1;
+    if (lesson.glossario?.length) t += 1;
+    t += 1; return t;
+  }, [blocos, lesson.exercicios, lesson.glossario, lessonSeed]);
 
   const currentStep = useMemo(() => {
     if (stage === "intro") return 1;
@@ -803,9 +805,11 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({
     for (let i = idx; i < blocos.length; i++) s += buildScenes(blocos[i], i, lessonSeed).length;
     if (stage === "exercises") return s + 1;
     if (lesson.exercicios?.length) s += 1;
+    if (stage === "glossario") return s + 1;
+    if (lesson.glossario?.length) s += 1;
     if (stage === "final") return s + 1;
     return totalScenes;
-  }, [stage, idx, sceneIdx, blocos, lesson.exercicios, totalScenes, lessonSeed]);
+  }, [stage, idx, sceneIdx, blocos, lesson.exercicios, lesson.glossario, totalScenes, lessonSeed]);
 
   const progress = currentStep / totalScenes;
   const resumo = Array.isArray(lesson.resumo) ? lesson.resumo : (typeof lesson.resumo === "string" ? [lesson.resumo] : []);
