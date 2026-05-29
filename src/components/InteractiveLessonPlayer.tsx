@@ -1160,6 +1160,38 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({
         </div>
       )}
 
+      {/* ── Glossary ── */}
+      {glossaryOpen && (
+        <div className="ilp-modal-overlay" onClick={() => setGlossaryOpen(false)}>
+          <div className="ilp-modal-content max-w-sm" onClick={(e) => e.stopPropagation()}>
+            <div className="ilp-modal-head">
+              <BookPlus size={16} className="text-primary" />
+              <strong>Dicionário Flora</strong>
+              <button className="ilp-modal-close" onClick={() => setGlossaryOpen(false)}><XIcon size={16}/></button>
+            </div>
+            <div className="p-4 space-y-4">
+              {glossaryLoading ? (
+                <div className="flex flex-col items-center justify-center py-6 gap-3">
+                  <Loader2 size={24} className="ilp-spin text-primary" />
+                  <p className="text-xs text-muted-foreground">Analisando termos técnicos...</p>
+                </div>
+              ) : glossaryTerms.length > 0 ? (
+                <div className="space-y-4">
+                  {glossaryTerms.map((t, i) => (
+                    <div key={i} className="space-y-1">
+                      <p className="text-sm font-bold text-primary">{t.term}</p>
+                      <p className="text-xs text-muted-foreground leading-relaxed">{t.definition}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-center text-xs text-muted-foreground py-4">Nenhum termo complexo identificado nesta cena.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Rich media panel ── */}
       {richMediaOpen && cur && (
         <div className="ilp-rich-media-panel">
@@ -1170,3 +1202,4 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({
     </div>
   );
 };
+
