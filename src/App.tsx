@@ -166,8 +166,9 @@ const App = () => (
       <TooltipProvider>
         <Sonner />
         <AuthProvider>
-          <NotificationInit />
-          <BrowserRouter
+          <AppProvider>
+            <NotificationInit />
+            <BrowserRouter
             future={{
               v7_startTransition: true,
               v7_relativeSplatPath: true,
