@@ -8,7 +8,7 @@ import { AddTopicForm } from "@/components/AddTopicForm";
 import { StudyTimer } from "@/components/StudyTimer";
 import { FocusMiniPlayer } from "@/components/FocusMiniPlayer";
 import { QuickStartChecklist } from "@/components/QuickStartChecklist";
-import { useDashboardWidgets } from "@/components/DashboardCustomizer";
+import { DashboardCustomizer, useDashboardWidgets } from "@/components/DashboardCustomizer";
 import { BottomNav } from "@/components/BottomNav";
 import { useStudyDashboard } from "@/hooks/useStudyDashboard";
 import { useStudyTimer } from "@/hooks/useStudyTimer";
