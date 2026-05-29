@@ -326,7 +326,7 @@ export default function Settings() {
         )}
 
         {/* 2FA */}
-        <TwoFactorPanel />
+        {/* 2FA removido a pedido do usuário */}
 
         {/* Objetivo */}
         <section className="rounded-2xl border border-border bg-card p-4 sm:p-5 space-y-4">
