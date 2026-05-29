@@ -291,8 +291,10 @@ export default function BancoConcurso() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [banca, setBanca] = useState("Todas");
+  const [orgao, setOrgao] = useState("Todas");
   const [disciplina, setDisciplina] = useState("Todas");
   const [ano, setAno] = useState("Todos");
+
   const [opened, setOpened] = useState<Question | null>(null);
   const [revealed, setRevealed] = useState<Record<string, string>>({});
   const [attempts, setAttempts] = useState<Record<string, Attempt>>({});
@@ -470,6 +472,11 @@ export default function BancoConcurso() {
     return ["Todas", ...Array.from(set).sort()];
   }, [questions]);
 
+  const orgaos = useMemo(() => {
+    const set = new Set(questions.map((q) => q.orgao).filter(Boolean));
+    return ["Todas", ...Array.from(set).sort()];
+  }, [questions]);
+
   const anos = useMemo(() => {
     const set = new Set<string>();
     for (const q of questions) if (q.ano != null) set.add(String(q.ano));
@@ -480,17 +487,19 @@ export default function BancoConcurso() {
     const s = debouncedSearch.trim().toLowerCase();
     return questions.filter((q) => {
       if (banca !== "Todas" && q.banca !== banca) return false;
+      if (orgao !== "Todas" && q.orgao !== orgao) return false;
       if (disciplina !== "Todas" && q.disciplina !== disciplina) return false;
       if (ano !== "Todos" && String(q.ano) !== ano) return false;
       if (s) {
-        const hay = (q.enunciado + " " + q.tema + " " + q.disciplina).toLowerCase();
+        const hay = (q.enunciado + " " + q.tema + " " + q.disciplina + " " + (q.orgao || "")).toLowerCase();
         if (!hay.includes(s)) return false;
       }
       if (onlyErrors && attempts[q.id]?.acertou !== false) return false;
       if (onlyFavorites && !favorites.has(q.id)) return false;
       return true;
     });
-  }, [questions, debouncedSearch, banca, disciplina, ano, onlyErrors, onlyFavorites, favorites, attempts]);
+  }, [questions, debouncedSearch, banca, orgao, disciplina, ano, onlyErrors, onlyFavorites, favorites, attempts]);
+
 
   const stats = useMemo(() => {
     const arr = Object.values(attempts);
@@ -1227,10 +1236,14 @@ export default function BancoConcurso() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
             <Input placeholder="Buscar por enunciado, tema ou disciplina…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <Select value={banca} onValueChange={setBanca}>
               <SelectTrigger><SelectValue placeholder="Banca" /></SelectTrigger>
               <SelectContent>{bancas.map((b) => <SelectItem key={b} value={b}>{b}</SelectItem>)}</SelectContent>
+            </Select>
+            <Select value={orgao} onValueChange={setOrgao}>
+              <SelectTrigger className="truncate"><SelectValue placeholder="Órgão" /></SelectTrigger>
+              <SelectContent>{orgaos.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
             </Select>
             <Select value={disciplina} onValueChange={setDisciplina}>
               <SelectTrigger><SelectValue placeholder="Disciplina" /></SelectTrigger>
@@ -1241,6 +1254,7 @@ export default function BancoConcurso() {
               <SelectContent>{anos.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent>
             </Select>
           </div>
+
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
             <Filter className="w-3.5 h-3.5" />
             <span>{filtered.length} resultado{filtered.length !== 1 && "s"}</span>

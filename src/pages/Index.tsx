@@ -129,7 +129,12 @@ export default function Index() {
     const savedTab = loadStringStorage("studyflow.activeTab");
     return savedTab === "semanal" ? "semanal" : "revisao";
   });
+  const [minimalistMode, setMinimalistMode] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("studyflow.minimalist") === "true";
+  });
   const { isVisible: isWidgetVisible } = useDashboardWidgets();
+
   const {
     notesTopic,
     quizTopic,
@@ -192,6 +197,11 @@ export default function Index() {
     window.localStorage.setItem("studyflow.activeTab", tab);
   }, [tab]);
 
+  useEffect(() => {
+    window.localStorage.setItem("studyflow.minimalist", String(minimalistMode));
+  }, [minimalistMode]);
+
+
   const tabs = [
     { id: "revisao" as Tab, label: "Cronograma de Revisao", icon: CalendarDays },
     { id: "semanal" as Tab, label: "Cronograma Semanal", icon: LayoutGrid },
@@ -235,20 +245,32 @@ export default function Index() {
     <div className="min-h-dvh bg-background pb-16 md:pb-0">
       <DashboardHeader user={user} bancoRoute={bancoRoute} bancoLabel={bancoLabel} onSignOut={signOut} />
       <main className="container max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
-        <DashboardHero
-          firstName={firstName}
-          isLoggedIn={Boolean(user)}
-          streakDays={momentum.streakDays}
-          weeklyProgressPercent={momentum.weeklyProgressPercent}
-          weeklyCompleted={momentum.weeklyCompleted}
-          weeklyTotal={momentum.weeklyTotal}
-          dailyGoals={dailyGoals}
-          todayMinutes={momentum.todayMinutes}
-          revisionsCompletedToday={momentum.revisionsCompletedToday}
-          comebackMode={momentum.comebackMode}
-          onPrimaryAction={handlePrimaryAction}
-          primaryLabel={primaryLabel}
-        />
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <DashboardHero
+            firstName={firstName}
+            isLoggedIn={Boolean(user)}
+            streakDays={momentum.streakDays}
+            weeklyProgressPercent={momentum.weeklyProgressPercent}
+            weeklyCompleted={momentum.weeklyCompleted}
+            weeklyTotal={momentum.weeklyTotal}
+            dailyGoals={dailyGoals}
+            todayMinutes={momentum.todayMinutes}
+            revisionsCompletedToday={momentum.revisionsCompletedToday}
+            comebackMode={momentum.comebackMode}
+            onPrimaryAction={handlePrimaryAction}
+            primaryLabel={primaryLabel}
+          />
+
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setMinimalistMode(!minimalistMode)}
+            className="rounded-xl h-9 text-xs font-medium shrink-0 bg-background/50 backdrop-blur-sm border-dashed"
+          >
+            {minimalistMode ? "Mostrar Widgets" : "Modo Minimalista"}
+          </Button>
+        </div>
+
 
         {/* Flora: confirmações pendentes */}
         {user && <FloraConfirmationBanner />}
@@ -318,7 +340,7 @@ export default function Index() {
           </Suspense>
         </div>
 
-        {isWidgetVisible("gamification") && (
+        {!minimalistMode && isWidgetVisible("gamification") && (
           <Suspense fallback={<SectionSkeleton className="min-h-[120px]" />}>
             <GamificationCard
               streak={gamification.streak}
@@ -332,11 +354,12 @@ export default function Index() {
           </Suspense>
         )}
 
-        {isWidgetVisible("stats") && (
+        {!minimalistMode && isWidgetVisible("stats") && (
           <Suspense fallback={<SectionSkeleton className="min-h-[80px]" />}>
             <StatsCards {...stats} />
           </Suspense>
         )}
+
 
         {/* Painéis específicos de concurso */}
         {isConcurso && (
@@ -350,7 +373,7 @@ export default function Index() {
           </>
         )}
 
-        {isWidgetVisible("overdue") && (
+        {!minimalistMode && isWidgetVisible("overdue") && (
           <Suspense fallback={<SectionSkeleton className="min-h-[80px]" />}>
             <div id="revisoes-atrasadas" className="scroll-mt-20">
               <OverdueRevisions
@@ -362,7 +385,7 @@ export default function Index() {
           </Suspense>
         )}
 
-        {isWidgetVisible("today_revisions") && (
+        {!minimalistMode && isWidgetVisible("today_revisions") && (
           <Suspense fallback={<SectionSkeleton className="min-h-[80px]" />}>
             <div id="revisoes-hoje" className="scroll-mt-20">
               <TodayRevisions revisions={todayRevisions} onComplete={handleToggleRevision} />
@@ -370,7 +393,7 @@ export default function Index() {
           </Suspense>
         )}
 
-        {isWidgetVisible("weekly_summary") && (
+        {!minimalistMode && isWidgetVisible("weekly_summary") && (
           <Suspense fallback={<SectionSkeleton className="min-h-[120px]" />}>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
               <WeeklyRevisionSummary topics={topics} />
@@ -378,6 +401,7 @@ export default function Index() {
             </div>
           </Suspense>
         )}
+
 
         {/* Tabs */}
         <div className="overflow-x-auto">
