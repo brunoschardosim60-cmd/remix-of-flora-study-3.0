@@ -24,4 +24,5 @@ export interface Lesson {
   blocos: LessonBlock[];
   resumo: string[];
   exercicio_final: ExerciseQuestion;
+  glossario?: { termo: string; definicao: string }[];
 }
