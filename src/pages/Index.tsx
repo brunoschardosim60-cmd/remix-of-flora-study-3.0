@@ -9,7 +9,8 @@ import {
   BarChart3, 
   Users, 
   GraduationCap, 
-  Sparkles 
+  Sparkles,
+  Loader2 as Loader2Icon
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { createTopic, StudyTopic, WeeklySlot, ALL_SUBJECTS, Subject, CONCURSO_SUBJECTS, ENEM_SUBJECTS } from "@/lib/studyData";
@@ -31,7 +32,6 @@ import { useStudentConfig } from "@/hooks/useStudentConfig";
 import { useDashboardHeroData } from "@/hooks/useDashboardHeroData";
 import { useDashboardPrimaryAction } from "@/hooks/useDashboardPrimaryAction";
 import { loadStringStorage } from "@/lib/storage";
-import { Loader2 as Loader2Icon } from "lucide-react";
 import { loadAIActivities } from "@/lib/aiActivityStore";
 import { toast } from "sonner";
 import { FloraConfirmationBanner } from "@/components/FloraConfirmationBanner";
@@ -39,7 +39,6 @@ import { FloraFirstAction } from "@/components/FloraFirstAction";
 import { FloraIcon } from "@/components/FloraIcon";
 import { toLocalDateStr } from "@/lib/dateUtils";
 import { countDueFlashcards } from "@/lib/flashcardScheduler";
-import { Sparkles } from "lucide-react";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { StudyNowDialog } from "@/components/dashboard/StudyNowDialog";
 import { StudyChoiceDialog } from "@/components/dashboard/StudyChoiceDialog";
