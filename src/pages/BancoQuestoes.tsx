@@ -1026,8 +1026,24 @@ export default function BancoQuestoes() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-            {filtered.slice(0, 200).map((q) => {
+            {filtered.length === 0 ? (
+              <div className="col-span-full py-16 text-center space-y-4">
+                <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+                  <Filter className="w-8 h-8 text-muted-foreground/50" />
+                </div>
+                <h3 className="text-lg font-semibold">Nenhuma questão encontrada</h3>
+                <p className="text-muted-foreground max-w-sm mx-auto">Tente ajustar seus filtros ou a busca para encontrar o que procura.</p>
+                <Button variant="outline" onClick={() => {
+                  setAno("Todos");
+                  setArea("Todas");
+                  setDisciplina("Todas");
+                  setTema("Todos");
+                  setSearch("");
+                }}>Limpar todos os filtros</Button>
+              </div>
+            ) : filtered.slice(0, 200).map((q) => {
               const att = attempts[q.id];
+
               const hasImg = !!q.imagem_urls?.[0];
               const enunciado = cleanedById.get(q.id)?.preview ?? "";
               const stat = globalStats[q.id];
