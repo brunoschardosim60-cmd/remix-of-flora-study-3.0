@@ -12,6 +12,7 @@ import { GlobalFocusMiniPlayer } from "@/components/GlobalFocusMiniPlayer";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { QuotaLimitModal } from "@/components/QuotaLimitModal";
 import { AppProvider } from "@/hooks/useAppContext";
+import { Sidebar } from "@/components/Sidebar";
 
 const Index = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
