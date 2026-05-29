@@ -306,6 +306,9 @@ export default function NotebookEditor() {
   const [quizFinished, setQuizFinished] = useState(false);
   const [quizWrongQuestions, setQuizWrongQuestions] = useState<string[]>([]);
   const [quizResultSaved, setQuizResultSaved] = useState(false);
+  const [ocrLoading, setOcrLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const solveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const statusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
