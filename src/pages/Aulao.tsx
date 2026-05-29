@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, BookOpen, Lightbulb, PenTool, Search, Loader2, Leaf, Clock, GraduationCap } from "lucide-react";
+import { ArrowLeft, BookOpen, Lightbulb, PenTool, Search, Loader2, Leaf, Clock, GraduationCap, FileText } from "lucide-react";
+
 import { FloraThinkingLoader } from "@/components/FloraThinkingLoader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,14 +17,14 @@ import { ensureDailyReset, registerStudySession } from "@/lib/gamification";
 import "./Aulao.css";
 import { saveLesson, loadLesson, listCachedLessons, removeLesson, type LessonCacheEntry } from "@/lib/lessonCache";
 
-type AulaoMode = "selection" | "lesson" | "essay" | "search";
+type AulaoMode = "selection" | "lesson" | "essay" | "search" | "templates";
 
 interface AulaoTopic {
   id: string;
   title: string;
   description: string;
   icon: React.ReactNode;
-  mode: "lesson" | "essay" | "search";
+  mode: "lesson" | "essay" | "search" | "templates";
   defaultLevel?: "enem" | "concurso" | "basico";
   defaultDidacticStyle?: "macetes" | "aprofundado" | "normal";
 }
@@ -72,7 +73,7 @@ const AULAO_TOPICS: AulaoTopic[] = [
     title: "Templates Nota 1000",
     description: "Esqueletos prontos e estruturas nota 1000 para você copiar e adaptar a qualquer tema.",
     icon: <FileText size={24} />,
-    mode: "selection", // We handle the navigation in handleTopicSelect
+    mode: "templates",
   },
 ];
 
@@ -289,6 +290,11 @@ export default function Aulao() {
       navigate("/cursos");
       return;
     }
+    if (topic.id === "redacao-templates") {
+      navigate("/redacao/templates");
+      return;
+    }
+
     setSelectedTopic(topic);
     setMode(topic.mode);
     setGeneratedLesson(null);
