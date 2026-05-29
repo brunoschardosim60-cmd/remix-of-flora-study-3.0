@@ -71,7 +71,7 @@ function nextStepsFor(decision: PendingDecision, bancoRoute: string): NextStep[]
 export function FloraConfirmationBanner() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { bancoRoute } = useStudentObjetivo(user);
+  const { bancoRoute, isConcurso } = useStudentObjetivo(user);
   const [pending, setPending] = useState<PendingDecision[]>([]);
   const [responding, setResponding] = useState<string | null>(null);
   const [acceptedInfo, setAcceptedInfo] = useState<Record<string, { summary: string; steps: NextStep[]; meta: typeof DECISION_META[string] }>>({});
@@ -86,8 +86,17 @@ export function FloraConfirmationBanner() {
       .in("decision_type", ["increase_difficulty", "reduce_load", "adjust_plan", "proactive_suggestion"])
       .order("created_at", { ascending: false })
       .limit(3);
-    setPending((data as PendingDecision[] | null) ?? []);
-  }, [user]);
+    let rows = (data as PendingDecision[] | null) ?? [];
+    // Se o aluno é ENEM, descarta sugestões com matérias de concurso
+    if (!isConcurso) {
+      const concursoOnly = /\b(Direito (Constitucional|Administrativo|Penal|Civil)|Raciocínio Lógico|Informática para concursos?|Contabilidade|Administração Pública)\b/i;
+      rows = rows.filter((d) => {
+        const txt = `${d.reasoning} ${JSON.stringify(d.recommendation || {})}`;
+        return !concursoOnly.test(txt);
+      });
+    }
+    setPending(rows);
+  }, [user, isConcurso]);
 
   useEffect(() => { loadPending(); }, [loadPending]);
 
