@@ -1,6 +1,16 @@
 import { useState, useEffect, useCallback, useMemo, lazy, Suspense, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { CalendarDays, LayoutGrid } from "lucide-react";
+import { 
+  CalendarDays, 
+  LayoutGrid, 
+  NotebookPen, 
+  Library, 
+  FileText, 
+  BarChart3, 
+  Users, 
+  GraduationCap, 
+  Sparkles 
+} from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { createTopic, StudyTopic, WeeklySlot, ALL_SUBJECTS, Subject, CONCURSO_SUBJECTS, ENEM_SUBJECTS } from "@/lib/studyData";
 import { DashboardHero } from "@/components/DashboardHero";
@@ -261,11 +271,68 @@ export default function Index() {
         />
 
 
-        {/* Flora: confirmações pendentes */}
-        {user && <FloraConfirmationBanner />}
-
-        {/* Flora: primeira ação recomendada (pós-onboarding) */}
-        {user && <FloraFirstAction onStartStudy={handlePrimaryAction} />}
+        {/* Menu Grid (Restaurado) */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+          <button 
+            onClick={() => navigate("/notebooks")} 
+            className="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border border-border bg-card hover:border-primary hover:shadow-sm transition-all group"
+          >
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <NotebookPen className="w-5 h-5 text-primary" />
+            </div>
+            <span className="text-xs font-semibold">Cadernos</span>
+          </button>
+          
+          <button 
+            onClick={() => navigate(bancoRoute)} 
+            className="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border border-border bg-card hover:border-primary hover:shadow-sm transition-all group"
+          >
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <Library className="w-5 h-5 text-primary" />
+            </div>
+            <span className="text-xs font-semibold">{bancoLabel}</span>
+          </button>
+          
+          <button 
+            onClick={() => navigate("/redacao")} 
+            className="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border border-border bg-card hover:border-primary hover:shadow-sm transition-all group"
+          >
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <FileText className="w-5 h-5 text-primary" />
+            </div>
+            <span className="text-xs font-semibold">Redação</span>
+          </button>
+          
+          <button 
+            onClick={() => navigate("/analise")} 
+            className="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border border-border bg-card hover:border-primary hover:shadow-sm transition-all group"
+          >
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <BarChart3 className="w-5 h-5 text-primary" />
+            </div>
+            <span className="text-xs font-semibold">Análise</span>
+          </button>
+          
+          <button 
+            onClick={() => navigate("/comunidades")} 
+            className="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border border-border bg-card hover:border-primary hover:shadow-sm transition-all group"
+          >
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <Users className="w-5 h-5 text-primary" />
+            </div>
+            <span className="text-xs font-semibold">Comunidade</span>
+          </button>
+          
+          <button 
+            onClick={() => navigate("/cursos")} 
+            className="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border border-border bg-card hover:border-primary hover:shadow-sm transition-all group"
+          >
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <GraduationCap className="w-5 h-5 text-primary" />
+            </div>
+            <span className="text-xs font-semibold">Cursos</span>
+          </button>
+        </div>
 
         {/* Sync agora é automático e silencioso em segundo plano */}
 
