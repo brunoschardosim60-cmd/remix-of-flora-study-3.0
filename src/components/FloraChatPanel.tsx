@@ -15,7 +15,6 @@ interface FloraChat {
 
 export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
   const { messages, input, setInput, isSending, objetivo, send } = useFloraChatStream({ isOpen, onClose });
-  const scrollRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -53,7 +52,7 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
       </div>
 
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-minimal">
         {messages.length === 0 && (
           <div className="text-center py-6 space-y-3 px-2">
             <FloraIcon className="w-10 h-10 text-primary mx-auto" />
@@ -114,6 +113,7 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
             </div>
           </div>
         )}
+        <div ref={messagesEndRef} />
       </div>
 
       {/* Input */}
