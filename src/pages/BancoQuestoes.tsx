@@ -829,13 +829,21 @@ export default function BancoQuestoes() {
             </Select>
             <Select value={disciplina} onValueChange={(v) => { setDisciplina(v); setTema("Todos"); }}>
               <SelectTrigger><SelectValue placeholder="Disciplina" /></SelectTrigger>
-              <SelectContent>{disciplinas.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+              <SelectContent>
+                {disciplinas && disciplinas.length > 0 ? (
+                  disciplinas.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)
+                ) : (
+                  <SelectItem value="Todas">Todas</SelectItem>
+                )}
+              </SelectContent>
             </Select>
             <Select value={tema} onValueChange={setTema}>
               <SelectTrigger><SelectValue placeholder="Tema" /></SelectTrigger>
               <SelectContent className="max-h-72">
                 <SelectItem value="Todos">Todos os Temas</SelectItem>
-                {temas.filter(t => t !== "Todos").map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                {temas && temas.length > 0 ? (
+                  temas.filter(t => t !== "Todos").map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)
+                ) : null}
               </SelectContent>
             </Select>
           </div>
