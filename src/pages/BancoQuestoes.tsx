@@ -1167,7 +1167,7 @@ export default function BancoQuestoes() {
 
               {/* 1. Texto de apoio + imagens + enunciado (renderizador hierárquico) */}
               <QuestionRenderer
-                enunciado={cleanedById.get(opened.id)?.cleaned ?? normalizeEnunciado(opened.enunciado, getAlternativas(opened).length === 5)}
+                enunciado={opened ? (cleanedById.get(opened.id)?.cleaned ?? normalizeEnunciado(opened.enunciado, getAlternativas(opened).length === 5)) : ""}
                 imagens={opened.imagem_urls || []}
                 label={`Questão ${opened.numero} ENEM ${opened.ano}`}
                 wide={readingMode}
