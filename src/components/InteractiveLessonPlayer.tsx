@@ -327,6 +327,7 @@ interface Exercise { pergunta: string; alternativas?: string[]; opcoes?: string[
 interface Lesson {
   titulo: string; introducao: string; blocos: LessonBlock[];
   resumo: string | string[]; exercicios?: Exercise[]; exercicio_final: Exercise;
+  glossario?: { termo: string; definicao: string }[];
 }
 interface Props {
   lesson: Lesson; onComplete?: () => void; onExit?: () => void;
