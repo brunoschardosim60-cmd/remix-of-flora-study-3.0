@@ -181,7 +181,7 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
                       const isHovered = hoveredSlot === slot.id;
 
                       return (
-                        <td key={dia} className="p-1.5">
+                        <td key={dia} className={`p-1.5 ${isMobileHidden ? "hidden sm:table-cell" : ""}`}>
                           {isEditing ? (
                             <div className="space-y-1.5 p-1">
                               <select
