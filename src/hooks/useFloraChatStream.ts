@@ -9,7 +9,6 @@ import {
   type Objetivo,
 } from "@/lib/floraChat";
 import { useFloraActionExecutor } from "@/hooks/useFloraActionExecutor";
-import { useStudentConfig } from "@/hooks/useStudentConfig";
 
 interface Options {
   isOpen: boolean;
@@ -27,7 +26,6 @@ interface Options {
  */
 export function useFloraChatStream({ isOpen, onClose }: Options) {
   const { user } = useAuth();
-  const { config: studentConfig } = useStudentConfig();
   const executeAction = useFloraActionExecutor(onClose);
   const [messages, setMessages] = useState<FloraMessage[]>([]);
   const [input, setInput] = useState("");
@@ -76,9 +74,18 @@ export function useFloraChatStream({ isOpen, onClose }: Options) {
     }
   }, []);
 
+  // Objetivo do onboarding (ajusta chips)
   useEffect(() => {
-    if (studentConfig?.objetivo) setObjetivo(studentConfig.objetivo as Objetivo);
-  }, [studentConfig]);
+    if (!user) return;
+    supabase
+      .from("student_onboarding")
+      .select("objetivo")
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.objetivo) setObjetivo(data.objetivo as Objetivo);
+      });
+  }, [user]);
 
   // Carrega histórico ao abrir
   useEffect(() => {

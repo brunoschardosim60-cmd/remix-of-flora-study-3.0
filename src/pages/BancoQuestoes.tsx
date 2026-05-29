@@ -219,7 +219,35 @@ function plainPreview(raw: string, hasStructuredAlts: boolean): string {
     .slice(0, 240);
 }
 
-import { QuestionImages } from "@/components/QuestionImages";
+// Sub-componente: imagens colapsáveis
+function QuestionImages({ urls, label }: { urls: string[]; label: string }) {
+  const [show, setShow] = useState(false);
+  if (!urls?.length) return null;
+  return (
+    <div className="rounded-xl border border-border bg-muted/30 overflow-hidden">
+      <button
+        onClick={() => setShow((v) => !v)}
+        className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+      >
+        <ImageIcon className="w-4 h-4 shrink-0" />
+        <span className="font-medium">{show ? "Ocultar" : "Ver"} imagem da prova</span>
+        <ChevronRight className={`w-4 h-4 ml-auto transition-transform ${show ? "rotate-90" : ""}`} />
+      </button>
+      {show && (
+        <div className="border-t border-border bg-white dark:bg-zinc-900 p-3 space-y-3">
+          {urls.map((url, i) => (
+            <img
+              key={i}
+              src={url}
+              alt={`${label} — imagem ${i + 1}`}
+              className="w-full h-auto rounded-lg object-contain max-h-[420px]"
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // Sub-componente: painel de alternativas
 function AlternativasPanel({
@@ -359,7 +387,6 @@ export default function BancoQuestoes() {
   const [onlyFavorites, setOnlyFavorites] = useState(false);
   const [showIncomplete, setShowIncomplete] = useState(false);
   const [globalStats, setGlobalStats] = useState<Record<string, Stat>>({});
-  const [countsByDisciplina, setCountsByDisciplina] = useState<Record<string, number>>({});
 
   useEffect(() => {
     (async () => {
@@ -405,15 +432,6 @@ export default function BancoQuestoes() {
           return true;
         });
         setQuestions(unique);
-
-        // Calcula contagem por disciplina para o filtro
-        const counts: Record<string, number> = {};
-        unique.forEach(q => {
-          if (q.disciplina) {
-            counts[q.disciplina] = (counts[q.disciplina] || 0) + 1;
-          }
-        });
-        setCountsByDisciplina(counts);
       }
       const map: Record<string, Attempt> = {};
       (attemptsData || []).forEach((a: any) => {
@@ -936,13 +954,9 @@ export default function BancoQuestoes() {
             <Select key={`disciplina-${disciplinas.length}`} value={disciplina} onValueChange={(v) => { setDisciplina(v); setTema("Todos"); }}>
               <SelectTrigger><SelectValue placeholder="Disciplina" /></SelectTrigger>
               <SelectContent>
-                    {disciplinas && disciplinas.length > 0 ? (
-                      disciplinas.map((d) => (
-                        <SelectItem key={d} value={d}>
-                          {d} {countsByDisciplina[d] ? `(${countsByDisciplina[d]})` : ""}
-                        </SelectItem>
-                      ))
-                    ) : (
+                {disciplinas && disciplinas.length > 0 ? (
+                  disciplinas.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)
+                ) : (
                   <SelectItem value="Todas">Todas</SelectItem>
                 )}
               </SelectContent>

@@ -6,35 +6,35 @@ import { Check, Sparkles, Crown, Rocket, ArrowLeft } from "lucide-react";
 const PLANS = [
   {
     id: "free",
-    name: "Grátis",
+    name: "Gr\u00e1tis",
     price: "R$ 0",
     period: "para sempre",
     icon: Sparkles,
-    desc: "Para começar a estudar com método.",
+    desc: "Para come\u00e7ar a estudar com m\u00e9todo.",
     features: [
       "Cadernos digitais ilimitados",
-      "Revisão espaçada automática",
-      "Banco com 3.000+ questões ENEM",
+      "Revis\u00e3o espa\u00e7ada autom\u00e1tica",
+      "Banco com 3.000+ quest\u00f5es ENEM",
       "10 mensagens com Flora por dia",
-      "2 correções de redação por semana",
+      "2 corre\u00e7\u00f5es de reda\u00e7\u00e3o por semana",
     ],
-    cta: "Começar grátis",
+    cta: "Come\u00e7ar gr\u00e1tis",
     highlight: false,
   },
   {
     id: "pro",
     name: "Pro",
-    price: "R$ 29",
-    period: "/mês",
+    price: "R$ 19",
+    period: "/m\u00eas",
     icon: Rocket,
-    desc: "Para quem está focado na aprovação.",
+    desc: "Para quem est\u00e1 a s\u00e9rio no ENEM ou concurso.",
     features: [
-      "Tudo do plano Grátis",
+      "Tudo do plano Gr\u00e1tis",
       "Flora ilimitada (chat, planos, aulas)",
-      "Redações ilimitadas com correção detalhada",
+      "Reda\u00e7\u00f5es ilimitadas com corre\u00e7\u00e3o detalhada",
       "Simulado ENEM completo com TRI",
       "Banco de concursos (CESPE, FCC, FGV...)",
-      "Suporte prioritário",
+      "Suporte priorit\u00e1rio",
     ],
     cta: "Assinar Pro",
     highlight: true,
@@ -42,14 +42,14 @@ const PLANS = [
   {
     id: "premium",
     name: "Premium",
-    price: "R$ 59",
-    period: "/mês",
+    price: "R$ 39",
+    period: "/m\u00eas",
     icon: Crown,
-    desc: "Acesso total à inteligência da Flora.",
+    desc: "Para quem quer o m\u00e1ximo da Flora.",
     features: [
       "Tudo do plano Pro",
-      "Modelos de IA Ultra-rápidos",
-      "Aulão personalizado por tema",
+      "Flora com modelo top de linha (GPT-5)",
+      "Aul\u00e3o personalizado por tema",
       "Mentoria em grupo semanal",
       "Acesso antecipado a novidades",
     ],
@@ -60,25 +60,25 @@ const PLANS = [
 
 export default function Pricing() {
   useEffect(() => {
-    document.title = "Planos — StudyFlow";
+    document.title = "Planos \u2014 StudyFlow";
   }, []);
 
   return (
     <div className="min-h-dvh bg-background text-foreground">
-      <header className="border-b border-border/60 sticky top-0 bg-background/80 backdrop-blur z-50">
+      <header className="border-b border-border/60 sticky top-0 bg-background/80 backdrop-blur z-10">
         <div className="container max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
             <ArrowLeft className="w-4 h-4" /> Voltar
           </Link>
-          <span className="font-heading font-bold">StudyFlow · Planos</span>
+          <span className="font-heading font-bold">StudyFlow \u00b7 Planos</span>
           <div className="w-16" />
         </div>
       </header>
 
       <section className="container max-w-6xl mx-auto px-4 py-12 text-center">
-        <h2 className="text-3xl font-bold sm:text-4xl">Planos que cabem no seu bolso</h2>
-        <p className="mt-4 text-muted-foreground max-w-2xl mx-auto">
-          Escolha o plano ideal para sua jornada de estudos. Transparência total, sem letras miúdas.
+        <h1 className="font-heading text-4xl md:text-5xl font-bold tracking-tight">Escolha seu plano</h1>
+        <p className="mt-4 text-muted-foreground max-w-xl mx-auto">
+          Comece gr\u00e1tis. Suba quando quiser mais da Flora.
         </p>
       </section>
 
@@ -94,7 +94,7 @@ export default function Pricing() {
           >
             {plan.highlight && (
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-primary text-primary-foreground text-xs font-semibold">
-                O mais popular
+                Mais escolhido
               </div>
             )}
             <div className="flex items-center gap-2">

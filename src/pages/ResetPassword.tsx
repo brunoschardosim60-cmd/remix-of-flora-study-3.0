@@ -17,14 +17,10 @@ export default function ResetPassword() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Escuta evento de mudança de auth para garantir que a sessão foi recuperada do hash
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "PASSWORD_RECOVERY") {
-        console.log("Modo de recuperação de senha ativo");
-      }
-    });
-    
-    return () => subscription.unsubscribe();
+    const hash = window.location.hash;
+    if (hash.includes("type=recovery")) {
+      // Supabase handles session from the hash automatically
+    }
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {

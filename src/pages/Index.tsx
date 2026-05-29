@@ -1,17 +1,6 @@
-import { useState, useEffect, useCallback, useMemo, lazy, Suspense, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
-import { 
-  CalendarDays, 
-  LayoutGrid, 
-  NotebookPen, 
-  Library, 
-  FileText, 
-  BarChart3, 
-  Users, 
-  GraduationCap, 
-  Sparkles,
-  Loader2 as Loader2Icon
-} from "lucide-react";
+import { CalendarDays, LayoutGrid } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { createTopic, StudyTopic, WeeklySlot, ALL_SUBJECTS, Subject, CONCURSO_SUBJECTS, ENEM_SUBJECTS } from "@/lib/studyData";
 import { DashboardHero } from "@/components/DashboardHero";
@@ -28,10 +17,11 @@ import { useFloraEvents } from "@/hooks/useFloraEvents";
 import { useStudyNow } from "@/hooks/useStudyNow";
 import { useDashboardDialogs } from "@/hooks/useDashboardDialogs";
 import { useDashboardBootstrap } from "@/hooks/useDashboardBootstrap";
-import { useStudentConfig } from "@/hooks/useStudentConfig";
+import { useStudentObjetivo } from "@/hooks/useStudentObjetivo";
 import { useDashboardHeroData } from "@/hooks/useDashboardHeroData";
 import { useDashboardPrimaryAction } from "@/hooks/useDashboardPrimaryAction";
 import { loadStringStorage } from "@/lib/storage";
+import { Loader2 as Loader2Icon } from "lucide-react";
 import { loadAIActivities } from "@/lib/aiActivityStore";
 import { toast } from "sonner";
 import { FloraConfirmationBanner } from "@/components/FloraConfirmationBanner";
@@ -39,6 +29,7 @@ import { FloraFirstAction } from "@/components/FloraFirstAction";
 import { FloraIcon } from "@/components/FloraIcon";
 import { toLocalDateStr } from "@/lib/dateUtils";
 import { countDueFlashcards } from "@/lib/flashcardScheduler";
+import { Sparkles } from "lucide-react";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { StudyNowDialog } from "@/components/dashboard/StudyNowDialog";
 import { StudyChoiceDialog } from "@/components/dashboard/StudyChoiceDialog";
@@ -84,12 +75,6 @@ type Tab = "revisao" | "semanal";
 export default function Index() {
   const { user, profile, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
-  const mounted = useRef(false);
-
-  useEffect(() => {
-    mounted.current = true;
-    return () => { mounted.current = false; };
-  }, []);
 
   // Bootstrap: deep-link, custom colors, idle prefetch, análise Flora
   useDashboardBootstrap(user);
@@ -97,11 +82,8 @@ export default function Index() {
   // Force onboarding for logged-in users who haven't completed it (admins skip)
   const onboardingChecked = useOnboardingGuard(user, isAdmin);
 
-  // Objetivo do aluno → rota/label do "Banco" do contexto global
-  const { config: studentConfig } = useStudentConfig();
-  const isConcurso = studentConfig?.isConcurso ?? false;
-  const bancoRoute = studentConfig?.bancoRoute ?? "/banco";
-  const bancoLabel = studentConfig?.bancoLabel ?? "Questões ENEM";
+  // Objetivo do aluno → rota/label do "Banco"
+  const { objetivo, isConcurso, bancoRoute, bancoLabel } = useStudentObjetivo(user);
   const subjectOptions = isConcurso ? CONCURSO_SUBJECTS : ENEM_SUBJECTS;
 
   const {
@@ -146,6 +128,10 @@ export default function Index() {
     if (typeof window === "undefined") return "revisao";
     const savedTab = loadStringStorage("studyflow.activeTab");
     return savedTab === "semanal" ? "semanal" : "revisao";
+  });
+  const [minimalistMode, setMinimalistMode] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("studyflow.minimalist") === "true";
   });
   const { isVisible: isWidgetVisible } = useDashboardWidgets();
 
@@ -211,6 +197,11 @@ export default function Index() {
     window.localStorage.setItem("studyflow.activeTab", tab);
   }, [tab]);
 
+  useEffect(() => {
+    window.localStorage.setItem("studyflow.minimalist", String(minimalistMode));
+  }, [minimalistMode]);
+
+
   const tabs = [
     { id: "revisao" as Tab, label: "Cronograma de Revisao", icon: CalendarDays },
     { id: "semanal" as Tab, label: "Cronograma Semanal", icon: LayoutGrid },
@@ -254,7 +245,8 @@ export default function Index() {
     <div className="min-h-dvh bg-background pb-16 md:pb-0">
       <DashboardHeader user={user} bancoRoute={bancoRoute} bancoLabel={bancoLabel} onSignOut={signOut} />
       <main className="container max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
-        <DashboardHero
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <DashboardHero
             firstName={firstName}
             isLoggedIn={Boolean(user)}
             streakDays={momentum.streakDays}
@@ -267,71 +259,24 @@ export default function Index() {
             comebackMode={momentum.comebackMode}
             onPrimaryAction={handlePrimaryAction}
             primaryLabel={primaryLabel}
-        />
+          />
 
-
-        {/* Menu Grid (Restaurado) */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-          <button 
-            onClick={() => navigate("/notebooks")} 
-            className="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border border-border bg-card hover:border-primary hover:shadow-sm transition-all group"
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setMinimalistMode(!minimalistMode)}
+            className="rounded-xl h-9 text-xs font-medium shrink-0 bg-background/50 backdrop-blur-sm border-dashed"
           >
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <NotebookPen className="w-5 h-5 text-primary" />
-            </div>
-            <span className="text-xs font-semibold">Cadernos</span>
-          </button>
-          
-          <button 
-            onClick={() => navigate(bancoRoute)} 
-            className="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border border-border bg-card hover:border-primary hover:shadow-sm transition-all group"
-          >
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Library className="w-5 h-5 text-primary" />
-            </div>
-            <span className="text-xs font-semibold">{bancoLabel}</span>
-          </button>
-          
-          <button 
-            onClick={() => navigate("/redacao")} 
-            className="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border border-border bg-card hover:border-primary hover:shadow-sm transition-all group"
-          >
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <FileText className="w-5 h-5 text-primary" />
-            </div>
-            <span className="text-xs font-semibold">Redação</span>
-          </button>
-          
-          <button 
-            onClick={() => navigate("/analise")} 
-            className="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border border-border bg-card hover:border-primary hover:shadow-sm transition-all group"
-          >
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <BarChart3 className="w-5 h-5 text-primary" />
-            </div>
-            <span className="text-xs font-semibold">Análise</span>
-          </button>
-          
-          <button 
-            onClick={() => navigate("/comunidades")} 
-            className="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border border-border bg-card hover:border-primary hover:shadow-sm transition-all group"
-          >
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Users className="w-5 h-5 text-primary" />
-            </div>
-            <span className="text-xs font-semibold">Comunidade</span>
-          </button>
-          
-          <button 
-            onClick={() => navigate("/cursos")} 
-            className="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border border-border bg-card hover:border-primary hover:shadow-sm transition-all group"
-          >
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <GraduationCap className="w-5 h-5 text-primary" />
-            </div>
-            <span className="text-xs font-semibold">Cursos</span>
-          </button>
+            {minimalistMode ? "Mostrar Widgets" : "Modo Minimalista"}
+          </Button>
         </div>
+
+
+        {/* Flora: confirmações pendentes */}
+        {user && <FloraConfirmationBanner />}
+
+        {/* Flora: primeira ação recomendada (pós-onboarding) */}
+        {user && <FloraFirstAction onStartStudy={handlePrimaryAction} />}
 
         {/* Sync agora é automático e silencioso em segundo plano */}
 
@@ -354,30 +299,27 @@ export default function Index() {
           }}
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-          {dueFlashcardsCount > 0 && isWidgetVisible("flashcards_banner") && (
-            <button
-              onClick={openFlashcardSession}
-              className="flex items-center justify-between gap-3 rounded-2xl border border-accent/30 bg-accent/5 hover:bg-accent/10 transition-colors px-4 py-3 text-left"
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-9 h-9 rounded-full bg-accent/15 flex items-center justify-center shrink-0">
-                  <Sparkles className="w-4 h-4 text-accent" />
-                </div>
-                <div className="min-w-0">
-                  <p className="font-heading font-semibold text-sm">Flashcards pendentes</p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {dueFlashcardsCount} card{dueFlashcardsCount > 1 ? "s" : ""} para hoje
-                  </p>
-                </div>
+        {dueFlashcardsCount > 0 && isWidgetVisible("flashcards_banner") && (
+          <button
+            onClick={openFlashcardSession}
+            className="w-full flex items-center justify-between gap-3 rounded-2xl border border-accent/30 bg-accent/5 hover:bg-accent/10 transition-colors px-4 py-3 text-left"
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-9 h-9 rounded-full bg-accent/15 flex items-center justify-center shrink-0">
+                <Sparkles className="w-4 h-4 text-accent" />
               </div>
-              <span className="shrink-0 inline-flex items-center justify-center min-w-[28px] h-7 px-2 rounded-full bg-accent text-accent-foreground text-xs font-bold">
-                {dueFlashcardsCount}
-              </span>
-            </button>
-          )}
-
-        </div>
+              <div className="min-w-0">
+                <p className="font-heading font-semibold text-sm">Flashcards pendentes</p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {dueFlashcardsCount} card{dueFlashcardsCount > 1 ? "s" : ""} para revisar hoje
+                </p>
+              </div>
+            </div>
+            <span className="shrink-0 inline-flex items-center justify-center min-w-[28px] h-7 px-2 rounded-full bg-accent text-accent-foreground text-xs font-bold">
+              {dueFlashcardsCount}
+            </span>
+          </button>
+        )}
 
         {/* Timer + Hours + Media */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
@@ -398,7 +340,7 @@ export default function Index() {
           </Suspense>
         </div>
 
-        {isWidgetVisible("gamification") && (
+        {!minimalistMode && isWidgetVisible("gamification") && (
           <Suspense fallback={<SectionSkeleton className="min-h-[120px]" />}>
             <GamificationCard
               streak={gamification.streak}
@@ -412,7 +354,7 @@ export default function Index() {
           </Suspense>
         )}
 
-        {isWidgetVisible("stats") && (
+        {!minimalistMode && isWidgetVisible("stats") && (
           <Suspense fallback={<SectionSkeleton className="min-h-[80px]" />}>
             <StatsCards {...stats} />
           </Suspense>
@@ -431,7 +373,7 @@ export default function Index() {
           </>
         )}
 
-        {isWidgetVisible("overdue") && (
+        {!minimalistMode && isWidgetVisible("overdue") && (
           <Suspense fallback={<SectionSkeleton className="min-h-[80px]" />}>
             <div id="revisoes-atrasadas" className="scroll-mt-20">
               <OverdueRevisions
@@ -443,7 +385,7 @@ export default function Index() {
           </Suspense>
         )}
 
-        {isWidgetVisible("today_revisions") && (
+        {!minimalistMode && isWidgetVisible("today_revisions") && (
           <Suspense fallback={<SectionSkeleton className="min-h-[80px]" />}>
             <div id="revisoes-hoje" className="scroll-mt-20">
               <TodayRevisions revisions={todayRevisions} onComplete={handleToggleRevision} />
@@ -451,7 +393,7 @@ export default function Index() {
           </Suspense>
         )}
 
-        {isWidgetVisible("weekly_summary") && (
+        {!minimalistMode && isWidgetVisible("weekly_summary") && (
           <Suspense fallback={<SectionSkeleton className="min-h-[120px]" />}>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
               <WeeklyRevisionSummary topics={topics} />

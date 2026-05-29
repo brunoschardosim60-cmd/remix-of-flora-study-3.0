@@ -9,8 +9,7 @@ import {
   Lightbulb, AlertTriangle, MessageCircleQuestion, CheckCircle2, XCircle,
   Sparkles, Brain, HelpCircle, ListChecks, ChevronDown, Leaf, Zap, Target,
   Volume2, VolumeX, Eye, Share2, Trophy, Flame, Radio, Image as ImageIcon, Palette, BookPlus,
-  RefreshCw, ZoomIn, X as XIcon, Bookmark, BookmarkCheck, Maximize2, CheckSquare,
-
+  RefreshCw, ZoomIn, X as XIcon, Bookmark, BookmarkCheck, Maximize2,
 
 } from "lucide-react";
 import { generateDidacticImage } from "@/lib/floraImages";
@@ -599,9 +598,6 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({
   }, []);
 
   const blocos = lesson.blocos || [];
-  const currentBlockIdx = stage === "block" ? idx : stage === "exercises" ? blocos.length : stage === "final" ? blocos.length + 1 : 0;
-  const totalSteps = blocos.length + (lesson.exercicios?.length ? 2 : 1);
-  const progressPercent = Math.min(100, Math.round((currentBlockIdx / totalSteps) * 100));
   const cur = blocos[idx];
   const isLast = idx === blocos.length - 1;
   const isCurLoading = !!loadingBlockIndices?.includes(idx);
@@ -902,6 +898,7 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({
               </button>
             )}
             {enableVoice && curScene && stage === "block" && (
+
               <button
                 className={`ilp-icon-btn ${voice.playing ? "ilp-icon-btn--active" : ""}`}
                 onClick={() => voice.toggle(curScene.text, "amiga")}
@@ -924,14 +921,10 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({
               aria-label={focusMode ? "Sair do modo foco" : "Modo foco (F)"} title={focusMode ? "Sair do modo foco" : "Modo foco"}>
               <Maximize2 size={14}/>
             </button>
-            <div className="flex flex-col items-end gap-0.5 ml-2">
-              <span className="ilp-step-tag leading-none">{currentStep} / {totalScenes}</span>
-              <div className="w-16 h-1 bg-muted rounded-full overflow-hidden">
-                <div className="h-full bg-primary transition-all duration-500" style={{ width: `${progress * 100}%` }} />
-              </div>
-            </div>
+            <span className="ilp-step-tag">{currentStep} / {totalScenes}</span>
           </div>
         </div>
+        <div className="ilp-bar"><div className="ilp-fill" style={{ width: `${progress * 100}%` }}/></div>
       </div>
 
       <div className="ilp-layout">
@@ -1119,8 +1112,7 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({
                 <div>Você foi muito bem nessa. Quer fixar agora com revisão espaçada, ou já partir pra próxima aula?</div>
               </div>
               <div className="ilp-done-actions">
-                <button className="ilp-nav primary" onClick={() => window.dispatchEvent(new CustomEvent("open-flora-quiz", { detail: { tema: lesson.titulo } }))}><CheckSquare size={16}/> Resolver Quiz Final</button>
-                <button className="ilp-nav secondary" onClick={() => onComplete?.()}><Sparkles size={16}/> Próxima aula</button>
+                <button className="ilp-nav primary" onClick={() => onComplete?.()}><Sparkles size={16}/> Próxima aula</button>
                 <button className="ilp-nav ghost" onClick={async () => {
                   const text = `Acabei de concluir "${lesson.titulo}" no StudyFlow com a Flora 🌿`;
                   try {

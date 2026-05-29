@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -46,79 +45,23 @@ export function DashboardHero({
   onPrimaryAction,
   primaryLabel,
 }: DashboardHeroProps) {
-  const currentXP = useMemo(() => {
-    try {
-      const saved = localStorage.getItem("studyflow.gamification");
-      if (saved) return JSON.parse(saved).xp || 0;
-    } catch {}
-    return 0;
-  }, []);
-
-  const currentLevel = useMemo(() => {
-    return Math.floor(Math.sqrt(currentXP / 50)) + 1;
-  }, [currentXP]);
-
-  const xpForNext = useMemo(() => {
-    const nextLevel = currentLevel + 1;
-    return Math.pow(nextLevel - 1, 2) * 50;
-  }, [currentLevel]);
-
-  const xpProgress = useMemo(() => {
-    const currentLevelStartXP = Math.pow(currentLevel - 1, 2) * 50;
-    const needed = xpForNext - currentLevelStartXP;
-    const has = currentXP - currentLevelStartXP;
-    return Math.min(100, Math.round((has / Math.max(1, needed)) * 100));
-  }, [currentXP, currentLevel, xpForNext]);
-
-  const statusLabel = useMemo(() => {
-    if (!isLoggedIn) return "Estude agora";
-    if (comebackMode) return "Bora recuperar?";
-    if (streakDays > 7) return "Ritmo imparável!";
-    if (streakDays > 0) return "Ritmo em dia";
-    return "Comece sua sequência!";
-  }, [isLoggedIn, comebackMode, streakDays]);
-
-  const statusVariant = useMemo(() => {
-    if (comebackMode) return "destructive";
-    if (streakDays > 7) return "default";
-    return "secondary";
-  }, [comebackMode, streakDays]);
-
   return (
-    <section className="relative overflow-hidden rounded-[28px] border border-border/60 bg-gradient-to-br from-primary/12 via-card to-accent/10 p-5 sm:p-7 w-full">
+    <section className="relative overflow-hidden rounded-[28px] border border-border/60 bg-gradient-to-br from-primary/12 via-card to-accent/10 p-5 sm:p-7">
       <div className="absolute inset-y-0 right-0 w-1/2 bg-[radial-gradient(circle_at_top_right,hsl(var(--primary)/0.10),transparent_55%)]" />
       <div className="relative space-y-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="space-y-3 max-w-2xl">
-            <div className="flex items-center gap-2">
-              <Badge variant={statusVariant as any} className="w-fit">
-                {statusLabel}
-              </Badge>
-              {isLoggedIn && (
-                <Badge variant="outline" className="bg-primary/5 border-primary/20 text-primary gap-1">
-                  Nível {currentLevel}
-                </Badge>
-              )}
-            </div>
+            <Badge variant="secondary" className="w-fit">
+              Ritmo em dia
+            </Badge>
             <div className="space-y-1">
-              <div className="flex items-baseline gap-2">
-                <h2 className="font-heading text-2xl font-bold sm:text-3xl">{greetingLabel(firstName, isLoggedIn)}</h2>
-              </div>
+              <h2 className="font-heading text-2xl font-bold sm:text-3xl">{greetingLabel(firstName, isLoggedIn)}</h2>
               <p className="text-sm text-muted-foreground sm:text-base">
                 {isLoggedIn
                   ? "Hoje está tudo organizado para você seguir sem pensar demais no próximo passo."
                   : "Escolhe um bloco e começa."}
               </p>
             </div>
-            {isLoggedIn && (
-               <div className="w-full max-w-xs space-y-1.5">
-                  <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-0.5">
-                    <span>Progresso de Nível</span>
-                    <span>{xpProgress}%</span>
-                  </div>
-                  <Progress value={xpProgress} className="h-1.5" />
-               </div>
-            )}
             <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3">
               <Button size="lg" className="w-full sm:w-auto sm:min-w-[180px]" onClick={onPrimaryAction}>
                 {primaryLabel}

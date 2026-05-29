@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Users, Plus, MessageCircle, BookOpen, Send, Sparkles, Pin, ThumbsUp, Search, Hash } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -205,35 +204,12 @@ function formatTime(date: Date): string {
 // ============ COMPONENTE PRINCIPAL ============
 export default function Comunidades() {
   const navigate = useNavigate();
-  const { user, profile } = useAuth();
-  
-  // Persistência real em banco seria aqui. Por enquanto, usamos localStorage com inicialização robusta.
-  const [communities, setCommunities] = useState<Community[]>(() => {
-    try {
-      const saved = localStorage.getItem("studyflow.communities");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        // Garante que o autor "Você" seja atualizado para o nome real se existir
-        return parsed.map((c: Community) => ({
-          ...c,
-          posts: c.posts.map(p => p.author === "Você" && profile?.display_name ? { ...p, author: profile.display_name } : p)
-        }));
-      }
-    } catch (e) {
-      console.error("Erro ao carregar comunidades do storage:", e);
-    }
-    return INITIAL_COMMUNITIES;
-  });
-  
+  const [communities, setCommunities] = useState<Community[]>(INITIAL_COMMUNITIES);
   const [activeCommunity, setActiveCommunity] = useState<Community | null>(null);
   const [newPost, setNewPost] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [isFloraTyping, setIsFloraTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    localStorage.setItem("studyflow.communities", JSON.stringify(communities));
-  }, [communities]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -270,7 +246,7 @@ export default function Comunidades() {
 
     const post: CommunityPost = {
       id: `post_${Date.now()}`,
-      author: profile?.display_name || user?.email?.split("@")[0] || "Você",
+      author: "Você",
       authorEmoji: "👤",
       content: newPost.trim(),
       timestamp: new Date(),

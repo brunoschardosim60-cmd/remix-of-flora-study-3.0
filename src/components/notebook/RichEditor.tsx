@@ -1,4 +1,4 @@
-import { useEditor, EditorContent, Editor } from "@tiptap/react";
+import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Highlight from "@tiptap/extension-highlight";
 import Image from "@tiptap/extension-image";
@@ -11,7 +11,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { EditorToolbar } from "./EditorToolbar";
 import { LatexDiagramPanel } from "./LatexDiagramPanel";
 import { Button } from "@/components/ui/button";
-import { Sigma, BookOpen, Edit3 } from "lucide-react";
+import { Sigma } from "lucide-react";
 
 interface RichEditorProps {
   content: string;
@@ -40,7 +40,6 @@ const TEMPLATE_CLASS: Record<string, string> = {
 
 export function RichEditor({ content, onChange, userId, notebookId, darkMode, onToggleDarkMode, template = "blank", zoom = 1, paperOverlay, wide = false }: RichEditorProps) {
   const isExternalUpdate = useRef(false);
-  const [readOnly, setReadOnly] = useState(false);
 
   const editor = useEditor({
     extensions: [
@@ -63,17 +62,10 @@ export function RichEditor({ content, onChange, userId, notebookId, darkMode, on
     },
       editorProps: {
         attributes: {
-          class: `prose prose-sm sm:prose-base max-w-none focus:outline-none min-h-[60vh] notebook-paper-text`,
+          class: "prose prose-sm sm:prose-base max-w-none focus:outline-none min-h-[60vh] notebook-paper-text",
         },
       },
-      editable: !readOnly,
   });
-
-  useEffect(() => {
-    if (editor) {
-      editor.setEditable(!readOnly);
-    }
-  }, [readOnly, editor]);
 
   // Sync external content changes (page switches)
   useEffect(() => {
@@ -100,36 +92,16 @@ export function RichEditor({ content, onChange, userId, notebookId, darkMode, on
           <LatexDiagramPanel editor={editor} onClose={() => setShowLatexPanel(false)} />
         </div>
       )}
-      <div className="flex items-center justify-between px-3 py-1 border-b border-border/30 bg-muted/20">
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 text-xs gap-1"
-            onClick={() => setShowLatexPanel((v) => !v)}
-          >
-            <Sigma className="w-3.5 h-3.5" />
-            LaTeX & Diagramas
-          </Button>
-        </div>
-        <div className="flex items-center gap-1 bg-background/50 rounded-lg p-0.5 border border-border/50">
-          <button
-            onClick={() => setReadOnly(false)}
-            className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-bold transition-all ${
-              !readOnly ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-muted"
-            }`}
-          >
-            <Edit3 className="w-3 h-3" /> EDIÇÃO
-          </button>
-          <button
-            onClick={() => setReadOnly(true)}
-            className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-bold transition-all ${
-              readOnly ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-muted"
-            }`}
-          >
-            <BookOpen className="w-3 h-3" /> LEITURA
-          </button>
-        </div>
+      <div className="flex items-center gap-2 px-3 py-1 border-b border-border/30 bg-muted/20">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 text-xs gap-1"
+          onClick={() => setShowLatexPanel((v) => !v)}
+        >
+          <Sigma className="w-3.5 h-3.5" />
+          LaTeX & Diagramas
+        </Button>
       </div>
       <div className="flex-1 overflow-auto py-4 sm:py-6 px-2 sm:px-4">
         <div

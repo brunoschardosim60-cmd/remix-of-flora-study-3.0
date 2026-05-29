@@ -1,4 +1,3 @@
-import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { StudyTopic, REVISION_INTERVALS } from "@/lib/studyData";
 import { isPastDateLocal } from "@/lib/dateUtils";
@@ -28,16 +27,6 @@ function isOverdue(iso: string | null) {
 
 export function RevisionTable({ topics, onToggleRevision, onRatingChange, onDelete, onOpenNotes, onOpenQuiz, onStartStudy }: RevisionTableProps) {
   const navigate = useNavigate();
-  const [sortField, setSortSortField] = useState<"tema" | "materia" | "rating">("tema");
-
-  const sortedTopics = useMemo(() => {
-    return [...topics].sort((a, b) => {
-      if (sortField === "tema") return a.tema.localeCompare(b.tema);
-      if (sortField === "materia") return (a.materia || "").localeCompare(b.materia || "");
-      if (sortField === "rating") return (b.rating || 0) - (a.rating || 0);
-      return 0;
-    });
-  }, [topics, sortField]);
 
   function handlePracticeQuestions(topic: StudyTopic) {
     const params = new URLSearchParams();
@@ -52,8 +41,8 @@ export function RevisionTable({ topics, onToggleRevision, onRatingChange, onDele
         <table className="w-full min-w-[860px] text-sm">
           <thead>
             <tr className="border-b border-border bg-muted/30">
-              <th className="text-left p-3 font-heading font-semibold cursor-pointer hover:text-primary" onClick={() => setSortSortField("tema")}>Tema</th>
-              <th className="text-left p-3 font-heading font-semibold cursor-pointer hover:text-primary" onClick={() => setSortSortField("materia")}>Matéria</th>
+              <th className="text-left p-3 font-heading font-semibold">Tema</th>
+              <th className="text-left p-3 font-heading font-semibold">Matéria</th>
               <th className="text-center p-3 font-heading font-semibold">Dia estudado</th>
               {REVISION_INTERVALS.map((d, i) => (
                 <th key={i} className="text-center p-3 font-heading font-semibold whitespace-nowrap">
@@ -77,7 +66,7 @@ export function RevisionTable({ topics, onToggleRevision, onRatingChange, onDele
                 </td>
               </tr>
             )}
-            {sortedTopics.map((topic) => (
+            {topics.map((topic) => (
               <tr
                 key={topic.id}
                 className="border-b border-border/50 hover:bg-muted/20 transition-colors"
@@ -114,13 +103,7 @@ export function RevisionTable({ topics, onToggleRevision, onRatingChange, onDele
                   </td>
                 ))}
                 <td className="p-3">
-                  <div className="flex flex-col items-center gap-1">
-                    <StarRating rating={topic.rating} onChange={(r) => onRatingChange(topic.id, r)} />
-                    <div className="flex gap-1">
-                      {topic.notas && <span className="w-1.5 h-1.5 rounded-full bg-primary" title="Tem anotações" />}
-                      {topic.flashcards?.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-accent" title="Tem flashcards" />}
-                    </div>
-                  </div>
+                  <StarRating rating={topic.rating} onChange={(r) => onRatingChange(topic.id, r)} />
                 </td>
                 <td className="p-3">
                   <div className="flex items-center gap-1 justify-center">

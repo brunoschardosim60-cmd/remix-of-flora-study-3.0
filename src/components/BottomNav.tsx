@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Home, NotebookPen, FileText, BarChart3, Sparkles, Library, BookOpen, GraduationCap } from "lucide-react";
-import { useStudentConfig } from "@/hooks/useStudentConfig";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 type Item = { path: string; label: string; icon: any; isAction?: boolean };
 
@@ -27,8 +28,22 @@ const CONCURSO_ITEMS: Item[] = [
 export function BottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { config: studentConfig } = useStudentConfig();
-  const isConcurso = studentConfig?.isConcurso ?? false;
+  const { user } = useAuth();
+  const [isConcurso, setIsConcurso] = useState(false);
+
+  useEffect(() => {
+    if (!user) { setIsConcurso(false); return; }
+    let cancelled = false;
+    supabase
+      .from("student_onboarding")
+      .select("objetivo")
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!cancelled) setIsConcurso((data?.objetivo || "").toLowerCase() === "concurso");
+      });
+    return () => { cancelled = true; };
+  }, [user]);
 
   const items = isConcurso ? CONCURSO_ITEMS : BASE_ITEMS;
 

@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { StickyNote, Layers, Plus, Trash2, RotateCcw, Sparkles, Loader2, CheckCircle2, Brain, Link2, LayoutTemplate } from "lucide-react";
+import { StickyNote, Layers, Plus, Trash2, RotateCcw, Sparkles, Loader2, CheckCircle2, Brain, Link2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { reportError } from "@/lib/errorHandling";
@@ -64,7 +64,7 @@ function isDueForReview(card: Flashcard): boolean {
 }
 
 export function TopicNotesDialog({ topic, open, onClose, onUpdateNotes, onUpdateFlashcards }: TopicNotesDialogProps) {
-  const [tab, setTab] = useState<"notas" | "flashcards" | "templates">("notas");
+  const [tab, setTab] = useState<"notas" | "flashcards">("notas");
   const [newFront, setNewFront] = useState("");
   const [newBack, setNewBack] = useState("");
   const [flippedCards, setFlippedCards] = useState<Set<string>>(new Set());
@@ -310,13 +310,6 @@ export function TopicNotesDialog({ topic, open, onClose, onUpdateNotes, onUpdate
               </span>
             )}
           </button>
-          <button
-            onClick={() => setTab("templates")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all
-              ${tab === "templates" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground"}`}
-          >
-            <LayoutTemplate className="w-3.5 h-3.5" /> Templates
-          </button>
           </div>
           <Button
             variant="outline"
@@ -335,31 +328,6 @@ export function TopicNotesDialog({ topic, open, onClose, onUpdateNotes, onUpdate
             placeholder="Escreva aqui os pontos principais deste tema..."
             className="min-h-[200px] resize-none"
           />
-        ) : tab === "templates" ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {[
-              { id: "resumo", label: "Resumo Estruturado", icon: StickyNote, text: "# RESUMO: [TEMA]\n\n## 💡 Conceito Chave\nDefinição em uma frase...\n\n## 📌 Pontos Principais\n- Ponto 1\n- Ponto 2\n\n## 🧠 Macete/Lembrete\nComo não esquecer..." },
-              { id: "mapa", label: "Mapa Mental (Texto)", icon: Brain, text: "# MAPA MENTAL\n\n[CONCEITO CENTRAL]\n   ├──> [RAMO 1]\n   │     └──> [DETALHE]\n   ├──> [RAMO 2]\n   └──> [RAMO 3]" },
-              { id: "fichamento", label: "Fichamento", icon: Layers, text: "# FICHAMENTO\n\n- Referência: [FONTE]\n- Citação: \"[TRECHO IMPORTANTE]\"\n- Análise: Minha interpretação sobre o autor..." },
-            ].map((tmpl) => (
-              <button
-                key={tmpl.id}
-                onClick={() => {
-                  if (confirm("Isso substituirá suas anotações atuais. Continuar?")) {
-                    onUpdateNotes(topic.id, tmpl.text.replace("[TEMA]", topic.tema));
-                    setTab("notas");
-                  }
-                }}
-                className="p-4 rounded-xl border border-border hover:border-primary/50 hover:bg-muted/50 transition-all text-left flex items-start gap-3"
-              >
-                <tmpl.icon className="w-5 h-5 text-primary mt-0.5" />
-                <div>
-                  <p className="font-semibold text-sm">{tmpl.label}</p>
-                  <p className="text-xs text-muted-foreground">Clique para aplicar este esqueleto</p>
-                </div>
-              </button>
-            ))}
-          </div>
         ) : reviewMode ? (
           renderReviewMode()
         ) : (
