@@ -1119,7 +1119,8 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({
                 <div>Você foi muito bem nessa. Quer fixar agora com revisão espaçada, ou já partir pra próxima aula?</div>
               </div>
               <div className="ilp-done-actions">
-                <button className="ilp-nav primary" onClick={() => onComplete?.()}><Sparkles size={16}/> Próxima aula</button>
+                <button className="ilp-nav primary" onClick={() => window.dispatchEvent(new CustomEvent("open-flora-quiz", { detail: { tema: lesson.titulo } }))}><CheckSquare size={16}/> Resolver Quiz Final</button>
+                <button className="ilp-nav secondary" onClick={() => onComplete?.()}><Sparkles size={16}/> Próxima aula</button>
                 <button className="ilp-nav ghost" onClick={async () => {
                   const text = `Acabei de concluir "${lesson.titulo}" no StudyFlow com a Flora 🌿`;
                   try {
