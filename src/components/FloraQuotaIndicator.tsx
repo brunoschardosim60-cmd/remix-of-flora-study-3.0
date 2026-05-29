@@ -27,7 +27,7 @@ export function FloraQuotaIndicator({ action }: Props) {
     };
     fetchQuota();
     
-    // Refresh periodically or on chat events
+    // Refresh on chat events
     const handler = () => fetchQuota();
     window.addEventListener("flora-quota-refresh", handler);
     return () => window.removeEventListener("flora-quota-refresh", handler);
