@@ -95,22 +95,30 @@ export default function Onboarding() {
     if (!user) return;
     setLoading(true);
     try {
-      const { error } = await supabase.from("student_onboarding").upsert({
+      const payload = {
         user_id: user.id,
-        objetivo,
-        banca: isConcurso ? banca : "",
-        cargo: isConcurso ? cargo.trim() : "",
+        objetivo: objetivo || "aprender",
+        banca: isConcurso ? (banca || "outras") : "",
+        cargo: isConcurso ? (cargo || "").trim() : "",
+        orgao: "",
+        tempo_disponivel_min: (parseInt(horasDisponiveis) || 4) * 60,
         data_prova: dataProva || null,
         horas_disponiveis: parseInt(horasDisponiveis) || 4,
-        nivel_atual: nivelAtual,
-        conteudo_estudado: conteudoEstudado.trim(),
-        turno_preferido: turnoPreferido,
-        objetivos_livre: objetivosLivre.trim(),
-        materias_dificeis: materiasDificeis,
-        rotina: turnoPreferido.toLowerCase(),
-        meta_resultado: metaResultado || objetivosLivre || `Passar em ${objetivo === "enem" ? "ENEM" : objetivo}`,
+        nivel_atual: nivelAtual || "Iniciante",
+        conteudo_estudado: (conteudoEstudado || "").trim(),
+        turno_preferido: turnoPreferido || "Manhã",
+        objetivos_livre: (objetivosLivre || "").trim(),
+        materias_dificeis: (materiasDificeis && materiasDificeis.length > 0) ? materiasDificeis : ["Geral"],
+        rotina: (turnoPreferido || "Manhã").toLowerCase(),
+        meta_resultado: (metaResultado || objetivosLivre || `Passar em ${objetivo === "enem" ? "ENEM" : objetivo}`).trim() || "Estudar",
         completed: true,
-      } as any);
+      };
+      
+      const { error } = await supabase.from("student_onboarding").upsert(payload);
+      if (error) {
+        console.error("Supabase upsert error:", error);
+        throw new Error(`Erro no banco de dados: ${error.message}`);
+      }
       if (error) throw error;
 
       // Gera plano em background
@@ -120,9 +128,9 @@ export default function Onboarding() {
 
       setDone(true);
       setTimeout(() => navigate("/"), 2200);
-    } catch (err) {
-      console.error(err);
-      toast.error("Erro ao salvar. Tente novamente.");
+    } catch (err: any) {
+      console.error("Onboarding error:", err);
+      toast.error(err?.message || "Erro ao salvar. Verifique se todos os campos obrigatórios estão preenchidos.");
     } finally {
       setLoading(false);
     }
