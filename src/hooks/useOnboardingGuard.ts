@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { useStudentConfig } from "./useStudentConfig";
 import type { User } from "@supabase/supabase-js";
 
 /**
@@ -9,27 +9,19 @@ import type { User } from "@supabase/supabase-js";
  */
 export function useOnboardingGuard(user: User | null, isAdmin: boolean) {
   const navigate = useNavigate();
+  const { config, loading } = useStudentConfig();
   const [checked, setChecked] = useState(!user);
 
   useEffect(() => {
-    if (!user) { setChecked(true); return; }
+    if (!user || loading) return;
     if (isAdmin) { setChecked(true); return; }
-    let cancelled = false;
-    supabase
-      .from("student_onboarding")
-      .select("completed")
-      .eq("user_id", user.id)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (cancelled) return;
-        if (!data || data.completed !== true) {
-          navigate("/onboarding", { replace: true });
-        } else {
-          setChecked(true);
-        }
-      });
-    return () => { cancelled = true; };
-  }, [user, isAdmin, navigate]);
+
+    if (config?.onboardingCompleted === false) {
+      navigate("/onboarding", { replace: true });
+    } else {
+      setChecked(true);
+    }
+  }, [user, isAdmin, navigate, config, loading]);
 
   return checked;
 }
