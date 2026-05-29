@@ -41,14 +41,17 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
   return (
     <AnimatePresence>
       <motion.div
+        initial={{ y: "100%", opacity: 0 }}
+        animate={isMinimized ? { y: "calc(100% - 60px)", opacity: 1 } : { y: 0, opacity: 1 }}
+        exit={{ y: "100%", opacity: 0 }}
+        transition={{ type: "spring", damping: 25, stiffness: 300 }}
         drag="y"
         dragConstraints={{ top: 0, bottom: 0 }}
-        dragElastic={0.2}
+        dragElastic={0.1}
         onDragEnd={(_, info) => {
           if (info.offset.y > 100) setIsMinimized(true);
           else if (info.offset.y < -100) setIsMinimized(false);
         }}
-        animate={isMinimized ? { y: "calc(100% - 60px)" } : { y: 0 }}
         className="fixed bottom-0 right-0 w-full h-[85vh] sm:bottom-20 sm:right-4 sm:w-[400px] sm:h-[600px] sm:max-w-[calc(100vw-2rem)] sm:max-h-[calc(100vh-6rem)] z-50 sm:rounded-2xl rounded-t-2xl border border-border bg-card shadow-2xl flex flex-col overflow-hidden"
       >
         {/* Header - Draggable Area */}
