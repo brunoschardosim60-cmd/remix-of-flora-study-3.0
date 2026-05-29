@@ -469,35 +469,25 @@ export default function BancoQuestoes() {
   }, [search]);
 
   const disciplinas = useMemo(() => {
-    // Filtramos disciplinas baseadas na área se houver uma selecionada,
-    // mas garantimos que as disciplinas mapeadas em diferentes áreas apareçam.
-    const set = new Set<string>();
-    const AREA_LIKE = new Set([
-      "Linguagens", "Ciências Humanas", "Ciências da Natureza", 
-      "Humanas", "Natureza", "Matemática", "Linguagens e Códigos"
-    ]);
+    // Mapeamento para os temas principais (agrupados)
+    return ["Todas", "Biologia", "Física", "Química", "História", "Geografia", "Filosofia", "Sociologia", "Português", "Literatura", "Artes", "Inglês", "Espanhol", "Matemática"];
+  }, []);
 
-    for (const q of questions) {
-      if (area !== "Todas" && q.area !== area) continue;
-      const d = (q.disciplina || "").trim();
-      if (d && !AREA_LIKE.has(d)) set.add(d);
-    }
-    return ["Todas", ...Array.from(set).sort()];
-  }, [questions, area]);
-
-
-  // Temas disponíveis dependem da disciplina selecionada (ou de todas).
-  // Temas disponíveis: agora mostramos TODOS os temas presentes no banco para facilitar a busca,
-  // independente do filtro de disciplina/área atual, pois a mesma matéria (ex: Citologia)
-  // pode estar classificada com disciplinas diferentes (ex: Biologia vs Natureza).
   const temas = useMemo(() => {
-    const set = new Set<string>();
-    for (const q of questions) {
-      const t = (q.tema || "").trim();
-      if (t) set.add(t);
-    }
-    return ["Todos", ...Array.from(set).sort((a, b) => a.localeCompare(b, "pt-BR"))];
-  }, [questions]);
+    // Lista simplificada dos temas principais que mais caem
+    return [
+      "Todos",
+      "Citologia", "Ecologia", "Genética", "Fisiologia Humana", "Botânica", // Bio
+      "Mecânica", "Eletricidade", "Termologia", "Óptica", "Ondulatória", // Física
+      "Química Orgânica", "Estequiometria", "Ácidos e Bases", "Eletroquímica", // Química
+      "Brasil República", "Brasil Colônia", "Idade Moderna", "Antiguidade", // História
+      "Geografia Física", "Geopolítica", "Urbanização", "Meio Ambiente", // Geo
+      "Ética", "Política", "Filosofia Moderna", "Sociologia Clássica", // Filo/Socio
+      "Interpretação de Texto", "Gêneros Textuais", "Variação Linguística", "Literatura Contemporânea", // Linguagens
+      "Funções", "Geometria", "Estatística", "Probabilidade", "Razão e Proporção" // Matemática
+    ].sort();
+  }, []);
+
 
 
   // Pré-computa enunciado limpo, preview e haystack de busca por questão.
