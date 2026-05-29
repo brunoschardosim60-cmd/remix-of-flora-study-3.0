@@ -119,6 +119,17 @@ function NotificationInit() {
   return null;
 }
 
+function Layout({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex min-h-dvh">
+      <Sidebar />
+      <div className="flex-1 min-w-0">
+        {children}
+      </div>
+    </div>
+  );
+}
+
 // Não logado vai direto para /auth — sem tela de apresentação intermediária
 function LandingOrDashboard() {
   const { user, loading } = useAuth();
@@ -126,12 +137,9 @@ function LandingOrDashboard() {
   if (!user) return <Navigate to="/auth" replace />;
   return (
     <ProtectedRoute>
-      <div className="flex min-h-dvh">
-        <Sidebar />
-        <div className="flex-1 min-w-0">
-          <Suspense fallback={<RouteFallback />}><Index /></Suspense>
-        </div>
-      </div>
+      <Layout>
+        <Suspense fallback={<RouteFallback />}><Index /></Suspense>
+      </Layout>
     </ProtectedRoute>
   );
 }
