@@ -15,8 +15,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   ArrowLeft, Plus, Trash2, ChevronLeft, ChevronRight, Loader2, Pencil, Type, Maximize2, Minimize2, Share2,
-  Brain, Sparkles, BookPlus, CheckCircle2, XCircle, ZoomIn, ZoomOut, FileText, Cloud, CloudOff, RefreshCw, Eye,
+  Brain, Sparkles, BookPlus, CheckCircle2, XCircle, ZoomIn, ZoomOut, FileText, Cloud, CloudOff, RefreshCw, Eye, Camera,
 } from "lucide-react";
+
 import { toast } from "sonner";
 import { InlineMath } from "react-katex";
 import "katex/dist/katex.min.css";
@@ -305,6 +306,9 @@ export default function NotebookEditor() {
   const [quizFinished, setQuizFinished] = useState(false);
   const [quizWrongQuestions, setQuizWrongQuestions] = useState<string[]>([]);
   const [quizResultSaved, setQuizResultSaved] = useState(false);
+  const [ocrLoading, setOcrLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const solveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const statusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -999,6 +1003,47 @@ export default function NotebookEditor() {
     setQuizResultSaved(false);
   };
 
+  const handleOCR = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setOcrLoading(true);
+    toast.loading("Digitalizando sua página...");
+    try {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64 = reader.result as string;
+        const base64Content = base64.split(",")[1];
+        try {
+          const { data, error } = await supabase.functions.invoke("ocr-notebook", {
+            body: { image: base64Content }
+          });
+          if (error) throw error;
+          if (data?.text) {
+            handleContentChange(`${page?.content || ""}<p>${data.text.replace(/\n/g, "<br/>")}</p>`);
+            toast.dismiss();
+            toast.success("Texto digitalizado!");
+          } else {
+            toast.dismiss();
+            toast.info("Não consegui ler nada.");
+          }
+        } catch (err) {
+          console.error(err);
+          toast.dismiss();
+          toast.error("Erro ao processar imagem.");
+        } finally {
+          setOcrLoading(false);
+          if (fileInputRef.current) fileInputRef.current.value = "";
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      setOcrLoading(false);
+      toast.dismiss();
+      toast.error("Erro ao carregar arquivo.");
+    }
+  };
+
+
   const handleGenerateQuizFromPage = async () => {
     setGeneratingStudy("quiz");
     try {
@@ -1354,6 +1399,19 @@ export default function NotebookEditor() {
                   {generatingStudy === "quiz" && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                   Gerar Quiz
                 </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => fileInputRef.current?.click()} disabled={ocrLoading}>
+                  <Camera className="w-4 h-4 mr-2" />
+                  Digitalizar foto (OCR)
+                </DropdownMenuItem>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleOCR}
+                />
+
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleCreateTopicFromPage}>
                   <BookPlus className="w-4 h-4 mr-2" />

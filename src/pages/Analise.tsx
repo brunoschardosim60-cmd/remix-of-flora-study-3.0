@@ -3,8 +3,10 @@ import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft, BarChart3, Loader2, AlertTriangle, Trophy, Target,
   TrendingUp, TrendingDown, Calendar, Flame, BookOpen, Brain,
-  Clock, Zap,
+  Clock, Zap, FileDown,
 } from "lucide-react";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -89,19 +91,24 @@ function last30Days() {
 // ─── Componente principal ─────────────────────────────────────────────────────
 export default function Analise() {
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
+
 
   const [topics, setTopics] = useState<StudyTopic[]>([]);
   const [sessions, setSessions] = useState<StudySession[]>([]);
   const [actions, setActions] = useState<UserAction[]>([]);
   const [perfs, setPerfs] = useState<StudentPerf[]>([]);
   const [reviews, setReviews] = useState<SpacedReview[]>([]);
+  const [gamification, setGamification] = useState<any>(null);
+
   const [essays, setEssays] = useState<EssayRow[]>([]);
   const [slots, setSlots] = useState<WeeklySlotRow[]>([]);
   const [onboarding, setOnboarding] = useState<OnboardingRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"geral" | "vivo" | "evolucao" | "enem" | "revisoes" | "relatorio">("geral");
   const [period, setPeriod] = useState<"7d" | "30d" | "all">("7d");
+  const [exporting, setExporting] = useState(false);
+
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth", { replace: true });
@@ -125,7 +132,9 @@ export default function Analise() {
         .eq("user_id", user.id).order("created_at", { ascending: false }).limit(50),
       supabase.from("weekly_slots").select("id,dia,horario,concluido,materia").eq("user_id", user.id),
       supabase.from("student_onboarding").select("objetivo,tempo_disponivel_min").eq("user_id", user.id).maybeSingle(),
-    ]).then(([state, { data: sess }, { data: acts }, { data: pf }, { data: rev }, { data: ess }, { data: sl }, { data: onb }]) => {
+      supabase.from("gamification_profiles").select("*").eq("user_id", user.id).maybeSingle(),
+
+    ]).then(([state, { data: sess }, { data: acts }, { data: pf }, { data: rev }, { data: ess }, { data: sl }, { data: onb }, { data: gami }]) => {
       if (cancelled) return;
       setTopics(state?.topics ?? []);
       setSessions((sess ?? []) as StudySession[]);
@@ -135,6 +144,8 @@ export default function Analise() {
       setEssays((ess ?? []) as EssayRow[]);
       setSlots((sl ?? []) as WeeklySlotRow[]);
       setOnboarding((onb ?? null) as OnboardingRow | null);
+      setGamification(gami);
+
     }).catch(() => undefined).finally(() => { if (!cancelled) setLoading(false); });
 
     return () => { cancelled = true; };
@@ -264,7 +275,106 @@ export default function Analise() {
     }
   }, [activeTab, showEnemTab]);
 
+  const handleExportPDF = async () => {
+    setExporting(true);
+    try {
+      // Import dynamicly to avoid bloat
+      const { jsPDF } = await import("jspdf");
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      
+      // Header
+      doc.setFontSize(20);
+      doc.setTextColor(59, 130, 246); // Primary color
+      doc.text("Relatório de Desempenho StudyFlow", 15, 20);
+      
+      doc.setFontSize(10);
+      doc.setTextColor(100, 116, 139);
+      doc.text(`Gerado em: ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR")}`, 15, 28);
+      doc.text(`Usuário: ${profile?.display_name || user?.email || "Estudante"}`, 15, 33);
+      
+      // Divider
+      doc.setDrawColor(226, 232, 240);
+      doc.line(15, 38, pageWidth - 15, 38);
+      
+      // Summary section
+      doc.setFontSize(14);
+      doc.setTextColor(30, 41, 59);
+      doc.text("Resumo Geral", 15, 48);
+      
+      doc.setFontSize(11);
+      doc.text(`Tempo Total de Estudo: ${fmtMin(totalStudyMs)}`, 20, 58);
+      doc.text(`Sequência (Streak): ${streak} dias`, 20, 65);
+      doc.text(`Total de Tópicos: ${topics.length}`, 20, 72);
+      doc.text(`Taxa Média de Acerto: ${perfs.length > 0 ? Math.round(perfs.reduce((a, p) => a + p.accuracy, 0) / perfs.length) : 0}%`, 20, 79);
+      
+      // Subject Performance
+      doc.setFontSize(14);
+      doc.text("Desempenho por Matéria", 15, 95);
+      
+      let y = 105;
+      const sortedPerfs = [...perfs].sort((a, b) => b.accuracy - a.accuracy);
+      
+      doc.setFontSize(10);
+      doc.setTextColor(100, 116, 139);
+      doc.text("Matéria", 20, y);
+      doc.text("Acertos", 100, y);
+      doc.text("Erros", 130, y);
+      doc.text("Precisão", 160, y);
+      
+      y += 5;
+      doc.line(15, y, pageWidth - 15, y);
+      y += 8;
+      
+      doc.setTextColor(30, 41, 59);
+      sortedPerfs.slice(0, 15).forEach((p) => {
+        if (y > 270) {
+          doc.addPage();
+          y = 20;
+        }
+        doc.text(p.materia, 20, y);
+        doc.text(String(p.acertos), 100, y);
+        doc.text(String(p.erros), 130, y);
+        doc.text(`${p.accuracy}%`, 160, y);
+        y += 8;
+      });
+      
+      if (showEnemTab) {
+        doc.addPage();
+        doc.setFontSize(16);
+        doc.setTextColor(59, 130, 246);
+        doc.text("Predição ENEM", 15, 20);
+        
+        doc.setFontSize(11);
+        doc.setTextColor(30, 41, 59);
+        doc.text(`Nota Geral Estimada: ${Math.round(toENEMScale(enemPred.score))}`, 15, 35);
+        
+        y = 50;
+        doc.text("Detalhamento por Área:", 15, y);
+        y += 10;
+        
+        enemPred.breakdown.forEach((b) => {
+          doc.text(`${b.area}: ${Math.round(toENEMScale(b.score))}`, 20, y);
+          y += 8;
+        });
+        
+        y += 10;
+        doc.text(`Redação Estimada: ${Math.round(toENEMScale(enemPred.factors.essayScore))}`, 15, y);
+      }
+
+      
+      doc.save(`Relatorio_StudyFlow_${new Date().toISOString().split('T')[0]}.pdf`);
+      toast.success("Relatório PDF gerado com sucesso!");
+    } catch (error) {
+      console.error("Erro ao gerar PDF:", error);
+      toast.error("Não foi possível gerar o PDF. Tente novamente.");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   // ─── Render ────────────────────────────────────────────────────────────────
+
   if (authLoading || !user) {
     return <div className="flex min-h-dvh items-center justify-center bg-background"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
   }
@@ -703,8 +813,58 @@ export default function Analise() {
               </div>
             )}
 
+            {/* ── ABA: RELATÓRIO ────────────────────────────────────── */}
+            {activeTab === "relatorio" && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between gap-4 flex-wrap bg-primary/5 border border-primary/20 rounded-2xl p-5">
+                  <div className="flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
+                      <FileDown className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-primary mb-1">Exportar Relatório Detalhado</h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        Gere um PDF completo com seu progresso, pontos fortes, fracos e predição de nota para salvar ou compartilhar com tutores/pais.
+                      </p>
+                    </div>
+                  </div>
+                  <Button 
+                    onClick={handleExportPDF} 
+                    disabled={exporting}
+                    className="gap-2 rounded-xl"
+                  >
+                    {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
+                    {exporting ? "Gerando..." : "Baixar PDF"}
+                  </Button>
+                </div>
+                
+                <DetailedProgressReport
+                  totalXP={0} // Gamification profile is not directly available here in the same shape
+                  level={1}
+                  streak={streak}
+                  totalStudyHours={Math.round(totalStudyMs / 3600000)}
+                  strongSubjects={perfs.filter(p => p.accuracy >= 75).map(p => p.materia)}
+                  weakSubjects={perfs.filter(p => p.accuracy < 60).map(p => p.materia)}
+                  subjectPerformances={perfs.map(p => ({
+                    subject: p.materia,
+                    accuracy: p.accuracy,
+                    totalQuestions: p.acertos + p.erros,
+                    studyMinutes: Math.round(filteredSessions.filter(s => s.subject === p.materia).reduce((a, s) => a + s.duration_ms, 0) / 60000),
+                    trend: p.accuracy >= 70 ? "up" : p.accuracy < 50 ? "down" : "stable"
+                  }))}
+                  weeklyData={heatmapData.map(d => ({
+                    day: d.label,
+                    minutes: d.min,
+                    questions: filteredActions.filter(a => a.created_at.startsWith(d.date) && (a.action === "quiz_correct" || a.action === "quiz_wrong")).length,
+                    revisions: reviews.filter(r => r.completed_at && r.completed_at.startsWith(d.date)).length
+                  }))}
+                />
+              </div>
+            )}
+
             {/* ── ABA: REVISÕES ────────────────────────────────────── */}
             {activeTab === "revisoes" && (
+
               <div className="space-y-4">
                 <div className="grid gap-3 grid-cols-3">
                   {[
