@@ -858,7 +858,7 @@ export default function BancoQuestoes() {
             <Input placeholder="Buscar por enunciado ou tema…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            <Select value={ano} onValueChange={setAno}>
+            <Select key={`ano-${anos.length}`} value={ano} onValueChange={setAno}>
               <SelectTrigger><SelectValue placeholder="Ano" /></SelectTrigger>
               <SelectContent>
                 {anos && anos.length > 0 ? (
@@ -868,7 +868,7 @@ export default function BancoQuestoes() {
                 )}
               </SelectContent>
             </Select>
-            <Select value={area} onValueChange={(v) => { setArea(v); setDisciplina("Todas"); setTema("Todos"); }}>
+            <Select key={`area-${AREAS.length}`} value={area} onValueChange={(v) => { setArea(v); setDisciplina("Todas"); setTema("Todos"); }}>
               <SelectTrigger><SelectValue placeholder="Área" /></SelectTrigger>
               <SelectContent>
                 {AREAS && AREAS.length > 0 ? (
@@ -878,7 +878,7 @@ export default function BancoQuestoes() {
                 )}
               </SelectContent>
             </Select>
-            <Select value={disciplina} onValueChange={(v) => { setDisciplina(v); setTema("Todos"); }}>
+            <Select key={`disciplina-${disciplinas.length}`} value={disciplina} onValueChange={(v) => { setDisciplina(v); setTema("Todos"); }}>
               <SelectTrigger><SelectValue placeholder="Disciplina" /></SelectTrigger>
               <SelectContent>
                 {disciplinas && disciplinas.length > 0 ? (
@@ -888,7 +888,7 @@ export default function BancoQuestoes() {
                 )}
               </SelectContent>
             </Select>
-            <Select value={tema} onValueChange={setTema}>
+            <Select key={`tema-${temas.length}`} value={tema} onValueChange={setTema}>
               <SelectTrigger><SelectValue placeholder="Tema" /></SelectTrigger>
               <SelectContent className="max-h-72">
                 <SelectItem value="Todos">Todos os Temas</SelectItem>
