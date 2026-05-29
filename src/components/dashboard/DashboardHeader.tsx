@@ -44,14 +44,24 @@ export function DashboardHeader({ user, bancoRoute, bancoLabel, onSignOut }: Pro
             <ThemeIcon className="w-4 h-4" />
           </Button>
           {user && (
-            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => navigate("/settings")} aria-label="Configurações">
+            <Button variant="ghost" size="icon" className="h-9 w-9 md:hidden" onClick={() => navigate("/settings")} aria-label="Configurações">
               <Settings className="w-4 h-4" />
             </Button>
           )}
           {user && (
-            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={onSignOut}>
+            <Button variant="ghost" size="icon" className="h-9 w-9 md:hidden" onClick={onSignOut}>
               <LogOut className="w-4 h-4" />
             </Button>
+          )}
+          {user && (
+            <div className="hidden md:flex items-center gap-2 ml-2 pl-2 border-l border-border">
+              <Button variant="ghost" size="sm" className="gap-2 px-3 h-9" onClick={() => navigate("/settings")}>
+                <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
+                  <UserIcon className="w-3.5 h-3.5 text-primary" />
+                </div>
+                <span className="text-xs font-medium">Perfil</span>
+              </Button>
+            </div>
           )}
         </div>
       </div>
