@@ -821,21 +821,41 @@ export default function BancoQuestoes() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <Select value={ano} onValueChange={setAno}>
               <SelectTrigger><SelectValue placeholder="Ano" /></SelectTrigger>
-              <SelectContent>{anos.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent>
+              <SelectContent>
+                {anos && anos.length > 0 ? (
+                  anos.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)
+                ) : (
+                  <SelectItem value="Todos">Todos</SelectItem>
+                )}
+              </SelectContent>
             </Select>
             <Select value={area} onValueChange={(v) => { setArea(v); setDisciplina("Todas"); setTema("Todos"); }}>
               <SelectTrigger><SelectValue placeholder="Área" /></SelectTrigger>
-              <SelectContent>{AREAS.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent>
+              <SelectContent>
+                {AREAS && AREAS.length > 0 ? (
+                  AREAS.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)
+                ) : (
+                  <SelectItem value="Todas">Todas</SelectItem>
+                )}
+              </SelectContent>
             </Select>
             <Select value={disciplina} onValueChange={(v) => { setDisciplina(v); setTema("Todos"); }}>
               <SelectTrigger><SelectValue placeholder="Disciplina" /></SelectTrigger>
-              <SelectContent>{disciplinas.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+              <SelectContent>
+                {disciplinas && disciplinas.length > 0 ? (
+                  disciplinas.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)
+                ) : (
+                  <SelectItem value="Todas">Todas</SelectItem>
+                )}
+              </SelectContent>
             </Select>
             <Select value={tema} onValueChange={setTema}>
               <SelectTrigger><SelectValue placeholder="Tema" /></SelectTrigger>
               <SelectContent className="max-h-72">
                 <SelectItem value="Todos">Todos os Temas</SelectItem>
-                {temas.filter(t => t !== "Todos").map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                {temas && temas.length > 0 ? (
+                  temas.filter(t => t !== "Todos").map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)
+                ) : null}
               </SelectContent>
             </Select>
           </div>
