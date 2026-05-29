@@ -173,6 +173,10 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
                       const slot = getSlot(horario, dia);
                       if (!slot) return <td key={dia} className="p-2" />;
 
+                      // No mobile, só mostramos o dia ativo
+                      const isMobileHidden = activeDayMobile !== dia;
+
+
                       const isEditing = editingSlot === slot.id;
                       const isHovered = hoveredSlot === slot.id;
 
