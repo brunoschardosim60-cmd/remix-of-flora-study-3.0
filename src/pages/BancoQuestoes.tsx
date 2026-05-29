@@ -469,35 +469,25 @@ export default function BancoQuestoes() {
   }, [search]);
 
   const disciplinas = useMemo(() => {
-    // Filtramos disciplinas baseadas na área se houver uma selecionada,
-    // mas garantimos que as disciplinas mapeadas em diferentes áreas apareçam.
-    const set = new Set<string>();
-    const AREA_LIKE = new Set([
-      "Linguagens", "Ciências Humanas", "Ciências da Natureza", 
-      "Humanas", "Natureza", "Matemática", "Linguagens e Códigos"
-    ]);
+    // Mapeamento para os temas principais (agrupados)
+    return ["Todas", "Biologia", "Física", "Química", "História", "Geografia", "Filosofia", "Sociologia", "Português", "Literatura", "Artes", "Inglês", "Espanhol", "Matemática"];
+  }, []);
 
-    for (const q of questions) {
-      if (area !== "Todas" && q.area !== area) continue;
-      const d = (q.disciplina || "").trim();
-      if (d && !AREA_LIKE.has(d)) set.add(d);
-    }
-    return ["Todas", ...Array.from(set).sort()];
-  }, [questions, area]);
-
-
-  // Temas disponíveis dependem da disciplina selecionada (ou de todas).
-  // Temas disponíveis: agora mostramos TODOS os temas presentes no banco para facilitar a busca,
-  // independente do filtro de disciplina/área atual, pois a mesma matéria (ex: Citologia)
-  // pode estar classificada com disciplinas diferentes (ex: Biologia vs Natureza).
   const temas = useMemo(() => {
-    const set = new Set<string>();
-    for (const q of questions) {
-      const t = (q.tema || "").trim();
-      if (t) set.add(t);
-    }
-    return ["Todos", ...Array.from(set).sort((a, b) => a.localeCompare(b, "pt-BR"))];
-  }, [questions]);
+    // Lista simplificada dos temas principais que mais caem
+    return [
+      "Todos",
+      "Citologia", "Ecologia", "Genética", "Fisiologia Humana", "Botânica", // Bio
+      "Mecânica", "Eletricidade", "Termologia", "Óptica", "Ondulatória", // Física
+      "Química Orgânica", "Estequiometria", "Ácidos e Bases", "Eletroquímica", // Química
+      "Brasil República", "Brasil Colônia", "Idade Moderna", "Antiguidade", // História
+      "Geografia Física", "Geopolítica", "Urbanização", "Meio Ambiente", // Geo
+      "Ética", "Política", "Filosofia Moderna", "Sociologia Clássica", // Filo/Socio
+      "Interpretação de Texto", "Gêneros Textuais", "Variação Linguística", "Literatura Contemporânea", // Linguagens
+      "Funções", "Geometria", "Estatística", "Probabilidade", "Razão e Proporção" // Matemática
+    ].sort();
+  }, []);
+
 
 
   // Pré-computa enunciado limpo, preview e haystack de busca por questão.
@@ -547,7 +537,6 @@ export default function BancoQuestoes() {
   const filtered = useMemo(() => {
     const s = debouncedSearch.trim().toLowerCase();
     return questions.filter((q) => {
-      // Normalização para busca textual e filtros
       const temaQ = (q.tema || "").trim().toLowerCase();
       const discQ = (q.disciplina || "").trim().toLowerCase();
       const areaQ = (q.area || "").trim().toLowerCase();
@@ -556,41 +545,68 @@ export default function BancoQuestoes() {
       // Filtro de Ano (Sempre independente)
       if (ano !== "Todos" && String(q.ano) !== ano) return false;
 
-      // Lógica de Filtro Hierárquico
-      if (searchNormalized) {
-        // Se houver busca textual, ela tem prioridade total (Ignora filtros de tema/disc/área para não restringir)
-        const hay = cleanedById.get(q.id)?.haystack ?? "";
-        if (!hay.includes(searchNormalized)) return false;
-      } else if (tema !== "Todos") {
-        // Se selecionou um tema (ex: "Meio Ambiente"), buscamos esse tema exato OU temas relacionados/sinônimos
+      // 1. Filtro de Tema (Prioridade)
+      // Se selecionou um tema (ex: "Meio Ambiente"), buscamos por palavras-chave em todo o conteúdo
+      if (tema !== "Todos") {
         const selectedTema = tema.toLowerCase();
-        
-        // Mapeamento de sinônimos para tornar a busca mais inteligente
         const synonyms: Record<string, string[]> = {
-          "meio ambiente": ["meio ambiente", "ecologia", "sustentabilidade", "meio-ambiente"],
-          "citologia": ["citologia", "célula", "celular", "biologia celular"],
-          "brasil república": ["brasil república", "brasil republica", "era vargas", "ditadura militar"],
-          "interpretação de texto": ["interpretação de texto", "interpretación de texto", "gêneros textuais", "generos textuais"]
+          "meio ambiente": ["meio ambiente", "ecologia", "sustentabilidade", "poluição", "recursos naturais", "impacto ambiental"],
+          "ecologia": ["ecologia", "meio ambiente", "sustentabilidade", "bioma", "ecossistema"],
+          "citologia": ["citologia", "celular", "célula", "organela", "mitocôndria"],
+          "brasil república": ["república", "era vargas", "ditadura", "democracia", "fhc", "lula", "jk"],
+          "interpretação de texto": ["interpretação", "texto", "leitura", "compreensão", "sentido"],
+          "funções": ["função", "afim", "quadrática", "exponencial", "logaritmo", "grau"],
+          "geometria": ["geometria", "plana", "espacial", "área", "volume", "triângulo", "círculo"]
         };
-
-        const currentSynonyms = synonyms[selectedTema] || [selectedTema];
-        const isMatch = currentSynonyms.some(s => temaQ.includes(s) || (selectedTema === "meio ambiente" && temaQ === ""));
-        
+        const targets = synonyms[selectedTema] || [selectedTema];
+        const hay = cleanedById.get(q.id)?.haystack ?? "";
+        const isMatch = targets.some(t => temaQ.includes(t) || discQ.includes(t) || hay.includes(t));
         if (!isMatch) return false;
-      } else if (disciplina !== "Todas") {
-        if (q.disciplina !== disciplina) return false;
-      } else if (area !== "Todas") {
-        if (q.area !== area) return false;
       }
 
-      // Filtros de estado (erros, favoritos, incompletas)
+      // 2. Filtro de Disciplina
+      if (disciplina !== "Todas") {
+        const selectedDisc = disciplina.toLowerCase();
+        const discMap: Record<string, string[]> = {
+          "biologia": ["biologia", "natureza"],
+          "física": ["física", "fisica", "natureza"],
+          "química": ["química", "quimica", "natureza"],
+          "história": ["história", "historia", "humanas"],
+          "geografia": ["geografia", "humanas"],
+          "português": ["português", "portugues", "linguagens", "texto"],
+          "matemática": ["matemática", "matematica"]
+        };
+        const targets = discMap[selectedDisc] || [selectedDisc];
+        if (!targets.some(t => discQ.includes(t) || areaQ.includes(t))) return false;
+      }
+
+      // 3. Filtro de Área
+      if (area !== "Todas") {
+        const selectedArea = area.toLowerCase();
+        const areaMap: Record<string, string[]> = {
+          "linguagens": ["linguagens", "português", "literatura", "inglês", "espanhol", "artes"],
+          "ciências humanas": ["humanas", "história", "geografia", "filosofia", "sociologia"],
+          "ciências da natureza": ["natureza", "biologia", "física", "química"],
+          "matemática": ["matemática"]
+        };
+        const targets = areaMap[selectedArea] || [selectedArea];
+        if (!targets.some(t => areaQ.includes(t) || discQ.includes(t))) return false;
+      }
+
+      // 4. Busca Textual Final
+      if (searchNormalized) {
+        const hay = cleanedById.get(q.id)?.haystack ?? "";
+        if (!hay.includes(searchNormalized)) return false;
+      }
+
+      // Filtros de estado
       if (onlyErrors && attempts[q.id]?.acertou !== false) return false;
       if (onlyFavorites && !favorites.has(q.id)) return false;
       if (q.incomplete && !showIncomplete) return false;
       return true;
     });
-
   }, [questions, debouncedSearch, area, ano, disciplina, tema, onlyErrors, onlyFavorites, showIncomplete, favorites, attempts, cleanedById]);
+
 
 
   // Índice da questão aberta dentro da lista filtrada → navegação ←/→.
