@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, ReactNode } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
@@ -11,8 +11,6 @@ import { initNotifications } from "@/lib/notifications";
 import { GlobalFocusMiniPlayer } from "@/components/GlobalFocusMiniPlayer";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { QuotaLimitModal } from "@/components/QuotaLimitModal";
-import { AppProvider } from "@/hooks/useAppContext";
-import { Sidebar } from "@/components/Sidebar";
 
 const Index = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
@@ -119,17 +117,6 @@ function NotificationInit() {
   return null;
 }
 
-function Layout({ children }: { children: ReactNode }) {
-  return (
-    <div className="flex min-h-dvh">
-      <Sidebar />
-      <div className="flex-1 min-w-0">
-        {children}
-      </div>
-    </div>
-  );
-}
-
 // Não logado vai direto para /auth — sem tela de apresentação intermediária
 function LandingOrDashboard() {
   const { user, loading } = useAuth();
@@ -137,9 +124,7 @@ function LandingOrDashboard() {
   if (!user) return <Navigate to="/auth" replace />;
   return (
     <ProtectedRoute>
-      <Layout>
-        <Suspense fallback={<RouteFallback />}><Index /></Suspense>
-      </Layout>
+      <Suspense fallback={<RouteFallback />}><Index /></Suspense>
     </ProtectedRoute>
   );
 }
@@ -180,9 +165,8 @@ const App = () => (
       <TooltipProvider>
         <Sonner />
         <AuthProvider>
-          <AppProvider>
-            <NotificationInit />
-            <BrowserRouter
+          <NotificationInit />
+          <BrowserRouter
             future={{
               v7_startTransition: true,
               v7_relativeSplatPath: true,
@@ -201,29 +185,28 @@ const App = () => (
                 <Route path="/" element={<LandingOrDashboard />} />
                 <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
                 <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
-                <Route path="/notebooks" element={<ProtectedRoute><Layout><Notebooks /></Layout></ProtectedRoute>} />
-                <Route path="/notebooks/:id" element={<ProtectedRoute><Layout><NotebookEditor /></Layout></ProtectedRoute>} />
-                <Route path="/redacao" element={<ProtectedRoute><Layout><Redacao /></Layout></ProtectedRoute>} />
-                <Route path="/redacao/temas" element={<ProtectedRoute><Layout><RedacaoTemas /></Layout></ProtectedRoute>} />
-                <Route path="/redacao/templates" element={<ProtectedRoute><Layout><RedacaoTemplates /></Layout></ProtectedRoute>} />
+                <Route path="/notebooks" element={<ProtectedRoute><Notebooks /></ProtectedRoute>} />
+                <Route path="/notebooks/:id" element={<ProtectedRoute><NotebookEditor /></ProtectedRoute>} />
+                <Route path="/redacao" element={<ProtectedRoute><Redacao /></ProtectedRoute>} />
+                <Route path="/redacao/temas" element={<ProtectedRoute><RedacaoTemas /></ProtectedRoute>} />
+                <Route path="/redacao/templates" element={<ProtectedRoute><RedacaoTemplates /></ProtectedRoute>} />
 
-                <Route path="/banco" element={<ProtectedRoute><Layout><BancoQuestoes /></Layout></ProtectedRoute>} />
-                <Route path="/banco-concurso" element={<ProtectedRoute><Layout><BancoConcurso /></Layout></ProtectedRoute>} />
-                <Route path="/analise" element={<ProtectedRoute><Layout><Analise /></Layout></ProtectedRoute>} />
-                <Route path="/settings" element={<ProtectedRoute><Layout><Settings /></Layout></ProtectedRoute>} />
+                <Route path="/banco" element={<ProtectedRoute><BancoQuestoes /></ProtectedRoute>} />
+                <Route path="/banco-concurso" element={<ProtectedRoute><BancoConcurso /></ProtectedRoute>} />
+                <Route path="/analise" element={<ProtectedRoute><Analise /></ProtectedRoute>} />
+                <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                 <Route path="/shared/notebook/:token" element={<Suspense fallback={<RouteFallback />}><SharedNotebook /></Suspense>} />
-                <Route path="/aulao" element={<ProtectedRoute><Layout><Aulao /></Layout></ProtectedRoute>} />
-                <Route path="/cursos" element={<ProtectedRoute><Layout><Cursos /></Layout></ProtectedRoute>} />
-                <Route path="/cursos/:id" element={<ProtectedRoute><Layout><CursoPlayer /></Layout></ProtectedRoute>} />
-                <Route path="/comunidades" element={<ProtectedRoute><Layout><Comunidades /></Layout></ProtectedRoute>} />
+                <Route path="/aulao" element={<ProtectedRoute><Aulao /></ProtectedRoute>} />
+                <Route path="/cursos" element={<ProtectedRoute><Cursos /></ProtectedRoute>} />
+                <Route path="/cursos/:id" element={<ProtectedRoute><CursoPlayer /></ProtectedRoute>} />
+                <Route path="/comunidades" element={<ProtectedRoute><Comunidades /></ProtectedRoute>} />
                 <Route path="/pricing" element={<Suspense fallback={<RouteFallback />}><Pricing /></Suspense>} />
                 <Route path="/u/:username" element={<Suspense fallback={<RouteFallback />}><PublicProfile /></Suspense>} />
                 
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
-            </BrowserRouter>
-          </AppProvider>
+          </BrowserRouter>
         </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>

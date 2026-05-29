@@ -779,45 +779,34 @@ export default function Redacao() {
 
                     {/* Competências ENEM */}
                     {isENEM && (
-                      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                      <div className="grid gap-3 md:grid-cols-2">
                         {COMPETENCIAS.map((comp) => {
                           const score = (selected[comp.key as keyof Essay] as number | null) ?? 0;
                           const fbRaw = feedbackComp?.[comp.key as keyof CompetenciaFeedback];
                           const fb = typeof fbRaw === "string" ? fbRaw : "";
                           const pct = (score / 200) * 100;
-                          const barColor = score >= 160 ? "bg-green-500" : score >= 120 ? "bg-blue-500" : "bg-orange-500";
-                          const isC5 = comp.key === "competencia_5";
-
+                          const barColor = pct >= 80 ? "bg-green-500" : pct >= 60 ? "bg-yellow-500" : pct >= 40 ? "bg-orange-500" : "bg-red-400";
                           return (
-                            <div key={comp.key} className={`space-y-2 rounded-xl border p-4 transition-all ${isC5 ? "border-primary/40 bg-primary/5 ring-1 ring-primary/20 shadow-sm" : "border-border bg-background/60"}`}>
+                            <div key={comp.key} className="space-y-2 rounded-xl border border-border bg-background/60 p-3">
                               <div className="flex items-center justify-between">
-                                <div className="min-w-0 flex-1">
-                                  <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-                                    C{comp.num}
-                                    {isC5 && <Sparkles className="w-2.5 h-2.5 text-primary" />}
+                                <div>
+                                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                    Competência {comp.num}
                                   </p>
-                                  <p className="text-sm font-semibold truncate">{comp.title}</p>
+                                  <p className="text-sm font-medium">{comp.title}</p>
                                 </div>
-                                <span className={`shrink-0 rounded-full px-2.5 py-1 text-sm font-bold ${isC5 ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary"}`}>
-                                  {score}<span className={`text-[10px] ${isC5 ? "text-primary-foreground/70" : "text-muted-foreground"}`}>/200</span>
+                                <span className="rounded-full bg-primary/10 px-2.5 py-1 text-sm font-bold text-primary">
+                                  {score}<span className="text-xs text-muted-foreground">/200</span>
                                 </span>
                               </div>
                               <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-                                <div className={`h-full rounded-full transition-all duration-700 ${barColor}`} style={{ width: `${pct}%` }} />
+                                <div className={`h-full rounded-full transition-all duration-500 ${barColor}`} style={{ width: `${pct}%` }} />
                               </div>
-                              <p className="text-[11px] text-muted-foreground leading-tight italic">{comp.description}</p>
-                              {fb && <p className="text-xs mt-2 line-clamp-3 hover:line-clamp-none transition-all cursor-default text-foreground/80">{fb}</p>}
+                              <p className="text-xs text-muted-foreground">{comp.description}</p>
+                              {fb && <p className="text-sm whitespace-pre-line">{fb}</p>}
                             </div>
                           );
                         })}
-                        {/* Nota Final Card */}
-                        <div className="col-span-full sm:col-span-1 lg:col-span-1 rounded-xl border-2 border-primary bg-primary text-primary-foreground p-4 flex flex-col items-center justify-center text-center shadow-lg relative overflow-hidden group">
-                           <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -mr-8 -mt-8 transition-transform group-hover:scale-150" />
-                           <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">Nota Final</p>
-                           <p className="text-4xl font-black mt-1 tabular-nums">{selected?.nota_total ?? 0}</p>
-                           <div className="h-px w-8 bg-primary-foreground/30 my-2" />
-                           <p className="text-[10px] font-medium">Desempenho Geral ENEM</p>
-                        </div>
                       </div>
                     )}
 

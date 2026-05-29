@@ -31,16 +31,7 @@ export default function Auth() {
   const [socialLoading, setSocialLoading] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const [quoteIndex, setQuoteIndex] = useState(0);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setQuoteIndex((prev) => (prev + 1) % QUOTES.length);
-    }, 10000); // Roda a cada 10s
-    return () => clearInterval(interval);
-  }, []);
-
-  const quote = QUOTES[quoteIndex];
+  const quote = QUOTES[0];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
