@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, BookOpen, Copy, Check, Sparkles } from "lucide-react";
+import { ArrowLeft, BookOpen, Copy, Check, Sparkles, FileText, Layout, Heart, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +13,7 @@ const TEMPLATES = [
     title: "Esqueleto Nota 1000 — Modelo Coringa",
     description: "Ideal para qualquer tema de ordem social ou educacional.",
     category: "Coringa",
+    icon: <Layout className="w-5 h-5" />,
     content: `## Introdução
 Historicamente, o Brasil é um país marcado por [Citar um Contexto Histórico Relacionado]. Nesse sentido, o(a) [Tema da Redação] apresenta-se como um desafio que precisa ser superado. Esse cenário ocorre não apenas devido à [Causa 1], mas também em virtude da [Causa 2]. Dessa forma, é fundamental analisar esses fatores para mitigar esse impasse.
 
@@ -30,6 +31,7 @@ Portanto, medidas são necessárias para resolver o impasse. Cabe ao Governo Fed
     title: "Esqueleto Nota 1000 — Foco em Tecnologia e Meio Ambiente",
     description: "Estrutura otimizada para temas que envolvem inovação, redes sociais ou ecologia.",
     category: "Específico",
+    icon: <Smartphone className="w-5 h-5" />,
     content: `## Introdução
 Na obra "Utopia", de Thomas More, é descrita uma sociedade perfeita, onde o bem comum é a prioridade. No entanto, ao analisar a realidade contemporânea brasileira, percebe-se que o(a) [Tema da Redação] distancia o país desse ideal. Isso ocorre devido ao descaso governamental e à negligência social. Nesse contexto, deve-se avaliar como esses entraves impedem o progresso nacional.
 
@@ -41,6 +43,42 @@ Além disso, a passividade da sociedade civil reforça o cenário negativo. Segu
 
 ## Conclusão
 Em suma, é imprescindível que ações sejam tomadas. O Ministério da Educação, em parceria com a mídia, deve promover campanhas de conscientização sobre o(a) [Tema], por meio de debates e materiais informativos, a fim de educar a população sobre seus direitos e deveres. Paralelamente, o Poder Legislativo deve endurecer as penas para quem descumpre as leis ambientais/tecnológicas. Assim, o Brasil poderá se aproximar da utopia de More.`
+  },
+  {
+    id: "esqueleto-3",
+    title: "Esqueleto Nota 1000 — Foco em Saúde e Minorias",
+    description: "Ideal para temas como saúde pública, doação de órgãos ou direitos de grupos minoritários.",
+    category: "Social/Saúde",
+    icon: <Heart className="w-5 h-5" />,
+    content: `## Introdução
+De acordo com a Constituição Federal de 1988, é dever do Estado garantir o bem-estar e a dignidade de todos os cidadãos. Todavia, a persistência do(a) [Tema da Redação] no Brasil demonstra que esse direito constitucional ainda não é plenamente usufruído por todos. Esse quadro de negligência é fomentado pela lacuna estatal e pelo preconito enraizado na sociedade. Logo, urge analisar como esses pilares sustentam o impasse.
+
+## Desenvolvimento 1
+A princípio, cabe pontuar que a inércia do Poder Público é um dos principais motores da questão. Segundo a teoria do "Contrato Social" de John Locke, o Estado deve garantir a segurança e os direitos dos indivíduos. Entretanto, no que diz respeito ao(à) [Tema], observa-se que os investimentos são escassos e as políticas públicas, ineficientes. Dessa forma, a omissão estatal torna-se um obstáculo para a efetivação da cidadania.
+
+## Desenvolvimento 2
+Outrossim, o estigma social agrava o problema. Segundo Gilberto Freyre, a formação da sociedade brasileira é marcada por hierarquias e exclusões que se refletem até os dias atuais. Nesse viés, o(a) [Tema] é muitas vezes visto com indiferença ou julgamento, o que dificulta o acolhimento e a resolução do conflito. Portanto, é necessário desconstruir essa visão arcaica para que haja progresso.
+
+## Conclusão
+Em virtude dos fatos mencionados, medidas urgentes são necessárias. O Ministério da Saúde, em conjunto com as Secretarias de Assistência Social, deve ampliar o acesso ao(à) [Solução Específica], por meio da descentralização dos serviços e do aumento de verbas para o setor. Além disso, cabe às escolas promoverem palestras e projetos que visem combater o preconceito sobre o(a) [Tema]. Somente assim, o preceito constitucional deixará de ser apenas um texto teórico.`
+  },
+  {
+    id: "esqueleto-4",
+    title: "Esqueleto Nota 1000 — Crítica à Cultura de Consumo",
+    description: "Perfeito para temas sobre publicidade infantil, lixo eletrônico ou comportamento moderno.",
+    category: "Cultura",
+    icon: <FileText className="w-5 h-5" />,
+    content: `## Introdução
+A Escola de Frankfurt, em seus estudos sobre a Indústria Cultural, alertou sobre a padronização dos comportamentos e a alienação dos indivíduos em prol do consumo. No Brasil atual, esse fenômeno reflete-se diretamente no(a) [Tema da Redação]. Essa problemática é alimentada pela falta de educação crítica e pelo bombardeio midiático constante. Dessa maneira, é essencial discutir os impactos dessa cultura na sociedade contemporânea.
+
+## Desenvolvimento 1
+Sob esse prisma, a ausência de um pensamento crítico desde a infância é preocupante. Segundo Paulo Freire, "se a educação sozinha não transforma a sociedade, sem ela tampouco a sociedade muda". No contexto do(a) [Tema], percebe-se que a falta de letramento midiático torna os cidadãos vulneráveis a manipulações. Assim, a educação falha em formar indivíduos capazes de questionar o status quo do consumo desenfreado.
+
+## Desenvolvimento 2
+Somado a isso, o papel da mídia na manutenção desse cenário é evidente. De acordo com o conceito de "Sociedade do Espetáculo" de Guy Debord, a imagem e o consumo sobrepõem-se à essência humana. No que tange ao(à) [Tema], o marketing agressivo estimula o desejo por [Citar Consequência], ignorando os danos sociais e ambientais. Com isso, o indivíduo é reduzido a um mero consumidor, distanciando-se de sua responsabilidade civil.
+
+## Conclusão
+Fica clara, portanto, a necessidade de intervenções. O Ministério da Cultura, aliado ao Ministério da Educação, deve implementar o "Projeto de Conscientização Crítica" nas redes de ensino, através de oficinas que ensinem a ler imagens e publicidades. Paralelamente, o CONAR (Conselho Nacional de Autorregulamentação Publicitária) deve impor limites mais rígidos ao(à) [Prática Específica]. Só assim poderemos transpor a alienação descrita pela Escola de Frankfurt.`
   }
 ];
 
@@ -94,6 +132,9 @@ export default function RedacaoTemplates() {
                 <div className="flex items-start justify-between gap-4">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
+                      <div className="p-1.5 rounded-lg bg-primary/10 text-primary shrink-0">
+                        {t.icon}
+                      </div>
                       <h2 className="font-bold text-lg">{t.title}</h2>
                       <Badge variant="secondary" className="text-[10px] h-5">{t.category}</Badge>
                     </div>

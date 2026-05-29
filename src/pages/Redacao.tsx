@@ -201,20 +201,23 @@ export default function Redacao() {
 
   const selected = useMemo(() => essays.find((e) => e.id === selectedId) ?? null, [essays, selectedId]);
 
-  // Salva no localStorage instantaneamente a cada mudança (sobrevivência offline)
+  // Salva no localStorage com debounce (sobrevivência offline) para evitar stuttering em textos longos
   useEffect(() => {
     if (!selected) return;
     if (selected.status === "corrigida") return;
     if (tema === lastSavedTema && texto === lastSavedTexto) {
-      // Sem alterações vs. servidor: limpa local
       clearLocalDraft(selected.id);
       clearPending(selected.id);
       setHasLocalPending(false);
       return;
     }
-    saveLocalDraft(selected.id, { tema, texto });
-    markPending(selected.id);
-    setHasLocalPending(true);
+
+    const timer = setTimeout(() => {
+      saveLocalDraft(selected.id, { tema, texto });
+      markPending(selected.id);
+      setHasLocalPending(true);
+    }, 1000); // 1s debounce para I/O local
+    return () => clearTimeout(timer);
   }, [tema, texto, selected, lastSavedTema, lastSavedTexto]);
 
   // Listeners de online/offline

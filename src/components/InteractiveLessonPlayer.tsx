@@ -327,6 +327,7 @@ interface Exercise { pergunta: string; alternativas?: string[]; opcoes?: string[
 interface Lesson {
   titulo: string; introducao: string; blocos: LessonBlock[];
   resumo: string | string[]; exercicios?: Exercise[]; exercicio_final: Exercise;
+  glossario?: { termo: string; definicao: string }[];
 }
 interface Props {
   lesson: Lesson; onComplete?: () => void; onExit?: () => void;
@@ -520,7 +521,7 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({
 }) => {
   const { user } = useAuth();
   const voice = useFloraVoice();
-  const [stage, setStage] = useState<"intro"|"block"|"exercises"|"final"|"done">("intro");
+  const [stage, setStage] = useState<"intro"|"block"|"exercises"|"glossario"|"final"|"done">("intro");
   const [idx, setIdx] = useState(0);
   const [sceneIdx, setSceneIdx] = useState(0);
 
@@ -756,10 +757,13 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({
         saveProgress(lesson.titulo, materia || "", idx + 1, 0);
         setIdx((i) => i + 1); playTone(880, 0.12, "sine", 0.05); return;
       }
-      if (lesson.exercicios?.length) setStage("exercises"); else setStage("final");
+      if (lesson.exercicios?.length) setStage("exercises"); 
+      else if (lesson.glossario?.length) setStage("glossario");
+      else setStage("final");
       playTone(990, 0.18, "triangle", 0.06); return;
     }
-    if (stage === "exercises") { setStage("final"); return; }
+    if (stage === "exercises") { setStage(lesson.glossario?.length ? "glossario" : "final"); return; }
+    if (stage === "glossario") { setStage("final"); return; }
     if (stage === "final") {
       setStage("done");
       playTone(660, 0.1, "sine", 0.06);
@@ -780,15 +784,18 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({
       setStage("intro"); return;
     }
     if (stage === "exercises") { setStage("block"); setIdx(blocos.length - 1); setSceneIdx(0); return; }
-    if (stage === "final") { setStage(lesson.exercicios?.length ? "exercises" : "block"); return; }
+    if (stage === "glossario") { setStage(lesson.exercicios?.length ? "exercises" : "block"); return; }
+    if (stage === "final") { setStage(lesson.glossario?.length ? "glossario" : (lesson.exercicios?.length ? "exercises" : "block")); return; }
   }, [stage, sceneIdx, idx, blocos.length, lesson.exercicios, playTone, onExit, voice]);
 
   // ── Progresso ─────────────────────────────────────────────
   const totalScenes = useMemo(() => {
     let t = 1;
     for (let i = 0; i < blocos.length; i++) t += buildScenes(blocos[i], i, lessonSeed).length;
-    if (lesson.exercicios?.length) t += 1; t += 1; return t;
-  }, [blocos, lesson.exercicios, lessonSeed]);
+    if (lesson.exercicios?.length) t += 1;
+    if (lesson.glossario?.length) t += 1;
+    t += 1; return t;
+  }, [blocos, lesson.exercicios, lesson.glossario, lessonSeed]);
 
   const currentStep = useMemo(() => {
     if (stage === "intro") return 1;
@@ -798,9 +805,11 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({
     for (let i = idx; i < blocos.length; i++) s += buildScenes(blocos[i], i, lessonSeed).length;
     if (stage === "exercises") return s + 1;
     if (lesson.exercicios?.length) s += 1;
+    if (stage === "glossario") return s + 1;
+    if (lesson.glossario?.length) s += 1;
     if (stage === "final") return s + 1;
     return totalScenes;
-  }, [stage, idx, sceneIdx, blocos, lesson.exercicios, totalScenes, lessonSeed]);
+  }, [stage, idx, sceneIdx, blocos, lesson.exercicios, lesson.glossario, totalScenes, lessonSeed]);
 
   const progress = currentStep / totalScenes;
   const resumo = Array.isArray(lesson.resumo) ? lesson.resumo : (typeof lesson.resumo === "string" ? [lesson.resumo] : []);

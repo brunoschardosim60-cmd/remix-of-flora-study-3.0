@@ -311,6 +311,7 @@ export default function BancoConcurso() {
   const [iaBanca, setIaBanca] = useState("FGV");
   const [iaMateria, setIaMateria] = useState("Português");
   const [iaAssunto, setIaAssunto] = useState("");
+  const [iaOrgao, setIaOrgao] = useState("Qualquer");
   const [iaNivel, setIaNivel] = useState<"facil" | "medio" | "dificil">("medio");
   const [iaTipo, setIaTipo] = useState<"multipla_escolha" | "certo_errado">("multipla_escolha");
   const [iaQtd, setIaQtd] = useState(3);
@@ -474,7 +475,11 @@ export default function BancoConcurso() {
 
   const orgaos = useMemo(() => {
     const set = new Set(questions.map((q) => q.orgao).filter(Boolean));
-    return ["Todas", ...Array.from(set).sort()];
+    const sorted = Array.from(set).sort();
+    // Prioriza os órgãos mais comuns/importantes
+    const top = ["Receita Federal", "INSS", "Polícia Federal", "TJSP", "TRF", "TRE", "PF", "PRF", "Banco do Brasil", "Caixa"].filter(t => set.has(t));
+    const others = sorted.filter(s => !top.includes(s));
+    return ["Todas", ...top, ...others];
   }, [questions]);
 
   const anos = useMemo(() => {
@@ -813,7 +818,7 @@ export default function BancoConcurso() {
 
       const { data, error } = await supabase.functions.invoke("generate-questions-user", {
         body: {
-          banca: iaBanca, materia: iaMateria, assunto: iaAssunto.trim(),
+          banca: iaBanca, orgao: iaOrgao, materia: iaMateria, assunto: iaAssunto.trim(),
           quantidade: iaQtd, nivel: iaNivel, tipo: iaTipo,
           focoErros: iaFocoErros,
           evitarEnunciados,
@@ -1630,6 +1635,15 @@ export default function BancoConcurso() {
                 onChange={(e) => setIaAssunto(e.target.value)}
                 placeholder="Ex: Interpretação de texto, Concordância verbal…"
                 maxLength={200}
+              />
+            </div>
+            <div className="space-y-1.5 col-span-2">
+              <Label className="text-xs">Órgão (Opcional)</Label>
+              <Input
+                value={iaOrgao}
+                onChange={(e) => setIaOrgao(e.target.value)}
+                placeholder="Ex: Receita Federal, INSS, TJSP…"
+                maxLength={100}
               />
             </div>
             <div className="space-y-1.5 col-span-2">
