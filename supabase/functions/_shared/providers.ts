@@ -378,7 +378,17 @@ export function parseAIJSON(content: string): unknown {
     .replace(/[\u2018\u2019]/g, "'")
     .replace(/[\u201C\u201D]/g, '"')
     .replace(/,\s*([}\]])/g, "$1")
-    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "");
+    // Remove caracteres de controle problemáticos exceto \n, \r, \t
+    // eslint-disable-next-line no-control-regex
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
+
+  // Tenta converter quebras de linha reais dentro de strings em \n literal
+  // Isso é um reparo comum quando a IA não escapa o JSON corretamente.
+  // Procuramos por conteúdo entre aspas e substituímos \n por \\n
+  repaired = repaired.replace(/"([^"\\]*(\\.[^"\\]*)*)"/g, (match) => {
+    return match.replace(/\n/g, "\\n").replace(/\r/g, "\\r").replace(/\t/g, "\\t");
+  });
+
 
   // Balanceia chaves/colchetes (quando truncado)
   let braces = 0, brackets = 0, inStr = false, esc = false;
