@@ -340,7 +340,7 @@ export default function Index() {
           </Suspense>
         </div>
 
-        {isWidgetVisible("gamification") && (
+        {!minimalistMode && isWidgetVisible("gamification") && (
           <Suspense fallback={<SectionSkeleton className="min-h-[120px]" />}>
             <GamificationCard
               streak={gamification.streak}
@@ -354,11 +354,12 @@ export default function Index() {
           </Suspense>
         )}
 
-        {isWidgetVisible("stats") && (
+        {!minimalistMode && isWidgetVisible("stats") && (
           <Suspense fallback={<SectionSkeleton className="min-h-[80px]" />}>
             <StatsCards {...stats} />
           </Suspense>
         )}
+
 
         {/* Painéis específicos de concurso */}
         {isConcurso && (
