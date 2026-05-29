@@ -399,6 +399,30 @@ export default function Settings() {
           </Button>
         </section>
 
+        {/* Configurações de Dashboard */}
+        <section className="rounded-2xl border border-border bg-card p-4 sm:p-5 space-y-4">
+          <h2 className="font-heading font-semibold text-base flex items-center gap-2">
+            <LayoutDashboard className="w-4 h-4 text-primary" /> Visualização
+          </h2>
+          <div className="flex items-center justify-between gap-3">
+            <div className="space-y-0.5">
+              <label className="text-sm font-medium">Modo Minimalista</label>
+              <p className="text-[11px] text-muted-foreground">Oculta widgets secundários do dashboard para foco total.</p>
+            </div>
+            <Switch 
+              checked={window.localStorage.getItem("studyflow.minimalist") === "true"} 
+              onCheckedChange={(val) => {
+                window.localStorage.setItem("studyflow.minimalist", String(val));
+                window.dispatchEvent(new Event("storage"));
+                toast.success(val ? "Modo minimalista ativado." : "Modo minimalista desativado.");
+              }} 
+            />
+          </div>
+          <div className="pt-2">
+            <DashboardCustomizer />
+          </div>
+        </section>
+
         {/* Theme */}
         <section className="rounded-2xl border border-border bg-card p-4 sm:p-5 space-y-4">
           <h2 className="font-heading font-semibold text-base">Tema</h2>
