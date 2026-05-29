@@ -359,11 +359,13 @@ export default function BancoQuestoes() {
   const [examElapsed, setExamElapsed] = useState(0);
   const [examFinished, setExamFinished] = useState(false);
   const [examAnswers, setExamAnswers] = useState<Record<string, string>>({});
+  const [examRealMode, setExamRealMode] = useState(false);
   type ExamKind = "quick" | "day1" | "day2";
   const [examKind, setExamKind] = useState<ExamKind>("quick");
   const [showExamPicker, setShowExamPicker] = useState(false);
   const [examYear, setExamYear] = useState<string>("mix"); // "mix" | "2024" | ...
   const [examYearOpen, setExamYearOpen] = useState(false);
+
   const { user } = useAuth();
   const [favorites, setFavorites] = useState<Set<string>>(() => loadFavoritesLocal());
   const [favoritesLoaded, setFavoritesLoaded] = useState(false);
@@ -831,13 +833,28 @@ export default function BancoQuestoes() {
     const q = examQueue[examIndex];
     if (!q || examAnswers[q.id]) return;
     setExamAnswers((a) => ({ ...a, [q.id]: letter }));
-    recordAttempt(q, letter, "prova");
+    // No modo "Real", não gravamos tentativa na hora para não dar feedback visual imediato no progresso global
+    if (!examRealMode) {
+      recordAttempt(q, letter, "prova");
+    }
   }
 
+
   function nextExam() {
-    if (examIndex < examQueue.length - 1) setExamIndex((i) => i + 1);
-    else setExamFinished(true);
+    if (examIndex < examQueue.length - 1) {
+      setExamIndex((i) => i + 1);
+    } else {
+      // No fim do Modo Real, gravamos todas as tentativas de uma vez para consolidar o histórico
+      if (examRealMode) {
+        examQueue.forEach(q => {
+          const letter = examAnswers[q.id];
+          if (letter) recordAttempt(q, letter, "prova");
+        });
+      }
+      setExamFinished(true);
+    }
   }
+
 
   function closeExam() {
     setExamMode(false);
@@ -1289,26 +1306,43 @@ export default function BancoQuestoes() {
                 </span>
               )}
             </div>
+            
+            <div className="flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={() => setExamRealMode(!examRealMode)}
+                className={`w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg border transition-colors ${
+                  examRealMode
+                    ? "bg-amber-500/10 border-amber-500/40"
+                    : "border-border hover:border-primary/40"
+                }`}
+              >
+                <span className="flex items-center gap-1.5 text-[11px] font-medium">
+                  <Timer className={`w-3 h-3 ${examRealMode ? "text-amber-500" : ""}`} />
+                  Modo Prova Real (Sem resposta imediata)
+                </span>
+              </button>
 
-            {/* Refazer erros */}
-            <button
-              type="button"
-              onClick={() => stats.erros > 0 && setOnlyErrors((v) => !v)}
-              disabled={stats.erros === 0}
-              className={`w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                onlyErrors
-                  ? "bg-primary/10 border-primary/40"
-                  : "border-border hover:border-primary/40"
-              }`}
-            >
-              <span className="flex items-center gap-1.5 text-[11px] font-medium">
-                <RotateCcw className="w-3 h-3" />
-                Refazer erros
-              </span>
-              <span className="text-[10px] text-muted-foreground tabular-nums">
-                {stats.erros}
-              </span>
-            </button>
+              <button
+                type="button"
+                onClick={() => stats.erros > 0 && setOnlyErrors((v) => !v)}
+                disabled={stats.erros === 0}
+                className={`w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                  onlyErrors
+                    ? "bg-primary/10 border-primary/40"
+                    : "border-border hover:border-primary/40"
+                }`}
+              >
+                <span className="flex items-center gap-1.5 text-[11px] font-medium">
+                  <RotateCcw className="w-3 h-3" />
+                  Refazer erros
+                </span>
+                <span className="text-[10px] text-muted-foreground tabular-nums">
+                  {stats.erros}
+                </span>
+              </button>
+            </div>
+
 
             {/* Ano (expandable) */}
             <div className="relative rounded-xl border border-border">
@@ -1426,13 +1460,18 @@ export default function BancoQuestoes() {
               </div>
               {examQueue.length <= 15 ? (
                 <div className="hidden sm:flex gap-1 items-center">
-                  {examQueue.map((q, i) => (
-                    <div key={q.id} className={`h-1.5 w-5 rounded-full transition-colors ${
-                      i < examIndex
-                        ? examAnswers[q.id] === q.correta ? "bg-emerald-500" : "bg-destructive"
-                        : i === examIndex ? "bg-primary" : "bg-muted"
-                    }`} />
-                  ))}
+                  {examQueue.map((q, i) => {
+                    const isAnswered = !!examAnswers[q.id];
+                    const isCorrect = examAnswers[q.id] === q.correta;
+                    return (
+                      <div key={q.id} className={`h-1.5 w-5 rounded-full transition-colors ${
+                        i < examIndex
+                          ? examRealMode ? (isAnswered ? "bg-primary/60" : "bg-muted") : (isCorrect ? "bg-emerald-500" : "bg-destructive")
+                          : i === examIndex ? "bg-primary" : "bg-muted"
+                      }`} />
+                    );
+                  })}
+
                 </div>
               ) : (
                 <div className="hidden sm:flex items-center w-32">
@@ -1468,7 +1507,7 @@ export default function BancoQuestoes() {
                   <AlternativasPanel q={q} chosen={chosen} onAnswer={answerExam} />
 
                   {/* Resultado */}
-                  {chosen && (
+                  {chosen && !examRealMode && (
                     <div className={`rounded-xl px-4 py-3 flex items-center gap-3 ${chosen === q.correta ? "bg-emerald-500/10 border border-emerald-500/30" : "bg-destructive/10 border border-destructive/30"}`}>
                       <span className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${chosen === q.correta ? "bg-emerald-500" : "bg-destructive"}`}>
                         {chosen === q.correta ? <Check className="w-4 h-4 text-white" /> : <X className="w-4 h-4 text-white" />}
@@ -1479,6 +1518,14 @@ export default function BancoQuestoes() {
                       </p>
                     </div>
                   )}
+
+                  {chosen && examRealMode && (
+                    <div className="rounded-xl px-4 py-3 bg-primary/5 border border-primary/20 flex items-center gap-3">
+                      <Check className="w-4 h-4 text-primary" />
+                      <p className="text-sm font-medium text-primary">Questão respondida. Continue focado!</p>
+                    </div>
+                  )}
+
 
                   <div className="flex justify-end">
                     <Button onClick={nextExam} disabled={!chosen} className="rounded-xl px-6">
