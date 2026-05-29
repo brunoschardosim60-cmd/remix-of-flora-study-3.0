@@ -5,6 +5,7 @@ import { ThemeProvider } from "next-themes";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
+import { StudentProvider } from "@/hooks/useStudentConfig";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { initNotifications } from "@/lib/notifications";
@@ -165,7 +166,8 @@ const App = () => (
       <TooltipProvider>
         <Sonner />
         <AuthProvider>
-          <NotificationInit />
+          <StudentProvider>
+            <NotificationInit />
           <BrowserRouter
             future={{
               v7_startTransition: true,
@@ -207,6 +209,7 @@ const App = () => (
               </Routes>
             </Suspense>
           </BrowserRouter>
+          </StudentProvider>
         </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>

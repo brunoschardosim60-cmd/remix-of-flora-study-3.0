@@ -27,6 +27,7 @@ import {
 import { reportError, toErrorMessage } from "@/lib/errorHandling";
 import { EssayEvolutionCard } from "@/components/EssayEvolutionCard";
 import { exportEssayToPdf } from "@/lib/essayPdfExport";
+import { useStudentConfig } from "@/hooks/useStudentConfig";
 import {
   saveLocalDraft,
   loadLocalDraft,
@@ -82,16 +83,18 @@ function getObjetivoConfig(objetivo: Objetivo) {
 // ─── Competências para UI ENEM ────────────────────────────────────────────────
 
 const CRITERIOS_GERAL = [
-  { key: "competencia_1", label: "Clareza e objetividade", desc: "A argumentação é direta e o leitor entende o ponto de vista?" },
-  { key: "competencia_2", label: "Argumentação", desc: "Os argumentos são sólidos, coerentes e bem fundamentados?" },
-  { key: "competencia_3", label: "Norma culta", desc: "Gramática, ortografia, concordância, regência, pontuação" },
-  { key: "competencia_4", label: "Estrutura e coesão", desc: "A organização é eficiente? Os parágrafos se conectam?" },
+  { key: "competencia_1", label: "C1: Norma culta", desc: "Domínio da escrita formal da língua portuguesa" },
+  { key: "competencia_2", label: "C2: Compreender o tema", desc: "Aplicar conceitos de várias áreas para desenvolver o tema" },
+  { key: "competencia_3", label: "C3: Argumentação", desc: "Selecionar, relacionar, organizar e interpretar informações" },
+  { key: "competencia_4", label: "C4: Coesão", desc: "Conhecimento dos mecanismos linguísticos para construção da argumentação" },
+  { key: "competencia_5", label: "C5: Proposta de intervenção", desc: "Respeito aos direitos humanos e detalhamento dos 5 elementos" },
 ] as const;
 
 export default function Redacao() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, loading: authLoading } = useAuth();
+  const { config: studentConfig } = useStudentConfig();
   const [essays, setEssays] = useState<Essay[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -124,18 +127,9 @@ export default function Redacao() {
     prefetchForContext("redacao");
   }, [authLoading, user, navigate]);
 
-  // Busca o objetivo do onboarding para adaptar a UI
   useEffect(() => {
-    if (!user) return;
-    supabase
-      .from("student_onboarding")
-      .select("objetivo")
-      .eq("user_id", user.id)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data?.objetivo) setObjetivo(data.objetivo as Objetivo);
-      });
-  }, [user]);
+    if (studentConfig?.objetivo) setObjetivo(studentConfig.objetivo as Objetivo);
+  }, [studentConfig]);
 
   useEffect(() => {
     if (!user) return;
@@ -430,6 +424,8 @@ export default function Redacao() {
   const notaGeralDe10 = !isENEM && selected?.nota_total != null
     ? (selected.nota_total / 100).toFixed(1)
     : null;
+  
+  const notaTotalENEM = isENEM && selected?.nota_total != null ? selected.nota_total : null;
 
   const metaObj = feedbackComp?._meta as any;
   const paragrafos = feedbackComp?._paragrafos;

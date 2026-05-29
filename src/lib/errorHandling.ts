@@ -10,21 +10,35 @@ export function isLocalDev() {
   return typeof window !== "undefined" && window.location.hostname === "127.0.0.1";
 }
 
+const SUPABASE_ERROR_MAP: Record<string, string> = {
+  "User already registered": "Este e-mail já está cadastrado.",
+  "Invalid login credentials": "E-mail ou senha incorretos.",
+  "Email not confirmed": "Por favor, confirme seu e-mail antes de entrar.",
+  "Password is too short": "A senha deve ter pelo menos 6 caracteres.",
+  "User not found": "Usuário não encontrado.",
+  "Invalid grant": "Credenciais inválidas.",
+};
+
 export function toErrorMessage(error: unknown, fallback = "Algo deu errado.") {
+  let message = fallback;
+
   if (error instanceof Error && error.message) {
-    return error.message;
+    message = error.message;
+  } else if (typeof error === "string") {
+    message = error;
+  } else {
+    const maybeError = error as { message?: unknown };
+    if (maybeError?.message && typeof maybeError.message === "string") {
+      message = maybeError.message;
+    }
   }
 
-  if (typeof error === "string") {
-    return error;
+  // Tradução amigável para Supabase
+  for (const [key, value] of Object.entries(SUPABASE_ERROR_MAP)) {
+    if (message.includes(key)) return value;
   }
 
-  const maybeError = error as { message?: unknown };
-  if (maybeError?.message && typeof maybeError.message === "string") {
-    return maybeError.message;
-  }
-
-  return fallback;
+  return message;
 }
 
 export async function getFriendlyErrorMessage(error: unknown, fallback = "Algo deu errado.") {

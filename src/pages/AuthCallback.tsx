@@ -14,19 +14,47 @@ export default function AuthCallback() {
   useEffect(() => {
     const finishOAuth = async () => {
       try {
-        // A sessão pode levar alguns instantes para ser gravada após o redirect OAuth.
-        let session = (await supabase.auth.getSession()).data.session;
-        if (!session) {
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) throw sessionError;
+
+        if (session) {
+          // Verifica se o usuário já completou o onboarding para decidir o redirect
+          const { data: onboarding } = await supabase
+            .from("student_onboarding")
+            .select("completed")
+            .eq("user_id", session.user.id)
+            .maybeSingle();
+
+          if (onboarding?.completed) {
+            navigate("/", { replace: true });
+          } else {
+            navigate("/onboarding", { replace: true });
+          }
+        } else {
+          // Retry logic original para casos de delay no cache de sessão
+          let retrySession = null;
           for (let i = 0; i < 10; i++) {
             await new Promise((resolve) => setTimeout(resolve, 200));
-            session = (await supabase.auth.getSession()).data.session;
-            if (session) break;
+            const { data: { session: s } } = await supabase.auth.getSession();
+            if (s) {
+              retrySession = s;
+              break;
+            }
+          }
+          
+          if (retrySession) {
+            const { data: onboarding } = await supabase
+              .from("student_onboarding")
+              .select("completed")
+              .eq("user_id", retrySession.user.id)
+              .maybeSingle();
+            navigate(onboarding?.completed ? "/" : "/onboarding", { replace: true });
+          } else {
+            navigate("/auth", { replace: true });
           }
         }
-
-        navigate(session ? "/" : "/auth", { replace: true });
       } catch (error: unknown) {
-        toast.error(getErrorMessage(error, "Erro ao finalizar login com Google"));
+        toast.error(getErrorMessage(error, "Erro ao finalizar login"));
         navigate("/auth", { replace: true });
       }
     };

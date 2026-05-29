@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from "react";
+import { useState, useEffect, useCallback, useMemo, lazy, Suspense, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { CalendarDays, LayoutGrid } from "lucide-react";
+import { CalendarDays, LayoutGrid, GraduationCap, PlayCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { createTopic, StudyTopic, WeeklySlot, ALL_SUBJECTS, Subject, CONCURSO_SUBJECTS, ENEM_SUBJECTS } from "@/lib/studyData";
 import { DashboardHero } from "@/components/DashboardHero";
@@ -17,7 +17,7 @@ import { useFloraEvents } from "@/hooks/useFloraEvents";
 import { useStudyNow } from "@/hooks/useStudyNow";
 import { useDashboardDialogs } from "@/hooks/useDashboardDialogs";
 import { useDashboardBootstrap } from "@/hooks/useDashboardBootstrap";
-import { useStudentObjetivo } from "@/hooks/useStudentObjetivo";
+import { useStudentConfig } from "@/hooks/useStudentConfig";
 import { useDashboardHeroData } from "@/hooks/useDashboardHeroData";
 import { useDashboardPrimaryAction } from "@/hooks/useDashboardPrimaryAction";
 import { loadStringStorage } from "@/lib/storage";
@@ -75,6 +75,12 @@ type Tab = "revisao" | "semanal";
 export default function Index() {
   const { user, profile, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
+  const mounted = useRef(false);
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
 
   // Bootstrap: deep-link, custom colors, idle prefetch, análise Flora
   useDashboardBootstrap(user);
@@ -82,8 +88,11 @@ export default function Index() {
   // Force onboarding for logged-in users who haven't completed it (admins skip)
   const onboardingChecked = useOnboardingGuard(user, isAdmin);
 
-  // Objetivo do aluno → rota/label do "Banco"
-  const { objetivo, isConcurso, bancoRoute, bancoLabel } = useStudentObjetivo(user);
+  // Objetivo do aluno → rota/label do "Banco" do contexto global
+  const { config: studentConfig } = useStudentConfig();
+  const isConcurso = studentConfig?.isConcurso ?? false;
+  const bancoRoute = studentConfig?.bancoRoute ?? "/banco";
+  const bancoLabel = studentConfig?.bancoLabel ?? "Questões ENEM";
   const subjectOptions = isConcurso ? CONCURSO_SUBJECTS : ENEM_SUBJECTS;
 
   const {
@@ -299,27 +308,47 @@ export default function Index() {
           }}
         />
 
-        {dueFlashcardsCount > 0 && isWidgetVisible("flashcards_banner") && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+          {dueFlashcardsCount > 0 && isWidgetVisible("flashcards_banner") && (
+            <button
+              onClick={openFlashcardSession}
+              className="flex items-center justify-between gap-3 rounded-2xl border border-accent/30 bg-accent/5 hover:bg-accent/10 transition-colors px-4 py-3 text-left"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-9 h-9 rounded-full bg-accent/15 flex items-center justify-center shrink-0">
+                  <Sparkles className="w-4 h-4 text-accent" />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-heading font-semibold text-sm">Flashcards pendentes</p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {dueFlashcardsCount} card{dueFlashcardsCount > 1 ? "s" : ""} para hoje
+                  </p>
+                </div>
+              </div>
+              <span className="shrink-0 inline-flex items-center justify-center min-w-[28px] h-7 px-2 rounded-full bg-accent text-accent-foreground text-xs font-bold">
+                {dueFlashcardsCount}
+              </span>
+            </button>
+          )}
+
           <button
-            onClick={openFlashcardSession}
-            className="w-full flex items-center justify-between gap-3 rounded-2xl border border-accent/30 bg-accent/5 hover:bg-accent/10 transition-colors px-4 py-3 text-left"
+            onClick={() => navigate("/cursos")}
+            className="flex items-center justify-between gap-3 rounded-2xl border border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors px-4 py-3 text-left"
           >
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-9 h-9 rounded-full bg-accent/15 flex items-center justify-center shrink-0">
-                <Sparkles className="w-4 h-4 text-accent" />
+              <div className="w-9 h-9 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
+                <GraduationCap className="w-4 h-4 text-primary" />
               </div>
               <div className="min-w-0">
-                <p className="font-heading font-semibold text-sm">Flashcards pendentes</p>
+                <p className="font-heading font-semibold text-sm">Aulas da Flora</p>
                 <p className="text-xs text-muted-foreground truncate">
-                  {dueFlashcardsCount} card{dueFlashcardsCount > 1 ? "s" : ""} para revisar hoje
+                  Explore conteúdos estruturados por matéria
                 </p>
               </div>
             </div>
-            <span className="shrink-0 inline-flex items-center justify-center min-w-[28px] h-7 px-2 rounded-full bg-accent text-accent-foreground text-xs font-bold">
-              {dueFlashcardsCount}
-            </span>
+            <PlayCircle className="w-5 h-5 text-primary shrink-0" />
           </button>
-        )}
+        </div>
 
         {/* Timer + Hours + Media */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">

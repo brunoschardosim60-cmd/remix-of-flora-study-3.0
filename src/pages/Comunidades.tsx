@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Users, Plus, MessageCircle, BookOpen, Send, Sparkles, Pin, ThumbsUp, Search, Hash } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -204,12 +205,20 @@ function formatTime(date: Date): string {
 // ============ COMPONENTE PRINCIPAL ============
 export default function Comunidades() {
   const navigate = useNavigate();
-  const [communities, setCommunities] = useState<Community[]>(INITIAL_COMMUNITIES);
+  const { user, profile } = useAuth();
+  const [communities, setCommunities] = useState<Community[]>(() => {
+    const saved = localStorage.getItem("studyflow.communities");
+    return saved ? JSON.parse(saved) : INITIAL_COMMUNITIES;
+  });
   const [activeCommunity, setActiveCommunity] = useState<Community | null>(null);
   const [newPost, setNewPost] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [isFloraTyping, setIsFloraTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    localStorage.setItem("studyflow.communities", JSON.stringify(communities));
+  }, [communities]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -246,7 +255,7 @@ export default function Comunidades() {
 
     const post: CommunityPost = {
       id: `post_${Date.now()}`,
-      author: "Você",
+      author: profile?.display_name || user?.email?.split("@")[0] || "Você",
       authorEmoji: "👤",
       content: newPost.trim(),
       timestamp: new Date(),

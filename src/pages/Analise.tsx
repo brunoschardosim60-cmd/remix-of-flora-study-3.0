@@ -23,6 +23,7 @@ import {
 import { ConcursoDashboard } from "@/components/ConcursoDashboard";
 import { DetailedProgressReport } from "@/components/DetailedProgressReport";
 import { ConcursoSimuladoHistory } from "@/components/ConcursoSimuladoHistory";
+import { useStudentConfig } from "@/hooks/useStudentConfig";
 import { SubjectHeatmap } from "@/components/dashboard/SubjectHeatmap";
 import { EvolutionChart } from "@/components/dashboard/EvolutionChart";
 import { WeakSpotsCard } from "@/components/dashboard/WeakSpotsCard";
@@ -92,6 +93,7 @@ function last30Days() {
 export default function Analise() {
   const navigate = useNavigate();
   const { user, profile, loading: authLoading } = useAuth();
+  const { config: studentConfig } = useStudentConfig();
 
 
   const [topics, setTopics] = useState<StudyTopic[]>([]);
@@ -131,10 +133,9 @@ export default function Analise() {
       supabase.from("essays").select("id,nota_total,status,competencia_1,competencia_2,competencia_3,competencia_4,competencia_5,corrected_at,created_at")
         .eq("user_id", user.id).order("created_at", { ascending: false }).limit(50),
       supabase.from("weekly_slots").select("id,dia,horario,concluido,materia").eq("user_id", user.id),
-      supabase.from("student_onboarding").select("objetivo,tempo_disponivel_min").eq("user_id", user.id).maybeSingle(),
       supabase.from("gamification_profiles").select("*").eq("user_id", user.id).maybeSingle(),
 
-    ]).then(([state, { data: sess }, { data: acts }, { data: pf }, { data: rev }, { data: ess }, { data: sl }, { data: onb }, { data: gami }]) => {
+    ]).then(([state, { data: sess }, { data: acts }, { data: pf }, { data: rev }, { data: ess }, { data: sl }, { data: gami }]) => {
       if (cancelled) return;
       setTopics(state?.topics ?? []);
       setSessions((sess ?? []) as StudySession[]);
@@ -143,13 +144,18 @@ export default function Analise() {
       setReviews((rev ?? []) as SpacedReview[]);
       setEssays((ess ?? []) as EssayRow[]);
       setSlots((sl ?? []) as WeeklySlotRow[]);
-      setOnboarding((onb ?? null) as OnboardingRow | null);
       setGamification(gami);
 
     }).catch(() => undefined).finally(() => { if (!cancelled) setLoading(false); });
 
     return () => { cancelled = true; };
   }, [user]);
+
+  useEffect(() => {
+    if (studentConfig?.onboardingData) {
+      setOnboarding(studentConfig.onboardingData);
+    }
+  }, [studentConfig]);
 
   // ─── Filtro de período ─────────────────────────────────────────────────────
   const periodCutoff = useMemo(() => {

@@ -7,6 +7,8 @@ import { toast } from "sonner";
 import { Loader2, ArrowRight, BookOpen, Trophy, Target, Sparkles, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 // ─── Tipos ───────────────────────────────────────────────────────────────────
 type Objetivo = "enem" | "vestibular" | "concurso" | "faculdade" | "aprender";
@@ -42,7 +44,7 @@ export default function Onboarding() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const [step, setStep] = useState(0); // 0=objetivo, 1=matérias, 2=meta
+  const [step, setStep] = useState(0); // 0=objetivo, 1=detalhes, 2=matérias, 3=meta
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
 
@@ -52,6 +54,10 @@ export default function Onboarding() {
   const [cargo, setCargo] = useState("");
   const [materiasDificeis, setMateriasDificeis] = useState<string[]>([]);
   const [metaResultado, setMetaResultado] = useState("");
+  const [customMaterias, setCustomMaterias] = useState("");
+  const [dataProva, setDataProva] = useState("");
+  const [horasDiarias, setHorasDiarias] = useState("4");
+  const [nivelAtual, setNivelAtual] = useState("iniciante");
 
   const isConcurso = objetivo === "concurso";
   const subjects = isConcurso ? CONCURSO_SUBJECTS : ENEM_SUBJECTS;
@@ -70,8 +76,9 @@ export default function Onboarding() {
   };
 
   const canNext = () => {
-    if (step === 0) return !!objetivo && (!isConcurso || !!banca);
-    if (step === 1) return materiasDificeis.length > 0;
+    if (step === 0) return !!objetivo;
+    if (step === 1) return true; // Detalhes opcionais
+    if (step === 2) return materiasDificeis.length > 0 || customMaterias.trim().length > 0;
     return true;
   };
 
@@ -85,10 +92,12 @@ export default function Onboarding() {
         banca: isConcurso ? banca : "",
         cargo: isConcurso ? cargo.trim() : "",
         orgao: "",
-        tempo_disponivel_min: 60,
-        materias_dificeis: materiasDificeis,
+        tempo_disponivel_min: parseInt(horasDiarias) * 60,
+        materias_dificeis: [...materiasDificeis, ...customMaterias.split(",").map(m => m.trim()).filter(m => m)],
         rotina: "manha",
         meta_resultado: metaResultado || `Passar em ${objetivo === "enem" ? "ENEM" : objetivo}`,
+        data_prova: dataProva || null,
+        nivel_atual: nivelAtual,
         completed: true,
       } as any);
       if (error) throw error;
@@ -128,8 +137,8 @@ export default function Onboarding() {
     );
   }
 
-  const TOTAL = 3;
-  const progress = ((step) / TOTAL) * 100;
+  const TOTAL = 4;
+  const progress = ((step + 1) / TOTAL) * 100;
 
   return (
     <div className="min-h-dvh bg-background flex flex-col">
@@ -227,7 +236,7 @@ export default function Onboarding() {
             </motion.div>
           )}
 
-          {/* ─── Step 1: Matérias difíceis ───────────────────────────── */}
+          {/* ─── Step 1: Detalhes ────────────────────────────────────── */}
           {step === 1 && (
             <motion.div
               key="step1"
@@ -237,34 +246,82 @@ export default function Onboarding() {
               className="w-full space-y-6"
             >
               <div className="text-center space-y-2">
-                <div className="w-14 h-14 rounded-2xl bg-orange-500/10 flex items-center justify-center mx-auto">
-                  <BookOpen className="w-7 h-7 text-orange-500" />
+                <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
+                  <Sparkles className="w-7 h-7 text-primary" />
                 </div>
-                <h1 className="text-2xl font-bold">Onde você trava?</h1>
-                <p className="text-muted-foreground text-sm">Selecione suas matérias mais difíceis</p>
+                <h1 className="text-2xl font-bold">Conte um pouco mais</h1>
+                <p className="text-muted-foreground text-sm">Para um plano 100% personalizado</p>
               </div>
 
-              <div className="flex flex-wrap gap-2">
-                {subjects.map((m) => (
-                  <button
-                    key={m}
-                    onClick={() => toggleMateria(m)}
-                    className={`px-3 py-2 rounded-xl border text-sm font-medium transition-all ${
-                      materiasDificeis.includes(m)
-                        ? "border-orange-500 bg-orange-500/10 text-orange-600"
-                        : "border-border hover:border-orange-400/50 text-muted-foreground"
-                    }`}
-                  >
-                    {materiasDificeis.includes(m) && "✓ "}{m}
-                  </button>
-                ))}
-              </div>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Quantas horas você tem por dia?</p>
+                  <Select value={horasDiarias} onValueChange={setHorasDiarias}>
+                    <SelectTrigger className="h-12">
+                      <SelectValue placeholder="Selecione as horas" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[1, 2, 3, 4, 5, 6, 8, 10].map(h => (
+                        <SelectItem key={h} value={String(h)}>{h} horas</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              {materiasDificeis.length > 0 && (
-                <p className="text-xs text-center text-muted-foreground">
-                  {materiasDificeis.length} matéria{materiasDificeis.length > 1 ? "s" : ""} selecionada{materiasDificeis.length > 1 ? "s" : ""}
-                </p>
-              )}
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Nível atual de conhecimento</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {["iniciante", "intermediário", "avançado"].map((n) => (
+                      <button
+                        key={n}
+                        onClick={() => setNivelAtual(n)}
+                        className={`px-2 py-3 rounded-xl border text-xs font-medium transition-all ${
+                          nivelAtual === n ? "border-primary bg-primary/10 text-primary" : "border-border"
+                        }`}
+                      >
+                        {n.charAt(0).toUpperCase() + n.slice(1)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Data da prova (opcional)</p>
+                  <Input
+                    type="date"
+                    value={dataProva}
+                    onChange={(e) => setDataProva(e.target.value)}
+                    className="h-12"
+                  />
+                </div>
+
+                {isConcurso && (
+                  <div className="space-y-3">
+                    <p className="text-sm font-medium">Qual banca?</p>
+                    <div className="flex flex-wrap gap-2">
+                      {BANCAS.map((b) => (
+                        <button
+                          key={b.value}
+                          onClick={() => setBanca(b.value)}
+                          className={`px-4 py-2 rounded-xl border text-sm font-medium transition-all ${
+                            banca === b.value
+                              ? "border-primary bg-primary/10 text-primary"
+                              : "border-border hover:border-primary/40 text-muted-foreground"
+                          }`}
+                        >
+                          {b.label}
+                        </button>
+                      ))}
+                    </div>
+                    <Input
+                      placeholder="Cargo (ex: Analista Tributário)"
+                      value={cargo}
+                      onChange={(e) => setCargo(e.target.value)}
+                      className="h-12"
+                    />
+                  </div>
+                )}
+              </div>
 
               <div className="flex gap-3">
                 <Button variant="outline" className="flex-1 h-12" onClick={() => setStep(0)}>
@@ -281,8 +338,68 @@ export default function Onboarding() {
             </motion.div>
           )}
 
-          {/* ─── Step 2: Meta ────────────────────────────────────────── */}
+          {/* ─── Step 2: Matérias difíceis ───────────────────────────── */}
           {step === 2 && (
+            <motion.div
+              key="step2"
+              initial={{ opacity: 0, x: 40 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -40 }}
+              className="w-full space-y-6"
+            >
+              <div className="text-center space-y-2">
+                <div className="w-14 h-14 rounded-2xl bg-orange-500/10 flex items-center justify-center mx-auto">
+                  <BookOpen className="w-7 h-7 text-orange-500" />
+                </div>
+                <h1 className="text-2xl font-bold">Onde você trava?</h1>
+                <p className="text-muted-foreground text-sm">Selecione ou digite suas matérias</p>
+              </div>
+
+              {objetivo !== "aprender" && objetivo !== "faculdade" && (
+                <div className="flex flex-wrap gap-2 max-h-[200px] overflow-y-auto p-1">
+                  {subjects.map((m) => (
+                    <button
+                      key={m}
+                      onClick={() => toggleMateria(m)}
+                      className={`px-3 py-2 rounded-xl border text-sm font-medium transition-all ${
+                        materiasDificeis.includes(m)
+                          ? "border-orange-500 bg-orange-500/10 text-orange-600"
+                          : "border-border hover:border-orange-400/50 text-muted-foreground"
+                      }`}
+                    >
+                      {materiasDificeis.includes(m) && "✓ "}{m}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Outras matérias (separadas por vírgula)</p>
+                <Textarea
+                  placeholder="Ex: Cálculo I, Mecânica dos Fluidos, Direito Civil..."
+                  value={customMaterias}
+                  onChange={(e) => setCustomMaterias(e.target.value)}
+                  className="min-h-[100px]"
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <Button variant="outline" className="flex-1 h-12" onClick={() => setStep(1)}>
+                  Voltar
+                </Button>
+                <Button
+                  className="flex-1 h-12 font-bold gap-2"
+                  disabled={!canNext()}
+                  onClick={() => setStep(3)}
+                >
+                  Continuar <ArrowRight className="w-4 h-4" />
+                </Button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* ─── Step 3: Meta ────────────────────────────────────────── */}
+          {step === 3 && (
             <motion.div
               key="step2"
               initial={{ opacity: 0, x: 40 }}
@@ -344,7 +461,7 @@ export default function Onboarding() {
 
       {/* Step indicators */}
       <div className="pb-8 flex justify-center gap-2">
-        {[0, 1, 2].map((i) => (
+        {[0, 1, 2, 3].map((i) => (
           <div
             key={i}
             className={`h-1.5 rounded-full transition-all duration-300 ${
