@@ -291,8 +291,10 @@ export default function BancoConcurso() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [banca, setBanca] = useState("Todas");
+  const [orgao, setOrgao] = useState("Todas");
   const [disciplina, setDisciplina] = useState("Todas");
   const [ano, setAno] = useState("Todos");
+
   const [opened, setOpened] = useState<Question | null>(null);
   const [revealed, setRevealed] = useState<Record<string, string>>({});
   const [attempts, setAttempts] = useState<Record<string, Attempt>>({});
