@@ -34,25 +34,9 @@ export function DashboardHeader({ user, bancoRoute, bancoLabel, onSignOut }: Pro
           <h1 className="font-heading font-bold text-lg sm:text-xl">StudyFlow</h1>
           <p className="text-xs text-muted-foreground hidden sm:block">Seu plano de estudos inteligente</p>
         </div>
+        <div className="flex-1 md:hidden" />
         <div className="hidden md:flex items-center gap-2">
-          <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate("/notebooks")} onMouseEnter={() => prefetchRoute("/notebooks")}>
-            <NotebookPen className="w-4 h-4" /> Cadernos
-          </Button>
-          {user && (
-            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate(bancoRoute)} onMouseEnter={() => prefetchRoute(bancoRoute)}>
-              <Library className="w-4 h-4" /> {bancoLabel}
-            </Button>
-          )}
-          {user && (
-            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate("/redacao")} onMouseEnter={() => prefetchRoute("/redacao")}>
-              <FileText className="w-4 h-4" /> Redação
-            </Button>
-          )}
-          {user && (
-            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate("/analise")} onMouseEnter={() => prefetchRoute("/analise")}>
-              <BarChart3 className="w-4 h-4" /> Análise
-            </Button>
-          )}
+           {/* Desktop links removidos para focar na Sidebar */}
         </div>
         <div className="flex items-center gap-1">
           <CustomThemeDialog />
