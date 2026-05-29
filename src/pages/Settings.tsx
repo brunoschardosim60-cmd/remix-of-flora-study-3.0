@@ -498,7 +498,7 @@ export default function Settings() {
 
 
         {/* Personalizar Dashboard */}
-        {user && (
+        {false && user && (
           <section className="rounded-2xl border border-border bg-card p-4 sm:p-5 space-y-3">
             <h2 className="font-heading font-semibold text-base flex items-center gap-2">
               <LayoutDashboard className="w-4 h-4 text-primary" /> Personalizar Dashboard
