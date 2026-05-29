@@ -3,8 +3,10 @@ import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft, BarChart3, Loader2, AlertTriangle, Trophy, Target,
   TrendingUp, TrendingDown, Calendar, Flame, BookOpen, Brain,
-  Clock, Zap,
+  Clock, Zap, FileDown,
 } from "lucide-react";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
