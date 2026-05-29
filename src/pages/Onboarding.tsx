@@ -301,10 +301,125 @@ export default function Onboarding() {
             </motion.div>
           )}
 
-          {/* ─── Step 2: Meta ────────────────────────────────────────── */}
+          {/* ─── Step 2: Rotina e Detalhes ────────────────────────────── */}
           {step === 2 && (
             <motion.div
               key="step2"
+              initial={{ opacity: 0, x: 40 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -40 }}
+              className="w-full space-y-5"
+            >
+              <div className="text-center space-y-2">
+                <div className="w-14 h-14 rounded-2xl bg-blue-500/10 flex items-center justify-center mx-auto">
+                  <Sparkles className="w-7 h-7 text-blue-500" />
+                </div>
+                <h1 className="text-2xl font-bold">Sua rotina</h1>
+                <p className="text-muted-foreground text-sm">Organize seu tempo de estudo</p>
+              </div>
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Data da prova (se houver)</label>
+                  <Input type="date" value={dataProva} onChange={(e) => setDataProva(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Horas disponíveis por dia</label>
+                  <Input type="number" min="1" max="24" value={horasDisponiveis} onChange={(e) => setHorasDisponiveis(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Turno preferido</label>
+                  <div className="flex flex-wrap gap-2">
+                    {["Manhã", "Tarde", "Noite", "Madrugada"].map((t) => (
+                      <button
+                        key={t}
+                        onClick={() => setTurnoPreferido(t)}
+                        className={`px-3 py-1.5 rounded-xl border text-sm font-medium transition-all ${
+                          turnoPreferido === t
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border text-muted-foreground"
+                        }`}
+                      >
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <Button variant="outline" className="flex-1 h-12" onClick={() => setStep(1)}>
+                  Voltar
+                </Button>
+                <Button className="flex-1 h-12 font-bold gap-2" onClick={() => setStep(3)}>
+                  Continuar <ArrowRight className="w-4 h-4" />
+                </Button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* ─── Step 3: Experiência ─────────────────────────────────── */}
+          {step === 3 && (
+            <motion.div
+              key="step3"
+              initial={{ opacity: 0, x: 40 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -40 }}
+              className="w-full space-y-5"
+            >
+              <div className="text-center space-y-2">
+                <div className="w-14 h-14 rounded-2xl bg-purple-500/10 flex items-center justify-center mx-auto">
+                  <Target className="w-7 h-7 text-purple-500" />
+                </div>
+                <h1 className="text-2xl font-bold">Sua experiência</h1>
+                <p className="text-muted-foreground text-sm">Onde você está hoje?</p>
+              </div>
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Nível atual</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {["Iniciante", "Intermediário", "Avançado"].map((n) => (
+                      <button
+                        key={n}
+                        onClick={() => setNivelAtual(n)}
+                        className={`px-2 py-2 rounded-xl border text-xs font-medium transition-all ${
+                          nivelAtual === n
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border text-muted-foreground"
+                        }`}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Conteúdo já estudado</label>
+                  <textarea
+                    className="w-full min-h-[80px] rounded-xl border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    placeholder="Ex: Já vi toda a base de matemática..."
+                    value={conteudoEstudado}
+                    onChange={(e) => setConteudoEstudado(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <Button variant="outline" className="flex-1 h-12" onClick={() => setStep(2)}>
+                  Voltar
+                </Button>
+                <Button className="flex-1 h-12 font-bold gap-2" onClick={() => setStep(4)}>
+                  Continuar <ArrowRight className="w-4 h-4" />
+                </Button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* ─── Step 4: Meta Final ──────────────────────────────────── */}
+          {step === 4 && (
+            <motion.div
+              key="step4"
               initial={{ opacity: 0, x: 40 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -40 }}
@@ -314,38 +429,33 @@ export default function Onboarding() {
                 <div className="w-14 h-14 rounded-2xl bg-yellow-500/10 flex items-center justify-center mx-auto">
                   <Trophy className="w-7 h-7 text-yellow-500" />
                 </div>
-                <h1 className="text-2xl font-bold">Qual é sua meta?</h1>
-                <p className="text-muted-foreground text-sm">Isso vai motivar a Flora a te cobrar</p>
+                <h1 className="text-2xl font-bold">Seu Objetivo</h1>
+                <p className="text-muted-foreground text-sm">A Flora vai focar nisso</p>
               </div>
 
-              <Input
-                placeholder={
-                  objetivo === "enem" ? "Ex: Nota 850 no ENEM e entrar em Medicina" :
-                  objetivo === "concurso" ? "Ex: Passar no concurso da Receita Federal" :
-                  "Ex: Aprender Cálculo até dezembro"
-                }
-                value={metaResultado}
-                onChange={(e) => setMetaResultado(e.target.value)}
-                className="h-12 text-base"
-                autoFocus
-                onKeyDown={(e) => e.key === "Enter" && handleFinish()}
-              />
-
-              <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-1">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Seu perfil</p>
-                <p className="text-sm">
-                  <span className="font-medium">Objetivo:</span>{" "}
-                  {OBJECTIVES.find((o) => o.value === objetivo)?.label}
-                  {isConcurso && banca ? ` · ${banca.toUpperCase()}` : ""}
-                </p>
-                <p className="text-sm">
-                  <span className="font-medium">Difíceis:</span>{" "}
-                  {materiasDificeis.slice(0, 3).join(", ")}{materiasDificeis.length > 3 ? ` +${materiasDificeis.length - 3}` : ""}
-                </p>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Sua meta principal</label>
+                  <Input
+                    placeholder="Ex: Passar em Medicina na USP"
+                    value={metaResultado}
+                    onChange={(e) => setMetaResultado(e.target.value)}
+                    className="h-12"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Objetivos adicionais (livre)</label>
+                  <textarea
+                    className="w-full min-h-[80px] rounded-xl border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    placeholder="Algo mais que a Flora deve saber?"
+                    value={objetivosLivre}
+                    onChange={(e) => setObjetivosLivre(e.target.value)}
+                  />
+                </div>
               </div>
 
-              <div className="flex gap-3">
-                <Button variant="outline" className="flex-1 h-12" onClick={() => setStep(1)}>
+              <div className="flex gap-3 pt-2">
+                <Button variant="outline" className="flex-1 h-12" onClick={() => setStep(3)}>
                   Voltar
                 </Button>
                 <Button
@@ -353,11 +463,11 @@ export default function Onboarding() {
                   onClick={handleFinish}
                   disabled={loading}
                 >
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Sparkles className="w-4 h-4" /> Começar!</>}
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Sparkles className="w-4 h-4" /> Finalizar</>}
                 </Button>
               </div>
             </motion.div>
-          )}
+          ) || (<div>Invalid step</div>)}
 
         </AnimatePresence>
       </div>
