@@ -95,22 +95,27 @@ export default function Onboarding() {
     if (!user) return;
     setLoading(true);
     try {
-      const { error } = await supabase.from("student_onboarding").upsert({
+      const payload = {
         user_id: user.id,
-        objetivo,
+        objetivo: objetivo || "aprender",
         banca: isConcurso ? banca : "",
         cargo: isConcurso ? cargo.trim() : "",
+        orgao: "",
+        tempo_disponivel_min: (parseInt(horasDisponiveis) || 4) * 60,
         data_prova: dataProva || null,
         horas_disponiveis: parseInt(horasDisponiveis) || 4,
-        nivel_atual: nivelAtual,
-        conteudo_estudado: conteudoEstudado.trim(),
-        turno_preferido: turnoPreferido,
-        objetivos_livre: objetivosLivre.trim(),
-        materias_dificeis: materiasDificeis,
-        rotina: turnoPreferido.toLowerCase(),
-        meta_resultado: metaResultado || objetivosLivre || `Passar em ${objetivo === "enem" ? "ENEM" : objetivo}`,
+        nivel_atual: nivelAtual || "Iniciante",
+        conteudo_estudado: (conteudoEstudado || "").trim(),
+        turno_preferido: turnoPreferido || "Manhã",
+        objetivos_livre: (objetivosLivre || "").trim(),
+        materias_dificeis: materiasDificeis && materiasDificeis.length > 0 ? materiasDificeis : [],
+        rotina: (turnoPreferido || "Manhã").toLowerCase(),
+        meta_resultado: (metaResultado || objetivosLivre || `Passar em ${objetivo === "enem" ? "ENEM" : objetivo}`).trim() || "Estudar",
         completed: true,
-      } as any);
+      };
+      
+      console.log("Onboarding payload:", payload);
+      const { error } = await supabase.from("student_onboarding").upsert(payload as any);
       if (error) throw error;
 
       // Gera plano em background
