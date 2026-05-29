@@ -489,13 +489,20 @@ export default function BancoQuestoes() {
   // Temas disponíveis dependem da disciplina selecionada (ou de todas).
   const temas = useMemo(() => {
     const set = new Set<string>();
+    const isFilteredByDisc = disciplina !== "Todas";
+    const isFilteredByArea = area !== "Todas";
+
     for (const q of questions) {
-      if (disciplina !== "Todas" && q.disciplina !== disciplina) continue;
+      // Se tiver área selecionada, filtra por ela
+      if (isFilteredByArea && q.area !== area) continue;
+      // Se tiver disciplina selecionada, filtra por ela
+      if (isFilteredByDisc && q.disciplina !== disciplina) continue;
+      
       const t = (q.tema || "").trim();
       if (t) set.add(t);
     }
     return ["Todos", ...Array.from(set).sort((a, b) => a.localeCompare(b, "pt-BR"))];
-  }, [questions, disciplina]);
+  }, [questions, disciplina, area]);
 
   // Pré-computa enunciado limpo, preview e haystack de busca por questão.
   // Evita rodar cleanPdfArtifacts toda hora durante render/filter.
@@ -824,9 +831,12 @@ export default function BancoQuestoes() {
               <SelectTrigger><SelectValue placeholder="Disciplina" /></SelectTrigger>
               <SelectContent>{disciplinas.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
             </Select>
-            <Select value={tema} onValueChange={setTema} disabled={temas.length <= 1}>
+            <Select value={tema} onValueChange={setTema}>
               <SelectTrigger><SelectValue placeholder="Tema" /></SelectTrigger>
-              <SelectContent className="max-h-72">{temas.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+              <SelectContent className="max-h-72">
+                <SelectItem value="Todos">Todos os Temas</SelectItem>
+                {temas.filter(t => t !== "Todos").map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+              </SelectContent>
             </Select>
           </div>
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
