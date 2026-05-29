@@ -387,6 +387,7 @@ export default function BancoQuestoes() {
   const [onlyFavorites, setOnlyFavorites] = useState(false);
   const [showIncomplete, setShowIncomplete] = useState(false);
   const [globalStats, setGlobalStats] = useState<Record<string, Stat>>({});
+  const [countsByDisciplina, setCountsByDisciplina] = useState<Record<string, number>>({});
 
   useEffect(() => {
     (async () => {
@@ -432,6 +433,15 @@ export default function BancoQuestoes() {
           return true;
         });
         setQuestions(unique);
+
+        // Calcula contagem por disciplina para o filtro
+        const counts: Record<string, number> = {};
+        unique.forEach(q => {
+          if (q.disciplina) {
+            counts[q.disciplina] = (counts[q.disciplina] || 0) + 1;
+          }
+        });
+        setCountsByDisciplina(counts);
       }
       const map: Record<string, Attempt> = {};
       (attemptsData || []).forEach((a: any) => {
