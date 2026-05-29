@@ -133,7 +133,7 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
 
       <div className="glass-card rounded-xl overflow-hidden">
         <div className="overflow-x-auto px-1 sm:px-0">
-          <table className="w-full min-w-[760px] text-sm">
+          <table className="w-full min-w-full sm:min-w-[760px] text-sm">
             <thead>
               <tr className="border-b border-border bg-muted/30">
                 <th className="p-3 font-heading font-semibold text-left w-[100px]">
