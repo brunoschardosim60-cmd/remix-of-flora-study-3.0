@@ -201,8 +201,8 @@ const App = () => (
                 <Route path="/" element={<LandingOrDashboard />} />
                 <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
                 <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
-                <Route path="/notebooks" element={<ProtectedRoute><Notebooks /></ProtectedRoute>} />
-                <Route path="/notebooks/:id" element={<ProtectedRoute><NotebookEditor /></ProtectedRoute>} />
+                <Route path="/notebooks" element={<ProtectedRoute><Layout><Notebooks /></Layout></ProtectedRoute>} />
+                <Route path="/notebooks/:id" element={<ProtectedRoute><Layout><NotebookEditor /></Layout></ProtectedRoute>} />
                 <Route path="/redacao" element={<ProtectedRoute><Layout><Redacao /></Layout></ProtectedRoute>} />
                 <Route path="/redacao/temas" element={<ProtectedRoute><Layout><RedacaoTemas /></Layout></ProtectedRoute>} />
                 <Route path="/redacao/templates" element={<ProtectedRoute><Layout><RedacaoTemplates /></Layout></ProtectedRoute>} />
