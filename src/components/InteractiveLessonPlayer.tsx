@@ -902,7 +902,6 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({
               </button>
             )}
             {enableVoice && curScene && stage === "block" && (
-
               <button
                 className={`ilp-icon-btn ${voice.playing ? "ilp-icon-btn--active" : ""}`}
                 onClick={() => voice.toggle(curScene.text, "amiga")}
@@ -925,10 +924,14 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({
               aria-label={focusMode ? "Sair do modo foco" : "Modo foco (F)"} title={focusMode ? "Sair do modo foco" : "Modo foco"}>
               <Maximize2 size={14}/>
             </button>
-            <span className="ilp-step-tag">{currentStep} / {totalScenes}</span>
+            <div className="flex flex-col items-end gap-0.5 ml-2">
+              <span className="ilp-step-tag leading-none">{currentStep} / {totalScenes}</span>
+              <div className="w-16 h-1 bg-muted rounded-full overflow-hidden">
+                <div className="h-full bg-primary transition-all duration-500" style={{ width: `${progress * 100}%` }} />
+              </div>
+            </div>
           </div>
         </div>
-        <div className="ilp-bar"><div className="ilp-fill" style={{ width: `${progress * 100}%` }}/></div>
       </div>
 
       <div className="ilp-layout">
