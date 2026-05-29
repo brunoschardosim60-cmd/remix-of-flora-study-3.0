@@ -115,6 +115,10 @@ export default function Onboarding() {
       };
       
       const { error } = await supabase.from("student_onboarding").upsert(payload);
+      if (error) {
+        console.error("Supabase upsert error:", error);
+        throw new Error(`Erro no banco de dados: ${error.message}`);
+      }
       if (error) throw error;
 
       // Gera plano em background
