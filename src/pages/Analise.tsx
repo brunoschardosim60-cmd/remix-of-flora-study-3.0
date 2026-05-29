@@ -132,7 +132,7 @@ export default function Analise() {
         .eq("user_id", user.id).order("created_at", { ascending: false }).limit(50),
       supabase.from("weekly_slots").select("id,dia,horario,concluido,materia").eq("user_id", user.id),
       supabase.from("student_onboarding").select("objetivo,tempo_disponivel_min").eq("user_id", user.id).maybeSingle(),
-      supabase.from("gamification_profiles").select("*").eq("id", user.id).maybeSingle(),
+      supabase.from("gamification_profiles").select("*").eq("user_id", user.id).maybeSingle(),
 
     ]).then(([state, { data: sess }, { data: acts }, { data: pf }, { data: rev }, { data: ess }, { data: sl }, { data: onb }]) => {
       if (cancelled) return;
