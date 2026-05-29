@@ -46,6 +46,30 @@ export function DashboardHero({
   onPrimaryAction,
   primaryLabel,
 }: DashboardHeroProps) {
+  const currentXP = useMemo(() => {
+    try {
+      const saved = localStorage.getItem("studyflow.gamification");
+      if (saved) return JSON.parse(saved).xp || 0;
+    } catch {}
+    return 0;
+  }, []);
+
+  const currentLevel = useMemo(() => {
+    return Math.floor(Math.sqrt(currentXP / 50)) + 1;
+  }, [currentXP]);
+
+  const xpForNext = useMemo(() => {
+    const nextLevel = currentLevel + 1;
+    return Math.pow(nextLevel - 1, 2) * 50;
+  }, [currentLevel]);
+
+  const xpProgress = useMemo(() => {
+    const currentLevelStartXP = Math.pow(currentLevel - 1, 2) * 50;
+    const needed = xpForNext - currentLevelStartXP;
+    const has = currentXP - currentLevelStartXP;
+    return Math.min(100, Math.round((has / Math.max(1, needed)) * 100));
+  }, [currentXP, currentLevel, xpForNext]);
+
   const statusLabel = useMemo(() => {
     if (!isLoggedIn) return "Estude agora";
     if (comebackMode) return "Bora recuperar?";
