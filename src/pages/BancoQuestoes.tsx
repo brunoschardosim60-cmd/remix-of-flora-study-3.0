@@ -1295,26 +1295,43 @@ export default function BancoQuestoes() {
                 </span>
               )}
             </div>
+            
+            <div className="flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={() => setExamRealMode(!examRealMode)}
+                className={`w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg border transition-colors ${
+                  examRealMode
+                    ? "bg-amber-500/10 border-amber-500/40"
+                    : "border-border hover:border-primary/40"
+                }`}
+              >
+                <span className="flex items-center gap-1.5 text-[11px] font-medium">
+                  <Timer className={`w-3 h-3 ${examRealMode ? "text-amber-500" : ""}`} />
+                  Modo Prova Real (Sem resposta imediata)
+                </span>
+              </button>
 
-            {/* Refazer erros */}
-            <button
-              type="button"
-              onClick={() => stats.erros > 0 && setOnlyErrors((v) => !v)}
-              disabled={stats.erros === 0}
-              className={`w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                onlyErrors
-                  ? "bg-primary/10 border-primary/40"
-                  : "border-border hover:border-primary/40"
-              }`}
-            >
-              <span className="flex items-center gap-1.5 text-[11px] font-medium">
-                <RotateCcw className="w-3 h-3" />
-                Refazer erros
-              </span>
-              <span className="text-[10px] text-muted-foreground tabular-nums">
-                {stats.erros}
-              </span>
-            </button>
+              <button
+                type="button"
+                onClick={() => stats.erros > 0 && setOnlyErrors((v) => !v)}
+                disabled={stats.erros === 0}
+                className={`w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                  onlyErrors
+                    ? "bg-primary/10 border-primary/40"
+                    : "border-border hover:border-primary/40"
+                }`}
+              >
+                <span className="flex items-center gap-1.5 text-[11px] font-medium">
+                  <RotateCcw className="w-3 h-3" />
+                  Refazer erros
+                </span>
+                <span className="text-[10px] text-muted-foreground tabular-nums">
+                  {stats.erros}
+                </span>
+              </button>
+            </div>
+
 
             {/* Ano (expandable) */}
             <div className="relative rounded-xl border border-border">
