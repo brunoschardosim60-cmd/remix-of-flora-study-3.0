@@ -1003,6 +1003,47 @@ export default function NotebookEditor() {
     setQuizResultSaved(false);
   };
 
+  const handleOCR = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setOcrLoading(true);
+    toast.loading("Digitalizando sua página...");
+    try {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64 = reader.result as string;
+        const base64Content = base64.split(",")[1];
+        try {
+          const { data, error } = await supabase.functions.invoke("ocr-notebook", {
+            body: { image: base64Content }
+          });
+          if (error) throw error;
+          if (data?.text) {
+            handleContentChange(`${page?.content || ""}<p>${data.text.replace(/\n/g, "<br/>")}</p>`);
+            toast.dismiss();
+            toast.success("Texto digitalizado!");
+          } else {
+            toast.dismiss();
+            toast.info("Não consegui ler nada.");
+          }
+        } catch (err) {
+          console.error(err);
+          toast.dismiss();
+          toast.error("Erro ao processar imagem.");
+        } finally {
+          setOcrLoading(false);
+          if (fileInputRef.current) fileInputRef.current.value = "";
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      setOcrLoading(false);
+      toast.dismiss();
+      toast.error("Erro ao carregar arquivo.");
+    }
+  };
+
+
   const handleGenerateQuizFromPage = async () => {
     setGeneratingStudy("quiz");
     try {
