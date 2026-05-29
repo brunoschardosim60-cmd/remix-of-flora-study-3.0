@@ -467,7 +467,7 @@ export default function Onboarding() {
                 </Button>
               </div>
             </motion.div>
-          ) || (<div>Invalid step</div>)}
+          )}
 
         </AnimatePresence>
       </div>
