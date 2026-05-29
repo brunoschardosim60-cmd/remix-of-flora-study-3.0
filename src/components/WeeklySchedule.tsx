@@ -112,7 +112,25 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
         )}
       </div>
 
+      {/* Mobile Day Selector */}
+      <div className="sm:hidden flex gap-1 overflow-x-auto pb-2 scrollbar-none">
+        {DIAS_SHORT.map((dia, i) => (
+          <button
+            key={dia}
+            onClick={() => setActiveDayDayMobile(i)}
+            className={`flex-1 min-w-[50px] py-2 rounded-lg text-xs font-bold transition-all border ${
+              activeDayMobile === i 
+                ? "bg-primary text-primary-foreground border-primary shadow-sm" 
+                : "bg-muted text-muted-foreground border-border"
+            }`}
+          >
+            {dia}
+          </button>
+        ))}
+      </div>
+
       {/* Schedule table */}
+
       <div className="glass-card rounded-xl overflow-hidden">
         <div className="overflow-x-auto px-1 sm:px-0">
           <table className="w-full min-w-[760px] text-sm">
