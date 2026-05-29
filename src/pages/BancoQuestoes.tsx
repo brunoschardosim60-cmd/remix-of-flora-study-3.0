@@ -545,56 +545,68 @@ export default function BancoQuestoes() {
       // Filtro de Ano (Sempre independente)
       if (ano !== "Todos" && String(q.ano) !== ano) return false;
 
-      // 1. Busca Textual (Prioridade Total)
+      // 1. Filtro de Tema (Prioridade)
+      // Se selecionou um tema (ex: "Meio Ambiente"), buscamos por palavras-chave em todo o conteúdo
+      if (tema !== "Todos") {
+        const selectedTema = tema.toLowerCase();
+        const synonyms: Record<string, string[]> = {
+          "meio ambiente": ["meio ambiente", "ecologia", "sustentabilidade", "poluição", "recursos naturais", "impacto ambiental"],
+          "ecologia": ["ecologia", "meio ambiente", "sustentabilidade", "bioma", "ecossistema"],
+          "citologia": ["citologia", "celular", "célula", "organela", "mitocôndria"],
+          "brasil república": ["república", "era vargas", "ditadura", "democracia", "fhc", "lula", "jk"],
+          "interpretação de texto": ["interpretação", "texto", "leitura", "compreensão", "sentido"],
+          "funções": ["função", "afim", "quadrática", "exponencial", "logaritmo", "grau"],
+          "geometria": ["geometria", "plana", "espacial", "área", "volume", "triângulo", "círculo"]
+        };
+        const targets = synonyms[selectedTema] || [selectedTema];
+        const hay = cleanedById.get(q.id)?.haystack ?? "";
+        const isMatch = targets.some(t => temaQ.includes(t) || discQ.includes(t) || hay.includes(t));
+        if (!isMatch) return false;
+      }
+
+      // 2. Filtro de Disciplina
+      if (disciplina !== "Todas") {
+        const selectedDisc = disciplina.toLowerCase();
+        const discMap: Record<string, string[]> = {
+          "biologia": ["biologia", "natureza"],
+          "física": ["física", "fisica", "natureza"],
+          "química": ["química", "quimica", "natureza"],
+          "história": ["história", "historia", "humanas"],
+          "geografia": ["geografia", "humanas"],
+          "português": ["português", "portugues", "linguagens", "texto"],
+          "matemática": ["matemática", "matematica"]
+        };
+        const targets = discMap[selectedDisc] || [selectedDisc];
+        if (!targets.some(t => discQ.includes(t) || areaQ.includes(t))) return false;
+      }
+
+      // 3. Filtro de Área
+      if (area !== "Todas") {
+        const selectedArea = area.toLowerCase();
+        const areaMap: Record<string, string[]> = {
+          "linguagens": ["linguagens", "português", "literatura", "inglês", "espanhol", "artes"],
+          "ciências humanas": ["humanas", "história", "geografia", "filosofia", "sociologia"],
+          "ciências da natureza": ["natureza", "biologia", "física", "química"],
+          "matemática": ["matemática"]
+        };
+        const targets = areaMap[selectedArea] || [selectedArea];
+        if (!targets.some(t => areaQ.includes(t) || discQ.includes(t))) return false;
+      }
+
+      // 4. Busca Textual Final
       if (searchNormalized) {
         const hay = cleanedById.get(q.id)?.haystack ?? "";
         if (!hay.includes(searchNormalized)) return false;
       }
 
-      // 2. Filtro de Tema (Agrupado)
-      if (tema !== "Todos") {
-        const selectedTema = tema.toLowerCase();
-        const synonyms: Record<string, string[]> = {
-          "meio ambiente": ["meio ambiente", "ecologia", "sustentabilidade", "biomas", "impactos ambientais", "poluição", "recursos naturais"],
-          "ecologia": ["ecologia", "meio ambiente", "sustentabilidade", "bioma", "ecossistema"],
-          "citologia": ["citologia", "celular", "célula", "organelas", "mitocôndria", "membrana"],
-          "brasil república": ["república", "republica", "era vargas", "ditadura", "populismo", "jk", "lula", "fhc"],
-          "interpretação de texto": ["interpretação", "texto", "leitura", "compreensão", "análise", "sentido"],
-          "funções": ["função", "funções", "afim", "quadrática", "exponencial", "logaritmo", "primeiro grau", "segundo grau"],
-          "geometria": ["geometria", "plana", "espacial", "analítica", "área", "volume", "triângulo", "círculo", "esfera"]
-        };
-        const targets = synonyms[selectedTema] || [selectedTema];
-        const hay = cleanedById.get(q.id)?.haystack ?? "";
-        
-        // Match se o tema, disciplina ou enunciado contém algum dos termos relacionados
-        const isMatch = targets.some(t => 
-          temaQ.includes(t) || 
-          discQ.includes(t) || 
-          areaQ.includes(t) ||
-          hay.includes(t)
-        );
-        if (!isMatch) return false;
-      }
+      // Filtros de estado
+      if (onlyErrors && attempts[q.id]?.acertou !== false) return false;
+      if (onlyFavorites && !favorites.has(q.id)) return false;
+      if (q.incomplete && !showIncomplete) return false;
+      return true;
+    });
+  }, [questions, debouncedSearch, area, ano, disciplina, tema, onlyErrors, onlyFavorites, showIncomplete, favorites, attempts, cleanedById]);
 
-
-      // 3. Filtro de Disciplina (Agrupado)
-      if (disciplina !== "Todas") {
-        const selectedDisc = disciplina.toLowerCase();
-        const discMap: Record<string, string[]> = {
-          "biologia": ["biologia", "natureza", "ciências da natureza"],
-          "física": ["física", "fisica", "natureza", "ciências da natureza"],
-          "química": ["química", "quimica", "natureza", "ciências da natureza"],
-          "história": ["história", "historia", "humanas", "ciências humanas"],
-          "geografia": ["geografia", "humanas", "ciências humanas"],
-          "português": ["português", "portugues", "linguagens", "gramática", "redação"],
-          "matemática": ["matemática", "matematica"]
-        };
-        const targets = discMap[selectedDisc] || [selectedDisc];
-        const isMatch = targets.some(t => discQ.includes(t) || areaQ.includes(t));
-        // Se a disciplina for muito específica (ex: Biologia), mas a questão estiver como "Natureza", 
-        // fazemos uma checagem extra pelo tema se necessário, mas aqui seguimos a lógica de agrupamento.
-        if (!isMatch) return false;
-      }
 
       // 4. Filtro de Área
       if (area !== "Todas") {
