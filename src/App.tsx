@@ -126,7 +126,12 @@ function LandingOrDashboard() {
   if (!user) return <Navigate to="/auth" replace />;
   return (
     <ProtectedRoute>
-      <Suspense fallback={<RouteFallback />}><Index /></Suspense>
+      <div className="flex min-h-dvh">
+        <Sidebar />
+        <div className="flex-1 min-w-0">
+          <Suspense fallback={<RouteFallback />}><Index /></Suspense>
+        </div>
+      </div>
     </ProtectedRoute>
   );
 }
