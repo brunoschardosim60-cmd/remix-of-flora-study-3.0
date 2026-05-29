@@ -340,66 +340,69 @@ export default function Index() {
           </Suspense>
         </div>
 
-        {!minimalistMode && isWidgetVisible("gamification") && (
-          <Suspense fallback={<SectionSkeleton className="min-h-[120px]" />}>
-            <GamificationCard
-              streak={gamification.streak}
-              xp={gamification.xp}
-              level={gamification.level}
-              todayStudyMinutes={gamification.todayStudyMinutes}
-              todayRevisions={gamification.todayRevisions}
-              todayQuizCount={gamification.todayQuizCount}
-              goals={gamification.dailyGoals}
-            />
-          </Suspense>
-        )}
+        {!minimalistMode && (
+          <div className="space-y-4 sm:space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
+            {isWidgetVisible("gamification") && (
+              <Suspense fallback={<SectionSkeleton className="min-h-[120px]" />}>
+                <GamificationCard
+                  streak={gamification.streak}
+                  xp={gamification.xp}
+                  level={gamification.level}
+                  todayStudyMinutes={gamification.todayStudyMinutes}
+                  todayRevisions={gamification.todayRevisions}
+                  todayQuizCount={gamification.todayQuizCount}
+                  goals={gamification.dailyGoals}
+                />
+              </Suspense>
+            )}
 
-        {!minimalistMode && isWidgetVisible("stats") && (
-          <Suspense fallback={<SectionSkeleton className="min-h-[80px]" />}>
-            <StatsCards {...stats} />
-          </Suspense>
-        )}
+            {isWidgetVisible("stats") && (
+              <Suspense fallback={<SectionSkeleton className="min-h-[80px]" />}>
+                <StatsCards {...stats} />
+              </Suspense>
+            )}
 
+            {/* Painéis específicos de concurso */}
+            {isConcurso && (
+              <>
+                <Suspense fallback={<SectionSkeleton className="min-h-[120px]" />}>
+                  <ConcursoDashboard />
+                </Suspense>
+                <Suspense fallback={<SectionSkeleton className="min-h-[120px]" />}>
+                  <ConcursoTrails onAddTopic={handleAdd} />
+                </Suspense>
+              </>
+            )}
 
-        {/* Painéis específicos de concurso */}
-        {isConcurso && (
-          <>
-            <Suspense fallback={<SectionSkeleton className="min-h-[120px]" />}>
-              <ConcursoDashboard />
-            </Suspense>
-            <Suspense fallback={<SectionSkeleton className="min-h-[120px]" />}>
-              <ConcursoTrails onAddTopic={handleAdd} />
-            </Suspense>
-          </>
-        )}
+            {isWidgetVisible("overdue") && (
+              <Suspense fallback={<SectionSkeleton className="min-h-[80px]" />}>
+                <div id="revisoes-atrasadas" className="scroll-mt-20">
+                  <OverdueRevisions
+                    revisions={overdueRevisions}
+                    onComplete={handleToggleRevision}
+                    onReschedule={handleRescheduleOverdue}
+                  />
+                </div>
+              </Suspense>
+            )}
 
-        {!minimalistMode && isWidgetVisible("overdue") && (
-          <Suspense fallback={<SectionSkeleton className="min-h-[80px]" />}>
-            <div id="revisoes-atrasadas" className="scroll-mt-20">
-              <OverdueRevisions
-                revisions={overdueRevisions}
-                onComplete={handleToggleRevision}
-                onReschedule={handleRescheduleOverdue}
-              />
-            </div>
-          </Suspense>
-        )}
+            {isWidgetVisible("today_revisions") && (
+              <Suspense fallback={<SectionSkeleton className="min-h-[80px]" />}>
+                <div id="revisoes-hoje" className="scroll-mt-20">
+                  <TodayRevisions revisions={todayRevisions} onComplete={handleToggleRevision} />
+                </div>
+              </Suspense>
+            )}
 
-        {!minimalistMode && isWidgetVisible("today_revisions") && (
-          <Suspense fallback={<SectionSkeleton className="min-h-[80px]" />}>
-            <div id="revisoes-hoje" className="scroll-mt-20">
-              <TodayRevisions revisions={todayRevisions} onComplete={handleToggleRevision} />
-            </div>
-          </Suspense>
-        )}
-
-        {!minimalistMode && isWidgetVisible("weekly_summary") && (
-          <Suspense fallback={<SectionSkeleton className="min-h-[120px]" />}>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
-              <WeeklyRevisionSummary topics={topics} />
-              <UpcomingRevisions revisions={upcomingRevisions} />
-            </div>
-          </Suspense>
+            {isWidgetVisible("weekly_summary") && (
+              <Suspense fallback={<SectionSkeleton className="min-h-[120px]" />}>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
+                  <WeeklyRevisionSummary topics={topics} />
+                  <UpcomingRevisions revisions={upcomingRevisions} />
+                </div>
+              </Suspense>
+            )}
+          </div>
         )}
 
 
