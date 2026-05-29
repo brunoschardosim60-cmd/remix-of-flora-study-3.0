@@ -130,7 +130,7 @@ export default function Onboarding() {
       setTimeout(() => navigate("/"), 2200);
     } catch (err: any) {
       console.error("Onboarding error:", err);
-      toast.error(err?.message || "Erro ao salvar. Tente novamente.");
+      toast.error(err?.message || "Erro ao salvar. Verifique se todos os campos obrigatórios estão preenchidos.");
     } finally {
       setLoading(false);
     }
