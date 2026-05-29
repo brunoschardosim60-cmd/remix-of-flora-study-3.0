@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, lazy, Suspense, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { CalendarDays, LayoutGrid, GraduationCap, PlayCircle } from "lucide-react";
+import { CalendarDays, LayoutGrid } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { createTopic, StudyTopic, WeeklySlot, ALL_SUBJECTS, Subject, CONCURSO_SUBJECTS, ENEM_SUBJECTS } from "@/lib/studyData";
 import { DashboardHero } from "@/components/DashboardHero";
@@ -138,10 +138,6 @@ export default function Index() {
     const savedTab = loadStringStorage("studyflow.activeTab");
     return savedTab === "semanal" ? "semanal" : "revisao";
   });
-  const [minimalistMode, setMinimalistMode] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem("studyflow.minimalist") === "true";
-  });
   const { isVisible: isWidgetVisible } = useDashboardWidgets();
 
   const {
@@ -206,11 +202,6 @@ export default function Index() {
     window.localStorage.setItem("studyflow.activeTab", tab);
   }, [tab]);
 
-  useEffect(() => {
-    window.localStorage.setItem("studyflow.minimalist", String(minimalistMode));
-  }, [minimalistMode]);
-
-
   const tabs = [
     { id: "revisao" as Tab, label: "Cronograma de Revisao", icon: CalendarDays },
     { id: "semanal" as Tab, label: "Cronograma Semanal", icon: LayoutGrid },
@@ -254,8 +245,7 @@ export default function Index() {
     <div className="min-h-dvh bg-background pb-16 md:pb-0">
       <DashboardHeader user={user} bancoRoute={bancoRoute} bancoLabel={bancoLabel} onSignOut={signOut} />
       <main className="container max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <DashboardHero
+        <DashboardHero
             firstName={firstName}
             isLoggedIn={Boolean(user)}
             streakDays={momentum.streakDays}
@@ -268,17 +258,7 @@ export default function Index() {
             comebackMode={momentum.comebackMode}
             onPrimaryAction={handlePrimaryAction}
             primaryLabel={primaryLabel}
-          />
-
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => setMinimalistMode(!minimalistMode)}
-            className="rounded-xl h-9 text-xs font-medium shrink-0 bg-background/50 backdrop-blur-sm border-dashed"
-          >
-            {minimalistMode ? "Mostrar Widgets" : "Modo Minimalista"}
-          </Button>
-        </div>
+        />
 
 
         {/* Flora: confirmações pendentes */}
@@ -331,23 +311,6 @@ export default function Index() {
             </button>
           )}
 
-          <button
-            onClick={() => navigate("/cursos")}
-            className="flex items-center justify-between gap-3 rounded-2xl border border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors px-4 py-3 text-left"
-          >
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-9 h-9 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
-                <GraduationCap className="w-4 h-4 text-primary" />
-              </div>
-              <div className="min-w-0">
-                <p className="font-heading font-semibold text-sm">Aulas da Flora</p>
-                <p className="text-xs text-muted-foreground truncate">
-                  Explore conteúdos estruturados por matéria
-                </p>
-              </div>
-            </div>
-            <PlayCircle className="w-5 h-5 text-primary shrink-0" />
-          </button>
         </div>
 
         {/* Timer + Hours + Media */}
@@ -369,7 +332,7 @@ export default function Index() {
           </Suspense>
         </div>
 
-        {!minimalistMode && isWidgetVisible("gamification") && (
+        {isWidgetVisible("gamification") && (
           <Suspense fallback={<SectionSkeleton className="min-h-[120px]" />}>
             <GamificationCard
               streak={gamification.streak}
@@ -383,7 +346,7 @@ export default function Index() {
           </Suspense>
         )}
 
-        {!minimalistMode && isWidgetVisible("stats") && (
+        {isWidgetVisible("stats") && (
           <Suspense fallback={<SectionSkeleton className="min-h-[80px]" />}>
             <StatsCards {...stats} />
           </Suspense>
@@ -402,7 +365,7 @@ export default function Index() {
           </>
         )}
 
-        {!minimalistMode && isWidgetVisible("overdue") && (
+        {isWidgetVisible("overdue") && (
           <Suspense fallback={<SectionSkeleton className="min-h-[80px]" />}>
             <div id="revisoes-atrasadas" className="scroll-mt-20">
               <OverdueRevisions
@@ -414,7 +377,7 @@ export default function Index() {
           </Suspense>
         )}
 
-        {!minimalistMode && isWidgetVisible("today_revisions") && (
+        {isWidgetVisible("today_revisions") && (
           <Suspense fallback={<SectionSkeleton className="min-h-[80px]" />}>
             <div id="revisoes-hoje" className="scroll-mt-20">
               <TodayRevisions revisions={todayRevisions} onComplete={handleToggleRevision} />
@@ -422,7 +385,7 @@ export default function Index() {
           </Suspense>
         )}
 
-        {!minimalistMode && isWidgetVisible("weekly_summary") && (
+        {isWidgetVisible("weekly_summary") && (
           <Suspense fallback={<SectionSkeleton className="min-h-[120px]" />}>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
               <WeeklyRevisionSummary topics={topics} />
