@@ -25,6 +25,8 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
   const [hoveredSlot, setHoveredSlot] = useState<string | null>(null);
   const [showAddRow, setShowAddRow] = useState(false);
   const [newHorario, setNewHorario] = useState("");
+  const [activeDayMobile, setActiveDayDayMobile] = useState(new Date().getDay() === 0 ? 6 : new Date().getDay() - 1);
+
 
   const horarios = [...new Set(slots.map((s) => s.horario))].sort();
 
@@ -110,10 +112,28 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
         )}
       </div>
 
+      {/* Mobile Day Selector */}
+      <div className="sm:hidden flex gap-1 overflow-x-auto pb-2 scrollbar-none">
+        {DIAS_SHORT.map((dia, i) => (
+          <button
+            key={dia}
+            onClick={() => setActiveDayDayMobile(i)}
+            className={`flex-1 min-w-[50px] py-2 rounded-lg text-xs font-bold transition-all border ${
+              activeDayMobile === i 
+                ? "bg-primary text-primary-foreground border-primary shadow-sm" 
+                : "bg-muted text-muted-foreground border-border"
+            }`}
+          >
+            {dia}
+          </button>
+        ))}
+      </div>
+
       {/* Schedule table */}
+
       <div className="glass-card rounded-xl overflow-hidden">
         <div className="overflow-x-auto px-1 sm:px-0">
-          <table className="w-full min-w-[760px] text-sm">
+          <table className="w-full min-w-full sm:min-w-[760px] text-sm">
             <thead>
               <tr className="border-b border-border bg-muted/30">
                 <th className="p-3 font-heading font-semibold text-left w-[100px]">
@@ -123,11 +143,12 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
                   </div>
                 </th>
                 {DIAS.map((dia, i) => (
-                  <th key={dia} className="p-3 font-heading font-semibold text-center">
+                  <th key={dia} className={`p-3 font-heading font-semibold text-center ${activeDayMobile !== i ? "hidden sm:table-cell" : ""}`}>
                     <span className="hidden sm:inline">{dia}</span>
                     <span className="sm:hidden">{DIAS_SHORT[i]}</span>
                   </th>
                 ))}
+
                 <th className="p-2 w-[40px]" />
               </tr>
             </thead>
@@ -153,11 +174,15 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
                       const slot = getSlot(horario, dia);
                       if (!slot) return <td key={dia} className="p-2" />;
 
+                      // No mobile, só mostramos o dia ativo
+                      const isMobileHidden = activeDayMobile !== dia;
+
+
                       const isEditing = editingSlot === slot.id;
                       const isHovered = hoveredSlot === slot.id;
 
                       return (
-                        <td key={dia} className="p-1.5">
+                        <td key={dia} className={`p-1.5 ${isMobileHidden ? "hidden sm:table-cell" : ""}`}>
                           {isEditing ? (
                             <div className="space-y-1.5 p-1">
                               <select
