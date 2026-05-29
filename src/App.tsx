@@ -199,15 +199,15 @@ const App = () => (
                 <Route path="/redacao/temas" element={<ProtectedRoute><RedacaoTemas /></ProtectedRoute>} />
                 <Route path="/redacao/templates" element={<ProtectedRoute><RedacaoTemplates /></ProtectedRoute>} />
 
-                <Route path="/banco" element={<ProtectedRoute><BancoQuestoes /></ProtectedRoute>} />
-                <Route path="/banco-concurso" element={<ProtectedRoute><BancoConcurso /></ProtectedRoute>} />
-                <Route path="/analise" element={<ProtectedRoute><Analise /></ProtectedRoute>} />
-                <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+                <Route path="/banco" element={<ProtectedRoute><Layout><BancoQuestoes /></Layout></ProtectedRoute>} />
+                <Route path="/banco-concurso" element={<ProtectedRoute><Layout><BancoConcurso /></Layout></ProtectedRoute>} />
+                <Route path="/analise" element={<ProtectedRoute><Layout><Analise /></Layout></ProtectedRoute>} />
+                <Route path="/settings" element={<ProtectedRoute><Layout><Settings /></Layout></ProtectedRoute>} />
                 <Route path="/shared/notebook/:token" element={<Suspense fallback={<RouteFallback />}><SharedNotebook /></Suspense>} />
-                <Route path="/aulao" element={<ProtectedRoute><Aulao /></ProtectedRoute>} />
-                <Route path="/cursos" element={<ProtectedRoute><Cursos /></ProtectedRoute>} />
-                <Route path="/cursos/:id" element={<ProtectedRoute><CursoPlayer /></ProtectedRoute>} />
-                <Route path="/comunidades" element={<ProtectedRoute><Comunidades /></ProtectedRoute>} />
+                <Route path="/aulao" element={<ProtectedRoute><Layout><Aulao /></Layout></ProtectedRoute>} />
+                <Route path="/cursos" element={<ProtectedRoute><Layout><Cursos /></Layout></ProtectedRoute>} />
+                <Route path="/cursos/:id" element={<ProtectedRoute><Layout><CursoPlayer /></Layout></ProtectedRoute>} />
+                <Route path="/comunidades" element={<ProtectedRoute><Layout><Comunidades /></Layout></ProtectedRoute>} />
                 <Route path="/pricing" element={<Suspense fallback={<RouteFallback />}><Pricing /></Suspense>} />
                 <Route path="/u/:username" element={<Suspense fallback={<RouteFallback />}><PublicProfile /></Suspense>} />
                 
