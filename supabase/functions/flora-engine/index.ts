@@ -1132,6 +1132,7 @@ Responda SOMENTE com JSON: {"resumo":"...","flashcards":[{"frente":"...","verso"
       const opts: CallOptions = {
         messages: [
           { role: "system", content: `Você é Flora. Analise e sugira o melhor tópico pra estudar agora. DADOS: ${JSON.stringify({ onboarding: context.onboarding, performance: context.performance, pendingReviews: context.pendingReviews, recentActions: context.recentActions })}
+REGRA CRÍTICA: Se o objetivo do aluno for ENEM, você deve sugerir APENAS matérias do ENEM (Matemática, Biologia, Física, Química, Português, História, Geografia, Filosofia, Sociologia, Inglês/Espanhol, Redação). PROIBIDO sugerir Direito, Raciocínio Lógico (fora de matemática), Informática para concursos ou matérias jurídicas.
 Responda SOMENTE com JSON: {"topic_id":"...","materia":"...","tema":"...","formato":"quiz|explicacao|resumo|exercicio","razao":"frase curta específica","prioridade":"alta|media|baixa"}\nSEMPRE responda em português brasileiro.` },
           { role: "user", content: "Qual o melhor tópico para estudar agora?" },
         ],
@@ -1153,7 +1154,7 @@ Responda SOMENTE com JSON: {"topic_id":"...","materia":"...","tema":"...","forma
           { role: "system", content: `Você é Flora, especialista em ${objCtx.label}, conversando com o aluno antes dele iniciar o cronômetro. Escolha o tópico mais urgente e prepare um BRIEFING DE ESTUDO conversacional, NÃO uma aula longa.
 DADOS: ${JSON.stringify({ onboarding: context.onboarding, performance: context.performance, pendingReviews: context.pendingReviews, goal: context.onboarding?.objetivo })}
 
-Se o objetivo for "enem", foque em Redação e matérias do ENEM (Humanas, Natureza, Linguagens, Matemática). NÃO sugira matérias de concurso como "Direito Constitucional" ou "Raciocínio Lógico" a menos que o objetivo seja "concurso".
+Se o objetivo for "enem", foque EXCLUSIVAMENTE em Redação e matérias do ENEM (Humanas, Natureza, Linguagens, Matemática). É PROIBIDO sugerir matérias de concurso como "Direito Constitucional", "Direito Administrativo", "Raciocínio Lógico" (a menos que seja lógica matemática do ENEM) ou "Informática para concursos". Se o objetivo for "concurso", foque nas matérias da banca e órgão escolhidos.
 
 
 Tom: direto, próximo, como uma mentora explicando antes da sessão. Português brasileiro, sem emojis.
