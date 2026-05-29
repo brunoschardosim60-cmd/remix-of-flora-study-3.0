@@ -129,10 +129,7 @@ export default function Index() {
     const savedTab = loadStringStorage("studyflow.activeTab");
     return savedTab === "semanal" ? "semanal" : "revisao";
   });
-  const [minimalistMode, setMinimalistMode] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem("studyflow.minimalist") === "true";
-  });
+  const [minimalistMode] = useState(false);
   const { isVisible: isWidgetVisible } = useDashboardWidgets();
 
   const {
@@ -197,9 +194,6 @@ export default function Index() {
     window.localStorage.setItem("studyflow.activeTab", tab);
   }, [tab]);
 
-  useEffect(() => {
-    window.localStorage.setItem("studyflow.minimalist", String(minimalistMode));
-  }, [minimalistMode]);
 
 
   const tabs = [
@@ -261,14 +255,6 @@ export default function Index() {
             primaryLabel={primaryLabel}
           />
 
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => setMinimalistMode(!minimalistMode)}
-            className="rounded-xl h-9 text-xs font-medium shrink-0 bg-background/50 backdrop-blur-sm border-dashed"
-          >
-            {minimalistMode ? "Mostrar Widgets" : "Modo Minimalista"}
-          </Button>
         </div>
 
 
@@ -340,70 +326,68 @@ export default function Index() {
           </Suspense>
         </div>
 
-        {!minimalistMode && (
-          <div className="space-y-4 sm:space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
-            {isWidgetVisible("gamification") && (
+        <div className="space-y-4 sm:space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
+          {isWidgetVisible("gamification") && (
+            <Suspense fallback={<SectionSkeleton className="min-h-[120px]" />}>
+              <GamificationCard
+                streak={gamification.streak}
+                xp={gamification.xp}
+                level={gamification.level}
+                todayStudyMinutes={gamification.todayStudyMinutes}
+                todayRevisions={gamification.todayRevisions}
+                todayQuizCount={gamification.todayQuizCount}
+                goals={gamification.dailyGoals}
+              />
+            </Suspense>
+          )}
+
+          {isWidgetVisible("stats") && (
+            <Suspense fallback={<SectionSkeleton className="min-h-[80px]" />}>
+              <StatsCards {...stats} />
+            </Suspense>
+          )}
+
+          {/* Painéis específicos de concurso */}
+          {isConcurso && (
+            <>
               <Suspense fallback={<SectionSkeleton className="min-h-[120px]" />}>
-                <GamificationCard
-                  streak={gamification.streak}
-                  xp={gamification.xp}
-                  level={gamification.level}
-                  todayStudyMinutes={gamification.todayStudyMinutes}
-                  todayRevisions={gamification.todayRevisions}
-                  todayQuizCount={gamification.todayQuizCount}
-                  goals={gamification.dailyGoals}
+                <ConcursoDashboard />
+              </Suspense>
+              <Suspense fallback={<SectionSkeleton className="min-h-[120px]" />}>
+                <ConcursoTrails onAddTopic={handleAdd} />
+              </Suspense>
+            </>
+          )}
+
+          {isWidgetVisible("overdue") && (
+            <Suspense fallback={<SectionSkeleton className="min-h-[80px]" />}>
+              <div id="revisoes-atrasadas" className="scroll-mt-20">
+                <OverdueRevisions
+                  revisions={overdueRevisions}
+                  onComplete={handleToggleRevision}
+                  onReschedule={handleRescheduleOverdue}
                 />
-              </Suspense>
-            )}
+              </div>
+            </Suspense>
+          )}
 
-            {isWidgetVisible("stats") && (
-              <Suspense fallback={<SectionSkeleton className="min-h-[80px]" />}>
-                <StatsCards {...stats} />
-              </Suspense>
-            )}
+          {isWidgetVisible("today_revisions") && (
+            <Suspense fallback={<SectionSkeleton className="min-h-[80px]" />}>
+              <div id="revisoes-hoje" className="scroll-mt-20">
+                <TodayRevisions revisions={todayRevisions} onComplete={handleToggleRevision} />
+              </div>
+            </Suspense>
+          )}
 
-            {/* Painéis específicos de concurso */}
-            {isConcurso && (
-              <>
-                <Suspense fallback={<SectionSkeleton className="min-h-[120px]" />}>
-                  <ConcursoDashboard />
-                </Suspense>
-                <Suspense fallback={<SectionSkeleton className="min-h-[120px]" />}>
-                  <ConcursoTrails onAddTopic={handleAdd} />
-                </Suspense>
-              </>
-            )}
-
-            {isWidgetVisible("overdue") && (
-              <Suspense fallback={<SectionSkeleton className="min-h-[80px]" />}>
-                <div id="revisoes-atrasadas" className="scroll-mt-20">
-                  <OverdueRevisions
-                    revisions={overdueRevisions}
-                    onComplete={handleToggleRevision}
-                    onReschedule={handleRescheduleOverdue}
-                  />
-                </div>
-              </Suspense>
-            )}
-
-            {isWidgetVisible("today_revisions") && (
-              <Suspense fallback={<SectionSkeleton className="min-h-[80px]" />}>
-                <div id="revisoes-hoje" className="scroll-mt-20">
-                  <TodayRevisions revisions={todayRevisions} onComplete={handleToggleRevision} />
-                </div>
-              </Suspense>
-            )}
-
-            {isWidgetVisible("weekly_summary") && (
-              <Suspense fallback={<SectionSkeleton className="min-h-[120px]" />}>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
-                  <WeeklyRevisionSummary topics={topics} />
-                  <UpcomingRevisions revisions={upcomingRevisions} />
-                </div>
-              </Suspense>
-            )}
-          </div>
-        )}
+          {isWidgetVisible("weekly_summary") && (
+            <Suspense fallback={<SectionSkeleton className="min-h-[120px]" />}>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
+                <WeeklyRevisionSummary topics={topics} />
+                <UpcomingRevisions revisions={upcomingRevisions} />
+              </div>
+            </Suspense>
+          )}
+        </div>
 
 
         {/* Tabs */}
