@@ -612,6 +612,7 @@ export default function BancoQuestoes() {
   }
 
   async function explainWithFlora(q: Question) {
+    if (!q) return;
     setExplaining(true);
     setExplanation("");
     const altMarcada = revealed[q.id] || attempts[q.id]?.alternativa_marcada || "";
@@ -626,7 +627,11 @@ export default function BancoQuestoes() {
       const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/explain-question`;
       const { data: { session } } = await supabase.auth.getSession();
       const accessToken = session?.access_token;
-      if (!accessToken) { toast.error("Faça login para usar a Flora"); setExplaining(false); return; }
+      if (!accessToken) { 
+        toast.error("Faça login para usar a Flora"); 
+        setExplaining(false); 
+        return; 
+      }
       const resp = await fetch(url, {
         method: "POST",
         headers: {
@@ -634,11 +639,36 @@ export default function BancoQuestoes() {
           Authorization: `Bearer ${accessToken}`,
           apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         },
-        body: JSON.stringify({ enunciado: q.enunciado, alternativaMarcada: altMarcada, correta: q.correta, ano: q.ano, numero: q.numero, disciplina: q.disciplina, tema: q.tema }),
+        body: JSON.stringify({ 
+          enunciado: q.enunciado, 
+          alternativaMarcada: altMarcada, 
+          correta: q.correta, 
+          ano: q.ano, 
+          numero: q.numero, 
+          disciplina: q.disciplina, 
+          tema: q.tema 
+        }),
       });
-      if (resp.status === 429) { toast.error("Muitas requisições. Aguarde."); setExplaining(false); return; }
-      if (resp.status === 402) { toast.error("Créditos da IA esgotados."); setExplaining(false); return; }
-      if (!resp.ok || !resp.body) { toast.error("Erro ao gerar explicação"); setExplaining(false); return; }
+
+      if (resp.status === 429) { 
+        toast.error("Muitas requisições. Aguarde."); 
+        setExplaining(false); 
+        return; 
+      }
+      if (resp.status === 402) { 
+        toast.error("Créditos da IA esgotados."); 
+        setExplaining(false); 
+        return; 
+      }
+      if (!resp.ok) {
+        throw new Error(`HTTP error! status: ${resp.status}`);
+      }
+      if (!resp.body) { 
+        toast.error("Erro ao gerar explicação"); 
+        setExplaining(false); 
+        return; 
+      }
+
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
@@ -655,12 +685,21 @@ export default function BancoQuestoes() {
           if (line.endsWith("\r")) line = line.slice(0, -1);
           if (!line.startsWith("data: ")) continue;
           const json = line.slice(6).trim();
-          if (json === "[DONE]") { done = true; break; }
+          if (json === "[DONE]") { 
+            done = true; 
+            break; 
+          }
           try {
             const parsed = JSON.parse(json);
             const c = parsed.choices?.[0]?.delta?.content;
-            if (c) { acc += c; setExplanation((prev) => prev + c); }
-          } catch { buffer = line + "\n" + buffer; break; }
+            if (c) { 
+              acc += c; 
+              setExplanation((prev) => prev + c); 
+            }
+          } catch (err) { 
+            console.error("Erro ao processar chunk:", err);
+            // Tenta manter o buffer se for erro de parse parcial
+          }
         }
       }
       // Persiste no cache local após o stream
@@ -819,7 +858,7 @@ export default function BancoQuestoes() {
             <Input placeholder="Buscar por enunciado ou tema…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            <Select value={ano} onValueChange={setAno}>
+            <Select key={`ano-${anos.length}`} value={ano} onValueChange={setAno}>
               <SelectTrigger><SelectValue placeholder="Ano" /></SelectTrigger>
               <SelectContent>
                 {anos && anos.length > 0 ? (
@@ -829,7 +868,7 @@ export default function BancoQuestoes() {
                 )}
               </SelectContent>
             </Select>
-            <Select value={area} onValueChange={(v) => { setArea(v); setDisciplina("Todas"); setTema("Todos"); }}>
+            <Select key={`area-${AREAS.length}`} value={area} onValueChange={(v) => { setArea(v); setDisciplina("Todas"); setTema("Todos"); }}>
               <SelectTrigger><SelectValue placeholder="Área" /></SelectTrigger>
               <SelectContent>
                 {AREAS && AREAS.length > 0 ? (
@@ -839,7 +878,7 @@ export default function BancoQuestoes() {
                 )}
               </SelectContent>
             </Select>
-            <Select value={disciplina} onValueChange={(v) => { setDisciplina(v); setTema("Todos"); }}>
+            <Select key={`disciplina-${disciplinas.length}`} value={disciplina} onValueChange={(v) => { setDisciplina(v); setTema("Todos"); }}>
               <SelectTrigger><SelectValue placeholder="Disciplina" /></SelectTrigger>
               <SelectContent>
                 {disciplinas && disciplinas.length > 0 ? (
@@ -849,7 +888,7 @@ export default function BancoQuestoes() {
                 )}
               </SelectContent>
             </Select>
-            <Select value={tema} onValueChange={setTema}>
+            <Select key={`tema-${temas.length}`} value={tema} onValueChange={setTema}>
               <SelectTrigger><SelectValue placeholder="Tema" /></SelectTrigger>
               <SelectContent className="max-h-72">
                 <SelectItem value="Todos">Todos os Temas</SelectItem>
@@ -1128,7 +1167,7 @@ export default function BancoQuestoes() {
 
               {/* 1. Texto de apoio + imagens + enunciado (renderizador hierárquico) */}
               <QuestionRenderer
-                enunciado={cleanedById.get(opened.id)?.cleaned ?? normalizeEnunciado(opened.enunciado, getAlternativas(opened).length === 5)}
+                enunciado={opened ? (cleanedById.get(opened.id)?.cleaned ?? normalizeEnunciado(opened.enunciado, getAlternativas(opened).length === 5)) : ""}
                 imagens={opened.imagem_urls || []}
                 label={`Questão ${opened.numero} ENEM ${opened.ano}`}
                 wide={readingMode}
@@ -1149,7 +1188,7 @@ export default function BancoQuestoes() {
               </section>
 
               {/* 4. Resultado */}
-              {(revealed[opened.id] || attempts[opened.id]) && (() => {
+              {(opened && (revealed[opened.id] || attempts[opened.id])) && (() => {
                 const chosen = revealed[opened.id] || attempts[opened.id]?.alternativa_marcada;
                 const acertou = chosen === opened.correta;
                 return (
