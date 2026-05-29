@@ -25,6 +25,8 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
   const [hoveredSlot, setHoveredSlot] = useState<string | null>(null);
   const [showAddRow, setShowAddRow] = useState(false);
   const [newHorario, setNewHorario] = useState("");
+  const [activeDayMobile, setActiveDayDayMobile] = useState(new Date().getDay() === 0 ? 6 : new Date().getDay() - 1);
+
 
   const horarios = [...new Set(slots.map((s) => s.horario))].sort();
 
