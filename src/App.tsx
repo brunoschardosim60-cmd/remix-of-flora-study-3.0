@@ -189,6 +189,8 @@ const App = () => (
                 <Route path="/notebooks/:id" element={<ProtectedRoute><NotebookEditor /></ProtectedRoute>} />
                 <Route path="/redacao" element={<ProtectedRoute><Redacao /></ProtectedRoute>} />
                 <Route path="/redacao/temas" element={<ProtectedRoute><RedacaoTemas /></ProtectedRoute>} />
+                <Route path="/redacao/templates" element={<ProtectedRoute><RedacaoTemplates /></ProtectedRoute>} />
+
                 <Route path="/banco" element={<ProtectedRoute><BancoQuestoes /></ProtectedRoute>} />
                 <Route path="/banco-concurso" element={<ProtectedRoute><BancoConcurso /></ProtectedRoute>} />
                 <Route path="/analise" element={<ProtectedRoute><Analise /></ProtectedRoute>} />
