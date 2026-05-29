@@ -90,7 +90,7 @@ export default function Onboarding() {
         rotina: "manha",
         meta_resultado: metaResultado || `Passar em ${objetivo === "enem" ? "ENEM" : objetivo}`,
         completed: true,
-      } as any);
+      });
       if (error) throw error;
 
       // Gera plano em background
