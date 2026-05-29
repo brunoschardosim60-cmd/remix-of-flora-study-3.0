@@ -8,8 +8,9 @@ import {
   Loader2, Send, ChevronLeft, ChevronRight,
   Lightbulb, AlertTriangle, MessageCircleQuestion, CheckCircle2, XCircle,
   Sparkles, Brain, HelpCircle, ListChecks, ChevronDown, Leaf, Zap, Target,
-  Volume2, VolumeX, Eye, Share2, Trophy, Flame, Radio, Image as ImageIcon, Palette,
+  Volume2, VolumeX, Eye, Share2, Trophy, Flame, Radio, Image as ImageIcon, Palette, BookPlus,
   RefreshCw, ZoomIn, X as XIcon, Bookmark, BookmarkCheck, Maximize2,
+
 } from "lucide-react";
 import { generateDidacticImage } from "@/lib/floraImages";
 import { LessonChart } from "@/components/LessonChart";
