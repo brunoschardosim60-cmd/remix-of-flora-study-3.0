@@ -116,6 +116,68 @@ export type Database = {
         }
         Relationships: []
       }
+      comments: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      communities: {
+        Row: {
+          category: string
+          created_at: string | null
+          description: string | null
+          id: string
+          member_count: number | null
+          name: string
+          slug: string
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          member_count?: number | null
+          name: string
+          slug: string
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          member_count?: number | null
+          name?: string
+          slug?: string
+        }
+        Relationships: []
+      }
       concurso_ia_attempts: {
         Row: {
           acertou: boolean
@@ -413,6 +475,39 @@ export type Database = {
         }
         Relationships: []
       }
+      courses: {
+        Row: {
+          category: string | null
+          cover_url: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          lessons_count: number | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          cover_url?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          lessons_count?: number | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          cover_url?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          lessons_count?: number | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       essay_themes: {
         Row: {
           competencias_destaque: string[]
@@ -596,6 +691,24 @@ export type Database = {
         }
         Relationships: []
       }
+      follows: {
+        Row: {
+          created_at: string | null
+          follower_id: string
+          following_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          follower_id: string
+          following_id: string
+        }
+        Update: {
+          created_at?: string | null
+          follower_id?: string
+          following_id?: string
+        }
+        Relationships: []
+      }
       gamification_profiles: {
         Row: {
           created_at: string
@@ -720,6 +833,29 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      likes: {
+        Row: {
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "likes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notebook_ai_activities: {
         Row: {
@@ -975,6 +1111,50 @@ export type Database = {
         }
         Relationships: []
       }
+      posts: {
+        Row: {
+          comments_count: number | null
+          community_id: string | null
+          content: string
+          created_at: string | null
+          id: string
+          likes_count: number | null
+          media_url: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          comments_count?: number | null
+          community_id?: string | null
+          content: string
+          created_at?: string | null
+          id?: string
+          likes_count?: number | null
+          media_url?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          comments_count?: number | null
+          community_id?: string | null
+          content?: string
+          created_at?: string | null
+          id?: string
+          likes_count?: number | null
+          media_url?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "posts_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -1196,18 +1376,51 @@ export type Database = {
         }
         Relationships: []
       }
+      student_achievements: {
+        Row: {
+          created_at: string | null
+          id: string
+          last_earned_at: string | null
+          type: string
+          user_id: string
+          value: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          last_earned_at?: string | null
+          type: string
+          user_id: string
+          value?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          last_earned_at?: string | null
+          type?: string
+          user_id?: string
+          value?: number | null
+        }
+        Relationships: []
+      }
       student_onboarding: {
         Row: {
           banca: string
           cargo: string
           completed: boolean
+          conteudo_estudado: string | null
           created_at: string
+          data_prova: string | null
+          horas_disponiveis: number | null
           materias_dificeis: string[]
           meta_resultado: string
+          nivel_atual: string | null
           objetivo: string
+          objetivos_livre: string | null
           orgao: string
           rotina: string
           tempo_disponivel_min: number
+          turno_preferido: string | null
           updated_at: string
           user_id: string
         }
@@ -1215,13 +1428,19 @@ export type Database = {
           banca?: string
           cargo?: string
           completed?: boolean
+          conteudo_estudado?: string | null
           created_at?: string
+          data_prova?: string | null
+          horas_disponiveis?: number | null
           materias_dificeis?: string[]
           meta_resultado?: string
+          nivel_atual?: string | null
           objetivo?: string
+          objetivos_livre?: string | null
           orgao?: string
           rotina?: string
           tempo_disponivel_min?: number
+          turno_preferido?: string | null
           updated_at?: string
           user_id: string
         }
@@ -1229,13 +1448,19 @@ export type Database = {
           banca?: string
           cargo?: string
           completed?: boolean
+          conteudo_estudado?: string | null
           created_at?: string
+          data_prova?: string | null
+          horas_disponiveis?: number | null
           materias_dificeis?: string[]
           meta_resultado?: string
+          nivel_atual?: string | null
           objetivo?: string
+          objetivos_livre?: string | null
           orgao?: string
           rotina?: string
           tempo_disponivel_min?: number
+          turno_preferido?: string | null
           updated_at?: string
           user_id?: string
         }

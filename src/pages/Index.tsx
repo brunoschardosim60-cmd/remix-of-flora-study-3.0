@@ -129,7 +129,6 @@ export default function Index() {
     const savedTab = loadStringStorage("studyflow.activeTab");
     return savedTab === "semanal" ? "semanal" : "revisao";
   });
-  const [minimalistMode] = useState(false);
   const { isVisible: isWidgetVisible } = useDashboardWidgets();
 
   const {
