@@ -890,7 +890,14 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({
               title={visualMode === "real" ? "Visual: fotos (clique para ilustrações)" : "Visual: ilustrações (clique para fotos)"}>
               {visualMode === "real" ? <ImageIcon size={14}/> : <Palette size={14}/>}
             </button>
+            {curScene && stage === "block" && (
+              <button className={`ilp-icon-btn ${glossaryOpen ? "ilp-icon-btn--active" : ""}`} onClick={fetchGlossary}
+                aria-label="Glossário" title="Glossário de termos">
+                <BookPlus size={14}/>
+              </button>
+            )}
             {enableVoice && curScene && stage === "block" && (
+
               <button
                 className={`ilp-icon-btn ${voice.playing ? "ilp-icon-btn--active" : ""}`}
                 onClick={() => voice.toggle(curScene.text, "amiga")}
