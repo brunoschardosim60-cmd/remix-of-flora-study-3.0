@@ -91,6 +91,10 @@ function getAlternativas(q: Question) {
  * Remove artefatos comuns: caracteres de controle, símbolos Unicode inválidos,
  * espaços invisíveis, ligatures mal codificadas, marcadores de coluna dupla, etc.
  */
+/**
+ * Limpeza profunda de texto extraído de PDF do ENEM.
+ * Remove artefatos comuns e corrige espaçamento de listas numéricas/bullet points.
+ */
 function cleanPdfArtifacts(raw: string): string {
   if (!raw) return "";
   let t = raw;
@@ -98,9 +102,17 @@ function cleanPdfArtifacts(raw: string): string {
   // Remove marcadores [[placeholder]] que vazam do banco quando há imagem no enunciado
   t = t.replace(/\[\[placeholder\]\]/gi, "").trim();
 
+  // Corrige falta de espaço após números de listas (ex: "1.Genética" -> "1. Genética")
+  // Captura [número][ponto][letra_maiúscula]
+  t = t.replace(/(\d+)\.([A-ZÀ-Ÿ])/g, "$1. $2");
+
+  // Corrige falta de espaço após pontos finais seguidos de letra maiúscula (colapso de PDF)
+  t = t.replace(/([a-zà-ÿ])\.([A-ZÀ-Ÿ])/g, "$1. $2");
+
+  // Garante primeira letra maiúscula se for um parágrafo começando com letra
+  t = t.replace(/^([a-zà-ÿ])/u, (match) => match.toUpperCase());
+
   // Remove descrições textuais de imagem — o aluno deve interpretar a imagem sozinho.
-  // Cobre padrões como: [Imagem: ...], (Imagem: ...), [Figura 1: ...], <Descrição da imagem: ...>,
-  // "Descrição da imagem: ...\n", "Legenda: ...\n", etc.
   t = t.replace(/[\[\(<]\s*(?:imagem|figura|foto|ilustra[çc][ãa]o|gr[áa]fico|charge|tirinha|quadrinho|mapa|tabela|esquema|diagrama|descri[çc][ãa]o(?:\s+da\s+imagem)?|legenda)\b[^\]\)>]*[\]\)>]/gi, "");
   t = t.replace(/^\s*(?:descri[çc][ãa]o(?:\s+da\s+imagem)?|legenda(?:\s+da\s+imagem)?)\s*[:\-–][^\n]*\n?/gim, "");
 
@@ -143,11 +155,11 @@ function cleanPdfArtifacts(raw: string): string {
   t = t.replace(/(\b.{20,80}?\b)\n?\s*\1/g, "$1");
 
   // Remove caixas de seleção e símbolos sem sentido isolados que não são LaTeX
-  // (quadrados, círculos, triângulos soltos que vieram de fontes especiais)
   t = t.replace(/(?<!\$)[\u25A0-\u25FF](?!\$)/g, "□");
 
   return t.trim();
 }
+
 
 /**
  * Remove o bloco de alternativas A) B) C) D) E) que vazou para dentro do enunciado
