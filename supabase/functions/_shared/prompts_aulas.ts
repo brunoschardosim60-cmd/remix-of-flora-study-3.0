@@ -34,6 +34,10 @@ Responda SOMENTE com este JSON:
   "titulo": "string — título da aula",
   "introducao": "string — 3-5 frases. Comece com gancho humano ('Olha, esse tema cai MUITO...'). Por que importa, o que vai aprender.",
   "blocos_titulos": ["título bloco 1", "título bloco 2", "..."],
+  "glossario": [
+    { "termo": "Termo 1", "definicao": "Definição curta" },
+    { "termo": "Termo 2", "definicao": "Definição curta" }
+  ],
   "exercicio_final": {
     "pergunta": "string — questão final estilo ${level}",
     "alternativas": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."],
@@ -42,7 +46,7 @@ Responda SOMENTE com este JSON:
   }
 }
 
-Gere exatamente ${blocos} títulos de blocos, em ordem didática (do básico ao avançado).`;
+Gere exatamente ${blocos} títulos de blocos, em ordem didática (do básico ao avançado). No glossário, inclua os 4-6 termos técnicos mais importantes do tema.`;
 }
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -267,6 +271,10 @@ Responda SOMENTE com este JSON (sem texto antes/depois, sem markdown):
     }
   ],
   "resumo": ["bullet 1", "bullet 2", "bullet 3", "bullet 4", "bullet 5"],
+  "glossario": [
+    { "termo": "Termo 1", "definicao": "Definição" },
+    { "termo": "Termo 2", "definicao": "Definição" }
+  ],
   "exercicios": [
     {
       "pergunta": "string",
