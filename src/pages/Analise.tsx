@@ -89,7 +89,8 @@ function last30Days() {
 // ─── Componente principal ─────────────────────────────────────────────────────
 export default function Analise() {
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
+
 
   const [topics, setTopics] = useState<StudyTopic[]>([]);
   const [sessions, setSessions] = useState<StudySession[]>([]);
