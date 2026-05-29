@@ -67,7 +67,15 @@ const AULAO_TOPICS: AulaoTopic[] = [
     icon: <Search size={24} />,
     mode: "search",
   },
+  {
+    id: "redacao-templates",
+    title: "Templates Nota 1000",
+    description: "Esqueletos prontos e estruturas nota 1000 para você copiar e adaptar a qualquer tema.",
+    icon: <FileText size={24} />,
+    mode: "selection", // We handle the navigation in handleTopicSelect
+  },
 ];
+
 
 const RECENT_LESSONS_KEY = "studyflow.aulao.recent";
 interface RecentLesson { topic: string; subject: string; at: number; }
