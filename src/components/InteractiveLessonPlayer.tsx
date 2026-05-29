@@ -605,6 +605,29 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({
   const scenes = useMemo(() => (cur ? buildScenes(cur, idx, lessonSeed) : []), [cur, idx, lessonSeed]);
   const curScene = scenes[sceneIdx];
 
+  const fetchGlossary = async () => {
+    if (!curScene?.text || glossaryLoading) return;
+    setGlossaryOpen(true);
+    setGlossaryLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("flora-glossary", {
+        body: { text: curScene.text, context: lesson.titulo }
+      });
+      if (error) throw error;
+      setGlossaryTerms(data.terms || []);
+    } catch (e) {
+      console.error(e);
+      toast.error("Não consegui carregar o glossário agora.");
+    } finally {
+      setGlossaryLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    setGlossaryTerms([]);
+  }, [idx, sceneIdx]);
+
+
   // ── Sidebar image query — por CENA, com refresh seed ──────
   const sceneSearchQuery = useMemo(() => {
     const snippet = curScene ? cleanForSearch(curScene.text.slice(0, 60)) : "";
