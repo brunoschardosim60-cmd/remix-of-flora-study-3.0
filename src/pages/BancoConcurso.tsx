@@ -475,7 +475,11 @@ export default function BancoConcurso() {
 
   const orgaos = useMemo(() => {
     const set = new Set(questions.map((q) => q.orgao).filter(Boolean));
-    return ["Todas", ...Array.from(set).sort()];
+    const sorted = Array.from(set).sort();
+    // Prioriza os órgãos mais comuns/importantes
+    const top = ["Receita Federal", "INSS", "Polícia Federal", "TJSP", "TRF", "TRE", "PF", "PRF", "Banco do Brasil", "Caixa"].filter(t => set.has(t));
+    const others = sorted.filter(s => !top.includes(s));
+    return ["Todas", ...top, ...others];
   }, [questions]);
 
   const anos = useMemo(() => {
