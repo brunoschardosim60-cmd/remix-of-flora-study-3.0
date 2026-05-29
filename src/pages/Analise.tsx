@@ -266,7 +266,105 @@ export default function Analise() {
     }
   }, [activeTab, showEnemTab]);
 
+  const handleExportPDF = async () => {
+    setExporting(true);
+    try {
+      // Import dynamicly to avoid bloat
+      const { jsPDF } = await import("jspdf");
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      
+      // Header
+      doc.setFontSize(20);
+      doc.setTextColor(59, 130, 246); // Primary color
+      doc.text("Relatório de Desempenho StudyFlow", 15, 20);
+      
+      doc.setFontSize(10);
+      doc.setTextColor(100, 116, 139);
+      doc.text(`Gerado em: ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR")}`, 15, 28);
+      doc.text(`Usuário: ${profile?.display_name || user?.email || "Estudante"}`, 15, 33);
+      
+      // Divider
+      doc.setDrawColor(226, 232, 240);
+      doc.line(15, 38, pageWidth - 15, 38);
+      
+      // Summary section
+      doc.setFontSize(14);
+      doc.setTextColor(30, 41, 59);
+      doc.text("Resumo Geral", 15, 48);
+      
+      doc.setFontSize(11);
+      doc.text(`Tempo Total de Estudo: ${fmtMin(totalStudyMs)}`, 20, 58);
+      doc.text(`Sequência (Streak): ${streak} dias`, 20, 65);
+      doc.text(`Total de Tópicos: ${topics.length}`, 20, 72);
+      doc.text(`Taxa Média de Acerto: ${perfs.length > 0 ? Math.round(perfs.reduce((a, p) => a + p.accuracy, 0) / perfs.length) : 0}%`, 20, 79);
+      
+      // Subject Performance
+      doc.setFontSize(14);
+      doc.text("Desempenho por Matéria", 15, 95);
+      
+      let y = 105;
+      const sortedPerfs = [...perfs].sort((a, b) => b.accuracy - a.accuracy);
+      
+      doc.setFontSize(10);
+      doc.setTextColor(100, 116, 139);
+      doc.text("Matéria", 20, y);
+      doc.text("Acertos", 100, y);
+      doc.text("Erros", 130, y);
+      doc.text("Precisão", 160, y);
+      
+      y += 5;
+      doc.line(15, y, pageWidth - 15, y);
+      y += 8;
+      
+      doc.setTextColor(30, 41, 59);
+      sortedPerfs.slice(0, 15).forEach((p) => {
+        if (y > 270) {
+          doc.addPage();
+          y = 20;
+        }
+        doc.text(p.materia, 20, y);
+        doc.text(String(p.acertos), 100, y);
+        doc.text(String(p.erros), 130, y);
+        doc.text(`${p.accuracy}%`, 160, y);
+        y += 8;
+      });
+      
+      if (showEnemTab) {
+        doc.addPage();
+        doc.setFontSize(16);
+        doc.setTextColor(59, 130, 246);
+        doc.text("Predição ENEM", 15, 20);
+        
+        doc.setFontSize(11);
+        doc.setTextColor(30, 41, 59);
+        doc.text(`Nota Geral Estimada: ${Math.round(enemPred.overall)}`, 15, 35);
+        
+        y = 50;
+        doc.text("Detalhamento por Área:", 15, y);
+        y += 10;
+        
+        Object.entries(enemPred.areas).forEach(([area, score]) => {
+          doc.text(`${area}: ${Math.round(score)}`, 20, y);
+          y += 8;
+        });
+        
+        y += 10;
+        doc.text(`Redação Estimada: ${Math.round(enemPred.essay)}`, 15, y);
+      }
+      
+      doc.save(`Relatorio_StudyFlow_${new Date().toISOString().split('T')[0]}.pdf`);
+      toast.success("Relatório PDF gerado com sucesso!");
+    } catch (error) {
+      console.error("Erro ao gerar PDF:", error);
+      toast.error("Não foi possível gerar o PDF. Tente novamente.");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   // ─── Render ────────────────────────────────────────────────────────────────
+
   if (authLoading || !user) {
     return <div className="flex min-h-dvh items-center justify-center bg-background"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
   }
