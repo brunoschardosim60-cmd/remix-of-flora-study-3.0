@@ -341,20 +341,21 @@ export default function Analise() {
         
         doc.setFontSize(11);
         doc.setTextColor(30, 41, 59);
-        doc.text(`Nota Geral Estimada: ${Math.round(enemPred.overall)}`, 15, 35);
+        doc.text(`Nota Geral Estimada: ${Math.round(toENEMScale(enemPred.score))}`, 15, 35);
         
         y = 50;
         doc.text("Detalhamento por Área:", 15, y);
         y += 10;
         
-        Object.entries(enemPred.areas).forEach(([area, score]) => {
-          doc.text(`${area}: ${Math.round(score)}`, 20, y);
+        enemPred.breakdown.forEach((b) => {
+          doc.text(`${b.area}: ${Math.round(toENEMScale(b.score))}`, 20, y);
           y += 8;
         });
         
         y += 10;
-        doc.text(`Redação Estimada: ${Math.round(enemPred.essay)}`, 15, y);
+        doc.text(`Redação Estimada: ${Math.round(toENEMScale(enemPred.factors.essayScore))}`, 15, y);
       }
+
       
       doc.save(`Relatorio_StudyFlow_${new Date().toISOString().split('T')[0]}.pdf`);
       toast.success("Relatório PDF gerado com sucesso!");
