@@ -364,7 +364,7 @@ export default function Onboarding() {
 
       {/* Step indicators */}
       <div className="pb-8 flex justify-center gap-2">
-        {[0, 1, 2].map((i) => (
+        {[0, 1, 2, 3, 4].map((i) => (
           <div
             key={i}
             className={`h-1.5 rounded-full transition-all duration-300 ${
