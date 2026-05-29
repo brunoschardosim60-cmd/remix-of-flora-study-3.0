@@ -373,7 +373,7 @@ export default function Index() {
           </>
         )}
 
-        {isWidgetVisible("overdue") && (
+        {!minimalistMode && isWidgetVisible("overdue") && (
           <Suspense fallback={<SectionSkeleton className="min-h-[80px]" />}>
             <div id="revisoes-atrasadas" className="scroll-mt-20">
               <OverdueRevisions
@@ -385,7 +385,7 @@ export default function Index() {
           </Suspense>
         )}
 
-        {isWidgetVisible("today_revisions") && (
+        {!minimalistMode && isWidgetVisible("today_revisions") && (
           <Suspense fallback={<SectionSkeleton className="min-h-[80px]" />}>
             <div id="revisoes-hoje" className="scroll-mt-20">
               <TodayRevisions revisions={todayRevisions} onComplete={handleToggleRevision} />
@@ -393,7 +393,7 @@ export default function Index() {
           </Suspense>
         )}
 
-        {isWidgetVisible("weekly_summary") && (
+        {!minimalistMode && isWidgetVisible("weekly_summary") && (
           <Suspense fallback={<SectionSkeleton className="min-h-[120px]" />}>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
               <WeeklyRevisionSummary topics={topics} />
@@ -401,6 +401,7 @@ export default function Index() {
             </div>
           </Suspense>
         )}
+
 
         {/* Tabs */}
         <div className="overflow-x-auto">
