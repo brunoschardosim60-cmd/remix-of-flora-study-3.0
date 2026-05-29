@@ -901,45 +901,93 @@ export default function BancoQuestoes() {
             <Input placeholder="Buscar por enunciado ou tema…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            <Select key={`ano-${anos.length}`} value={ano} onValueChange={setAno}>
-              <SelectTrigger><SelectValue placeholder="Ano" /></SelectTrigger>
-              <SelectContent>
-                {anos && anos.length > 0 ? (
-                  anos.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)
-                ) : (
-                  <SelectItem value="Todos">Todos</SelectItem>
-                )}
-              </SelectContent>
-            </Select>
-            <Select key={`area-${AREAS.length}`} value={area} onValueChange={(v) => { setArea(v); setDisciplina("Todas"); setTema("Todos"); }}>
-              <SelectTrigger><SelectValue placeholder="Área" /></SelectTrigger>
-              <SelectContent>
-                {AREAS && AREAS.length > 0 ? (
-                  AREAS.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)
-                ) : (
-                  <SelectItem value="Todas">Todas</SelectItem>
-                )}
-              </SelectContent>
-            </Select>
-            <Select key={`disciplina-${disciplinas.length}`} value={disciplina} onValueChange={(v) => { setDisciplina(v); setTema("Todos"); }}>
-              <SelectTrigger><SelectValue placeholder="Disciplina" /></SelectTrigger>
-              <SelectContent>
-                {disciplinas && disciplinas.length > 0 ? (
-                  disciplinas.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)
-                ) : (
-                  <SelectItem value="Todas">Todas</SelectItem>
-                )}
-              </SelectContent>
-            </Select>
-            <Select key={`tema-${temas.length}`} value={tema} onValueChange={setTema}>
-              <SelectTrigger><SelectValue placeholder="Tema" /></SelectTrigger>
-              <SelectContent className="max-h-72">
-                <SelectItem value="Todos">Todos os Temas</SelectItem>
-                {temas && temas.length > 0 ? (
-                  temas.filter(t => t !== "Todos").map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)
-                ) : null}
-              </SelectContent>
-            </Select>
+            <div className="relative group">
+              <Select key={`ano-${anos.length}`} value={ano} onValueChange={setAno}>
+                <SelectTrigger className="pr-8"><SelectValue placeholder="Ano" /></SelectTrigger>
+                <SelectContent>
+                  {anos && anos.length > 0 ? (
+                    anos.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)
+                  ) : (
+                    <SelectItem value="Todos">Todos</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+              {ano !== "Todos" && (
+                <button 
+                  onClick={() => setAno("Todos")}
+                  className="absolute right-8 top-1/2 -translate-y-1/2 p-1 hover:text-destructive transition-colors z-20"
+                  title="Limpar filtro"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            <div className="relative group">
+              <Select key={`area-${AREAS.length}`} value={area} onValueChange={(v) => { setArea(v); setDisciplina("Todas"); setTema("Todos"); }}>
+                <SelectTrigger className="pr-8"><SelectValue placeholder="Área" /></SelectTrigger>
+                <SelectContent>
+                  {AREAS && AREAS.length > 0 ? (
+                    AREAS.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)
+                  ) : (
+                    <SelectItem value="Todas">Todas</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+              {area !== "Todas" && (
+                <button 
+                  onClick={() => { setArea("Todas"); setDisciplina("Todas"); setTema("Todos"); }}
+                  className="absolute right-8 top-1/2 -translate-y-1/2 p-1 hover:text-destructive transition-colors z-20"
+                  title="Limpar filtro"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            <div className="relative group">
+              <Select key={`disciplina-${disciplinas.length}`} value={disciplina} onValueChange={(v) => { setDisciplina(v); setTema("Todos"); }}>
+                <SelectTrigger className="pr-8"><SelectValue placeholder="Disciplina" /></SelectTrigger>
+                <SelectContent>
+                  {disciplinas && disciplinas.length > 0 ? (
+                    disciplinas.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)
+                  ) : (
+                    <SelectItem value="Todas">Todas</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+              {disciplina !== "Todas" && (
+                <button 
+                  onClick={() => { setDisciplina("Todas"); setTema("Todos"); }}
+                  className="absolute right-8 top-1/2 -translate-y-1/2 p-1 hover:text-destructive transition-colors z-20"
+                  title="Limpar filtro"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            <div className="relative group">
+              <Select key={`tema-${temas.length}`} value={tema} onValueChange={setTema}>
+                <SelectTrigger className="pr-8"><SelectValue placeholder="Tema" /></SelectTrigger>
+                <SelectContent className="max-h-72">
+                  <SelectItem value="Todos">Todos os Temas</SelectItem>
+                  {temas && temas.length > 0 ? (
+                    temas.filter(t => t !== "Todos").map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)
+                  ) : null}
+                </SelectContent>
+              </Select>
+              {tema !== "Todos" && (
+                <button 
+                  onClick={() => setTema("Todos")}
+                  className="absolute right-8 top-1/2 -translate-y-1/2 p-1 hover:text-destructive transition-colors z-20"
+                  title="Limpar filtro"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
           </div>
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
             <Filter className="w-3.5 h-3.5" />
@@ -978,8 +1026,24 @@ export default function BancoQuestoes() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-            {filtered.slice(0, 200).map((q) => {
+            {filtered.length === 0 ? (
+              <div className="col-span-full py-16 text-center space-y-4">
+                <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+                  <Filter className="w-8 h-8 text-muted-foreground/50" />
+                </div>
+                <h3 className="text-lg font-semibold">Nenhuma questão encontrada</h3>
+                <p className="text-muted-foreground max-w-sm mx-auto">Tente ajustar seus filtros ou a busca para encontrar o que procura.</p>
+                <Button variant="outline" onClick={() => {
+                  setAno("Todos");
+                  setArea("Todas");
+                  setDisciplina("Todas");
+                  setTema("Todos");
+                  setSearch("");
+                }}>Limpar todos os filtros</Button>
+              </div>
+            ) : filtered.slice(0, 200).map((q) => {
               const att = attempts[q.id];
+
               const hasImg = !!q.imagem_urls?.[0];
               const enunciado = cleanedById.get(q.id)?.preview ?? "";
               const stat = globalStats[q.id];
