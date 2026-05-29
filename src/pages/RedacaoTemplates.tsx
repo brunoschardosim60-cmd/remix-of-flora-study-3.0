@@ -1,0 +1,125 @@
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft, BookOpen, Copy, Check, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { useState } from "react";
+import { toast } from "sonner";
+import { BottomNav } from "@/components/BottomNav";
+
+const TEMPLATES = [
+  {
+    id: "esqueleto-1",
+    title: "Esqueleto Nota 1000 — Modelo Coringa",
+    description: "Ideal para qualquer tema de ordem social ou educacional.",
+    category: "Coringa",
+    content: `## Introdução
+Historicamente, o Brasil é um país marcado por [Citar um Contexto Histórico Relacionado]. Nesse sentido, o(a) [Tema da Redação] apresenta-se como um desafio que precisa ser superado. Esse cenário ocorre não apenas devido à [Causa 1], mas também em virtude da [Causa 2]. Dessa forma, é fundamental analisar esses fatores para mitigar esse impasse.
+
+## Desenvolvimento 1 (Causa 1)
+Em primeira análise, é importante destacar o papel da [Instituição ou Fator] na manutenção do problema. Segundo o filósofo [Citar Repertório], "frase do repertório". Sob essa ótica, percebe-se que a falta de medidas eficazes para combater o(a) [Tema] perpetua um ciclo de desigualdade. Assim, enquanto a [Causa 1] for negligenciada, o problema continuará a afetar a sociedade brasileira.
+
+## Desenvolvimento 2 (Causa 2)
+Ademais, a [Causa 2] também contribui para o agravamento da questão. De acordo com [Citar Outro Repertório], a sociedade tende a normalizar situações de injustiça quando elas se tornam recorrentes. Nesse contexto, a ausência de debate público sobre o(a) [Tema] impede que novas soluções surjam. Logo, urge que essa barreira seja rompida para garantir o bem-estar coletivo.
+
+## Conclusão
+Portanto, medidas são necessárias para resolver o impasse. Cabe ao Governo Federal, por meio do Ministério da [Ministério Correspondente], investir em [Ação Prática], com o objetivo de [Finalidade da Ação]. Tal iniciativa deve ser realizada por intermédio de [Meio/Modo]. Somente assim, será possível transformar a realidade do(a) [Tema] e garantir que os direitos fundamentais sejam respeitados.`
+  },
+  {
+    id: "esqueleto-2",
+    title: "Esqueleto Nota 1000 — Foco em Tecnologia e Meio Ambiente",
+    description: "Estrutura otimizada para temas que envolvem inovação, redes sociais ou ecologia.",
+    category: "Específico",
+    content: `## Introdução
+Na obra "Utopia", de Thomas More, é descrita uma sociedade perfeita, onde o bem comum é a prioridade. No entanto, ao analisar a realidade contemporânea brasileira, percebe-se que o(a) [Tema da Redação] distancia o país desse ideal. Isso ocorre devido ao descaso governamental e à negligência social. Nesse contexto, deve-se avaliar como esses entraves impedem o progresso nacional.
+
+## Desenvolvimento 1
+Em um primeiro plano, a insuficiência legislativa é um fator determinante. Conforme o pensamento de [Citar Repertório], a lei deve ser um instrumento de proteção, e não apenas de punição. Contudo, no que tange ao(à) [Tema], nota-se que as normas vigentes são falhas ou insuficientemente aplicadas. Como consequência, a problemática se intensifica, gerando prejuízos para toda a coletividade.
+
+## Desenvolvimento 2
+Além disso, a passividade da sociedade civil reforça o cenário negativo. Segundo Zygmunt Bauman, vivemos em uma "modernidade líquida", onde as relações e os problemas sociais são tratados de forma superficial. No caso do(a) [Tema], essa superficialidade impede uma conscientização real sobre a gravidade do assunto. Dessa maneira, a mudança estrutural torna-se cada vez mais distante.
+
+## Conclusão
+Em suma, é imprescindível que ações sejam tomadas. O Ministério da Educação, em parceria com a mídia, deve promover campanhas de conscientização sobre o(a) [Tema], por meio de debates e materiais informativos, a fim de educar a população sobre seus direitos e deveres. Paralelamente, o Poder Legislativo deve endurecer as penas para quem descumpre as leis ambientais/tecnológicas. Assim, o Brasil poderá se aproximar da utopia de More.`
+  }
+];
+
+export default function RedacaoTemplates() {
+  const navigate = useNavigate();
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const copyToClipboard = (id: string, content: string) => {
+    navigator.clipboard.writeText(content);
+    setCopiedId(id);
+    toast.success("Copiado para a área de transferência!");
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  return (
+    <div className="min-h-dvh bg-background pb-20 md:pb-6">
+      <div className="border-b border-border bg-card sticky top-0 z-10 shadow-sm">
+        <div className="container max-w-5xl mx-auto px-3 sm:px-4 py-3 flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+            <BookOpen className="w-5 h-5 text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-lg font-semibold leading-tight">Templates Nota 1000</h1>
+            <p className="text-xs text-muted-foreground">Esqueletos prontos para te ajudar a destravar</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="container max-w-5xl mx-auto px-3 sm:px-4 py-6 space-y-6">
+        <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 flex items-start gap-4">
+          <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
+            <Sparkles className="w-5 h-5 text-primary" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-primary mb-1">Como usar os templates?</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Estes esqueletos são estruturas lógicas que já garantem os pontos de coesão e estrutura. 
+              Substitua os termos entre colchetes <strong>[ ]</strong> pelos argumentos do tema que você escolheu.
+              Pratique encaixando diferentes temas no mesmo esqueleto para ganhar velocidade!
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-6">
+          {TEMPLATES.map((t) => (
+            <Card key={t.id} className="overflow-hidden border-2 hover:border-primary/30 transition-colors">
+              <div className="p-5 space-y-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <h2 className="font-bold text-lg">{t.title}</h2>
+                      <Badge variant="secondary" className="text-[10px] h-5">{t.category}</Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground">{t.description}</p>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => copyToClipboard(t.id, t.content)}
+                    className="shrink-0 rounded-xl gap-1.5"
+                  >
+                    {copiedId === t.id ? <Check size={14} /> : <Copy size={14} />}
+                    {copiedId === t.id ? "Copiado" : "Copiar tudo"}
+                  </Button>
+                </div>
+
+                <div className="bg-muted/50 rounded-xl p-4 font-mono text-[13px] leading-relaxed whitespace-pre-wrap border border-border/40 max-h-[400px] overflow-y-auto">
+                  {t.content}
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      </div>
+
+      <BottomNav />
+    </div>
+  );
+}
