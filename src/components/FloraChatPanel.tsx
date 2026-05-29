@@ -1,11 +1,12 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Send, X } from "lucide-react";
+import { Send, X, ChevronUp, ChevronDown } from "lucide-react";
 import { FloraQuotaIndicator } from "@/components/FloraQuotaIndicator";
 import { FloraIcon } from "@/components/FloraIcon";
 import ReactMarkdown from "react-markdown";
 import { getSuggestionChips } from "@/lib/floraChat";
 import { useFloraChatStream } from "@/hooks/useFloraChatStream";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface FloraChat {
   isOpen: boolean;
@@ -16,6 +17,12 @@ interface FloraChat {
 export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
   const { messages, input, setInput, isSending, objetivo, send } = useFloraChatStream({ isOpen, onClose });
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [page, setPage] = useState(1);
+  const MESSAGES_PER_PAGE = 30;
+
+  const paginatedMessages = messages.slice(-MESSAGES_PER_PAGE * page);
+  const hasMore = messages.length > paginatedMessages.length;
 
   // Pré-preenche input quando abre com mensagem inicial
   useEffect(() => {
@@ -32,19 +39,36 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
   const chips = getSuggestionChips(objetivo);
 
   return (
-    <div className="fixed bottom-0 right-0 w-full h-[80vh] sm:bottom-20 sm:right-4 sm:w-[380px] sm:h-[500px] sm:max-w-[calc(100vw-2rem)] sm:max-h-[calc(100vh-6rem)] z-50 sm:rounded-2xl rounded-t-2xl border border-border bg-card shadow-2xl flex flex-col overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center gap-2 p-4 border-b border-border bg-primary/5">
-        <FloraIcon className="w-6 h-6 text-primary" />
-        <div className="flex-1 min-w-0">
-          <p className="font-heading font-semibold text-sm">Flora</p>
-          <p className="text-xs text-muted-foreground">Sua professora parceira</p>
+    <AnimatePresence>
+      <motion.div
+        initial={{ y: "100%", opacity: 0 }}
+        animate={isMinimized ? { y: "calc(100% - 60px)", opacity: 1 } : { y: 0, opacity: 1 }}
+        exit={{ y: "100%", opacity: 0 }}
+        transition={{ type: "spring", damping: 25, stiffness: 300 }}
+        drag="y"
+        dragConstraints={{ top: 0, bottom: 0 }}
+        dragElastic={0.1}
+        onDragEnd={(_, info) => {
+          if (info.offset.y > 100) setIsMinimized(true);
+          else if (info.offset.y < -100) setIsMinimized(false);
+        }}
+        className="fixed bottom-0 right-0 w-full h-[85vh] sm:bottom-20 sm:right-4 sm:w-[400px] sm:h-[600px] sm:max-w-[calc(100vw-2rem)] sm:max-h-[calc(100vh-6rem)] z-50 sm:rounded-2xl rounded-t-2xl border border-border bg-card shadow-2xl flex flex-col overflow-hidden"
+      >
+        {/* Header - Draggable Area */}
+        <div className="flex items-center gap-2 p-4 border-b border-border bg-primary/5 cursor-grab active:cursor-grabbing">
+          <FloraIcon className="w-6 h-6 text-primary" />
+          <div className="flex-1 min-w-0" onClick={() => setIsMinimized(!isMinimized)}>
+            <p className="font-heading font-semibold text-sm">Flora</p>
+            <p className="text-xs text-muted-foreground">Sua professora parceira</p>
+          </div>
+          <FloraQuotaIndicator action="chat" />
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsMinimized(!isMinimized)}>
+            {isMinimized ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}>
+            <X className="w-4 h-4" />
+          </Button>
         </div>
-        <FloraQuotaIndicator action="chat" />
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}>
-          <X className="w-4 h-4" />
-        </Button>
-      </div>
 
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">
@@ -77,12 +101,23 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
           </div>
         )}
 
-        {messages.map((msg, i) => (
+        {hasMore && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full text-xs text-muted-foreground hover:text-primary"
+            onClick={() => setPage(p => p + 1)}
+          >
+            Carregar mensagens anteriores
+          </Button>
+        )}
+
+        {paginatedMessages.map((msg, i) => (
           <div key={i} className="animate-fade-in">
             <div className={`rounded-xl px-3 py-2 text-sm overflow-hidden break-words ${
               msg.role === "user"
-                ? "bg-primary text-primary-foreground ml-8"
-                : "bg-muted mr-8"
+                ? "bg-primary text-primary-foreground ml-8 shadow-sm"
+                : "bg-muted mr-8 shadow-xs border border-border/50"
             }`}>
               {msg.role === "assistant" ? (
                 <div className="prose prose-sm max-w-none dark:prose-invert [overflow-wrap:anywhere]">
@@ -96,7 +131,7 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
         ))}
 
         {isSending && messages[messages.length - 1]?.role === "user" && (
-          <div className="bg-muted rounded-xl px-3 py-3 mr-8 animate-fade-in">
+          <div className="bg-muted rounded-xl px-3 py-3 mr-8 animate-fade-in border border-border/50">
             <div className="flex items-center gap-1.5">
               <FloraIcon className="w-4 h-4 text-primary" />
               <span className="text-xs text-muted-foreground">Flora pensando</span>
@@ -111,7 +146,7 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
       </div>
 
       {/* Input */}
-      <div className="p-3 border-t border-border">
+      <div className="p-3 border-t border-border bg-background">
         <form onSubmit={(e) => { e.preventDefault(); send(); }} className="flex items-end gap-2">
           <textarea
             value={input}
@@ -124,16 +159,17 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
               if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
             }}
             placeholder={isSending ? "Flora pensando..." : "Fala comigo..."}
-            className="flex-1 text-sm resize-none rounded-md border border-input bg-background px-3 py-2 ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-default disabled:opacity-100"
+            className="flex-1 text-sm resize-none rounded-xl border border-input bg-background px-3 py-2 ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-default disabled:opacity-100"
             disabled={isSending}
             rows={1}
             style={{ minHeight: "38px", maxHeight: "120px" }}
           />
-          <Button type="submit" size="icon" className="shrink-0" disabled={!input.trim() || isSending}>
+          <Button type="submit" size="icon" className="shrink-0 rounded-xl" disabled={!input.trim() || isSending}>
             <Send className="w-4 h-4" />
           </Button>
         </form>
       </div>
-    </div>
+    </motion.div>
+    </AnimatePresence>
   );
 }

@@ -326,27 +326,42 @@ export default function Index() {
           </Suspense>
         </div>
 
-        <div className="space-y-4 sm:space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
-          {isWidgetVisible("gamification") && (
-            <Suspense fallback={<SectionSkeleton className="min-h-[120px]" />}>
-              <GamificationCard
-                streak={gamification.streak}
-                xp={gamification.xp}
-                level={gamification.level}
-                todayStudyMinutes={gamification.todayStudyMinutes}
-                todayRevisions={gamification.todayRevisions}
-                todayQuizCount={gamification.todayQuizCount}
-                goals={gamification.dailyGoals}
-              />
-            </Suspense>
-          )}
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 sm:gap-6 animate-in fade-in slide-in-from-top-4 duration-500">
+          <div className="xl:col-span-8 space-y-4 sm:space-y-6">
+            {isWidgetVisible("gamification") && (
+              <Suspense fallback={<SectionSkeleton className="min-h-[120px]" />}>
+                <GamificationCard
+                  streak={gamification.streak}
+                  xp={gamification.xp}
+                  level={gamification.level}
+                  todayStudyMinutes={gamification.todayStudyMinutes}
+                  todayRevisions={gamification.todayRevisions}
+                  todayQuizCount={gamification.todayQuizCount}
+                  goals={gamification.dailyGoals}
+                />
+              </Suspense>
+            )}
 
-          {isWidgetVisible("stats") && (
-            <Suspense fallback={<SectionSkeleton className="min-h-[80px]" />}>
-              <StatsCards {...stats} />
-            </Suspense>
-          )}
+            {isWidgetVisible("stats") && (
+              <Suspense fallback={<SectionSkeleton className="min-h-[80px]" />}>
+                <StatsCards {...stats} />
+              </Suspense>
+            )}
+          </div>
 
+          <div className="xl:col-span-4 space-y-4 sm:space-y-6">
+             <div className="rounded-2xl border border-border bg-card/50 p-4 space-y-4">
+                <h3 className="font-heading font-bold text-sm flex items-center gap-2">
+                   <Sparkles className="w-4 h-4 text-primary" /> Análise de Desempenho
+                </h3>
+                <Suspense fallback={<SectionSkeleton className="h-40" />}>
+                   {/* Placeholder para WeakSpots ou Heatmap que caibam aqui */}
+                   <div className="text-xs text-muted-foreground italic">Flora está analisando suas matérias mais fracas...</div>
+                </Suspense>
+             </div>
+          </div>
+        </div>
+        <div className="space-y-4 sm:space-y-6">
           {/* Painéis específicos de concurso */}
           {isConcurso && (
             <>

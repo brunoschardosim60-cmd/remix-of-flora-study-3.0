@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { BookOpen, NotebookPen, FileText, BarChart3, Sun, Moon, CircleDot, LogOut, Settings, Library } from "lucide-react";
+import { BookOpen, NotebookPen, FileText, BarChart3, Sun, Moon, CircleDot, LogOut, Settings, Library, User as UserIcon } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { CustomThemeDialog } from "@/components/CustomThemeDialog";
@@ -34,25 +34,9 @@ export function DashboardHeader({ user, bancoRoute, bancoLabel, onSignOut }: Pro
           <h1 className="font-heading font-bold text-lg sm:text-xl">StudyFlow</h1>
           <p className="text-xs text-muted-foreground hidden sm:block">Seu plano de estudos inteligente</p>
         </div>
+        <div className="flex-1 md:hidden" />
         <div className="hidden md:flex items-center gap-2">
-          <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate("/notebooks")} onMouseEnter={() => prefetchRoute("/notebooks")}>
-            <NotebookPen className="w-4 h-4" /> Cadernos
-          </Button>
-          {user && (
-            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate(bancoRoute)} onMouseEnter={() => prefetchRoute(bancoRoute)}>
-              <Library className="w-4 h-4" /> {bancoLabel}
-            </Button>
-          )}
-          {user && (
-            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate("/redacao")} onMouseEnter={() => prefetchRoute("/redacao")}>
-              <FileText className="w-4 h-4" /> Redação
-            </Button>
-          )}
-          {user && (
-            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate("/analise")} onMouseEnter={() => prefetchRoute("/analise")}>
-              <BarChart3 className="w-4 h-4" /> Análise
-            </Button>
-          )}
+           {/* Desktop links removidos para focar na Sidebar */}
         </div>
         <div className="flex items-center gap-1">
           <CustomThemeDialog />
@@ -60,14 +44,24 @@ export function DashboardHeader({ user, bancoRoute, bancoLabel, onSignOut }: Pro
             <ThemeIcon className="w-4 h-4" />
           </Button>
           {user && (
-            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => navigate("/settings")} aria-label="Configurações">
+            <Button variant="ghost" size="icon" className="h-9 w-9 md:hidden" onClick={() => navigate("/settings")} aria-label="Configurações">
               <Settings className="w-4 h-4" />
             </Button>
           )}
           {user && (
-            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={onSignOut}>
+            <Button variant="ghost" size="icon" className="h-9 w-9 md:hidden" onClick={onSignOut}>
               <LogOut className="w-4 h-4" />
             </Button>
+          )}
+          {user && (
+            <div className="hidden md:flex items-center gap-2 ml-2 pl-2 border-l border-border">
+              <Button variant="ghost" size="sm" className="gap-2 px-3 h-9" onClick={() => navigate("/settings")}>
+                <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
+                  <UserIcon className="w-3.5 h-3.5 text-primary" />
+                </div>
+                <span className="text-xs font-medium">Perfil</span>
+              </Button>
+            </div>
           )}
         </div>
       </div>

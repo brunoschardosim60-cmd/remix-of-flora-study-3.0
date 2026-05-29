@@ -1090,9 +1090,21 @@ export const InteractiveLessonPlayer: React.FC<Props> = ({
 
           {stage === "final" && (
             <div className="ilp-scene">
-              <div className="ilp-scene-head"><span className="ilp-block-tag">Revisão</span><h2 className="ilp-block-title">O essencial</h2></div>
-              {resumo.length > 0 && <ul className="ilp-resumo">{resumo.map((r, i) => <li key={i}><MD>{r}</MD></li>)}</ul>}
-              {lesson.exercicio_final && <ExerciseCard ex={lesson.exercicio_final} label="Questão final" tema={lesson.titulo}/>}
+              <div className="ilp-scene-head"><span className="ilp-block-tag">Revisão Obrigatória</span><h2 className="ilp-block-title">O essencial</h2></div>
+              <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 mb-4">
+                <p className="text-sm font-bold text-primary mb-2 uppercase tracking-wider flex items-center gap-2">
+                  <ListChecks size={16} /> Pontos-chave
+                </p>
+                <ul className="ilp-resumo">{resumo.map((r, i) => <li key={i} className="text-sm border-b border-primary/10 last:border-0 py-2"><MD>{r}</MD></li>)}</ul>
+              </div>
+              {lesson.exercicio_final && (
+                <div className="mt-6">
+                  <p className="text-sm font-bold mb-3 flex items-center gap-2">
+                    <Trophy size={16} className="text-yellow-500" /> Quiz Final Obrigatório
+                  </p>
+                  <ExerciseCard ex={lesson.exercicio_final} label="Desafio de Conclusão" tema={lesson.titulo}/>
+                </div>
+              )}
             </div>
           )}
 

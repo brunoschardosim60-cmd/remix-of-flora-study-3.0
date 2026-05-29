@@ -214,7 +214,16 @@ export default function Cursos() {
             <Loader2 className="animate-spin text-primary" />
           </div>
         ) : lessons.length === 0 ? (
-          <p className="text-center text-muted-foreground py-12">Nenhuma aula publicada ainda.</p>
+          <div className="flex flex-col items-center justify-center py-20 text-center space-y-4 animate-in fade-in duration-500">
+             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
+                <GraduationCap className="w-8 h-8 text-muted-foreground" />
+             </div>
+             <div>
+                <p className="text-lg font-semibold">Nenhum curso disponível ainda</p>
+                <p className="text-sm text-muted-foreground max-w-xs">A Flora está preparando as melhores aulas para o seu perfil. Volte em breve!</p>
+             </div>
+             <Button variant="outline" onClick={() => nav("/")}>Voltar ao Início</Button>
+          </div>
         ) : (
           Object.entries(grouped).map(([subject, items]) => (
             <section key={subject}>

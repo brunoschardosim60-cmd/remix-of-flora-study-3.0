@@ -10,21 +10,33 @@ export function isLocalDev() {
   return typeof window !== "undefined" && window.location.hostname === "127.0.0.1";
 }
 
+const ERROR_MAP: Record<string, string> = {
+  "User already registered": "Este e-mail já está cadastrado.",
+  "Email not confirmed": "E-mail não confirmado. Verifique sua caixa de entrada.",
+  "Invalid login credentials": "E-mail ou senha incorretos.",
+  "Invalid refresh token": "Sessão expirada. Por favor, faça login novamente.",
+  "Password is too short": "A senha deve ter pelo menos 6 caracteres.",
+  "New password should be different from the old password": "A nova senha deve ser diferente da atual.",
+  "Email link is invalid or has expired": "O link expirou ou é inválido.",
+  "Network request failed": "Erro de conexão. Verifique sua internet.",
+  "Signup is disabled": "O cadastro está temporariamente desativado.",
+};
+
 export function toErrorMessage(error: unknown, fallback = "Algo deu errado.") {
-  if (error instanceof Error && error.message) {
-    return error.message;
+  const rawMessage = (() => {
+    if (error instanceof Error && error.message) return error.message;
+    if (typeof error === "string") return error;
+    const maybeError = error as { message?: unknown };
+    if (maybeError?.message && typeof maybeError.message === "string") return maybeError.message;
+    return fallback;
+  })();
+
+  // Tradução de erros comuns
+  for (const [en, pt] of Object.entries(ERROR_MAP)) {
+    if (rawMessage.includes(en)) return pt;
   }
 
-  if (typeof error === "string") {
-    return error;
-  }
-
-  const maybeError = error as { message?: unknown };
-  if (maybeError?.message && typeof maybeError.message === "string") {
-    return maybeError.message;
-  }
-
-  return fallback;
+  return rawMessage;
 }
 
 export async function getFriendlyErrorMessage(error: unknown, fallback = "Algo deu errado.") {
