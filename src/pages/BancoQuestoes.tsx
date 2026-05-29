@@ -612,6 +612,7 @@ export default function BancoQuestoes() {
   }
 
   async function explainWithFlora(q: Question) {
+    if (!q) return;
     setExplaining(true);
     setExplanation("");
     const altMarcada = revealed[q.id] || attempts[q.id]?.alternativa_marcada || "";
@@ -626,7 +627,11 @@ export default function BancoQuestoes() {
       const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/explain-question`;
       const { data: { session } } = await supabase.auth.getSession();
       const accessToken = session?.access_token;
-      if (!accessToken) { toast.error("Faça login para usar a Flora"); setExplaining(false); return; }
+      if (!accessToken) { 
+        toast.error("Faça login para usar a Flora"); 
+        setExplaining(false); 
+        return; 
+      }
       const resp = await fetch(url, {
         method: "POST",
         headers: {
@@ -634,11 +639,36 @@ export default function BancoQuestoes() {
           Authorization: `Bearer ${accessToken}`,
           apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         },
-        body: JSON.stringify({ enunciado: q.enunciado, alternativaMarcada: altMarcada, correta: q.correta, ano: q.ano, numero: q.numero, disciplina: q.disciplina, tema: q.tema }),
+        body: JSON.stringify({ 
+          enunciado: q.enunciado, 
+          alternativaMarcada: altMarcada, 
+          correta: q.correta, 
+          ano: q.ano, 
+          numero: q.numero, 
+          disciplina: q.disciplina, 
+          tema: q.tema 
+        }),
       });
-      if (resp.status === 429) { toast.error("Muitas requisições. Aguarde."); setExplaining(false); return; }
-      if (resp.status === 402) { toast.error("Créditos da IA esgotados."); setExplaining(false); return; }
-      if (!resp.ok || !resp.body) { toast.error("Erro ao gerar explicação"); setExplaining(false); return; }
+
+      if (resp.status === 429) { 
+        toast.error("Muitas requisições. Aguarde."); 
+        setExplaining(false); 
+        return; 
+      }
+      if (resp.status === 402) { 
+        toast.error("Créditos da IA esgotados."); 
+        setExplaining(false); 
+        return; 
+      }
+      if (!resp.ok) {
+        throw new Error(`HTTP error! status: ${resp.status}`);
+      }
+      if (!resp.body) { 
+        toast.error("Erro ao gerar explicação"); 
+        setExplaining(false); 
+        return; 
+      }
+
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
@@ -655,12 +685,21 @@ export default function BancoQuestoes() {
           if (line.endsWith("\r")) line = line.slice(0, -1);
           if (!line.startsWith("data: ")) continue;
           const json = line.slice(6).trim();
-          if (json === "[DONE]") { done = true; break; }
+          if (json === "[DONE]") { 
+            done = true; 
+            break; 
+          }
           try {
             const parsed = JSON.parse(json);
             const c = parsed.choices?.[0]?.delta?.content;
-            if (c) { acc += c; setExplanation((prev) => prev + c); }
-          } catch { buffer = line + "\n" + buffer; break; }
+            if (c) { 
+              acc += c; 
+              setExplanation((prev) => prev + c); 
+            }
+          } catch (err) { 
+            console.error("Erro ao processar chunk:", err);
+            // Tenta manter o buffer se for erro de parse parcial
+          }
         }
       }
       // Persiste no cache local após o stream
