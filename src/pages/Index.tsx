@@ -20,6 +20,7 @@ import { useDashboardBootstrap } from "@/hooks/useDashboardBootstrap";
 import { useStudentObjetivo } from "@/hooks/useStudentObjetivo";
 import { useDashboardHeroData } from "@/hooks/useDashboardHeroData";
 import { useDashboardPrimaryAction } from "@/hooks/useDashboardPrimaryAction";
+import { usePresence } from "@/hooks/usePresence";
 import { loadStringStorage } from "@/lib/storage";
 import { Loader2 as Loader2Icon } from "lucide-react";
 import { loadAIActivities } from "@/lib/aiActivityStore";
@@ -175,6 +176,7 @@ export default function Index() {
   });
 
   const { firstName, dailyGoals } = useDashboardHeroData(user, profile, gamification);
+  const { minutesAway, timeOfDay } = usePresence();
 
   const handleNotesDialogUpdate = useCallback((topicId: string, notas: string) => {
     handleUpdateNotes(topicId, notas);
@@ -259,6 +261,8 @@ export default function Index() {
             comebackMode={momentum.comebackMode}
             onPrimaryAction={handlePrimaryAction}
             primaryLabel={primaryLabel}
+            timeOfDay={timeOfDay}
+            minutesAway={minutesAway}
           />
 
         </div>
