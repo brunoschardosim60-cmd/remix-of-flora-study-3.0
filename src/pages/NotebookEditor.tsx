@@ -1618,7 +1618,7 @@ export default function NotebookEditor() {
             open={floraOpen}
             onClose={() => setFloraOpen(false)}
             linkedTopicTitle={notebook?.title}
-            summary={aiSummary}
+            summary={currentSummary}
             activities={aiActivities}
             generatingStudy={generatingStudy}
             onGenerateSummary={handleGenerateSummaryFromPage}
