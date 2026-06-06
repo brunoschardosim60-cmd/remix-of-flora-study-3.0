@@ -59,8 +59,10 @@ interface MathSuggestion {
   confidence?: number;
 }
 
-import { DrawingToolbar } from "@/components/notebook/DrawingToolbar";
-import { PageThumbnails } from "@/components/notebook/PageThumbnails";
+import { SamsungStyleToolbar } from "@/components/notebook/SamsungStyleToolbar";
+import { PageSidebarGrid } from "@/components/notebook/PageSidebarGrid";
+import { FloraNotebookSidebar } from "@/components/notebook/FloraNotebookSidebar";
+import "@/components/notebook/notebook-premium.css";
 import { ShareNotebookDialog } from "@/components/notebook/ShareNotebookDialog";
 import { StickyNote, type StickyNoteData } from "@/components/notebook/StickyNote";
 import { FocusMode } from "@/components/notebook/FocusMode";
@@ -279,6 +281,7 @@ export default function NotebookEditor() {
   const [zoom, setZoom] = useState(1);
   const editorContainerRef = useRef<HTMLDivElement>(null);
   const [drawTool, setDrawTool] = useState<"pen" | "marker" | "eraser" | "select" | "line" | "rect" | "circle">("pen");
+  const [floraOpen, setFloraOpen] = useState(false);
   const [selectionBounds, setSelectionBounds] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
   const [penColor, setPenColor] = useState("#000000");
   const [penWidth, setPenWidth] = useState(2);
@@ -1468,36 +1471,35 @@ export default function NotebookEditor() {
         </div>
       </header>
 
-      {/* Drawing toolbar - auto-hide in fullscreen */}
-      {mode === "draw" && (
-        <div className={`transition-transform duration-300 ${expandedEditor ? "group/toolbar hover:translate-y-0 -translate-y-full absolute top-0 left-0 right-0 z-50" : ""}`}>
-          <DrawingToolbar
-            tool={drawTool}
-            onToolChange={setDrawTool}
-            penColor={penColor}
-            onColorChange={setPenColor}
-            penWidth={penWidth}
-            onWidthChange={setPenWidth}
-            onClear={() => updateDrawingState({ ...drawingState, strokes: [], stickyNotes: [], mathSuggestions: [] })}
-            onUndo={() => {
-              const lastStroke = drawingState.strokes[drawingState.strokes.length - 1];
-              if (lastStroke) {
-                updateDrawingState({ ...drawingState, strokes: drawingState.strokes.slice(0, -1) });
-              }
-            }}
-            onAddSticky={(color) => handleStickyNotesChange([
-              ...drawingState.stickyNotes,
-              { id: crypto.randomUUID(), x: 80, y: 80, width: 180, height: 140, text: "", color },
-            ])}
-            onSolveSelection={handleSolveSelection}
-            autoSolveEnabled={autoSolveEnabled}
-            onToggleAutoSolve={setAutoSolveEnabled}
-            solvingMath={solvingMath}
-            hasSelection={!!selectionBounds}
-            mathStatus={mathStatus}
-          />
-        </div>
-      )}
+      <SamsungStyleToolbar
+        mode={mode}
+        onModeChange={setMode}
+        drawTool={drawTool}
+        onDrawToolChange={setDrawTool}
+        penColor={penColor}
+        onColorChange={setPenColor}
+        penWidth={penWidth}
+        onWidthChange={setPenWidth}
+        onClear={() => updateDrawingState({ ...drawingState, strokes: [], stickyNotes: [], mathSuggestions: [] })}
+        onUndo={() => {
+          const lastStroke = drawingState.strokes[drawingState.strokes.length - 1];
+          if (lastStroke) {
+            updateDrawingState({ ...drawingState, strokes: drawingState.strokes.slice(0, -1) });
+          }
+        }}
+        onAddSticky={(color) => handleStickyNotesChange([
+          ...drawingState.stickyNotes,
+          { id: crypto.randomUUID(), x: 80, y: 80, width: 180, height: 140, text: "", color },
+        ])}
+        onToggleFlora={() => setFloraOpen(!floraOpen)}
+        floraOpen={floraOpen}
+        onSolveSelection={handleSolveSelection}
+        autoSolveEnabled={autoSolveEnabled}
+        onToggleAutoSolve={setAutoSolveEnabled}
+        solvingMath={solvingMath}
+        hasSelection={!!selectionBounds}
+        mathStatus={mathStatus}
+      />
 
       <ShareNotebookDialog
         open={shareDialogOpen}
@@ -1556,10 +1558,9 @@ export default function NotebookEditor() {
           </div>
         </FocusMode>
       ) : (
-        <div className="flex flex-1 overflow-hidden">
-          {/* Miniaturas de páginas — sidebar lateral */}
+        <div className="nb-layout">
           {!expandedEditor && (
-            <PageThumbnails
+            <PageSidebarGrid
               pages={pages}
               currentPage={currentPage}
               onSelectPage={setCurrentPage}
@@ -1570,7 +1571,7 @@ export default function NotebookEditor() {
 
           <div
             ref={editorContainerRef}
-            className={`flex-1 overflow-auto ${expandedEditor ? "w-full h-full" : "px-2 sm:px-4 py-3 sm:py-4"}`}
+            className={`nb-paper-area ${expandedEditor ? "w-full h-full" : ""}`}
           >
             <div className="relative min-h-full">
               <RichEditor
@@ -1612,6 +1613,20 @@ export default function NotebookEditor() {
 
             </div>
           </div>
+          
+          <FloraNotebookSidebar
+            open={floraOpen}
+            onClose={() => setFloraOpen(false)}
+            linkedTopicTitle={notebook?.title}
+            summary={currentSummary}
+            activities={aiActivities}
+            generatingStudy={generatingStudy}
+            onGenerateSummary={handleGenerateSummaryFromPage}
+            onGenerateFlashcards={handleGenerateFlashcardsFromPage}
+            onGenerateQuiz={() => setQuizDialogOpen(true)}
+            onCreateTopic={handleCreateTopicFromPage}
+            onSyncSummary={handleSyncSummaryToTopic}
+          />
         </div>
       )}
 
