@@ -255,7 +255,7 @@
 .nb-paper-area {
   flex: 1;
   overflow: auto;
-  padding: 24px 16px;
+  padding: 16px 8px;
   display: flex;
   justify-content: center;
   align-items: flex-start;
@@ -264,7 +264,7 @@
 .nb-paper {
   position: relative;
   width: 100%;
-  max-width: 800px;
+  max-width: 1180px;
   min-height: 85vh;
   background: var(--nb-paper-bg);
   border-radius: var(--nb-paper-radius);

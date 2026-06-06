@@ -103,15 +103,16 @@ export function RichEditor({ content, onChange, userId, notebookId, darkMode, on
           LaTeX & Diagramas
         </Button>
       </div>
-      <div className="flex-1 overflow-auto py-4 sm:py-6 px-2 sm:px-4">
+      <div className="flex-1 overflow-auto py-4 sm:py-6 px-2 sm:px-3">
         <div
-          className={`relative mx-auto ${wide ? "max-w-[1100px]" : "max-w-[800px]"} rounded-2xl transition-shadow duration-300 animate-fade-in ${
+          className={`relative mx-auto w-full ${wide ? "max-w-[1400px]" : "max-w-[1180px]"} rounded-2xl transition-shadow duration-300 animate-fade-in ${
             darkMode
               ? "bg-gray-900 shadow-[0_8px_30px_rgba(0,0,0,0.5)] [&_.ProseMirror]:text-gray-100 [&_.ProseMirror_h1]:text-gray-50 [&_.ProseMirror_h2]:text-gray-50 [&_.ProseMirror_h3]:text-gray-50"
               : "bg-white shadow-[0_4px_24px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.08)]"
           } ${TEMPLATE_CLASS[template] || ""}`}
           style={{
-            padding: "40px",
+            padding: "56px 64px",
+            minHeight: "85vh",
             transform: `scale(${zoom})`,
             transformOrigin: "top center",
           }}
