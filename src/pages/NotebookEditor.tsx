@@ -1573,7 +1573,7 @@ export default function NotebookEditor() {
             ref={editorContainerRef}
             className={`nb-paper-area ${expandedEditor ? "w-full h-full" : ""}`}
           >
-            <div className="relative min-h-full">
+            <div className="relative min-h-full w-full flex-1">
               <RichEditor
                 content={page?.content || ""}
                 onChange={handleContentChange}
