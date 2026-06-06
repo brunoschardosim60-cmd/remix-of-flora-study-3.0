@@ -24,11 +24,19 @@ interface DashboardHeroProps {
   comebackMode: boolean;
   onPrimaryAction: () => void;
   primaryLabel: string;
+  timeOfDay?: "morning" | "afternoon" | "evening" | "night";
+  minutesAway?: number;
 }
 
-function greetingLabel(firstName: string | undefined, isLoggedIn: boolean) {
+function greetingLabel(firstName: string | undefined, isLoggedIn: boolean, timeOfDay?: string, minutesAway?: number) {
   if (!isLoggedIn) return "Pronto para estudar?";
-  return firstName ? `Bom te ver, ${firstName}` : "Bom te ver";
+  
+  let greeting = "Bom te ver";
+  if (timeOfDay === "morning") greeting = "Bom dia";
+  if (timeOfDay === "afternoon") greeting = "Boa tarde";
+  if (timeOfDay === "evening" || timeOfDay === "night") greeting = "Boa noite";
+
+  return firstName ? `${greeting}, ${firstName}` : greeting;
 }
 
 export function DashboardHero({
@@ -44,6 +52,8 @@ export function DashboardHero({
   comebackMode,
   onPrimaryAction,
   primaryLabel,
+  timeOfDay,
+  minutesAway,
 }: DashboardHeroProps) {
   return (
     <section className="relative overflow-hidden rounded-[28px] border border-border/60 bg-gradient-to-br from-primary/12 via-card to-accent/10 p-5 sm:p-7">
@@ -52,10 +62,10 @@ export function DashboardHero({
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="space-y-3 max-w-2xl">
             <Badge variant="secondary" className="w-fit">
-              Ritmo em dia
+              {minutesAway !== undefined && minutesAway > 120 ? "Sentimos sua falta" : (minutesAway !== undefined && minutesAway > 30 ? "Bem-vindo de volta" : "Ritmo em dia")}
             </Badge>
             <div className="space-y-1">
-              <h2 className="font-heading text-2xl font-bold sm:text-3xl">{greetingLabel(firstName, isLoggedIn)}</h2>
+              <h2 className="font-heading text-2xl font-bold sm:text-3xl">{greetingLabel(firstName, isLoggedIn, timeOfDay, minutesAway)}</h2>
               <p className="text-sm text-muted-foreground sm:text-base">
                 {isLoggedIn
                   ? "Hoje está tudo organizado para você seguir sem pensar demais no próximo passo."
