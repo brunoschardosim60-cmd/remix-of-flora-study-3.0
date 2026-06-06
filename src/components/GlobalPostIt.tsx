@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { useLocation } from "react-router-dom";
 import { ExternalLink, Plus, X, GripHorizontal } from "lucide-react";
 import { useGlobalPostIt, type GlobalPostItNote } from "@/hooks/useGlobalPostIt";
 
@@ -188,6 +189,9 @@ function DraggableNote({
 export function GlobalPostIt() {
   const { notes, updateNote, addNote, removeNote, openInPiP, isPipActive, pipWindow } = useGlobalPostIt();
   const [hasPipSupport, setHasPipSupport] = useState(false);
+  const location = useLocation();
+  // Only show launcher + on-page notes on notebook routes. PiP (once open) keeps working everywhere.
+  const isNotebookRoute = location.pathname.startsWith("/notebooks");
 
   useEffect(() => {
     setHasPipSupport("documentPictureInPicture" in window);
@@ -224,6 +228,9 @@ export function GlobalPostIt() {
     );
   }
 
+  // Outside notebook routes: render nothing on screen (PiP would have its own window).
+  if (!isNotebookRoute) return null;
+
   // Render on the main screen (fallback or normal usage before PiP)
   return (
     <>
@@ -238,21 +245,21 @@ export function GlobalPostIt() {
       ))}
 
       {/* Floating launcher button if PiP is supported, otherwise just a way to add notes */}
-      <div style={{ position: "fixed", bottom: 24, left: 24, zIndex: 9998, display: "flex", gap: 8 }}>
+      <div style={{ position: "fixed", bottom: 24, right: 24, zIndex: 9998, display: "flex", gap: 8, opacity: 0.85 }}>
         <button
           onClick={addNote}
-          className="w-10 h-10 rounded-full bg-yellow-200 text-yellow-800 shadow-md flex items-center justify-center hover:bg-yellow-300 transition-colors border border-yellow-300"
+          className="w-9 h-9 rounded-full bg-yellow-200 text-yellow-800 shadow-md flex items-center justify-center hover:bg-yellow-300 transition-colors border border-yellow-300"
           title="Nova nota rápida"
         >
-          <Plus size={20} />
+          <Plus size={18} />
         </button>
         {hasPipSupport && (
           <button
             onClick={openInPiP}
-            className="w-10 h-10 rounded-full bg-background border border-border text-foreground shadow-md flex items-center justify-center hover:bg-muted transition-colors"
+            className="w-9 h-9 rounded-full bg-background border border-border text-foreground shadow-md flex items-center justify-center hover:bg-muted transition-colors"
             title="Abrir nota flutuante (Picture-in-Picture)"
           >
-            <ExternalLink size={18} />
+            <ExternalLink size={16} />
           </button>
         )}
       </div>
