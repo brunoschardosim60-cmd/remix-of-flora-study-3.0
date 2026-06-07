@@ -634,7 +634,17 @@ export default function NotebookEditor() {
 
   const handleSolveSelection = useCallback(async () => {
     if (!selectionBounds) {
-      toast.info("Selecione uma região primeiro (ferramenta de seleção).");
+      // Sem seleção: tenta resolver pelo texto da página (texto digitado).
+      const text = (page?.content || "")
+        .replace(/<[^>]*>/g, " ")
+        .replace(/&nbsp;/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+      if (!text) {
+        toast.info("Selecione uma região ou escreva uma expressão na página.");
+        return;
+      }
+      void solveTextWithFlora(text);
       return;
     }
     if (solvingMathRef.current) return;
@@ -644,7 +654,30 @@ export default function NotebookEditor() {
     setMathStatus("processing");
     try {
       const imageData = canvasRef.current?.getImageData(selectionBounds);
-      if (!imageData) {
+      // Conta strokes dentro da seleção: se vazio, vai para fallback de texto.
+      const insideStrokes = drawingState.strokes.filter((stroke) => {
+        const b = getStrokeBounds(stroke);
+        if (!b) return false;
+        const cx = b.x + b.width / 2;
+        const cy = b.y + b.height / 2;
+        return (
+          cx >= selectionBounds.x &&
+          cx <= selectionBounds.x + selectionBounds.width &&
+          cy >= selectionBounds.y &&
+          cy <= selectionBounds.y + selectionBounds.height
+        );
+      });
+
+      if (!imageData || insideStrokes.length === 0) {
+        const text = (page?.content || "")
+          .replace(/<[^>]*>/g, " ")
+          .replace(/&nbsp;/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+        if (text) {
+          await solveTextWithFlora(text);
+          return;
+        }
         toast.error("Não foi possível recortar a região.");
         return;
       }
@@ -662,8 +695,18 @@ export default function NotebookEditor() {
         applySolutions(data.solutions, drawingState.strokes);
         toast.success("Região resolvida.");
       } else {
-        setMathStatus("idle");
-        toast.info("Não consegui identificar uma expressão na região.");
+        // Sem solução pela imagem → tenta pelo texto da página
+        const text = (page?.content || "")
+          .replace(/<[^>]*>/g, " ")
+          .replace(/&nbsp;/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+        if (text) {
+          await solveTextWithFlora(text);
+        } else {
+          setMathStatus("idle");
+          toast.info("Não consegui identificar uma expressão na região.");
+        }
       }
     } catch (error) {
       console.error("Solve selection error:", error);
@@ -675,7 +718,9 @@ export default function NotebookEditor() {
       canvasRef.current?.clearSelection?.();
       setSelectionBounds(null);
     }
-  }, [applySolutions, drawingState.strokes, selectionBounds]);
+    // solveTextWithFlora é estável (definido abaixo via useCallback)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [applySolutions, drawingState.strokes, selectionBounds, page?.content]);
 
 
   const confidenceLabel = (value: number | undefined) => {
