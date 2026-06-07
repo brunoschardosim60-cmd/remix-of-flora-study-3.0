@@ -423,7 +423,7 @@
   position: fixed;
   bottom: 20px;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translateX(-50%) translateY(calc(100% + 12px));
   display: flex;
   align-items: center;
   gap: 4px;
@@ -435,7 +435,56 @@
   border-radius: var(--nb-toolbar-radius);
   box-shadow: var(--nb-toolbar-shadow);
   z-index: 55;
-  animation: nb-toolbar-appear 0.35s var(--nb-transition-spring) backwards;
+  transition: transform 0.3s var(--nb-transition-spring);
+  opacity: 0.95;
+}
+
+/* Hover area to reveal floating toolbar */
+.nb-floating-toolbar::before {
+  content: "";
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 22px;
+  pointer-events: auto;
+}
+
+.nb-floating-toolbar:hover,
+.nb-floating-toolbar:focus-within {
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Reveal when mouse is near bottom of viewport */
+body:has(.nb-floating-toolbar):hover .nb-floating-toolbar {
+  /* keep default; actual reveal handled via hover on ::before strip */
+}
+
+/* Always show a peek tab so user knows it's there */
+.nb-floating-toolbar {
+  /* override: small peek visible */
+  transform: translateX(-50%) translateY(calc(100% - 14px));
+}
+
+/* ── Auto-hide top header (peek on hover) ── */
+.nb-peek-top {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+.nb-peek-top .nb-peek-trigger {
+  height: 6px;
+  width: 100%;
+  background: linear-gradient(to bottom, hsl(var(--primary) / 0.25), transparent);
+}
+.nb-peek-top .nb-peek-content {
+  transform: translateY(-100%);
+  transition: transform 0.28s var(--nb-transition-spring);
+  will-change: transform;
+}
+.nb-peek-top:hover .nb-peek-content,
+.nb-peek-top:focus-within .nb-peek-content {
+  transform: translateY(0);
 }
 
 .nb-toolbar-group {
