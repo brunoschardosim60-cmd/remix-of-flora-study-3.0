@@ -1392,7 +1392,7 @@ export default function NotebookEditor() {
                   {generatingStudy === "flashcards" && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                   Gerar Flashcards
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setQuizDialogOpen(true)} disabled={generatingStudy !== "none"}>
+                <DropdownMenuItem onClick={handleGenerateQuizFromPage} disabled={generatingStudy !== "none"}>
                   {generatingStudy === "quiz" && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                   Gerar Quiz
                 </DropdownMenuItem>
