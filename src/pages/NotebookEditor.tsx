@@ -485,6 +485,32 @@ export default function NotebookEditor() {
     loadNotebook();
   }, [id, navigate]);
 
+  // Auto-create the first page when a notebook has none yet.
+  useEffect(() => {
+    if (loading) return;
+    if (!id || !user?.id) return;
+    if (pages.length > 0) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("notebook_pages")
+        .insert({
+          notebook_id: id,
+          user_id: user.id,
+          page_number: 1,
+          content: "",
+          drawing_data: drawingToJson(emptyDrawing),
+        })
+        .select()
+        .single();
+      if (!cancelled && data) {
+        setPages([rowToNotebookPage(data)]);
+        setCurrentPage(0);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [loading, id, user?.id, pages.length]);
+
   const applySolutions = useCallback((solutions: NotebookMathSolution[], originalStrokes: Stroke[]) => {
     const newMathSuggestions: MathSuggestion[] = solutions.map((sol) => {
       const bounds = getStrokesBounds(originalStrokes);
@@ -556,11 +582,11 @@ export default function NotebookEditor() {
         toast.success("Expressão resolvida.");
       } else {
         setMathStatus("idle");
-        toast.info("Não consegui identificar uma expressão.");
+        // Silencioso no auto-solve para não poluir páginas de texto/exercícios.
       }
     } catch (error) {
       console.error("Solve math error:", error);
-      toast.error("Erro ao resolver expressão.");
+      console.warn("solve-math falhou silenciosamente no auto-solve");
       setMathStatus("idle");
     } finally {
       setSolvingMath(false);
@@ -861,6 +887,8 @@ export default function NotebookEditor() {
   };
 
   const handleGenerateSummaryFromPage = async () => {
+    setGeneratingStudy("summary");
+    setFloraOpen(true);
     try {
       const notes = getPlainPageText();
       if (!notes) {
@@ -904,11 +932,14 @@ export default function NotebookEditor() {
       const { handleQuotaError } = await import("@/lib/quotaErrors");
       const handled = await handleQuotaError(error, { feature: "resumo" });
       if (!handled) toast.error("Não foi possível gerar resumo da página.");
+    } finally {
+      setGeneratingStudy("none");
     }
   };
 
   const handleGenerateFlashcardsFromPage = async () => {
     setGeneratingStudy("flashcards");
+    setFloraOpen(true);
     try {
       const { allTopics, topic } = await ensureLinkedTopic();
       const notes = getPlainPageText();
@@ -1261,13 +1292,10 @@ export default function NotebookEditor() {
         </>
       )}
 
-      {/* Header - auto-hide in fullscreen */}
-      <header className={`border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-40 transition-transform duration-300 ${
-        expandedEditor ? "group/header hover:translate-y-0 -translate-y-full" : ""
-      }`}
-        onMouseEnter={(e) => { if (expandedEditor) e.currentTarget.style.transform = "translateY(0)"; }}
-        onMouseLeave={(e) => { if (expandedEditor) e.currentTarget.style.transform = ""; }}
-      >
+      {/* Header - auto-hide. Show only on hover (peek strip at top). */}
+      <div className="nb-peek-top sticky top-0 z-40">
+        <div className="nb-peek-trigger" aria-hidden />
+        <header className="nb-peek-content border-b border-border bg-card/80 backdrop-blur-md">
         <div className="container max-w-7xl mx-auto px-3 sm:px-4 py-2 flex flex-wrap items-center gap-2 sm:gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate("/notebooks")} className="h-11 w-11 sm:h-10 sm:w-10">
             <ArrowLeft className="w-5 h-5" />
@@ -1361,7 +1389,7 @@ export default function NotebookEditor() {
                   {generatingStudy === "flashcards" && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                   Gerar Flashcards
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setQuizDialogOpen(true)} disabled={generatingStudy !== "none"}>
+                <DropdownMenuItem onClick={handleGenerateQuizFromPage} disabled={generatingStudy !== "none"}>
                   {generatingStudy === "quiz" && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                   Gerar Quiz
                 </DropdownMenuItem>
@@ -1433,6 +1461,7 @@ export default function NotebookEditor() {
           </div>
         </div>
       </header>
+      </div>
 
       <SamsungStyleToolbar
         mode={mode}
@@ -1586,7 +1615,7 @@ export default function NotebookEditor() {
             generatingStudy={generatingStudy}
             onGenerateSummary={handleGenerateSummaryFromPage}
             onGenerateFlashcards={handleGenerateFlashcardsFromPage}
-            onGenerateQuiz={() => setQuizDialogOpen(true)}
+            onGenerateQuiz={handleGenerateQuizFromPage}
             onCreateTopic={handleCreateTopicFromPage}
             onSyncSummary={handleSyncSummaryToTopic}
           />
