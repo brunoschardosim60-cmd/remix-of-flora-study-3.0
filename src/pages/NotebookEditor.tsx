@@ -632,9 +632,75 @@ export default function NotebookEditor() {
     await solveMath(drawingState.strokes);
   };
 
+  // Resolve uma expressão digitada na página (fallback quando não há desenho).
+  // Usa flora-engine "chat" para devolver soma, produto e raízes em texto/LaTeX.
+  const solveTextWithFlora = useCallback(async (text: string) => {
+    if (solvingMathRef.current) return;
+    solvingMathRef.current = true;
+    setSolvingMath(true);
+    setMathStatus("processing");
+    try {
+      const prompt =
+        `Você é um solver matemático. Resolva a(s) expressão(ões) abaixo de forma direta e completa em PT-BR. ` +
+        `Se for equação do 2º grau, mostre: forma padrão ax^2+bx+c=0, soma das raízes (-b/a), produto (c/a) e as raízes via Bhaskara. ` +
+        `Responda em texto curto + LaTeX entre $...$ quando útil. Sem markdown extra.\n\n` +
+        `Conteúdo da página:\n${text}`;
+
+      const { data, error } = await supabase.functions.invoke<{ reply?: string; message?: string; content?: string }>(
+        "flora-engine",
+        {
+          body: {
+            action: "chat",
+            userId: user?.id || "anonymous",
+            data: { message: prompt, messages: [{ role: "user", content: prompt }] },
+          },
+        }
+      );
+      if (error) throw error;
+      const reply = (data?.reply || data?.message || data?.content || "").toString().trim();
+      if (!reply) {
+        toast.info("A IA não retornou solução.");
+        setMathStatus("idle");
+        return;
+      }
+
+      // Anexa o resultado como bloco no final da página
+      const block = `<p><strong>Solver IA:</strong><br/>${reply
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\n/g, "<br/>")}</p>`;
+      handleContentChange(`${page?.content || ""}${block}`);
+      setMathStatus("resolved");
+      if (statusTimerRef.current) clearTimeout(statusTimerRef.current);
+      statusTimerRef.current = setTimeout(() => setMathStatus("idle"), STATUS_RESOLVED_MS);
+      setFloraOpen(true);
+      toast.success("Resolvido com base no texto da página.");
+    } catch (err) {
+      console.error("solveTextWithFlora error:", err);
+      const { handleQuotaError } = await import("@/lib/quotaErrors");
+      const handled = await handleQuotaError(err, { feature: "solver" });
+      if (!handled) toast.error("Não consegui resolver a expressão.");
+      setMathStatus("idle");
+    } finally {
+      setSolvingMath(false);
+      solvingMathRef.current = false;
+    }
+  }, [user?.id, page?.content, handleContentChange]);
+
   const handleSolveSelection = useCallback(async () => {
     if (!selectionBounds) {
-      toast.info("Selecione uma região primeiro (ferramenta de seleção).");
+      // Sem seleção: tenta resolver pelo texto da página (texto digitado).
+      const text = (page?.content || "")
+        .replace(/<[^>]*>/g, " ")
+        .replace(/&nbsp;/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+      if (!text) {
+        toast.info("Selecione uma região ou escreva uma expressão na página.");
+        return;
+      }
+      void solveTextWithFlora(text);
       return;
     }
     if (solvingMathRef.current) return;
@@ -644,7 +710,30 @@ export default function NotebookEditor() {
     setMathStatus("processing");
     try {
       const imageData = canvasRef.current?.getImageData(selectionBounds);
-      if (!imageData) {
+      // Conta strokes dentro da seleção: se vazio, vai para fallback de texto.
+      const insideStrokes = drawingState.strokes.filter((stroke) => {
+        const b = getStrokeBounds(stroke);
+        if (!b) return false;
+        const cx = b.x + b.width / 2;
+        const cy = b.y + b.height / 2;
+        return (
+          cx >= selectionBounds.x &&
+          cx <= selectionBounds.x + selectionBounds.width &&
+          cy >= selectionBounds.y &&
+          cy <= selectionBounds.y + selectionBounds.height
+        );
+      });
+
+      if (!imageData || insideStrokes.length === 0) {
+        const text = (page?.content || "")
+          .replace(/<[^>]*>/g, " ")
+          .replace(/&nbsp;/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+        if (text) {
+          await solveTextWithFlora(text);
+          return;
+        }
         toast.error("Não foi possível recortar a região.");
         return;
       }
@@ -662,8 +751,18 @@ export default function NotebookEditor() {
         applySolutions(data.solutions, drawingState.strokes);
         toast.success("Região resolvida.");
       } else {
-        setMathStatus("idle");
-        toast.info("Não consegui identificar uma expressão na região.");
+        // Sem solução pela imagem → tenta pelo texto da página
+        const text = (page?.content || "")
+          .replace(/<[^>]*>/g, " ")
+          .replace(/&nbsp;/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+        if (text) {
+          await solveTextWithFlora(text);
+        } else {
+          setMathStatus("idle");
+          toast.info("Não consegui identificar uma expressão na região.");
+        }
       }
     } catch (error) {
       console.error("Solve selection error:", error);
@@ -675,7 +774,9 @@ export default function NotebookEditor() {
       canvasRef.current?.clearSelection?.();
       setSelectionBounds(null);
     }
-  }, [applySolutions, drawingState.strokes, selectionBounds]);
+    // solveTextWithFlora é estável (definido abaixo via useCallback)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [applySolutions, drawingState.strokes, selectionBounds, page?.content]);
 
 
   const confidenceLabel = (value: number | undefined) => {
@@ -1319,7 +1420,11 @@ export default function NotebookEditor() {
       )}
 
       {/* Header - auto-hide. Show only on hover (peek strip at top). */}
-      <div className={`nb-peek-top sticky top-0 z-40 ${headerPinned ? "pinned" : ""}`}>
+      <div
+        className={`nb-peek-top sticky top-0 z-40 ${
+          headerPinned || generatingStudy !== "none" || ocrLoading ? "pinned" : ""
+        }`}
+      >
         <div className="nb-peek-trigger" aria-hidden />
         <header className="nb-peek-content border-b border-border bg-card/80 backdrop-blur-md">
         <div className="container max-w-7xl mx-auto px-3 sm:px-4 py-2 flex flex-wrap items-center gap-2 sm:gap-3">

@@ -9,6 +9,8 @@ import { TextStyle } from "@tiptap/extension-text-style";
 import { Color } from "@tiptap/extension-color";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { EditorToolbar } from "./EditorToolbar";
+import { ReactNodeViewRenderer } from "@tiptap/react";
+import { ResizableImageView } from "./ResizableImageView";
 
 interface RichEditorProps {
   content: string;
@@ -47,10 +49,34 @@ export function RichEditor({ content, onChange, userId, notebookId, darkMode, on
       Image.extend({
         draggable: true,
         selectable: true,
+        addAttributes() {
+          return {
+            ...this.parent?.(),
+            width: {
+              default: null,
+              parseHTML: (el) => {
+                const w = el.getAttribute("width") || el.style.width;
+                if (!w) return null;
+                const n = parseInt(String(w).replace("px", ""), 10);
+                return Number.isFinite(n) ? n : w;
+              },
+              renderHTML: (attrs) => (attrs.width ? { width: attrs.width } : {}),
+            },
+            alignment: {
+              default: "center",
+              parseHTML: (el) => el.getAttribute("data-alignment") || "center",
+              renderHTML: (attrs) =>
+                attrs.alignment ? { "data-alignment": attrs.alignment } : {},
+            },
+          };
+        },
+        addNodeView() {
+          return ReactNodeViewRenderer(ResizableImageView);
+        },
       }).configure({
         inline: false,
         allowBase64: true,
-        HTMLAttributes: { class: "nb-editor-image", draggable: "true" },
+        HTMLAttributes: { class: "nb-editor-image" },
       }),
       Placeholder.configure({ placeholder: "Comece a escrever..." }),
       UnderlineExt,
