@@ -1229,11 +1229,34 @@ export default function NotebookEditor() {
         e.preventDefault();
         setFocusModeActive((prev) => !prev);
       }
+      if (e.key === "Escape" && autoSolveEnabled) {
+        setAutoSolveEnabled(false);
+      }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [autoSolveEnabled]);
+
+  // When IA is toggled ON, automatically switch to draw mode with selection tool
+  // so the user can immediately select a region to solve. Toggling OFF restores
+  // the previous mode/tool.
+  const handleToggleAutoSolve = useCallback((enabled: boolean) => {
+    setAutoSolveEnabled(enabled);
+    localStorage.setItem(NOTEBOOK_AUTOSOLVE_STORAGE_KEY, enabled ? "1" : "0");
+    if (enabled) {
+      prevModeRef.current = mode;
+      prevDrawToolRef.current = drawTool;
+      setMode("draw");
+      setDrawTool("select");
+      toast.info("IA ativada — selecione a região para resolver. ESC para sair.");
+    } else {
+      setMode(prevModeRef.current);
+      setDrawTool(prevDrawToolRef.current);
+      canvasRef.current?.clearSelection?.();
+      setSelectionBounds(null);
+    }
+  }, [drawTool, mode]);
 
   // Recebe conteúdo enviado pela Flora via chat
   useEffect(() => {
