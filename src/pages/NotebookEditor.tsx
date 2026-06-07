@@ -485,6 +485,32 @@ export default function NotebookEditor() {
     loadNotebook();
   }, [id, navigate]);
 
+  // Auto-create the first page when a notebook has none yet.
+  useEffect(() => {
+    if (loading) return;
+    if (!id || !user?.id) return;
+    if (pages.length > 0) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("notebook_pages")
+        .insert({
+          notebook_id: id,
+          user_id: user.id,
+          page_number: 1,
+          content: "",
+          drawing_data: drawingToJson(emptyDrawing),
+        })
+        .select()
+        .single();
+      if (!cancelled && data) {
+        setPages([rowToNotebookPage(data)]);
+        setCurrentPage(0);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [loading, id, user?.id, pages.length]);
+
   const applySolutions = useCallback((solutions: NotebookMathSolution[], originalStrokes: Stroke[]) => {
     const newMathSuggestions: MathSuggestion[] = solutions.map((sol) => {
       const bounds = getStrokesBounds(originalStrokes);
