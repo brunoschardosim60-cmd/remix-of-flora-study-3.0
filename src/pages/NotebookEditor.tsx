@@ -290,8 +290,8 @@ export default function NotebookEditor() {
     return stored == null ? true : stored === "1";
   });
   const [headerPinned, setHeaderPinned] = useState(false);
-  const [prevDrawTool, setPrevDrawTool] = useState<typeof drawTool>("pen");
-  const [prevMode, setPrevMode] = useState<"text" | "draw">("text");
+  const prevDrawToolRef = useRef<"pen" | "marker" | "eraser" | "select" | "line" | "rect" | "circle">("pen");
+  const prevModeRef = useRef<"text" | "draw">("text");
   const [solvingMath, setSolvingMath] = useState(false);
   const [mathStatus, setMathStatus] = useState<"idle" | "processing" | "resolved">("idle");
   const [lastMathSuggestion, setLastMathSuggestion] = useState<MathSuggestion | null>(null);
