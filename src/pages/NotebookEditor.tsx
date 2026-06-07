@@ -1520,7 +1520,7 @@ export default function NotebookEditor() {
         floraOpen={floraOpen}
         onSolveSelection={handleSolveSelection}
         autoSolveEnabled={autoSolveEnabled}
-        onToggleAutoSolve={setAutoSolveEnabled}
+        onToggleAutoSolve={handleToggleAutoSolve}
         solvingMath={solvingMath}
         hasSelection={!!selectionBounds}
         mathStatus={mathStatus}
