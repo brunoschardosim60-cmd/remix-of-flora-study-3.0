@@ -582,11 +582,11 @@ export default function NotebookEditor() {
         toast.success("Expressão resolvida.");
       } else {
         setMathStatus("idle");
-        toast.info("Não consegui identificar uma expressão.");
+        // Silencioso no auto-solve para não poluir páginas de texto/exercícios.
       }
     } catch (error) {
       console.error("Solve math error:", error);
-      toast.error("Erro ao resolver expressão.");
+      console.warn("solve-math falhou silenciosamente no auto-solve");
       setMathStatus("idle");
     } finally {
       setSolvingMath(false);
