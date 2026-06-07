@@ -439,31 +439,33 @@
   opacity: 0.95;
 }
 
-/* Hover area to reveal floating toolbar */
-.nb-floating-toolbar::before {
-  content: "";
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 22px;
-  pointer-events: auto;
+/* Floating toolbar: peek a sliver, expand on hover */
+.nb-floating-toolbar {
+  transform: translateX(-50%) translateY(calc(100% - 12px));
 }
-
 .nb-floating-toolbar:hover,
 .nb-floating-toolbar:focus-within {
   transform: translateX(-50%) translateY(0);
+  opacity: 1;
 }
 
-/* Reveal when mouse is near bottom of viewport */
-body:has(.nb-floating-toolbar):hover .nb-floating-toolbar {
-  /* keep default; actual reveal handled via hover on ::before strip */
+/* Editor images: draggable + resizable */
+.nb-editor-image,
+.ProseMirror img {
+  cursor: grab;
+  resize: both;
+  overflow: hidden;
+  max-width: 100%;
+  border-radius: 8px;
+  transition: box-shadow 0.2s ease;
 }
-
-/* Always show a peek tab so user knows it's there */
-.nb-floating-toolbar {
-  /* override: small peek visible */
-  transform: translateX(-50%) translateY(calc(100% - 14px));
+.nb-editor-image:hover,
+.ProseMirror img:hover {
+  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.4);
+}
+.nb-editor-image:active,
+.ProseMirror img:active {
+  cursor: grabbing;
 }
 
 /* ── Auto-hide top header (peek on hover) ── */
