@@ -1461,6 +1461,7 @@ export default function NotebookEditor() {
           </div>
         </div>
       </header>
+      </div>
 
       <SamsungStyleToolbar
         mode={mode}
