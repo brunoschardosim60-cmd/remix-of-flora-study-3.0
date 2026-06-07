@@ -489,6 +489,11 @@
   transform: translateY(0);
 }
 
+/* Stay open while a popover/dropdown/menu launched from the header is active */
+.nb-peek-top.pinned .nb-peek-content {
+  transform: translateY(0);
+}
+
 .nb-toolbar-group {
   display: flex;
   align-items: center;

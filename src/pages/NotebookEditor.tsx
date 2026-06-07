@@ -289,6 +289,9 @@ export default function NotebookEditor() {
     const stored = loadStringStorage(NOTEBOOK_AUTOSOLVE_STORAGE_KEY);
     return stored == null ? true : stored === "1";
   });
+  const [headerPinned, setHeaderPinned] = useState(false);
+  const prevDrawToolRef = useRef<"pen" | "marker" | "eraser" | "select" | "line" | "rect" | "circle">("pen");
+  const prevModeRef = useRef<"text" | "draw">("text");
   const [solvingMath, setSolvingMath] = useState(false);
   const [mathStatus, setMathStatus] = useState<"idle" | "processing" | "resolved">("idle");
   const [lastMathSuggestion, setLastMathSuggestion] = useState<MathSuggestion | null>(null);
@@ -1226,11 +1229,34 @@ export default function NotebookEditor() {
         e.preventDefault();
         setFocusModeActive((prev) => !prev);
       }
+      if (e.key === "Escape" && autoSolveEnabled) {
+        setAutoSolveEnabled(false);
+      }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [autoSolveEnabled]);
+
+  // When IA is toggled ON, automatically switch to draw mode with selection tool
+  // so the user can immediately select a region to solve. Toggling OFF restores
+  // the previous mode/tool.
+  const handleToggleAutoSolve = useCallback((enabled: boolean) => {
+    setAutoSolveEnabled(enabled);
+    localStorage.setItem(NOTEBOOK_AUTOSOLVE_STORAGE_KEY, enabled ? "1" : "0");
+    if (enabled) {
+      prevModeRef.current = mode;
+      prevDrawToolRef.current = drawTool;
+      setMode("draw");
+      setDrawTool("select");
+      toast.info("IA ativada — selecione a região para resolver. ESC para sair.");
+    } else {
+      setMode(prevModeRef.current);
+      setDrawTool(prevDrawToolRef.current);
+      canvasRef.current?.clearSelection?.();
+      setSelectionBounds(null);
+    }
+  }, [drawTool, mode]);
 
   // Recebe conteúdo enviado pela Flora via chat
   useEffect(() => {
@@ -1293,7 +1319,7 @@ export default function NotebookEditor() {
       )}
 
       {/* Header - auto-hide. Show only on hover (peek strip at top). */}
-      <div className="nb-peek-top sticky top-0 z-40">
+      <div className={`nb-peek-top sticky top-0 z-40 ${headerPinned ? "pinned" : ""}`}>
         <div className="nb-peek-trigger" aria-hidden />
         <header className="nb-peek-content border-b border-border bg-card/80 backdrop-blur-md">
         <div className="container max-w-7xl mx-auto px-3 sm:px-4 py-2 flex flex-wrap items-center gap-2 sm:gap-3">
@@ -1348,12 +1374,19 @@ export default function NotebookEditor() {
           </div>
 
           <div className="order-6 sm:order-none w-full sm:w-auto flex flex-wrap sm:flex-nowrap items-center gap-2">
-            <Select value={selectedSubject} onValueChange={(v) => setSelectedSubject(v as Subject)}>
+            <Select
+              value={selectedSubject}
+              onValueChange={(v) => setSelectedSubject(v as Subject)}
+              onOpenChange={(open) => setHeaderPinned(open)}
+            >
               <SelectTrigger className="h-9 w-full sm:w-auto min-w-0 sm:min-w-[150px]">
                 <SelectValue placeholder="Matéria" />
               </SelectTrigger>
               <SelectContent>
-                {ALL_SUBJECTS.map((subject) => (
+                {(notebook?.subject
+                  ? ALL_SUBJECTS.filter((s) => s === notebook.subject)
+                  : ALL_SUBJECTS
+                ).map((subject) => (
                   <SelectItem key={subject} value={subject}>{subject}</SelectItem>
                 ))}
               </SelectContent>
@@ -1362,17 +1395,17 @@ export default function NotebookEditor() {
             {/* AI toggle icon - works for both text and draw */}
             <button
               type="button"
-              onClick={() => setAutoSolveEnabled((v) => !v)}
+              onClick={() => handleToggleAutoSolve(!autoSolveEnabled)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
                 autoSolveEnabled ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-muted"
               }`}
-              title={autoSolveEnabled ? "IA ativa" : "IA inativa"}
+              title={autoSolveEnabled ? "IA ativa — clique ou ESC para sair" : "Ativar IA (modo seleção)"}
             >
               <Sparkles className="w-4 h-4" />
               <span className="hidden sm:inline">IA</span>
             </button>
 
-            <DropdownMenu>
+            <DropdownMenu onOpenChange={(open) => setHeaderPinned(open)}>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-11 w-11 sm:h-8 sm:w-8">
                   <Brain className="w-4 h-4" />
@@ -1487,7 +1520,7 @@ export default function NotebookEditor() {
         floraOpen={floraOpen}
         onSolveSelection={handleSolveSelection}
         autoSolveEnabled={autoSolveEnabled}
-        onToggleAutoSolve={setAutoSolveEnabled}
+        onToggleAutoSolve={handleToggleAutoSolve}
         solvingMath={solvingMath}
         hasSelection={!!selectionBounds}
         mathStatus={mathStatus}

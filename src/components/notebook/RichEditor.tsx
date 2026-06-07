@@ -44,7 +44,14 @@ export function RichEditor({ content, onChange, userId, notebookId, darkMode, on
         heading: { levels: [1, 2, 3] },
       }),
       Highlight.configure({ multicolor: true }),
-      Image.configure({ inline: false, allowBase64: true, HTMLAttributes: { class: "nb-editor-image" } }),
+      Image.extend({
+        draggable: true,
+        selectable: true,
+      }).configure({
+        inline: false,
+        allowBase64: true,
+        HTMLAttributes: { class: "nb-editor-image", draggable: "true" },
+      }),
       Placeholder.configure({ placeholder: "Comece a escrever..." }),
       UnderlineExt,
       TextAlign.configure({ types: ["heading", "paragraph"] }),

@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { X, GripVertical } from "lucide-react";
+import { X, Move } from "lucide-react";
 
 export interface StickyNoteData {
   id: string;
@@ -80,17 +80,25 @@ export function StickyNote({ note, onUpdate, onDelete, active }: StickyNoteProps
         zIndex: 30,
       }}
     >
-      <div className="flex items-center justify-between px-2 py-1 cursor-grab" onMouseDown={handleMouseDown}>
-        <GripVertical className="w-3 h-3 opacity-50" />
+      <div className="flex items-center justify-between px-2 py-1">
+        <span
+          className="flex-1 flex items-center cursor-grab active:cursor-grabbing select-none"
+          onMouseDown={handleMouseDown}
+        >
+          <Move className="w-3 h-3 opacity-50" />
+        </span>
         <button
           type="button"
+          onMouseDown={(e) => { e.stopPropagation(); e.preventDefault(); }}
           onClick={(e) => {
             e.stopPropagation();
+            e.preventDefault();
             onDelete(note.id);
           }}
-          className="opacity-50 hover:opacity-100 transition-opacity"
+          className="opacity-70 hover:opacity-100 transition-opacity p-1 -m-1 rounded hover:bg-black/10"
+          aria-label="Excluir nota"
         >
-          <X className="w-3 h-3" />
+          <X className="w-3.5 h-3.5" />
         </button>
       </div>
       <textarea
