@@ -79,32 +79,48 @@ export function useGlobalPostIt() {
   }, []);
 
   const openInPiP = useCallback(async () => {
-    // Check if the API is supported
-    if (!("documentPictureInPicture" in window)) {
-      console.warn("Document Picture-in-Picture API is not supported in this browser.");
-      return false;
-    }
-
-    try {
-      // @ts-ignore - Document Picture-in-Picture API types are not fully standard yet
-      const pip = await window.documentPictureInPicture.requestWindow({
-        width: 300,
-        height: 350,
-      });
-
-      setPipWindow(pip);
-      setIsPipActive(true);
-
-      pip.addEventListener("pagehide", () => {
-        setIsPipActive(false);
-        setPipWindow(null);
-      });
-
+    // Fallback helper: opens a normal popup window with the standalone post-it page.
+    // Works inside iframes (like the Lovable preview) where the PiP API is blocked.
+    const openPopupFallback = () => {
+      const popup = window.open(
+        "/pip-postit.html",
+        "flora-postit",
+        "popup=yes,width=320,height=400,left=100,top=100"
+      );
+      if (!popup) {
+        alert(
+          "Não foi possível abrir o post-it flutuante. Permita pop-ups deste site nas configurações do navegador."
+        );
+        return false;
+      }
+      popup.focus();
       return true;
-    } catch (error) {
-      console.error("Failed to open PiP window:", error);
-      return false;
+    };
+
+    // Try the native Document Picture-in-Picture API first
+    if ("documentPictureInPicture" in window) {
+      try {
+        // @ts-ignore - Document Picture-in-Picture API types are not fully standard yet
+        const pip = await window.documentPictureInPicture.requestWindow({
+          width: 300,
+          height: 350,
+        });
+        setPipWindow(pip);
+        setIsPipActive(true);
+        pip.addEventListener("pagehide", () => {
+          setIsPipActive(false);
+          setPipWindow(null);
+        });
+        return true;
+      } catch (error) {
+        // Most common: NotAllowedError when running inside an iframe (Lovable preview).
+        // Fall back to a normal popup window so the user still gets a floating post-it.
+        console.warn("PiP unavailable, falling back to popup window:", error);
+        return openPopupFallback();
+      }
     }
+
+    return openPopupFallback();
   }, []);
 
   return {
