@@ -1617,7 +1617,7 @@ export default function NotebookEditor() {
             generatingStudy={generatingStudy}
             onGenerateSummary={handleGenerateSummaryFromPage}
             onGenerateFlashcards={handleGenerateFlashcardsFromPage}
-            onGenerateQuiz={() => setQuizDialogOpen(true)}
+            onGenerateQuiz={handleGenerateQuizFromPage}
             onCreateTopic={handleCreateTopicFromPage}
             onSyncSummary={handleSyncSummaryToTopic}
           />
