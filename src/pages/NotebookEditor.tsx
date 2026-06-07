@@ -887,6 +887,8 @@ export default function NotebookEditor() {
   };
 
   const handleGenerateSummaryFromPage = async () => {
+    setGeneratingStudy("summary");
+    setFloraOpen(true);
     try {
       const notes = getPlainPageText();
       if (!notes) {
@@ -930,11 +932,14 @@ export default function NotebookEditor() {
       const { handleQuotaError } = await import("@/lib/quotaErrors");
       const handled = await handleQuotaError(error, { feature: "resumo" });
       if (!handled) toast.error("Não foi possível gerar resumo da página.");
+    } finally {
+      setGeneratingStudy("none");
     }
   };
 
   const handleGenerateFlashcardsFromPage = async () => {
     setGeneratingStudy("flashcards");
+    setFloraOpen(true);
     try {
       const { allTopics, topic } = await ensureLinkedTopic();
       const notes = getPlainPageText();
