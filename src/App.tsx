@@ -9,7 +9,6 @@ import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { initNotifications } from "@/lib/notifications";
 import { GlobalFocusMiniPlayer } from "@/components/GlobalFocusMiniPlayer";
-import { GlobalPostIt } from "@/components/GlobalPostIt";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { QuotaLimitModal } from "@/components/QuotaLimitModal";
 
@@ -174,7 +173,6 @@ const App = () => (
             }}
           >
             <GlobalFocusMiniPlayer />
-            <GlobalPostIt />
             <QuotaLimitModal />
             <Suspense fallback={<RouteFallback />}>
               <Routes>
