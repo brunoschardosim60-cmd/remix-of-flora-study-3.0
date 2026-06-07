@@ -173,7 +173,6 @@ const App = () => (
             }}
           >
             <GlobalFocusMiniPlayer />
-            <GlobalPostIt />
             <QuotaLimitModal />
             <Suspense fallback={<RouteFallback />}>
               <Routes>
