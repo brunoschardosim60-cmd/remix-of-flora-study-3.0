@@ -1319,7 +1319,11 @@ export default function NotebookEditor() {
       )}
 
       {/* Header - auto-hide. Show only on hover (peek strip at top). */}
-      <div className={`nb-peek-top sticky top-0 z-40 ${headerPinned ? "pinned" : ""}`}>
+      <div
+        className={`nb-peek-top sticky top-0 z-40 ${
+          headerPinned || generatingStudy !== "none" || ocrLoading ? "pinned" : ""
+        }`}
+      >
         <div className="nb-peek-trigger" aria-hidden />
         <header className="nb-peek-content border-b border-border bg-card/80 backdrop-blur-md">
         <div className="container max-w-7xl mx-auto px-3 sm:px-4 py-2 flex flex-wrap items-center gap-2 sm:gap-3">
