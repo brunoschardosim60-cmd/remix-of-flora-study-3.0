@@ -1292,13 +1292,10 @@ export default function NotebookEditor() {
         </>
       )}
 
-      {/* Header - auto-hide in fullscreen */}
-      <header className={`border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-40 transition-transform duration-300 ${
-        expandedEditor ? "group/header hover:translate-y-0 -translate-y-full" : ""
-      }`}
-        onMouseEnter={(e) => { if (expandedEditor) e.currentTarget.style.transform = "translateY(0)"; }}
-        onMouseLeave={(e) => { if (expandedEditor) e.currentTarget.style.transform = ""; }}
-      >
+      {/* Header - auto-hide. Show only on hover (peek strip at top). */}
+      <div className="nb-peek-top sticky top-0 z-40">
+        <div className="nb-peek-trigger" aria-hidden />
+        <header className="nb-peek-content border-b border-border bg-card/80 backdrop-blur-md">
         <div className="container max-w-7xl mx-auto px-3 sm:px-4 py-2 flex flex-wrap items-center gap-2 sm:gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate("/notebooks")} className="h-11 w-11 sm:h-10 sm:w-10">
             <ArrowLeft className="w-5 h-5" />
