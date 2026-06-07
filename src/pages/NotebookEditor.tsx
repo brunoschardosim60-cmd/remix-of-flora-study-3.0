@@ -632,6 +632,71 @@ export default function NotebookEditor() {
     await solveMath(drawingState.strokes);
   };
 
+  // Resolve uma expressão digitada na página (fallback quando não há desenho).
+  // Usa flora-engine "chat" para devolver soma, produto e raízes em texto/LaTeX.
+  const solveTextWithFlora = useCallback(async (text: string) => {
+    if (solvingMathRef.current) return;
+    solvingMathRef.current = true;
+    setSolvingMath(true);
+    setMathStatus("processing");
+    try {
+      const prompt =
+        `Você é um solver matemático. Resolva a(s) expressão(ões) abaixo de forma direta e completa em PT-BR. ` +
+        `Se for equação do 2º grau, mostre: forma padrão ax^2+bx+c=0, soma das raízes (-b/a), produto (c/a) e as raízes via Bhaskara. ` +
+        `Responda em texto curto + LaTeX entre $...$ quando útil. Sem markdown extra.\n\n` +
+        `Conteúdo da página:\n${text}`;
+
+      const { data, error } = await supabase.functions.invoke<{ reply?: string; message?: string; content?: string }>(
+        "flora-engine",
+        {
+          body: {
+            action: "chat",
+            userId: user?.id || "anonymous",
+            data: { message: prompt, messages: [{ role: "user", content: prompt }] },
+          },
+        }
+      );
+      if (error) throw error;
+      const reply = (data?.reply || data?.message || data?.content || "").toString().trim();
+      if (!reply) {
+        toast.info("A IA não retornou solução.");
+        setMathStatus("idle");
+        return;
+      }
+
+      // Anexa o resultado como bloco no final da página
+      const block = `<p><strong>Solver IA:</strong><br/>${reply
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\n/g, "<br/>")}</p>`;
+      handleContentChange(`${page?.content || ""}${block}`);
+      pushAIActivity({
+        type: "solver",
+        title: "Expressão resolvida pelo texto",
+        detail: reply.slice(0, 120),
+        notebookId: id,
+        pageId: page?.id,
+        topicId: currentLink?.topicId ?? undefined,
+      });
+      setMathStatus("resolved");
+      if (statusTimerRef.current) clearTimeout(statusTimerRef.current);
+      statusTimerRef.current = setTimeout(() => setMathStatus("idle"), STATUS_RESOLVED_MS);
+      setFloraOpen(true);
+      toast.success("Resolvido com base no texto da página.");
+    } catch (err) {
+      console.error("solveTextWithFlora error:", err);
+      const { handleQuotaError } = await import("@/lib/quotaErrors");
+      const handled = await handleQuotaError(err, { feature: "solver" });
+      if (!handled) toast.error("Não consegui resolver a expressão.");
+      setMathStatus("idle");
+    } finally {
+      setSolvingMath(false);
+      solvingMathRef.current = false;
+    }
+  // page?.content e id/pageId entram por closure — re-criar a cada mudança.
+  }, [user?.id, page?.content, page?.id, id, currentLink?.topicId, handleContentChange, pushAIActivity]);
+
   const handleSolveSelection = useCallback(async () => {
     if (!selectionBounds) {
       // Sem seleção: tenta resolver pelo texto da página (texto digitado).
