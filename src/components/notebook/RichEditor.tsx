@@ -9,9 +9,6 @@ import { TextStyle } from "@tiptap/extension-text-style";
 import { Color } from "@tiptap/extension-color";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { EditorToolbar } from "./EditorToolbar";
-import { LatexDiagramPanel } from "./LatexDiagramPanel";
-import { Button } from "@/components/ui/button";
-import { Sigma } from "lucide-react";
 
 interface RichEditorProps {
   content: string;
@@ -47,7 +44,7 @@ export function RichEditor({ content, onChange, userId, notebookId, darkMode, on
         heading: { levels: [1, 2, 3] },
       }),
       Highlight.configure({ multicolor: true }),
-      Image.configure({ inline: false, allowBase64: true }),
+      Image.configure({ inline: false, allowBase64: true, HTMLAttributes: { class: "nb-editor-image" } }),
       Placeholder.configure({ placeholder: "Comece a escrever..." }),
       UnderlineExt,
       TextAlign.configure({ types: ["heading", "paragraph"] }),
@@ -76,8 +73,6 @@ export function RichEditor({ content, onChange, userId, notebookId, darkMode, on
     }
   }, [content, editor]);
 
-  const [showLatexPanel, setShowLatexPanel] = useState(false);
-
   return (
     <div className={`flex flex-col h-full ${darkMode ? "text-gray-100" : ""}`}>
       <EditorToolbar
@@ -87,22 +82,6 @@ export function RichEditor({ content, onChange, userId, notebookId, darkMode, on
         darkMode={darkMode}
         onToggleDarkMode={onToggleDarkMode}
       />
-      {showLatexPanel && (
-        <div className="px-3 py-2">
-          <LatexDiagramPanel editor={editor} onClose={() => setShowLatexPanel(false)} />
-        </div>
-      )}
-      <div className="flex items-center gap-2 px-3 py-1 border-b border-border/30 bg-muted/20">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-7 text-xs gap-1"
-          onClick={() => setShowLatexPanel((v) => !v)}
-        >
-          <Sigma className="w-3.5 h-3.5" />
-          LaTeX & Diagramas
-        </Button>
-      </div>
       <div className="flex-1 overflow-auto py-4 sm:py-6 px-2 sm:px-3">
         <div
           className={`relative mx-auto w-full ${wide ? "max-w-[1400px]" : "max-w-[1180px]"} rounded-2xl transition-shadow duration-300 animate-fade-in ${
