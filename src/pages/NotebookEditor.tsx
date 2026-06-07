@@ -1258,43 +1258,6 @@ export default function NotebookEditor() {
             <Minimize2 className="w-5 h-5" />
           </button>
 
-          {/* Floating mode dock: Texto / Desenhar / IA */}
-          <div className="fixed top-3 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-1 rounded-full bg-background/90 border border-border shadow-lg px-1.5 py-1 backdrop-blur-sm">
-            <button
-              type="button"
-              onClick={() => setMode("text")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
-                mode === "text" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
-              }`}
-              title="Modo texto"
-            >
-              <Type className="w-4 h-4" />
-              <span className="hidden sm:inline">Texto</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode("draw")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
-                mode === "draw" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
-              }`}
-              title="Modo desenho"
-            >
-              <Pencil className="w-4 h-4" />
-              <span className="hidden sm:inline">Desenhar</span>
-            </button>
-            <div className="w-px h-5 bg-border mx-0.5" />
-            <button
-              type="button"
-              onClick={() => setAutoSolveEnabled((v) => !v)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
-                autoSolveEnabled ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-muted"
-              }`}
-              title={autoSolveEnabled ? "IA ativa" : "IA inativa"}
-            >
-              <Sparkles className="w-4 h-4" />
-              <span className="hidden sm:inline">IA</span>
-            </button>
-          </div>
         </>
       )}
 
