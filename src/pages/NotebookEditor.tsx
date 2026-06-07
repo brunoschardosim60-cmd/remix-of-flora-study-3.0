@@ -671,14 +671,6 @@ export default function NotebookEditor() {
         .replace(/>/g, "&gt;")
         .replace(/\n/g, "<br/>")}</p>`;
       handleContentChange(`${page?.content || ""}${block}`);
-      pushAIActivity({
-        type: "solver",
-        title: "Expressão resolvida pelo texto",
-        detail: reply.slice(0, 120),
-        notebookId: id,
-        pageId: page?.id,
-        topicId: currentLink?.topicId ?? undefined,
-      });
       setMathStatus("resolved");
       if (statusTimerRef.current) clearTimeout(statusTimerRef.current);
       statusTimerRef.current = setTimeout(() => setMathStatus("idle"), STATUS_RESOLVED_MS);
@@ -694,8 +686,7 @@ export default function NotebookEditor() {
       setSolvingMath(false);
       solvingMathRef.current = false;
     }
-  // page?.content e id/pageId entram por closure — re-criar a cada mudança.
-  }, [user?.id, page?.content, page?.id, id, currentLink?.topicId, handleContentChange, pushAIActivity]);
+  }, [user?.id, page?.content, handleContentChange]);
 
   const handleSolveSelection = useCallback(async () => {
     if (!selectionBounds) {
