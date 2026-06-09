@@ -247,7 +247,7 @@ export default function Index() {
     <div className="min-h-dvh bg-background pb-16 md:pb-0">
       <DashboardHeader user={user} bancoRoute={bancoRoute} bancoLabel={bancoLabel} onSignOut={signOut} />
       <main className="container max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="w-full">
           <DashboardHero
             firstName={firstName}
             isLoggedIn={Boolean(user)}
