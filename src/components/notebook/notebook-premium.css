@@ -733,6 +733,16 @@
     --nb-page-grid-width: 56px;
   }
 
+  .nb-layout {
+    flex-direction: column;
+    overflow: visible;
+  }
+
+  .nb-paper-area {
+    min-width: 0;
+    width: 100%;
+  }
+
   .nb-floating-toolbar {
     bottom: 12px;
     left: 8px;
