@@ -20,7 +20,34 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: unknown) {
     console.error("[ErrorBoundary]", error, info);
+    if (/Failed to fetch dynamically imported module|Importing a module script failed|ChunkLoadError/i.test(error?.message || "")) {
+      this.recoverFromStaleModule();
+    }
   }
+
+  private recoverFromStaleModule = async () => {
+    const key = "studyflow.stale-module-recovery-at";
+    try {
+      const last = Number(sessionStorage.getItem(key) || 0);
+      if (Date.now() - last < 30_000) return;
+      sessionStorage.setItem(key, String(Date.now()));
+
+      if ("caches" in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map((k) => caches.delete(k)));
+      }
+      if ("serviceWorker" in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map((r) => r.unregister()));
+      }
+
+      const url = new URL(window.location.href);
+      url.searchParams.set("_reload", String(Date.now()));
+      window.location.replace(url.toString());
+    } catch {
+      window.location.reload();
+    }
+  };
 
   private handleReload = () => {
     // Tenta limpar caches do SW antes de recarregar, caso o erro venha de chunk antigo
