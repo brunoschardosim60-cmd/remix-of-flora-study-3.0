@@ -1655,19 +1655,17 @@ export default function NotebookEditor() {
                 zoom={zoom}
                 wide={expandedEditor}
                 paperOverlay={
-                  <Suspense fallback={null}>
-                    <KonvaDrawingCanvas
-                      ref={canvasRef}
-                      strokes={drawingState.strokes}
-                      onStrokesChange={handleStrokesChange}
-                      active={mode === "draw"}
-                      penColor={penColor}
-                      penWidth={penWidth}
-                      tool={drawTool}
-                      zoom={1}
-                      onSelectionChange={setSelectionBounds}
-                    />
-                  </Suspense>
+                  <KonvaDrawingCanvas
+                    ref={canvasRef}
+                    strokes={drawingState.strokes}
+                    onStrokesChange={handleStrokesChange}
+                    active={mode === "draw"}
+                    penColor={penColor}
+                    penWidth={penWidth}
+                    tool={drawTool}
+                    zoom={1}
+                    onSelectionChange={setSelectionBounds}
+                  />
                 }
               />
 
@@ -1712,19 +1710,17 @@ export default function NotebookEditor() {
                 zoom={zoom}
                 wide={expandedEditor}
                 paperOverlay={
-                  <Suspense fallback={null}>
-                    <KonvaDrawingCanvas
-                      ref={canvasRef}
-                      strokes={drawingState.strokes}
-                      onStrokesChange={handleStrokesChange}
-                      active={mode === "draw"}
-                      penColor={penColor}
-                      penWidth={penWidth}
-                      tool={drawTool}
-                      zoom={1}
-                      onSelectionChange={setSelectionBounds}
-                    />
-                  </Suspense>
+                  <KonvaDrawingCanvas
+                    ref={canvasRef}
+                    strokes={drawingState.strokes}
+                    onStrokesChange={handleStrokesChange}
+                    active={mode === "draw"}
+                    penColor={penColor}
+                    penWidth={penWidth}
+                    tool={drawTool}
+                    zoom={1}
+                    onSelectionChange={setSelectionBounds}
+                  />
                 }
               />
 
