@@ -47,8 +47,15 @@ window.addEventListener("unhandledrejection", (e) => {
   maybeReloadOnChunkError(String(msg));
 });
 
-// Register service worker for background Pomodoro notifications.
-if ("serviceWorker" in navigator) {
+const isLovablePreview = /lovable(project)?\.com|lovable\.app/.test(window.location.hostname);
+const shouldRegisterServiceWorker = "serviceWorker" in navigator && !import.meta.env.DEV && !isLovablePreview;
+
+if ("serviceWorker" in navigator && !shouldRegisterServiceWorker) {
+  navigator.serviceWorker.getRegistrations().then((regs) => regs.forEach((reg) => reg.unregister())).catch(() => {});
+}
+
+// Register service worker for background Pomodoro notifications only outside preview/dev.
+if (shouldRegisterServiceWorker) {
   window.addEventListener("load", () => {
     navigator.serviceWorker
       .register("/sw.js", { updateViaCache: "none" })
