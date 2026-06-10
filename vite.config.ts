@@ -14,9 +14,6 @@ export default defineConfig(({ mode }) => ({
       overlay: false,
     },
   },
-  optimizeDeps: {
-    exclude: ["react", "react-dom", "react-dom/client", "react/jsx-runtime", "react/jsx-dev-runtime"],
-  },
   build: {
     // manualChunks removido: estava causando TDZ ("Cannot access 'A' before initialization")
     // por dependência circular entre o chunk de recharts/d3 e seus consumidores.
