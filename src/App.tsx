@@ -11,6 +11,7 @@ import { initNotifications } from "@/lib/notifications";
 import { GlobalFocusMiniPlayer } from "@/components/GlobalFocusMiniPlayer";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { QuotaLimitModal } from "@/components/QuotaLimitModal";
+import NotebookEditor from "./pages/NotebookEditor";
 
 const Index = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
@@ -18,7 +19,6 @@ const AuthCallback = lazy(() => import("./pages/AuthCallback"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const Notebooks = lazy(() => import("./pages/Notebooks"));
-const NotebookEditor = lazy(() => import("./pages/NotebookEditor"));
 const Admin = lazy(() => import("./pages/Admin"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 const Redacao = lazy(() => import("./pages/Redacao"));
