@@ -36,11 +36,11 @@ import { StudyNowDialog } from "@/components/dashboard/StudyNowDialog";
 import { StudyChoiceDialog } from "@/components/dashboard/StudyChoiceDialog";
 import { FloraButton } from "@/components/dashboard/FloraButton";
 import { Button } from "@/components/ui/button";
+import { QuizDialog } from "@/components/QuizDialog";
+import { FlashcardSessionDialog } from "@/components/FlashcardSessionDialog";
 
 // Lazy: heavy components that DON'T appear on first render
 const FocusModeOverlay = lazy(() => import("@/components/FocusModeOverlay").then(m => ({ default: m.FocusModeOverlay })));
-const QuizDialog = lazy(() => import("@/components/QuizDialog").then(m => ({ default: m.QuizDialog })));
-const FlashcardSessionDialog = lazy(() => import("@/components/FlashcardSessionDialog").then(m => ({ default: m.FlashcardSessionDialog })));
 const TopicNotesDialog = lazy(() => import("@/components/TopicNotesDialog").then(m => ({ default: m.TopicNotesDialog })));
 const WeeklySchedule = lazy(() => import("@/components/WeeklySchedule").then(m => ({ default: m.WeeklySchedule })));
 

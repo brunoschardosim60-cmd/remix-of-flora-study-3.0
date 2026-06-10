@@ -9,6 +9,18 @@ repairCorruptedAppStorage();
 // Recarrega automaticamente quando um chunk dinâmico antigo falha (deploy novo
 // invalida hashes; HTML antigo tenta importar arquivo que não existe mais).
 const CHUNK_RELOAD_KEY = "studyflow.chunk-reload-at";
+async function clearBrowserCaches() {
+  try {
+    if ("caches" in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((k) => caches.delete(k)));
+    }
+    if ("serviceWorker" in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map((r) => r.unregister()));
+    }
+  } catch { /* ignore */ }
+}
 function maybeReloadOnChunkError(message: string) {
   if (!/Failed to fetch dynamically imported module|Importing a module script failed|ChunkLoadError/i.test(message)) {
     return;
@@ -18,10 +30,16 @@ function maybeReloadOnChunkError(message: string) {
     if (Date.now() - last < 10_000) return; // evita loop
     sessionStorage.setItem(CHUNK_RELOAD_KEY, String(Date.now()));
   } catch { /* ignore */ }
-  window.location.reload();
+  clearBrowserCaches().finally(() => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("_reload", String(Date.now()));
+    window.location.replace(url.toString());
+  });
 }
 window.addEventListener("error", (e) => {
-  maybeReloadOnChunkError(String(e?.message || ""));
+  const target = e.target as HTMLScriptElement | null;
+  const src = target && "src" in target ? target.src : "";
+  maybeReloadOnChunkError(String(e?.message || src || ""));
 });
 window.addEventListener("unhandledrejection", (e) => {
   const reason = e?.reason;
@@ -29,8 +47,15 @@ window.addEventListener("unhandledrejection", (e) => {
   maybeReloadOnChunkError(String(msg));
 });
 
-// Register service worker for background Pomodoro notifications.
-if ("serviceWorker" in navigator) {
+const isLovablePreview = /lovable(project)?\.com|lovable\.app/.test(window.location.hostname);
+const shouldRegisterServiceWorker = "serviceWorker" in navigator && !import.meta.env.DEV && !isLovablePreview;
+
+if ("serviceWorker" in navigator && !shouldRegisterServiceWorker) {
+  navigator.serviceWorker.getRegistrations().then((regs) => regs.forEach((reg) => reg.unregister())).catch(() => {});
+}
+
+// Register service worker for background Pomodoro notifications only outside preview/dev.
+if (shouldRegisterServiceWorker) {
   window.addEventListener("load", () => {
     navigator.serviceWorker
       .register("/sw.js", { updateViaCache: "none" })

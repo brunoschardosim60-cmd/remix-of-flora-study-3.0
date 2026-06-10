@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -29,10 +29,7 @@ import {
   type Stroke,
   type DrawingCanvasRef,
 } from "@/components/notebook/drawingTypes";
-
-const KonvaDrawingCanvas = lazy(() =>
-  import("@/components/notebook/KonvaDrawingCanvas").then((m) => ({ default: m.KonvaDrawingCanvas }))
-);
+import { KonvaDrawingCanvas } from "@/components/notebook/KonvaDrawingCanvas";
 
 // MathSuggestion type used locally in the editor
 interface MathSuggestion {
@@ -1658,19 +1655,17 @@ export default function NotebookEditor() {
                 zoom={zoom}
                 wide={expandedEditor}
                 paperOverlay={
-                  <Suspense fallback={null}>
-                    <KonvaDrawingCanvas
-                      ref={canvasRef}
-                      strokes={drawingState.strokes}
-                      onStrokesChange={handleStrokesChange}
-                      active={mode === "draw"}
-                      penColor={penColor}
-                      penWidth={penWidth}
-                      tool={drawTool}
-                      zoom={1}
-                      onSelectionChange={setSelectionBounds}
-                    />
-                  </Suspense>
+                  <KonvaDrawingCanvas
+                    ref={canvasRef}
+                    strokes={drawingState.strokes}
+                    onStrokesChange={handleStrokesChange}
+                    active={mode === "draw"}
+                    penColor={penColor}
+                    penWidth={penWidth}
+                    tool={drawTool}
+                    zoom={1}
+                    onSelectionChange={setSelectionBounds}
+                  />
                 }
               />
 
@@ -1715,19 +1710,17 @@ export default function NotebookEditor() {
                 zoom={zoom}
                 wide={expandedEditor}
                 paperOverlay={
-                  <Suspense fallback={null}>
-                    <KonvaDrawingCanvas
-                      ref={canvasRef}
-                      strokes={drawingState.strokes}
-                      onStrokesChange={handleStrokesChange}
-                      active={mode === "draw"}
-                      penColor={penColor}
-                      penWidth={penWidth}
-                      tool={drawTool}
-                      zoom={1}
-                      onSelectionChange={setSelectionBounds}
-                    />
-                  </Suspense>
+                  <KonvaDrawingCanvas
+                    ref={canvasRef}
+                    strokes={drawingState.strokes}
+                    onStrokesChange={handleStrokesChange}
+                    active={mode === "draw"}
+                    penColor={penColor}
+                    penWidth={penWidth}
+                    tool={drawTool}
+                    zoom={1}
+                    onSelectionChange={setSelectionBounds}
+                  />
                 }
               />
 

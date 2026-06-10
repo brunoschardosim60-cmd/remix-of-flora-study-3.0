@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Brain, CheckCircle2, XCircle, Loader2, Trophy, RotateCcw } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/useAuth";
-import { floraGenerateQuiz } from "@/lib/floraClient";
+import { floraGenerateQuiz, logUserAction } from "@/lib/floraClient";
 import { calculateQuizXp, QUIZ_BASE_XP, QUIZ_DIFFICULTY_MULTIPLIER } from "@/lib/gamification";
 import { MathText } from "./MathText";
+import { supabase } from "@/integrations/supabase/client";
 
 interface QuizQuestion {
   pergunta: string;
@@ -76,7 +77,7 @@ export function QuizDialog({ topic, open, onClose, onSaveResult, initialQuestion
       let pageContent: string | undefined;
       if (user?.id) {
         try {
-          const { data: nbData } = await (await import("@/integrations/supabase/client")).supabase
+          const { data: nbData } = await supabase
             .from("notebooks")
             .select("id")
             .eq("user_id", user.id)
@@ -84,7 +85,7 @@ export function QuizDialog({ topic, open, onClose, onSaveResult, initialQuestion
             .limit(1)
             .maybeSingle();
           if (nbData?.id) {
-            const { data: pages } = await (await import("@/integrations/supabase/client")).supabase
+            const { data: pages } = await supabase
               .from("notebook_pages")
               .select("content")
               .eq("notebook_id", nbData.id)
@@ -186,17 +187,15 @@ export function QuizDialog({ topic, open, onClose, onSaveResult, initialQuestion
 
     // Log each answer to student_performance via flora-engine
     if (user?.id) {
-      import("@/lib/floraClient").then(({ logUserAction }) => {
-        for (const q of questions) {
-          const isCorrect = !wrongQuestions.includes(q.pergunta);
-          logUserAction(
-            isCorrect ? "quiz_correct" : "quiz_wrong",
-            topic.id,
-            topic.materia,
-            { pergunta: q.pergunta.slice(0, 200) }
-          );
-        }
-      });
+      for (const q of questions) {
+        const isCorrect = !wrongQuestions.includes(q.pergunta);
+        logUserAction(
+          isCorrect ? "quiz_correct" : "quiz_wrong",
+          topic.id,
+          topic.materia,
+          { pergunta: q.pergunta.slice(0, 200) }
+        );
+      }
     }
   };
 
