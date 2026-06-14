@@ -225,7 +225,23 @@ export function FocusModeOverlay({
 
                 <div className="rounded-2xl border border-white/10 bg-background/45 p-4">
                   <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground mb-3">Música</p>
-                  <StudyMediaLinks />
+                  <div className="grid grid-cols-2 gap-2">
+                    {SOUND_OPTIONS.map((option) => {
+                      const Icon = option.icon;
+                      const active = sound === option.id;
+                      return (
+                        <button
+                          key={option.id}
+                          onClick={() => setSound(option.id)}
+                          className={`inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm transition ${active ? "border-primary bg-primary/15 text-primary" : "border-border/70 bg-background/35 text-muted-foreground hover:text-foreground"}`}
+                        >
+                          <Icon className="h-4 w-4" />
+                          {option.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <StudyMediaLinks className="mt-3 justify-center" />
                 </div>
               </div>
             </div>
