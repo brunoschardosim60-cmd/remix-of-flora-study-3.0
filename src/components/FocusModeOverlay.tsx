@@ -1,14 +1,23 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTheme } from "next-themes";
 import {
   Pause, Play, X, Square, RotateCcw,
-  Minimize2, Maximize2, Sun, Moon, CircleDot,
+  Minimize2, Maximize2, Sun, Moon, CircleDot, CloudRain, Coffee, Trees, Radio,
 } from "lucide-react";
 import { getFocusMessage } from "@/lib/focusMessages";
 import { StudyMediaLinks } from "@/components/StudyMediaLinks";
+import { FOCUS_SOUNDS, type FocusSoundType } from "@/lib/focusSounds";
 
 
 type FocusViewMode = "full" | "minimal";
+
+const SOUND_OPTIONS: { id: FocusSoundType; label: string; icon: typeof CloudRain }[] = [
+  { id: "none", label: "Silêncio", icon: CircleDot },
+  { id: "rain", label: "Chuva", icon: CloudRain },
+  { id: "lofi", label: "Lo-fi", icon: Radio },
+  { id: "cafe", label: "Café", icon: Coffee },
+  { id: "nature", label: "Floresta", icon: Trees },
+];
 
 
 interface FocusModeOverlayProps {
@@ -32,6 +41,8 @@ export function FocusModeOverlay({
 }: FocusModeOverlayProps) {
   const [viewMode, setViewMode] = useState<FocusViewMode>("full");
   const [showMinimalControls, setShowMinimalControls] = useState(true);
+  const [sound, setSound] = useState<FocusSoundType>("none");
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const { theme, setTheme } = useTheme();
 
   const message = useMemo(() => getFocusMessage(elapsed), [elapsed]);
@@ -71,6 +82,20 @@ export function FocusModeOverlay({
     return () => window.clearTimeout(timeout);
   }, [isOpen, viewMode, showMinimalControls]);
 
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    if (!isOpen || !running || sound === "none") return;
+    const audio = new Audio(FOCUS_SOUNDS[sound]);
+    audio.loop = true;
+    audio.volume = 0.28;
+    audioRef.current = audio;
+    void audio.play().catch(() => {});
+    return () => audio.pause();
+  }, [isOpen, running, sound]);
+
   if (!isOpen) return null;
 
   const cycleTheme = () => {
@@ -90,11 +115,12 @@ export function FocusModeOverlay({
 
   return (
     <div
-      className="fixed inset-0 z-50 overflow-hidden bg-background/80 backdrop-blur-2xl"
+      className="fixed inset-0 z-50 overflow-hidden bg-background/95 backdrop-blur-2xl"
       onMouseMove={revealMinimalControls}
       onClick={revealMinimalControls}
     >
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.08),_transparent_35%)]" />
+      <div className="focus-aurora absolute inset-0" />
+      <div className="focus-particles absolute inset-0" />
 
       {viewMode === "minimal" ? (
         <div className="relative flex min-h-dvh items-center justify-center p-6">
@@ -199,7 +225,23 @@ export function FocusModeOverlay({
 
                 <div className="rounded-2xl border border-white/10 bg-background/45 p-4">
                   <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground mb-3">Música</p>
-                  <StudyMediaLinks />
+                  <div className="grid grid-cols-2 gap-2">
+                    {SOUND_OPTIONS.map((option) => {
+                      const Icon = option.icon;
+                      const active = sound === option.id;
+                      return (
+                        <button
+                          key={option.id}
+                          onClick={() => setSound(option.id)}
+                          className={`inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm transition ${active ? "border-primary bg-primary/15 text-primary" : "border-border/70 bg-background/35 text-muted-foreground hover:text-foreground"}`}
+                        >
+                          <Icon className="h-4 w-4" />
+                          {option.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <StudyMediaLinks className="mt-3 justify-center" />
                 </div>
               </div>
             </div>

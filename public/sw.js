@@ -1,4 +1,4 @@
-// StudyFlow Service Worker — v4
+// StudyFlow Service Worker — v5
 // • Notificações de revisões agendadas (mantido)
 // • Cache offline para questões, revisões e flashcards (novo)
 //
@@ -9,7 +9,10 @@
 //     com a última cópia conhecida e atualiza em segundo plano quando online.
 //   - Demais requests → não interceptados.
 
-const DATA_CACHE = "studyflow-data-v4";
+const DATA_CACHE = "studyflow-data-v5";
+const REVISION_NOTIFICATION_TAG = "studyflow-revision";
+const REVISION_MIN_INTERVAL_MS = 24 * 60 * 60 * 1000;
+let _lastRevisionNotificationAt = 0;
 
 // Tabelas Supabase REST que valem a pena cachear para uso offline.
 // Match em /rest/v1/<tabela>?...
@@ -90,6 +93,10 @@ self.addEventListener("fetch", (event) => {
 // ─── Click em notificação → abre o app ───────────────────────────────────────
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
+  if (event.notification.tag === REVISION_NOTIFICATION_TAG && event.action === "dismiss") {
+    _lastRevisionNotificationAt = Date.now();
+    return;
+  }
   const url = event.notification.data?.url || "/";
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
@@ -116,15 +123,19 @@ self.addEventListener("message", (event) => {
 });
 
 function showStudyNotification(title, body, url = "/") {
+  const now = Date.now();
+  if (now - _lastRevisionNotificationAt < REVISION_MIN_INTERVAL_MS) return;
+  _lastRevisionNotificationAt = now;
   self.registration.showNotification(title, {
     body,
     icon: "/icon-192.png",
     badge: "/favicon.ico",
-    tag: "studyflow-revision",
-    renotify: true,
+    tag: REVISION_NOTIFICATION_TAG,
+    renotify: false,
+    requireInteraction: false,
     data: { url },
     actions: [
-      { action: "open", title: "Revisar agora" },
+      { action: "open", title: "Revisar 5 cards" },
       { action: "dismiss", title: "Mais tarde" },
     ],
   });
