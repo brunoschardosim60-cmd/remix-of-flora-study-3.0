@@ -733,14 +733,27 @@
     --nb-page-grid-width: 56px;
   }
 
+  /* No mobile, container precisa permitir scroll vertical e altura natural,
+     senão o paper-area colapsa e a tela fica em branco. */
+  .nb-editor-container {
+    overflow: visible;
+    min-height: 100dvh;
+    height: auto;
+  }
+
   .nb-layout {
     flex-direction: column;
     overflow: visible;
+    flex: 1 1 auto;
+    min-height: 0;
   }
 
   .nb-paper-area {
     min-width: 0;
     width: 100%;
+    flex: 1 1 auto;
+    min-height: 60dvh;
+    overflow: visible;
   }
 
   .nb-floating-toolbar {
