@@ -177,6 +177,7 @@ export default function Index() {
 
   const { firstName, dailyGoals } = useDashboardHeroData(user, profile, gamification);
   const { minutesAway, timeOfDay } = usePresence();
+  const studyNightMode = new Date().getHours() >= 20 || new Date().getHours() < 5;
 
   const handleNotesDialogUpdate = useCallback((topicId: string, notas: string) => {
     handleUpdateNotes(topicId, notas);
@@ -255,7 +256,7 @@ export default function Index() {
   }
 
   return (
-    <div className="min-h-dvh bg-background pb-16 md:pb-0">
+    <div className={`min-h-dvh bg-background pb-16 md:pb-0 ${studyNightMode ? "study-night" : ""}`}>
       <DashboardHeader user={user} bancoRoute={bancoRoute} bancoLabel={bancoLabel} onSignOut={signOut} />
       <main className="container max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
         <div className="w-full">
