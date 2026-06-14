@@ -203,6 +203,17 @@ export default function Index() {
     window.localStorage.setItem("studyflow.minimalist", String(minimalistMode));
   }, [minimalistMode]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("flashcards") !== "rapid") return;
+    if (dueFlashcardsCount <= 0) return;
+    openFlashcardSession();
+    params.delete("flashcards");
+    const next = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ""}`;
+    window.history.replaceState({}, "", next);
+  }, [dueFlashcardsCount, openFlashcardSession]);
+
 
   const tabs = [
     { id: "revisao" as Tab, label: "Cronograma de Revisao", icon: CalendarDays },
@@ -260,6 +271,7 @@ export default function Index() {
             revisionsCompletedToday={momentum.revisionsCompletedToday}
             comebackMode={momentum.comebackMode}
             onPrimaryAction={handlePrimaryAction}
+            onFocusAction={timer.start}
             primaryLabel={primaryLabel}
             timeOfDay={timeOfDay}
             minutesAway={minutesAway}
