@@ -12,6 +12,30 @@ export interface ReviewForNotification {
   interval_days: number;
 }
 
+const REVISION_NOTIFY_DAY_KEY = "sf-revision-notified-day";
+const REVISION_NOTIFY_SNOOZE_KEY = "sf-revision-snoozed-until";
+
+function todayKey(): string {
+  return new Date().toISOString().split("T")[0];
+}
+
+function canShowRevisionNotification(): boolean {
+  if (typeof localStorage === "undefined") return false;
+  try {
+    const snoozedUntil = Number(localStorage.getItem(REVISION_NOTIFY_SNOOZE_KEY) || 0);
+    if (snoozedUntil && Date.now() < snoozedUntil) return false;
+    return localStorage.getItem(REVISION_NOTIFY_DAY_KEY) !== todayKey();
+  } catch {
+    return false;
+  }
+}
+
+function markRevisionNotificationShown(): void {
+  try {
+    localStorage.setItem(REVISION_NOTIFY_DAY_KEY, todayKey());
+  } catch { /* ignore */ }
+}
+
 // ─── Verifica suporte ─────────────────────────────────────────────────────────
 export function notificationsSupported(): boolean {
   return "Notification" in window && "serviceWorker" in navigator;
@@ -30,14 +54,12 @@ export async function scheduleReviewNotifications(reviews: ReviewForNotification
   const reg = await navigator.serviceWorker.ready;
   reg.active?.postMessage({ type: "SCHEDULE_REVIEW_NOTIFICATIONS", reviews });
 
-  // Registra periodic sync se suportado (Chrome/Android)
+  // Evita loop de avisos: revisão pendente agora é no máximo diária pelo app.
   if ("periodicSync" in reg) {
     try {
-      await (reg as any).periodicSync.register("studyflow-revision-check", {
-        minInterval: 30 * 60 * 1000, // 30 min
-      });
+      await (reg as any).periodicSync.unregister?.("studyflow-revision-check");
     } catch {
-      // periodicSync pode falhar se permissão não dada — fallback abaixo
+      // pode falhar em navegadores sem suporte total — ignora
     }
   }
 
@@ -51,24 +73,20 @@ let _fallbackTimer: ReturnType<typeof setTimeout> | null = null;
 function scheduleLocalFallback(reviews: ReviewForNotification[]): void {
   if (_fallbackTimer) clearTimeout(_fallbackTimer);
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = todayKey();
   const overdue = reviews.filter(r => !r.completed && r.scheduled_date <= today);
 
-  // Throttle: no máximo uma notificação por dia, por aba/sessão.
-  const today2 = new Date().toISOString().split("T")[0];
-  const flagKey = `sf-revision-notified-${today2}`;
-  const alreadyNotified = typeof sessionStorage !== "undefined" && sessionStorage.getItem(flagKey);
-
-  if (overdue.length > 0 && Notification.permission === "granted" && !alreadyNotified) {
+  if (overdue.length > 0 && Notification.permission === "granted" && canShowRevisionNotification()) {
     _fallbackTimer = setTimeout(async () => {
-      try { sessionStorage.setItem(flagKey, "1"); } catch { /* ignore */ }
+      if (!canShowRevisionNotification()) return;
+      markRevisionNotificationShown();
       const reg = await navigator.serviceWorker.ready;
       const subjects = [...new Set(overdue.map(r => r.materia))].slice(0, 3).join(", ");
       reg.active?.postMessage({
         type: "SHOW_NOTIFICATION",
         title: `${overdue.length} ${overdue.length > 1 ? "revisões" : "revisão"} pendente${overdue.length > 1 ? "s" : ""}`,
         body: `Matérias: ${subjects}. Clique para revisar.`,
-        url: "/?revisar=hoje",
+        url: "/?flashcards=rapid",
       });
     }, 5000);
   }
@@ -79,16 +97,11 @@ function scheduleLocalFallback(reviews: ReviewForNotification[]): void {
 export async function notifyOverdueReviews(reviews: ReviewForNotification[]): Promise<void> {
   if (Notification.permission !== "granted") return;
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = todayKey();
   const overdue = reviews.filter(r => !r.completed && r.scheduled_date <= today);
   if (overdue.length === 0) return;
-
-  // Throttle: 1 por dia por sessão.
-  const flagKey = `sf-revision-notified-${today}`;
-  try {
-    if (sessionStorage.getItem(flagKey)) return;
-    sessionStorage.setItem(flagKey, "1");
-  } catch { /* ignore */ }
+  if (!canShowRevisionNotification()) return;
+  markRevisionNotificationShown();
 
   const reg = await navigator.serviceWorker.ready;
   const subjects = [...new Set(overdue.map(r => r.materia))].slice(0, 3).join(", ");
@@ -96,14 +109,14 @@ export async function notifyOverdueReviews(reviews: ReviewForNotification[]): Pr
     type: "SHOW_NOTIFICATION",
     title: `${overdue.length} ${overdue.length > 1 ? "revisões" : "revisão"} atrasada${overdue.length > 1 ? "s" : ""}`,
     body: `Não quebre sua sequência! ${subjects}`,
-    url: "/?revisar=atrasadas",
+    url: "/?flashcards=rapid",
   });
 }
 
 // ─── Hook de inicialização (chamar no App.tsx) ────────────────────────────────
 export async function initNotifications(reviews: ReviewForNotification[]): Promise<void> {
   if (!notificationsSupported()) return;
-  const permission = await requestNotificationPermission();
+  const permission = Notification.permission === "default" ? "default" : await requestNotificationPermission();
   if (permission !== "granted") return;
   await scheduleReviewNotifications(reviews);
   await notifyOverdueReviews(reviews);
