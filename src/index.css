@@ -181,6 +181,26 @@ html {
   animation: focus-particles-drift 24s linear infinite;
 }
 
+.study-night {
+  background:
+    radial-gradient(circle at 50% 0%, hsl(var(--accent) / 0.10), transparent 34%),
+    linear-gradient(180deg, hsl(var(--background)), hsl(var(--background)));
+}
+
+.study-night::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(circle at center, transparent 48%, hsl(var(--accent) / 0.10) 100%);
+}
+
+.study-night > * {
+  position: relative;
+  z-index: 1;
+}
+
 @keyframes focus-aurora-shift {
   from { transform: scale(1) translate3d(0, 0, 0); filter: saturate(0.95); }
   to { transform: scale(1.08) translate3d(-2%, 2%, 0); filter: saturate(1.15); }
