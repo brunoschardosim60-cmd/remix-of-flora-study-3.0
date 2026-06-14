@@ -1,14 +1,23 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTheme } from "next-themes";
 import {
   Pause, Play, X, Square, RotateCcw,
-  Minimize2, Maximize2, Sun, Moon, CircleDot,
+  Minimize2, Maximize2, Sun, Moon, CircleDot, CloudRain, Coffee, Trees, Radio,
 } from "lucide-react";
 import { getFocusMessage } from "@/lib/focusMessages";
 import { StudyMediaLinks } from "@/components/StudyMediaLinks";
+import { FOCUS_SOUNDS, type FocusSoundType } from "@/lib/focusSounds";
 
 
 type FocusViewMode = "full" | "minimal";
+
+const SOUND_OPTIONS: { id: FocusSoundType; label: string; icon: typeof CloudRain }[] = [
+  { id: "none", label: "Silêncio", icon: CircleDot },
+  { id: "rain", label: "Chuva", icon: CloudRain },
+  { id: "lofi", label: "Lo-fi", icon: Radio },
+  { id: "cafe", label: "Café", icon: Coffee },
+  { id: "nature", label: "Floresta", icon: Trees },
+];
 
 
 interface FocusModeOverlayProps {
