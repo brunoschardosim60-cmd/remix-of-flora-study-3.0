@@ -115,11 +115,12 @@ export function FocusModeOverlay({
 
   return (
     <div
-      className="fixed inset-0 z-50 overflow-hidden bg-background/80 backdrop-blur-2xl"
+      className="fixed inset-0 z-50 overflow-hidden bg-background/95 backdrop-blur-2xl"
       onMouseMove={revealMinimalControls}
       onClick={revealMinimalControls}
     >
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.08),_transparent_35%)]" />
+      <div className="focus-aurora absolute inset-0" />
+      <div className="focus-particles absolute inset-0" />
 
       {viewMode === "minimal" ? (
         <div className="relative flex min-h-dvh items-center justify-center p-6">
