@@ -71,6 +71,29 @@ export function DashboardHeader({ user, bancoRoute, bancoLabel, onSignOut }: Pro
           )}
         </div>
       </div>
+      {/* Mobile quick-nav: aparece em portrait/celular sem precisar girar a tela */}
+      <div className="md:hidden border-t border-border/60 bg-card/80">
+        <div className="container max-w-7xl mx-auto px-2 py-2 flex items-center gap-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          <Button variant="outline" size="sm" className="gap-1.5 shrink-0" onClick={() => navigate("/notebooks")}>
+            <NotebookPen className="w-4 h-4" /> Cadernos
+          </Button>
+          {user && (
+            <Button variant="outline" size="sm" className="gap-1.5 shrink-0" onClick={() => navigate(bancoRoute)}>
+              <Library className="w-4 h-4" /> {bancoLabel}
+            </Button>
+          )}
+          {user && (
+            <Button variant="outline" size="sm" className="gap-1.5 shrink-0" onClick={() => navigate("/redacao")}>
+              <FileText className="w-4 h-4" /> Redação
+            </Button>
+          )}
+          {user && (
+            <Button variant="outline" size="sm" className="gap-1.5 shrink-0" onClick={() => navigate("/analise")}>
+              <BarChart3 className="w-4 h-4" /> Análise
+            </Button>
+          )}
+        </div>
+      </div>
     </header>
   );
 }

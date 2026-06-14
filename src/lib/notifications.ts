@@ -54,9 +54,14 @@ function scheduleLocalFallback(reviews: ReviewForNotification[]): void {
   const today = new Date().toISOString().split("T")[0];
   const overdue = reviews.filter(r => !r.completed && r.scheduled_date <= today);
 
-  if (overdue.length > 0 && Notification.permission === "granted") {
-    // Notifica após 5 segundos se há revisões atrasadas e aba está aberta
+  // Throttle: no máximo uma notificação por dia, por aba/sessão.
+  const today2 = new Date().toISOString().split("T")[0];
+  const flagKey = `sf-revision-notified-${today2}`;
+  const alreadyNotified = typeof sessionStorage !== "undefined" && sessionStorage.getItem(flagKey);
+
+  if (overdue.length > 0 && Notification.permission === "granted" && !alreadyNotified) {
     _fallbackTimer = setTimeout(async () => {
+      try { sessionStorage.setItem(flagKey, "1"); } catch { /* ignore */ }
       const reg = await navigator.serviceWorker.ready;
       const subjects = [...new Set(overdue.map(r => r.materia))].slice(0, 3).join(", ");
       reg.active?.postMessage({
@@ -67,9 +72,7 @@ function scheduleLocalFallback(reviews: ReviewForNotification[]): void {
       });
     }, 5000);
   }
-
-  // Agenda próxima verificação em 30 min (enquanto aba aberta)
-  _fallbackTimer = setTimeout(() => scheduleLocalFallback(reviews), 30 * 60 * 1000);
+  // Sem loop de 30min: deixamos o periodicSync do SW cuidar disso quando suportado.
 }
 
 // ─── Notificação imediata (ex: ao abrir o app com revisões atrasadas) ─────────
@@ -79,6 +82,13 @@ export async function notifyOverdueReviews(reviews: ReviewForNotification[]): Pr
   const today = new Date().toISOString().split("T")[0];
   const overdue = reviews.filter(r => !r.completed && r.scheduled_date <= today);
   if (overdue.length === 0) return;
+
+  // Throttle: 1 por dia por sessão.
+  const flagKey = `sf-revision-notified-${today}`;
+  try {
+    if (sessionStorage.getItem(flagKey)) return;
+    sessionStorage.setItem(flagKey, "1");
+  } catch { /* ignore */ }
 
   const reg = await navigator.serviceWorker.ready;
   const subjects = [...new Set(overdue.map(r => r.materia))].slice(0, 3).join(", ");
