@@ -41,6 +41,8 @@ export function FocusModeOverlay({
 }: FocusModeOverlayProps) {
   const [viewMode, setViewMode] = useState<FocusViewMode>("full");
   const [showMinimalControls, setShowMinimalControls] = useState(true);
+  const [sound, setSound] = useState<FocusSoundType>("none");
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const { theme, setTheme } = useTheme();
 
   const message = useMemo(() => getFocusMessage(elapsed), [elapsed]);
@@ -79,6 +81,20 @@ export function FocusModeOverlay({
     const timeout = window.setTimeout(() => setShowMinimalControls(false), 3000);
     return () => window.clearTimeout(timeout);
   }, [isOpen, viewMode, showMinimalControls]);
+
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    if (!isOpen || !running || sound === "none") return;
+    const audio = new Audio(FOCUS_SOUNDS[sound]);
+    audio.loop = true;
+    audio.volume = 0.28;
+    audioRef.current = audio;
+    void audio.play().catch(() => {});
+    return () => audio.pause();
+  }, [isOpen, running, sound]);
 
   if (!isOpen) return null;
 
