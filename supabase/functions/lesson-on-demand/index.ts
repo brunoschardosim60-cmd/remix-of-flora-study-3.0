@@ -69,6 +69,33 @@ Esquema obrigatório:
 }
 Linguagem: PT-BR, didática, calorosa, sem rodeios. Exemplos brasileiros. NUNCA invente fatos históricos.`;
 
+function sanitizeJson(raw: string): string {
+  let s = (raw || "").trim();
+  // Remove code fences ```json ... ```
+  s = s.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
+  // Remove trailing commas before } or ]
+  s = s.replace(/,(\s*[}\]])/g, "$1");
+  return s.trim();
+}
+
+async function callAI(lovableKey: string, model: string, userPrompt: string, signal: AbortSignal) {
+  return await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    signal,
+    headers: { Authorization: `Bearer ${lovableKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: "system", content: SYSTEM },
+        { role: "user", content: userPrompt },
+      ],
+      response_format: { type: "json_object" },
+      max_tokens: 8000,
+      temperature: 0.6,
+    }),
+  });
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -115,33 +142,38 @@ serve(async (req) => {
 
     const userPrompt = `Matéria: ${materia}\nTema: ${tema}\nNível: ${level}\nGere a aula completa em JSON conforme o esquema.`;
 
-    const ai = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${lovableKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-pro",
-        messages: [
-          { role: "system", content: SYSTEM },
-          { role: "user", content: userPrompt },
-        ],
-        response_format: { type: "json_object" },
-        max_tokens: 8000,
-        temperature: 0.6,
-      }),
-    });
-
-    if (!ai.ok) {
-      const t = await ai.text();
-      if (ai.status === 429) return json({ error: "Limite de uso da IA. Tente em alguns minutos." }, 429);
-      if (ai.status === 402) return json({ error: "Créditos esgotados. Adicione mais em Settings." }, 402);
-      console.error("AI error:", ai.status, t);
-      return json({ error: `IA falhou (${ai.status})` }, 502);
+    // Tenta gemini-2.5-pro primeiro; se falhar (5xx/timeout) cai para flash.
+    const models = ["google/gemini-2.5-pro", "google/gemini-2.5-flash"];
+    let ai: Response | null = null;
+    let lastErr = "";
+    for (const model of models) {
+      const ctl = new AbortController();
+      const to = setTimeout(() => ctl.abort(), 55_000);
+      try {
+        ai = await callAI(lovableKey, model, userPrompt, ctl.signal);
+        clearTimeout(to);
+        if (ai.ok) break;
+        if (ai.status === 429) return json({ error: "Limite de uso da IA. Tente em alguns minutos." }, 429);
+        if (ai.status === 402) return json({ error: "Créditos esgotados. Adicione mais em Settings." }, 402);
+        lastErr = `${model} retornou HTTP ${ai.status}`;
+        console.error("AI error:", model, ai.status, await ai.text());
+        ai = null;
+      } catch (e) {
+        clearTimeout(to);
+        lastErr = `${model}: ${(e as Error).message}`;
+        console.error("AI exception:", model, e);
+      }
     }
+    if (!ai) return json({ error: `IA indisponível agora (${lastErr}). Tente novamente em 1 min.` }, 502);
+
     const aiJson = await ai.json();
-    const raw = aiJson?.choices?.[0]?.message?.content;
+    const raw = aiJson?.choices?.[0]?.message?.content ?? "";
     let lesson: unknown;
-    try { lesson = JSON.parse(raw); } catch {
-      return json({ error: "IA retornou JSON inválido" }, 502);
+    try {
+      lesson = JSON.parse(sanitizeJson(String(raw)));
+    } catch (e) {
+      console.error("JSON parse failed. Raw head:", String(raw).slice(0, 300));
+      return json({ error: "IA retornou JSON inválido — tente reformular o tema." }, 502);
     }
 
     // 3) Salva no cache permanente

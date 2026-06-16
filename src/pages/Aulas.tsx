@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { BottomNav } from "@/components/BottomNav";
 import { toast } from "sonner";
+import { suggestCorrection } from "@/lib/textCorrector";
 
 type Lesson = {
   id: string;
@@ -72,19 +73,26 @@ export default function Aulas() {
   }, [lessons, search]);
 
   const askFlora = async () => {
-    if (!askTema.trim()) {
+    const raw = askTema.trim();
+    if (!raw) {
       toast.info("Digite o tema");
       return;
     }
+    const corrected = suggestCorrection(raw);
+    if (corrected && corrected !== raw) {
+      setAskTema(corrected);
+      toast.info(`Corrigi para "${corrected}"`);
+    }
+    const finalTema = corrected || raw;
     setGenerating(true);
     setOnDemand(null);
     try {
       const { data, error } = await supabase.functions.invoke("lesson-on-demand", {
-        body: { materia: askMateria, tema: askTema.trim() },
+        body: { materia: askMateria, tema: finalTema },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      setOnDemand({ materia: askMateria, tema: askTema.trim(), lesson: data.lesson, cached: !!data.cached });
+      setOnDemand({ materia: askMateria, tema: finalTema, lesson: data.lesson, cached: !!data.cached });
       toast.success(data.cached ? "Aula recuperada do cache" : "Aula gerada pela Flora");
     } catch (e: any) {
       toast.error(e?.message || "Erro ao gerar aula");
