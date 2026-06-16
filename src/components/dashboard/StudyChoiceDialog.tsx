@@ -1,4 +1,3 @@
-import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import type { StudyTopic } from "@/lib/studyData";
 
@@ -21,7 +20,6 @@ export function StudyChoiceDialog({
   onChooseTimerOnly,
   onChooseAulao,
 }: Props) {
-  const navigate = useNavigate();
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
@@ -55,12 +53,6 @@ export function StudyChoiceDialog({
             <div className="text-left">
               <p className="font-semibold text-sm">Aulão com a Flora</p>
               <p className="text-xs text-muted-foreground">Aula explicada com macetes, redação e busca de conteúdo</p>
-            </div>
-          </Button>
-          <Button variant="outline" className="w-full justify-start h-auto py-3" onClick={() => { onClose(); navigate("/explica-foto"); }}>
-            <div className="text-left">
-              <p className="font-semibold text-sm">📷 Explica essa foto</p>
-              <p className="text-xs text-muted-foreground">Fotografe um exercício e a Flora resolve passo a passo</p>
             </div>
           </Button>
         </div>
