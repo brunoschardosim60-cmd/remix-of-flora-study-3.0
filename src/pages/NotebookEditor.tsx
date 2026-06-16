@@ -270,7 +270,8 @@ export default function NotebookEditor() {
   const [currentPage, setCurrentPage] = useState(0);
   const page = pages[currentPage];
   const [loading, setLoading] = useState(true);
-  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error" | "offline">("idle");
+  const [pendingOffline, setPendingOffline] = useState<number>(0);
   const [darkMode, setDarkMode] = useState(false);
   const [mode, setMode] = useState<"text" | "draw">("text");
   const [pageTemplate, setPageTemplate] = useState<PageTemplate>("blank");
