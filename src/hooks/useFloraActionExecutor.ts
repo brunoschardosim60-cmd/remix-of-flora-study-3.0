@@ -57,6 +57,15 @@ export function useFloraActionExecutor(onClose: () => void) {
       } else if (data?.type === "meta_dia") {
         window.dispatchEvent(new CustomEvent("flora-meta-dia", { detail: data }));
         toast.success("Meta do dia atualizada!");
+      } else if (data?.type === "image") {
+        if (data.imageUrl) {
+          window.dispatchEvent(new CustomEvent("flora-chat-append", {
+            detail: { role: "assistant", content: `![${data.prompt || "Imagem"}](${data.imageUrl})` },
+          }));
+          toast.success(data.generated ? "Imagem gerada." : "Imagem encontrada.");
+        } else {
+          toast.error(data.error || "Não consegui gerar a imagem.");
+        }
       }
     } catch (err) {
       console.error("Action error:", err);
