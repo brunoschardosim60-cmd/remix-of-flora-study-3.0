@@ -53,9 +53,9 @@ export function useFloraChatStream({ isOpen, onClose }: Options) {
   // Permite que outras partes do app (ex.: executor de ações) adicionem mensagens no chat
   useEffect(() => {
     const handler = (e: Event) => {
-      const detail = (e as CustomEvent).detail as { role?: "user" | "assistant"; content?: string } | undefined;
+      const detail = (e as CustomEvent).detail as { role?: "user" | "assistant"; content?: string; metadata?: Record<string, unknown> } | undefined;
       if (!detail?.content) return;
-      setMessages((prev) => [...prev, { role: detail.role || "assistant", content: detail.content! }]);
+      setMessages((prev) => [...prev, { role: detail.role || "assistant", content: detail.content!, metadata: detail.metadata }]);
     };
     window.addEventListener("flora-chat-append", handler);
     return () => window.removeEventListener("flora-chat-append", handler);
@@ -99,6 +99,7 @@ export function useFloraChatStream({ isOpen, onClose }: Options) {
           const loaded: (FloraMessage & { seq?: number; created_at?: string })[] = data.messages.map((m: any) => ({
             role: m.role as "user" | "assistant",
             content: m.content,
+            metadata: m.metadata || undefined,
             seq: typeof m.seq === "number" ? m.seq : undefined,
             created_at: m.created_at,
           }));
@@ -112,7 +113,7 @@ export function useFloraChatStream({ isOpen, onClose }: Options) {
             loaded.sort((a, b) => (a.seq ?? 0) - (b.seq ?? 0));
             toast.info("Mensagens foram reordenadas automaticamente.");
           }
-          setMessages(loaded.map(({ role, content }) => ({ role, content })));
+          setMessages(loaded.map(({ role, content, metadata }) => ({ role, content, metadata })));
         }
       } catch { /* silent */ }
       setChatLoaded(true);
@@ -208,7 +209,7 @@ export function useFloraChatStream({ isOpen, onClose }: Options) {
       supabase.functions.invoke("flora-engine", {
         body: {
           action: "save_chat",
-          data: { messages: messages.slice(-100).map((m) => ({ role: m.role, content: m.content })) },
+          data: { messages: messages.slice(-100).map((m) => ({ role: m.role, content: m.content, metadata: m.metadata || {} })) },
         },
       }).catch(() => {});
     }, 2000);

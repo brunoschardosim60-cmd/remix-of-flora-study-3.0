@@ -639,6 +639,7 @@ export type Database = {
           content: string
           created_at: string
           id: string
+          metadata: Json
           role: string
           seq: number
           user_id: string
@@ -647,6 +648,7 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          metadata?: Json
           role?: string
           seq?: number
           user_id: string
@@ -655,6 +657,7 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          metadata?: Json
           role?: string
           seq?: number
           user_id?: string
@@ -1084,6 +1087,27 @@ export type Database = {
           topic_id?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      ocr_cache: {
+        Row: {
+          created_at: string
+          hash: string
+          hits: number
+          text: string
+        }
+        Insert: {
+          created_at?: string
+          hash: string
+          hits?: number
+          text: string
+        }
+        Update: {
+          created_at?: string
+          hash?: string
+          hits?: number
+          text?: string
         }
         Relationships: []
       }
