@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Flame, Maximize2, Target, TrendingUp } from "lucide-react";
+import { Flame, Target, TrendingUp } from "lucide-react";
 
 interface DailyGoalCard {
   id: "minutes" | "revisions" | "quiz";
@@ -75,12 +75,6 @@ export function DashboardHero({
               </p>
             </div>
             <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3">
-              {onFocusAction && (
-                <Button size="lg" onClick={onFocusAction} className="min-h-14 w-full gap-2 text-base sm:w-auto sm:min-w-[220px]">
-                  <Maximize2 className="h-5 w-5" />
-                  Entrar em foco
-                </Button>
-              )}
               <Button size="lg" className="w-full sm:w-auto sm:min-w-[180px]" onClick={onPrimaryAction}>
                 {primaryLabel}
               </Button>
