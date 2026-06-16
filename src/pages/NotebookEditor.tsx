@@ -430,22 +430,34 @@ export default function NotebookEditor() {
         return;
       }
 
+      const payload = {
+        content: currentPageData.content,
+        drawing_data: drawingToJson(currentPageData.drawing_data ?? emptyDrawing),
+        tags: currentMeta?.tags ?? [],
+      };
+
+      // Offline: queue and report
+      if (typeof navigator !== "undefined" && navigator.onLine === false) {
+        enqueuePageUpdate({ pageId: currentPageData.id, ...payload });
+        setPendingOffline(pendingCount());
+        setSaveStatus("offline");
+        return;
+      }
+
       try {
         const { error } = await supabase
           .from("notebook_pages")
-          .update({
-            content: currentPageData.content,
-            drawing_data: drawingToJson(currentPageData.drawing_data ?? emptyDrawing),
-            tags: currentMeta?.tags ?? [],
-          })
+          .update(payload)
           .eq("id", currentPageData.id);
 
         if (error) throw error;
         setSaveStatus("saved");
       } catch (error) {
         console.error("Failed to save page:", error);
-        setSaveStatus("error");
-        toast.error("Erro ao salvar página.");
+        // Cai pra offline queue ao invés de perder dados
+        enqueuePageUpdate({ pageId: currentPageData.id, ...payload });
+        setPendingOffline(pendingCount());
+        setSaveStatus("offline");
       }
     }, 1000);
 
