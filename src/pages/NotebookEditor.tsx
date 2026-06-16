@@ -71,6 +71,7 @@ import { loadJsonStorage, loadStringStorage } from "@/lib/storage";
 import { getNotebookAIActivities, recordAIActivity, type AIActivityItem } from "@/lib/aiActivityStore";
 import { scheduleSpacedReviews } from "@/lib/spacedReviews";
 import type { Json } from "@/integrations/supabase/types";
+import { enqueuePageUpdate, flushQueue, pendingCount } from "@/lib/notebookOfflineQueue";
 
 type PageTemplate = "blank" | "lined" | "grid" | "dotted" | "physics" | "chemistry" | "essay";
 
