@@ -71,6 +71,7 @@ import { loadJsonStorage, loadStringStorage } from "@/lib/storage";
 import { getNotebookAIActivities, recordAIActivity, type AIActivityItem } from "@/lib/aiActivityStore";
 import { scheduleSpacedReviews } from "@/lib/spacedReviews";
 import type { Json } from "@/integrations/supabase/types";
+import { enqueuePageUpdate, flushQueue, pendingCount } from "@/lib/notebookOfflineQueue";
 
 type PageTemplate = "blank" | "lined" | "grid" | "dotted" | "physics" | "chemistry" | "essay";
 
@@ -269,7 +270,8 @@ export default function NotebookEditor() {
   const [currentPage, setCurrentPage] = useState(0);
   const page = pages[currentPage];
   const [loading, setLoading] = useState(true);
-  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error" | "offline">("idle");
+  const [pendingOffline, setPendingOffline] = useState<number>(0);
   const [darkMode, setDarkMode] = useState(false);
   const [mode, setMode] = useState<"text" | "draw">("text");
   const [pageTemplate, setPageTemplate] = useState<PageTemplate>("blank");
@@ -428,22 +430,34 @@ export default function NotebookEditor() {
         return;
       }
 
+      const payload = {
+        content: currentPageData.content,
+        drawing_data: drawingToJson(currentPageData.drawing_data ?? emptyDrawing),
+        tags: currentMeta?.tags ?? [],
+      };
+
+      // Offline: queue and report
+      if (typeof navigator !== "undefined" && navigator.onLine === false) {
+        enqueuePageUpdate({ pageId: currentPageData.id, ...payload });
+        setPendingOffline(pendingCount());
+        setSaveStatus("offline");
+        return;
+      }
+
       try {
         const { error } = await supabase
           .from("notebook_pages")
-          .update({
-            content: currentPageData.content,
-            drawing_data: drawingToJson(currentPageData.drawing_data ?? emptyDrawing),
-            tags: currentMeta?.tags ?? [],
-          })
+          .update(payload)
           .eq("id", currentPageData.id);
 
         if (error) throw error;
         setSaveStatus("saved");
       } catch (error) {
         console.error("Failed to save page:", error);
-        setSaveStatus("error");
-        toast.error("Erro ao salvar página.");
+        // Cai pra offline queue ao invés de perder dados
+        enqueuePageUpdate({ pageId: currentPageData.id, ...payload });
+        setPendingOffline(pendingCount());
+        setSaveStatus("offline");
       }
     }, 1000);
 
@@ -451,6 +465,34 @@ export default function NotebookEditor() {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     };
   }, [currentPageData, id, currentMeta?.tags]);
+
+  // Offline-first: tenta dar flush ao carregar e quando a conexão volta
+  useEffect(() => {
+    setPendingOffline(pendingCount());
+    const doFlush = async () => {
+      if (typeof navigator !== "undefined" && navigator.onLine === false) return;
+      const before = pendingCount();
+      if (before === 0) return;
+      const { ok, fail } = await flushQueue();
+      const remaining = pendingCount();
+      setPendingOffline(remaining);
+      if (ok > 0 && remaining === 0) {
+        setSaveStatus("saved");
+        toast.success(`Sincronizado: ${ok} alteraç${ok === 1 ? "ão" : "ões"} salva${ok === 1 ? "" : "s"}.`);
+      } else if (fail > 0) {
+        setSaveStatus("offline");
+      }
+    };
+    void doFlush();
+    const onOnline = () => void doFlush();
+    const onOffline = () => setSaveStatus("offline");
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+    return () => {
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+    };
+  }, []);
 
   // Load notebook and pages
   useEffect(() => {
@@ -1448,6 +1490,14 @@ export default function NotebookEditor() {
               <span className="flex items-center gap-1 text-destructive">
                 <CloudOff className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Erro ao salvar</span>
+              </span>
+            )}
+            {saveStatus === "offline" && (
+              <span className="flex items-center gap-1 text-amber-500" title="Suas alterações estão salvas no dispositivo e serão sincronizadas quando a conexão voltar">
+                <CloudOff className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">
+                  Offline{pendingOffline > 0 ? ` · ${pendingOffline} pendente${pendingOffline === 1 ? "" : "s"}` : ""}
+                </span>
               </span>
             )}
           </div>
