@@ -1,6 +1,8 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Send, X } from "lucide-react";
+import { Send, X, Camera, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { FloraQuotaIndicator } from "@/components/FloraQuotaIndicator";
 import { FloraIcon } from "@/components/FloraIcon";
 import ReactMarkdown from "react-markdown";
@@ -16,6 +18,30 @@ interface FloraChat {
 export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
   const { messages, input, setInput, isSending, objetivo, send } = useFloraChatStream({ isOpen, onClose });
   const scrollRef = useRef<HTMLDivElement>(null);
+  const photoRef = useRef<HTMLInputElement>(null);
+  const [ocrLoading, setOcrLoading] = useState(false);
+
+  const handlePhoto = async (file: File) => {
+    if (!file) return;
+    setOcrLoading(true);
+    try {
+      const buf = new Uint8Array(await file.arrayBuffer());
+      let bin = "";
+      for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i]);
+      const base64 = btoa(bin);
+      const { data, error } = await supabase.functions.invoke("ocr-notebook", { body: { image: base64 } });
+      if (error) throw error;
+      const text = String(data?.text || "").trim();
+      if (!text) throw new Error("Não consegui ler o texto da foto.");
+      setInput(`Explica essa foto passo a passo:\n\n${text}`);
+      toast.success("Texto extraído. Revise e envie.");
+    } catch (e: any) {
+      toast.error(e?.message || "Erro ao ler foto");
+    } finally {
+      setOcrLoading(false);
+      if (photoRef.current) photoRef.current.value = "";
+    }
+  };
 
   // Pré-preenche input quando abre com mensagem inicial
   useEffect(() => {
@@ -113,6 +139,26 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
       {/* Input */}
       <div className="p-3 border-t border-border">
         <form onSubmit={(e) => { e.preventDefault(); send(); }} className="flex items-end gap-2">
+          <input
+            ref={photoRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) void handlePhoto(f); }}
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="shrink-0"
+            onClick={() => photoRef.current?.click()}
+            disabled={ocrLoading || isSending}
+            aria-label="Explica essa foto"
+            title="Explica essa foto"
+          >
+            {ocrLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
+          </Button>
           <textarea
             value={input}
             onChange={(e) => {
