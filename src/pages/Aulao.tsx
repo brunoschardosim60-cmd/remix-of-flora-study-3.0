@@ -6,6 +6,7 @@ import { FloraThinkingLoader } from "@/components/FloraThinkingLoader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { suggestCorrection } from "@/lib/textCorrector";
 import { floraGenerateLessonSkeleton, floraGenerateLessonBlock, type FloraPersonality } from "@/lib/floraClient";
 import { Lesson } from "@/lib/types";
 import { InteractiveLessonPlayer } from "@/components/InteractiveLessonPlayer";
@@ -262,8 +263,15 @@ export default function Aulao() {
   const handleSearch = async () => {
     const q = searchQuery.trim();
     if (!q) { toast.error("Digite um assunto para buscar."); return; }
+    // Auto-correção de erros comuns
+    const corrected = suggestCorrection(q);
+    if (corrected && corrected !== q) {
+      setSearchQuery(corrected);
+      toast.info(`Corrigi para "${corrected}"`);
+    }
+    const finalQ = corrected || q;
     // Escape caracteres que quebram PostgREST .or() — vírgula/aspas/parênteses
-    const safeQ = q.replace(/[,"'()]/g, " ").replace(/\s+/g, " ").trim();
+    const safeQ = finalQ.replace(/[,"'()]/g, " ").replace(/\s+/g, " ").trim();
     setSearchLoading(true);
     setSearchResults([]);
     const ctl = new AbortController();
