@@ -42,7 +42,7 @@ function extractBalancedJSON(text: string, startIdx: number): { json: string; en
 export function parseFloraActions(text: string): { cleanText: string; actions: FloraAction[] } {
   const actions: FloraAction[] = [];
   let cleanText = text;
-  const actionTokenRegex = /\[AÇÃO:(CRONOGRAMA|REMOVER_CRONOGRAMA|QUIZ|FLASHCARDS|POMODORO|CADERNO|META_DIA)\]\s*/g;
+  const actionTokenRegex = /\[AÇÃO:(CRONOGRAMA|REMOVER_CRONOGRAMA|QUIZ|FLASHCARDS|POMODORO|CADERNO|META_DIA|IMAGEM)\]\s*/g;
   let match;
   const removals: { start: number; end: number }[] = [];
   while ((match = actionTokenRegex.exec(text)) !== null) {

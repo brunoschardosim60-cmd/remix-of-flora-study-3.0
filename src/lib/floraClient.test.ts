@@ -12,7 +12,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // ─── Mock do módulo supabase ──────────────────────────────────────────────────
-const mockInvoke = vi.fn();
+// vi.mock é hoisted para o topo do arquivo, então variáveis comuns ainda não existem
+// quando a factory roda. Usamos vi.hoisted para garantir que mockInvoke esteja pronto.
+const { mockInvoke } = vi.hoisted(() => ({ mockInvoke: vi.fn() }));
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     functions: { invoke: mockInvoke },
