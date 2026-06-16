@@ -466,6 +466,34 @@ export default function NotebookEditor() {
     };
   }, [currentPageData, id, currentMeta?.tags]);
 
+  // Offline-first: tenta dar flush ao carregar e quando a conexão volta
+  useEffect(() => {
+    setPendingOffline(pendingCount());
+    const doFlush = async () => {
+      if (typeof navigator !== "undefined" && navigator.onLine === false) return;
+      const before = pendingCount();
+      if (before === 0) return;
+      const { ok, fail } = await flushQueue();
+      const remaining = pendingCount();
+      setPendingOffline(remaining);
+      if (ok > 0 && remaining === 0) {
+        setSaveStatus("saved");
+        toast.success(`Sincronizado: ${ok} alteraç${ok === 1 ? "ão" : "ões"} salva${ok === 1 ? "" : "s"}.`);
+      } else if (fail > 0) {
+        setSaveStatus("offline");
+      }
+    };
+    void doFlush();
+    const onOnline = () => void doFlush();
+    const onOffline = () => setSaveStatus("offline");
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+    return () => {
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+    };
+  }, []);
+
   // Load notebook and pages
   useEffect(() => {
     async function loadNotebook() {
