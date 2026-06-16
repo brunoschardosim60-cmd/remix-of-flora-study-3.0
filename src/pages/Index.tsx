@@ -10,6 +10,7 @@ import { FocusMiniPlayer } from "@/components/FocusMiniPlayer";
 import { QuickStartChecklist } from "@/components/QuickStartChecklist";
 import { DashboardCustomizer, useDashboardWidgets } from "@/components/DashboardCustomizer";
 import { BottomNav } from "@/components/BottomNav";
+import { FloraTour } from "@/components/onboarding/FloraTour";
 import { useStudyDashboard } from "@/hooks/useStudyDashboard";
 import { useStudyTimer } from "@/hooks/useStudyTimer";
 import { useOnboardingGuard } from "@/hooks/useOnboardingGuard";
@@ -575,6 +576,9 @@ export default function Index() {
 
       {/* Bottom Navigation - mobile only */}
       <BottomNav />
+
+      {/* Tour de boas-vindas (1ª visita) */}
+      <FloraTour />
     </div>
   );
 }

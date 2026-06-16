@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+import "./styles/focus.css";
 import { initializeAppStorageVersion, repairCorruptedAppStorage } from "./lib/storage";
 
 initializeAppStorageVersion();
@@ -48,7 +49,14 @@ window.addEventListener("unhandledrejection", (e) => {
 });
 
 const isLovablePreview = /lovable(project)?\.com|lovable\.app/.test(window.location.hostname);
-const shouldRegisterServiceWorker = "serviceWorker" in navigator && !import.meta.env.DEV && !isLovablePreview;
+// Flag opt-in: defina VITE_ENABLE_SW=true em .env.production para ativar o
+// Service Worker em prod. Em DEV ou preview Lovable, sempre desativado.
+const swEnvFlag = String((import.meta as any).env?.VITE_ENABLE_SW ?? "").toLowerCase() === "true";
+const shouldRegisterServiceWorker =
+  "serviceWorker" in navigator &&
+  !import.meta.env.DEV &&
+  !isLovablePreview &&
+  swEnvFlag;
 
 if ("serviceWorker" in navigator && !shouldRegisterServiceWorker) {
   navigator.serviceWorker.getRegistrations().then((regs) => regs.forEach((reg) => reg.unregister())).catch(() => {});

@@ -1,109 +1,68 @@
-## Objetivo
+Vou implementar as melhorias em etapas priorizadas por impacto/risco. Cada etapa é independente e entregável; ao final de cada uma envio um mini-relatório.
 
-Implementar duas frentes em paralelo:
+## Etapa 1 — Fundação técnica (baixo risco, alto valor)
+1. **Logger util** (`src/lib/logger.ts`) — silencia `log/info/debug` em `import.meta.env.PROD`, mantém `warn/error`. Substituir os ~55 `console.*` por `logger.*` (script `sed` + revisão manual nos críticos).
+2. **CSS de foco** → mover `focus-aurora`, `focus-particles`, `study-night` para `src/styles/focus.css` e importar no `main.tsx`. Enxuga `index.css`.
+3. **Lazy loading** — devolver `lazy()` para `KonvaDrawingCanvas`, `Aulao`, `CursoPlayer` (os 3 mais pesados) com `<Suspense fallback={<Loader/>}>`. Manter `NotebookEditor`, `QuizDialog`, `FlashcardSessionDialog` estáticos (foram corrigidos no mobile, regressão alta).
+4. **Service Worker prod flag** — `VITE_ENABLE_SW=true` em `.env.production`, condicional no `main.tsx`.
+5. **Tipagem** — tipar `floraClient`, `aiActivityStore`, `useFloraChatStream` removendo `any`.
 
-**A) Dashboard vivo** — visão analítica viva do aluno: mapa de calor por matéria, evolução temporal, pontos fracos detectados pela Flora. Reutiliza componentes/estilo já existentes (sem mudar layout/cores).
+## Etapa 2 — UX Mobile + Notificações
+6. **BottomNav mobile** — novo `src/components/layout/BottomNav.tsx` com 5 ícones (Hoje, Cadernos, Banco, Flora, Eu). Visível só em `md:hidden`. Esconde scroll horizontal da navbar atual no mobile.
+7. **Resumo único de revisões 19h** — em `src/lib/notifications.ts`:
+   - Remover push imediato por item.
+   - Agendar 1 notificação diária às 19h: "Você tem N revisões pendentes hoje" → clica → abre `/revisoes` (sessão rápida).
+   - Persistir `last_review_digest_date` no localStorage para idempotência.
 
-**B) Pré-cache inteligente de conteúdo** — popular `content_cache` com aulas, blocos, imagens didáticas e questões reais (ENEM / concurso) para reduzir custo de tokens nas próximas aulas.
+## Etapa 3 — Onboarding "Tour Flora 30s"
+8. **`src/components/onboarding/FloraTour.tsx`** — overlay 4 steps com Flora resolvendo questão exemplo de matemática (animação de digitação + resultado). Trigger no fim do onboarding atual. Skip button. Marca `flora_tour_seen` no localStorage.
 
----
+## Etapa 4 — Features de estudo
+9. **Simulado adaptativo semanal** — nova rota `/simulado-semanal`:
+   - Edge function `weekly-adaptive-quiz` que lê `weak_topics` do usuário (já existe análise) e gera 10 questões via Lovable AI.
+   - UI com cronômetro, 1 questão por vez, relatório final.
+   - Card no dashboard "Simulado da semana" (toda segunda).
+10. **"Explica essa foto"** — em `src/pages/Banco.tsx` (ou nova `/explica-foto`):
+    - Botão "Tirar foto do exercício".
+    - Reusa OCR do notebook + envia para Flora resolver passo a passo (chat existente).
+11. **Modo prova ENEM** — nova rota `/simulado-enem`:
+    - 180 questões, 5h30 timer, sem Flora.
+    - Relatório final usando `predictENEM` existente → TRI estimada por área.
+12. **Resumo em áudio do caderno** — botão "🎧 Ouvir resumo" no `NotebookEditor`:
+    - Edge function gera resumo → TTS via Lovable AI (gemini audio) → player inline.
 
-## Parte A — Dashboard vivo
+## Etapa 5 — Conteúdo curado
+13. **Biblioteca de aulões** — tabela `curated_lessons` (matéria, tópico, conteúdo MD, video_url opcional). Seed inicial com 30 aulas (script). Página `/aulas` lista por matéria. Aulão sob demanda fica como fallback.
+14. **Trilha "ENEM em 90 dias"** — tabela `study_tracks` + `track_checkins`. Página `/trilhas` com progresso diário e check-in da Flora.
 
-### 1. Página `/analise` (já existe `src/pages/Analise.tsx`) — adicionar 3 widgets
+## Detalhes técnicos por etapa
 
-**1.1 Mapa de calor por matéria (`SubjectHeatmap.tsx`)**
-- Grid: linhas = matérias do aluno, colunas = últimos 14 dias.
-- Cor da célula deriva de tempo estudado + acertos do dia (HSL via tokens existentes: `--primary` com alpha variável, sem cor nova).
-- Fonte de dados: `study_sessions` (duração) + `question_attempts` + `concurso_question_attempts` (acertos) + `study_topics.quiz_last_score`.
-- Cálculo client-side com `useStudyDashboard` estendido.
+**Etapa 1**
+```text
+src/lib/logger.ts          (novo)
+src/styles/focus.css       (novo, recortado de index.css)
+src/main.tsx               (importa focus.css, SW flag)
+src/App.tsx                (lazy KonvaDrawingCanvas/Aulao/CursoPlayer)
+src/lib/floraClient.ts     (tipos)
+src/lib/aiActivityStore.ts (tipos)
+src/hooks/useFloraChatStream.ts (tipos)
++ substituição em massa de console.*
+```
 
-**1.2 Linha de evolução (`EvolutionChart.tsx`)**
-- Gráfico recharts (já no projeto) — 2 linhas: horas/dia e % acerto (média móvel 7d).
-- Período: últimos 30 dias.
+**Etapa 2**
+```text
+src/components/layout/BottomNav.tsx (novo)
+src/components/Layout.tsx ou App.tsx (montar BottomNav)
+src/lib/notifications.ts  (digest 19h, remover push por item)
+```
 
-**1.3 Pontos fracos da Flora (`WeakSpotsCard.tsx`)**
-- Lê `student_performance` ordenado por `prioridade desc` + `accuracy asc` (top 5).
-- Cada item: matéria · tema · accuracy · botão "Estudar agora" (chama `floraStudyNow` com tema fixo) e "Gerar quiz de reforço".
-- Se `student_performance` estiver vazio, faz fallback agregando `quiz_errors` de `study_topics`.
-
-### 2. Hook `useDashboardLive.ts`
-- Centraliza queries (uma chamada por widget, com cache em memória 60s).
-- Retorna `{ heatmap, evolution, weakSpots, loading, error }`.
-
-### 3. Integração na página `Analise.tsx`
-- Adiciona seção "Dashboard vivo" no topo, antes do conteúdo atual.
-- Mantém layout/grid existente (Tailwind tokens).
-
----
-
-## Parte B — Pré-cache inteligente
-
-### 1. Estender `seed-content-cache` (já existe)
-Adicionar 3 modos novos ao endpoint:
-
-**1.1 `mode: "blocks"`** — gera blocos individuais (não apenas aulas inteiras), cada bloco salvo com `cache_key` no formato `block:materia:tema:idx:total:mode`. Aproveita o mesmo skeleton de `flora-engine` `generate_lesson_block`. Reduz custo quando aluno pula blocos.
-
-**1.2 `mode: "questions"`** — para cada `(materia, tema)` popular, busca em `questions` (ENEM) e `concurso_questions` (concurso) até 5 questões reais por tema e salva em `content_cache` como `tipo: "questions"`, `payload: { questions: [...] }`. Usado como exercício final em vez de gerar via IA.
-
-**1.3 `mode: "images"`** — detecta conceitos visuais por tema (lista curada: "DNA", "mitose", "célula animal", "função quadrática gráfico", "circuito elétrico", etc.) e chama `flora-images` para pré-gerar. Salva URL em `content_cache` `tipo: "image"`, `cache_key: image:concept-slug`.
-
-### 2. Painel admin (`AdminCachePanel.tsx`)
-Adicionar 3 botões além de Rápida/Completa/Masterclass:
-- "Popular blocos" (modo `blocks`)
-- "Popular questões reais" (modo `questions`) — mostra contagem de questões disponíveis por matéria antes
-- "Popular imagens didáticas" (modo `images`) — preview da lista de conceitos
-
-### 3. Integração com geração de aula
-- `flora-engine` `generate_lesson_block`: antes de chamar IA para `exercicio`, procura em `content_cache` `tipo: "questions"` com `materia`+`tema`. Se achar ≥1, usa questão real (transforma para o formato do bloco). Cai pra IA só se não houver.
-- `flora-engine` `generate_lesson_block`: para `imagem_didatica`, procura `content_cache` `tipo: "image"` por slug do conceito antes de chamar `flora-images`.
-
-### 4. Lookup helpers (`flora-engine/index.ts`)
-- `findCachedQuestion(supabase, materia, tema)`
-- `findCachedImage(supabase, concept)`
-
----
-
-## Detalhes técnicos
-
-**Banco**: nenhuma migration nova; reusa `content_cache` (já tem `tipo`, `payload`, `cache_key`).
-
-**Cache key convention**:
-- Aula completa: `k:lesson|materia:..|tema:..|level:..|style:..|mode:..` (já existe)
-- Bloco: `k:block|materia:..|tema:..|idx:..|total:..|mode:..` (novo)
-- Questões: `k:questions|materia:..|tema:..` (novo)
-- Imagem: `k:image|concept:..` (novo)
-
-**Token saving**: aula com 5 blocos hoje custa ~12-15k tokens. Com cache de blocos + questões reais + imagens pré-geradas, primeira execução popula; execuções subsequentes do mesmo tema custam <2k tokens (apenas personalização da Flora no comentário inicial).
-
-**Imagens**: orçamento controlado — máx. 30 imagens por execução do modo `images`, lista curada hardcoded em `seed-content-cache`.
-
-**Questões**: usa `questions` para ENEM e `concurso_questions` para concurso, mapeando matéria/tema com normalização (já existe helper `normCacheStr`).
-
----
-
-## Arquivos a criar/editar
-
-**Criar:**
-- `src/hooks/useDashboardLive.ts`
-- `src/components/dashboard/SubjectHeatmap.tsx`
-- `src/components/dashboard/EvolutionChart.tsx`
-- `src/components/dashboard/WeakSpotsCard.tsx`
-
-**Editar:**
-- `src/pages/Analise.tsx` (adicionar seção Dashboard vivo)
-- `src/components/AdminCachePanel.tsx` (3 botões novos)
-- `supabase/functions/seed-content-cache/index.ts` (modos blocks/questions/images)
-- `supabase/functions/flora-engine/index.ts` (lookup de questão real e imagem cacheada antes de gerar)
-
-Sem mudanças de schema. Sem mudanças de design/cores.
-
----
+**Etapas 3-5**: detalhes nos commits — cada uma com seu mini-relatório.
 
 ## Ordem de execução
+Vou rodar **Etapa 1 + Etapa 2 + Etapa 3** agora (são as de menor risco e fundação). Depois confirmo com você antes de partir pras Etapas 4 e 5 (envolvem novas tabelas + edge functions + custo de IA).
 
-1. Parte A completa (dashboard vivo) — entregável visível ao aluno.
-2. Parte B backend (seed estendido + lookups no flora-engine).
-3. Parte B admin UI (botões no painel).
-4. Deploy de `seed-content-cache` e `flora-engine`.
-5. Rodar seed manual de `questions` + `images` para os 25 tópicos populares já listados.
+## Relatório
+Ao final de cada etapa envio:
+- Arquivos tocados
+- O que mudou no comportamento
+- O que testar manualmente
