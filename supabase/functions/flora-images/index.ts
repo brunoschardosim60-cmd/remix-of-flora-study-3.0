@@ -133,6 +133,37 @@ async function searchPhoto(query: string): Promise<{ imageUrl: string; provider:
   throw new Error("Todos os provedores de foto falharam");
 }
 
+// ─── Gera ilustração via IA quando bancos de foto falham ────────────────────
+// Modelo escolhido por tier: free/pro = flash-image (barato); pro_plus = pro-image-preview (alta qualidade)
+async function generateAiImage(concept: string, tier: string = "free"): Promise<string | null> {
+  if (!LOVABLE_KEY) return null;
+  const model = tier === "pro_plus"
+    ? "google/gemini-3-pro-image-preview"
+    : "google/gemini-2.5-flash-image";
+  const prompt = `Educational illustration about "${concept}". Clear, colorful, didactic, no text overlays, suitable for students.`;
+  try {
+    const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${LOVABLE_KEY}` },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: "user", content: prompt }],
+        modalities: ["image", "text"],
+      }),
+      signal: AbortSignal.timeout(40000),
+    });
+    if (!r.ok) { console.warn(`[flora-images:ai] ${model} ${r.status}`); return null; }
+    const d = await r.json();
+    const msg = d?.choices?.[0]?.message;
+    const img =
+      msg?.images?.[0]?.image_url?.url ||
+      msg?.images?.[0]?.url ||
+      (Array.isArray(msg?.content) ? msg.content.find((c: any) => c?.image_url?.url)?.image_url?.url : null) ||
+      (typeof msg?.content === "string" && msg.content.match(/data:image\/[a-z]+;base64,[A-Za-z0-9+/=]+/)?.[0]);
+    return img || null;
+  } catch (e) { console.warn("[flora-images:ai] falhou:", e instanceof Error ? e.message : e); return null; }
+}
+
 // ─── VÍDEO: YouTube Data API v3 ───────────────────────────────────────────────
 export interface VideoResult {
   videoId: string;
@@ -371,9 +402,20 @@ serve(async (req: Request) => {
       const cacheKey = `img-search:${normCacheStr(enQuery)}`;
       const cached = await cacheLookup(supabase, cacheKey);
       if (cached?.imageUrl) return json({ success: true, ...cached, cached: true });
-      const { imageUrl, provider } = await searchPhoto(rawQuery);
-      await cacheStore(supabase, cacheKey, { tipo: "image_search", tema: rawQuery }, { imageUrl, provider, query: enQuery }, 7 * 24 * 3600);
-      return json({ success: true, imageUrl, provider, query: enQuery });
+      try {
+        const { imageUrl, provider } = await searchPhoto(rawQuery);
+        await cacheStore(supabase, cacheKey, { tipo: "image_search", tema: rawQuery }, { imageUrl, provider, query: enQuery }, 7 * 24 * 3600);
+        return json({ success: true, imageUrl, provider, query: enQuery });
+      } catch (e) {
+        // Fallback: se nenhum banco de foto retornou, gera via IA (modelo barato por padrão)
+        const tier: string = body.tier || "free";
+        const aiUrl = await generateAiImage(rawQuery, tier);
+        if (aiUrl) {
+          await cacheStore(supabase, cacheKey, { tipo: "image_search", tema: rawQuery }, { imageUrl: aiUrl, provider: `ai:${tier}`, query: enQuery }, 30 * 24 * 3600);
+          return json({ success: true, imageUrl: aiUrl, provider: `ai:${tier}`, query: enQuery, generated: true });
+        }
+        return json({ success: false, error: "image_unavailable", reason: e instanceof Error ? e.message : String(e) });
+      }
     }
 
     // ── generate (DALL-E legado) ──────────────────────────────────

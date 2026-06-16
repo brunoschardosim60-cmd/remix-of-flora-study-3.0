@@ -720,6 +720,7 @@ AÇÕES (no FINAL, APÓS CONFIRMAÇÃO):
 [AÇÃO:CADERNO]{"titulo":"...","materia":"...","conteudo":"<h2>...</h2><p>...</p>"}    ← usa para resumo/explicação longa/redação completa/correção de redação
 [AÇÃO:META_DIA]{"studyMinutes":60,"revisions":5,"quizCount":2}
 [AÇÃO:REMOVER_CRONOGRAMA]{"materia":"..."}
+[AÇÃO:IMAGEM]{"prompt":"descrição curta em inglês ou português do que ilustrar"}    ← usa quando o aluno pedir imagem/foto/ilustração/diagrama/desenho
 
 EXEMPLOS DO COMPORTAMENTO CERTO:
 Aluno: "me faz um resumo de mitose" → "Boa. Resumo completo no caderno?"
@@ -1081,6 +1082,32 @@ Responda SOMENTE com JSON: {"resumo":"...","flashcards":[{"frente":"...","verso"
       }
 
       if (actionType === "POMODORO" && data?.payload) return jsonResponse({ ok: true, type: "pomodoro", ...data.payload });
+
+      if (actionType === "IMAGEM" && data?.payload) {
+        const prompt: string = String(data.payload.prompt || data.payload.concept || "").trim();
+        if (!prompt) return jsonResponse({ error: "prompt obrigatório" }, 400);
+        // Detecta tier do aluno pra escolher qualidade do modelo de geração
+        let tier = "free";
+        try {
+          const { data: t } = await supabase.from("user_tiers").select("tier").eq("user_id", userId).maybeSingle();
+          if (t?.tier) tier = t.tier;
+        } catch { /* mantém free */ }
+        try {
+          const imgRes = await fetch(`${supabaseUrl}/functions/v1/flora-images`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${supabaseAnonKey}`, apikey: supabaseAnonKey },
+            body: JSON.stringify({ action: "search", query: prompt, tier }),
+          });
+          const j = await imgRes.json().catch(() => ({}));
+          if (j?.success && j?.imageUrl) {
+            await supabase.from("user_actions").insert({ user_id: userId, action: "flora_image", metadata: { prompt, provider: j.provider, generated: !!j.generated } });
+            return jsonResponse({ ok: true, type: "image", imageUrl: j.imageUrl, prompt, provider: j.provider, generated: !!j.generated });
+          }
+          return jsonResponse({ ok: false, type: "image", error: "Não consegui gerar a imagem agora." });
+        } catch (e) {
+          return jsonResponse({ ok: false, type: "image", error: e instanceof Error ? e.message : String(e) });
+        }
+      }
 
       if (actionType === "CADERNO" && data?.payload) {
         const { titulo, materia, conteudo } = data.payload;
