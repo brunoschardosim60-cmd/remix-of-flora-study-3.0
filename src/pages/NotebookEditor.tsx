@@ -1492,6 +1492,14 @@ export default function NotebookEditor() {
                 <span className="hidden sm:inline">Erro ao salvar</span>
               </span>
             )}
+            {saveStatus === "offline" && (
+              <span className="flex items-center gap-1 text-amber-500" title="Suas alterações estão salvas no dispositivo e serão sincronizadas quando a conexão voltar">
+                <CloudOff className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">
+                  Offline{pendingOffline > 0 ? ` · ${pendingOffline} pendente${pendingOffline === 1 ? "" : "s"}` : ""}
+                </span>
+              </span>
+            )}
           </div>
 
           {/* Mode toggle */}
