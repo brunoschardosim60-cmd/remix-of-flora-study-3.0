@@ -720,6 +720,7 @@ AÇÕES (no FINAL, APÓS CONFIRMAÇÃO):
 [AÇÃO:CADERNO]{"titulo":"...","materia":"...","conteudo":"<h2>...</h2><p>...</p>"}    ← usa para resumo/explicação longa/redação completa/correção de redação
 [AÇÃO:META_DIA]{"studyMinutes":60,"revisions":5,"quizCount":2}
 [AÇÃO:REMOVER_CRONOGRAMA]{"materia":"..."}
+[AÇÃO:IMAGEM]{"prompt":"descrição curta em inglês ou português do que ilustrar"}    ← usa quando o aluno pedir imagem/foto/ilustração/diagrama/desenho
 
 EXEMPLOS DO COMPORTAMENTO CERTO:
 Aluno: "me faz um resumo de mitose" → "Boa. Resumo completo no caderno?"
