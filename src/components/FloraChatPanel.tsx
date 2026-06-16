@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Send, X, Camera, Loader2 } from "lucide-react";
+import { Send, X, Camera, Loader2, Mic, Square } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { FloraQuotaIndicator } from "@/components/FloraQuotaIndicator";
@@ -20,6 +20,59 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const photoRef = useRef<HTMLInputElement>(null);
   const [ocrLoading, setOcrLoading] = useState(false);
+  const [recording, setRecording] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+
+  async function blobToBase64(blob: Blob): Promise<string> {
+    const buf = new Uint8Array(await blob.arrayBuffer());
+    let bin = "";
+    for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i]);
+    return btoa(bin);
+  }
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mime = MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "audio/mp4";
+      const rec = new MediaRecorder(stream, { mimeType: mime });
+      chunksRef.current = [];
+      rec.ondataavailable = (e) => { if (e.data.size) chunksRef.current.push(e.data); };
+      rec.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop());
+        const blob = new Blob(chunksRef.current, { type: mime });
+        if (blob.size < 500) { toast.error("Áudio muito curto."); return; }
+        if (blob.size > 8 * 1024 * 1024) { toast.error("Áudio muito longo (máx ~8MB)."); return; }
+        setTranscribing(true);
+        try {
+          const base64 = await blobToBase64(blob);
+          const { data, error } = await supabase.functions.invoke("flora-transcribe", {
+            body: { audio: base64, mimeType: mime },
+          });
+          if (error) throw error;
+          const text = String(data?.text || "").trim();
+          if (!text) throw new Error("Não consegui transcrever.");
+          setInput((prev) => prev ? `${prev} ${text}` : text);
+          toast.success("Áudio transcrito. Revise e envie.");
+        } catch (e: any) {
+          toast.error(e?.message || "Erro ao transcrever");
+        } finally {
+          setTranscribing(false);
+        }
+      };
+      mediaRecorderRef.current = rec;
+      rec.start();
+      setRecording(true);
+    } catch (e: any) {
+      toast.error("Sem permissão de microfone");
+    }
+  };
+
+  const stopRecording = () => {
+    mediaRecorderRef.current?.stop();
+    setRecording(false);
+  };
 
   const handlePhoto = async (file: File) => {
     if (!file) return;
@@ -33,8 +86,13 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
       if (error) throw error;
       const text = String(data?.text || "").trim();
       if (!text) throw new Error("Não consegui ler o texto da foto.");
+      // Cria thumbnail pequena para o histórico
+      const thumb = await createThumbnail(file, 120);
+      window.dispatchEvent(new CustomEvent("flora-chat-append", {
+        detail: { role: "user", content: `📷 Foto enviada`, metadata: { thumb, ocrText: text.slice(0, 2000) } },
+      }));
       setInput(`Explica essa foto passo a passo:\n\n${text}`);
-      toast.success("Texto extraído. Revise e envie.");
+      toast.success(data?.cached ? "Foto reconhecida do cache." : "Texto extraído. Revise e envie.");
     } catch (e: any) {
       toast.error(e?.message || "Erro ao ler foto");
     } finally {
@@ -42,6 +100,25 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
       if (photoRef.current) photoRef.current.value = "";
     }
   };
+
+  async function createThumbnail(file: File, maxSize: number): Promise<string> {
+    return new Promise((resolve) => {
+      const img = new window.Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        const ratio = Math.min(maxSize / img.width, maxSize / img.height, 1);
+        const w = Math.round(img.width * ratio);
+        const h = Math.round(img.height * ratio);
+        const canvas = document.createElement("canvas");
+        canvas.width = w; canvas.height = h;
+        canvas.getContext("2d")?.drawImage(img, 0, 0, w, h);
+        URL.revokeObjectURL(url);
+        resolve(canvas.toDataURL("image/jpeg", 0.7));
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); resolve(""); };
+      img.src = url;
+    });
+  }
 
   // Pré-preenche input quando abre com mensagem inicial
   useEffect(() => {
@@ -110,6 +187,13 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
                 ? "bg-primary text-primary-foreground ml-8"
                 : "bg-muted mr-8"
             }`}>
+              {(msg as any).metadata?.thumb && (
+                <img
+                  src={(msg as any).metadata.thumb}
+                  alt="Foto enviada"
+                  className="rounded-lg mb-1.5 max-w-[140px] max-h-[140px] object-cover"
+                />
+              )}
               {msg.role === "assistant" ? (
                 <div className="prose prose-sm max-w-none dark:prose-invert [overflow-wrap:anywhere]">
                   <ReactMarkdown>{msg.content}</ReactMarkdown>
@@ -153,11 +237,23 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
             size="icon"
             className="shrink-0"
             onClick={() => photoRef.current?.click()}
-            disabled={ocrLoading || isSending}
+            disabled={ocrLoading || isSending || recording || transcribing}
             aria-label="Explica essa foto"
             title="Explica essa foto"
           >
             {ocrLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
+          </Button>
+          <Button
+            type="button"
+            variant={recording ? "destructive" : "ghost"}
+            size="icon"
+            className="shrink-0"
+            onClick={recording ? stopRecording : startRecording}
+            disabled={ocrLoading || isSending || transcribing}
+            aria-label={recording ? "Parar gravação" : "Gravar áudio"}
+            title={recording ? "Parar gravação" : "Gravar áudio"}
+          >
+            {transcribing ? <Loader2 className="w-4 h-4 animate-spin" /> : recording ? <Square className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
           </Button>
           <textarea
             value={input}
