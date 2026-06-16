@@ -36,6 +36,9 @@ const PublicProfile = lazy(() => import("./pages/PublicProfile"));
 const Cursos = lazy(() => import("./pages/Cursos"));
 const CursoPlayer = lazy(() => import("./pages/CursoPlayer"));
 const RedacaoTemplates = lazy(() => import("./pages/RedacaoTemplates"));
+const SimuladoSemanal = lazy(() => import("./pages/SimuladoSemanal"));
+const SimuladoEnem = lazy(() => import("./pages/SimuladoEnem"));
+const ExplicaFoto = lazy(() => import("./pages/ExplicaFoto"));
 
 
 
@@ -200,6 +203,9 @@ const App = () => (
                 <Route path="/cursos" element={<ProtectedRoute><Cursos /></ProtectedRoute>} />
                 <Route path="/cursos/:id" element={<ProtectedRoute><CursoPlayer /></ProtectedRoute>} />
                 <Route path="/comunidades" element={<ProtectedRoute><Comunidades /></ProtectedRoute>} />
+                <Route path="/simulado-semanal" element={<ProtectedRoute><SimuladoSemanal /></ProtectedRoute>} />
+                <Route path="/simulado-enem" element={<ProtectedRoute><SimuladoEnem /></ProtectedRoute>} />
+                <Route path="/explica-foto" element={<ProtectedRoute><ExplicaFoto /></ProtectedRoute>} />
                 <Route path="/pricing" element={<Suspense fallback={<RouteFallback />}><Pricing /></Suspense>} />
                 <Route path="/u/:username" element={<Suspense fallback={<RouteFallback />}><PublicProfile /></Suspense>} />
                 

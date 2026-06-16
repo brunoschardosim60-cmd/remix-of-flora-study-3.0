@@ -57,6 +57,7 @@ interface MathSuggestion {
 }
 
 import { SamsungStyleToolbar } from "@/components/notebook/SamsungStyleToolbar";
+import { AudioSummaryButton } from "@/components/notebook/AudioSummaryButton";
 import { PageSidebarGrid } from "@/components/notebook/PageSidebarGrid";
 import { FloraNotebookSidebar } from "@/components/notebook/FloraNotebookSidebar";
 import "@/components/notebook/notebook-premium.css";
@@ -1593,6 +1594,10 @@ export default function NotebookEditor() {
             <Button variant="ghost" size="icon" onClick={() => setCurrentPage((prev) => Math.min(pages.length - 1, prev + 1))} disabled={currentPage === pages.length - 1}>
               <ChevronRight className="w-4 h-4" />
             </Button>
+            <AudioSummaryButton
+              content={currentPageData?.content || ""}
+              title={notebook?.title || `Página ${currentPage + 1}`}
+            />
           </div>
         </div>
       </header>
