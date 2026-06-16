@@ -857,13 +857,14 @@ ${olderSummary}${recentChatSummary}`;
         content: m.content?.slice(0, 4000) || "",
         created_at: new Date(now + i).toISOString(),
         seq: i,
+        metadata: m.metadata && typeof m.metadata === "object" ? m.metadata : {},
       }));
       await supabase.from("flora_chat_messages").insert(inserts);
       return jsonResponse({ ok: true, saved: inserts.length });
     }
 
     if (action === "load_chat") {
-      const { data: messages } = await supabase.from("flora_chat_messages").select("role, content, created_at, seq").eq("user_id", userId).order("seq", { ascending: true }).order("created_at", { ascending: true }).limit(80);
+      const { data: messages } = await supabase.from("flora_chat_messages").select("role, content, created_at, seq, metadata").eq("user_id", userId).order("seq", { ascending: true }).order("created_at", { ascending: true }).limit(80);
       return jsonResponse({ messages: messages ?? [] });
     }
 

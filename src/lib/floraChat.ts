@@ -4,6 +4,7 @@
 export interface FloraMessage {
   role: "user" | "assistant";
   content: string;
+  metadata?: Record<string, unknown>;
 }
 
 export interface FloraAction {
