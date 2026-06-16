@@ -12,6 +12,7 @@ import { TwoFactorPanel } from "@/components/TwoFactorPanel";
 import { Sun, Moon, CircleDot, LogOut, ArrowLeft, Shield, User, Target, Sparkles, Bell, BellOff, Loader2, Save, LayoutDashboard, Calendar, Download, FileDown, Trash2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Globe, Copy } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { getMyTier, getMyQuota, type AITier } from "@/lib/aiUsage";
 
@@ -254,7 +255,33 @@ export default function Settings() {
         </div>
       </header>
 
-      <main className="container max-w-2xl mx-auto px-3 sm:px-4 py-6 space-y-6">
+      <main className="container max-w-3xl mx-auto px-3 sm:px-4 py-6">
+        {/* Hero */}
+        {user && (
+          <div className="mb-6 rounded-3xl border border-border bg-gradient-to-br from-primary/10 via-card to-card p-5 sm:p-6 flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-primary/15 text-primary flex items-center justify-center font-heading font-bold text-xl">
+              {(displayName || user.email || "?").trim().charAt(0).toUpperCase()}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="font-heading font-semibold text-base truncate">{displayName || "Sem nome"}</p>
+              <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+              <div className="mt-1 flex items-center gap-2">
+                <Badge variant="secondary" className="text-[10px]">{TIER_LABEL[tier]}</Badge>
+                {isAdmin && <Badge className="text-[10px]">Admin</Badge>}
+              </div>
+            </div>
+          </div>
+        )}
+
+        <Tabs defaultValue="perfil" className="w-full">
+          <TabsList className="w-full h-auto flex flex-wrap justify-start gap-1 bg-muted/60 p-1">
+            <TabsTrigger value="perfil" className="flex-1 min-w-[80px]">Perfil</TabsTrigger>
+            <TabsTrigger value="estudo" className="flex-1 min-w-[80px]">Estudo</TabsTrigger>
+            <TabsTrigger value="aparencia" className="flex-1 min-w-[80px]">Aparência</TabsTrigger>
+            <TabsTrigger value="conta" className="flex-1 min-w-[80px]">Conta</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="perfil" className="space-y-5 mt-5">
         {/* Profile */}
         {user && (
           <section className="rounded-2xl border border-border bg-card p-4 sm:p-5 space-y-3">
@@ -278,6 +305,34 @@ export default function Settings() {
             <p className="text-xs text-muted-foreground">Conta: {user.email}</p>
           </section>
         )}
+          {/* Notifications */}
+          <section className="rounded-2xl border border-border bg-card p-4 sm:p-5 space-y-3">
+            <h2 className="font-heading font-semibold text-base flex items-center gap-2">
+              {notifPermission === "granted" ? <Bell className="w-4 h-4 text-primary" /> : <BellOff className="w-4 h-4 text-muted-foreground" />}
+              Notificações
+            </h2>
+            {notifPermission === "granted" ? (
+              <p className="text-sm text-muted-foreground">
+                ✅ Notificações ativadas. Você receberá lembretes de revisão e alarmes do timer.
+              </p>
+            ) : notifPermission === "denied" ? (
+              <p className="text-sm text-muted-foreground">
+                ❌ Notificações bloqueadas. Ative nas preferências do navegador.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  Ative para receber lembretes de revisão, alarmes do timer e dicas da Flora.
+                </p>
+                <Button onClick={handleRequestNotifications} variant="outline" size="sm" className="gap-1.5">
+                  <Bell className="w-4 h-4" /> Ativar notificações
+                </Button>
+              </div>
+            )}
+          </section>
+          </TabsContent>
+
+          <TabsContent value="estudo" className="space-y-5 mt-5">
 
         {/* Public profile */}
         {false && user && (
@@ -399,6 +454,27 @@ export default function Settings() {
           </Button>
         </section>
 
+          {/* Integração com Calendário */}
+          {user && (
+            <section className="rounded-2xl border border-border bg-card p-4 sm:p-5 space-y-3">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Calendar className="w-4 h-4 text-primary shrink-0" />
+                  <div className="min-w-0">
+                    <h2 className="font-heading font-semibold text-base">Calendário</h2>
+                    <p className="text-xs text-muted-foreground">Exportar cronograma como .ics</p>
+                  </div>
+                </div>
+                <Button onClick={handleExportCalendar} size="sm" variant="outline" className="gap-1.5">
+                  <Download className="w-4 h-4" />
+                  Exportar .ics
+                </Button>
+              </div>
+            </section>
+          )}
+          </TabsContent>
+
+          <TabsContent value="aparencia" className="space-y-5 mt-5">
         {/* Configurações de Dashboard */}
         <section className="rounded-2xl border border-border bg-card p-4 sm:p-5 space-y-4">
           <h2 className="font-heading font-semibold text-base flex items-center gap-2">
@@ -433,6 +509,9 @@ export default function Settings() {
             <CustomThemeDialog />
           </div>
         </section>
+          </TabsContent>
+
+          <TabsContent value="conta" className="space-y-5 mt-5">
 
         {/* Quota */}
         {(() => {
@@ -470,33 +549,6 @@ export default function Settings() {
           );
         })()}
 
-        {/* Notifications */}
-        <section className="rounded-2xl border border-border bg-card p-4 sm:p-5 space-y-3">
-          <h2 className="font-heading font-semibold text-base flex items-center gap-2">
-            {notifPermission === "granted" ? <Bell className="w-4 h-4 text-primary" /> : <BellOff className="w-4 h-4 text-muted-foreground" />}
-            Notificações
-          </h2>
-          {notifPermission === "granted" ? (
-            <p className="text-sm text-muted-foreground">
-              ✅ Notificações ativadas. Você receberá lembretes de revisão e alarmes do timer.
-            </p>
-          ) : notifPermission === "denied" ? (
-            <p className="text-sm text-muted-foreground">
-              ❌ Notificações bloqueadas. Para ativar, acesse as configurações do navegador e permita notificações para este site.
-            </p>
-          ) : (
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">
-                Ative notificações para receber lembretes de revisão, alarmes do timer e dicas da Flora.
-              </p>
-              <Button onClick={handleRequestNotifications} variant="outline" size="sm" className="gap-1.5">
-                <Bell className="w-4 h-4" /> Ativar notificações
-              </Button>
-            </div>
-          )}
-        </section>
-
-
         {/* Personalizar Dashboard */}
         {false && user && (
           <section className="rounded-2xl border border-border bg-card p-4 sm:p-5 space-y-3">
@@ -507,25 +559,6 @@ export default function Settings() {
               Escolha quais seções aparecem no seu dashboard.
             </p>
             <DashboardCustomizer />
-          </section>
-        )}
-
-        {/* Integração com Calendário */}
-        {user && (
-          <section className="rounded-2xl border border-border bg-card p-4 sm:p-5 space-y-3">
-            <div className="flex items-center justify-between gap-3 flex-wrap">
-              <div className="flex items-center gap-2 min-w-0">
-                <Calendar className="w-4 h-4 text-primary shrink-0" />
-                <div className="min-w-0">
-                  <h2 className="font-heading font-semibold text-base">Calendário</h2>
-                  <p className="text-xs text-muted-foreground">Exportar cronograma como .ics</p>
-                </div>
-              </div>
-              <Button onClick={handleExportCalendar} size="sm" variant="outline" className="gap-1.5">
-                <Download className="w-4 h-4" />
-                Exportar .ics
-              </Button>
-            </div>
           </section>
         )}
 
@@ -549,6 +582,8 @@ export default function Settings() {
 
         {/* LGPD: Export & Delete */}
         {user && <LgpdSection />}
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );

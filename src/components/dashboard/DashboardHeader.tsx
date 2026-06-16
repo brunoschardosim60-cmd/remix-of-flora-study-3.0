@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { BookOpen, NotebookPen, FileText, BarChart3, Sun, Moon, CircleDot, LogOut, Settings, Library } from "lucide-react";
+import { BookOpen, NotebookPen, FileText, BarChart3, Sun, Moon, CircleDot, LogOut, Settings, Library, Camera } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { CustomThemeDialog } from "@/components/CustomThemeDialog";
@@ -56,6 +56,11 @@ export function DashboardHeader({ user, bancoRoute, bancoLabel, onSignOut }: Pro
         </div>
         <div className="flex items-center gap-1">
           <CustomThemeDialog />
+          {user && (
+            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => navigate("/explica-foto")} aria-label="Explica essa foto" title="Explica essa foto">
+              <Camera className="w-4 h-4" />
+            </Button>
+          )}
           <Button variant="ghost" size="icon" className="h-9 w-9" onClick={cycleTheme} aria-label="Trocar tema">
             <ThemeIcon className="w-4 h-4" />
           </Button>
@@ -90,6 +95,11 @@ export function DashboardHeader({ user, bancoRoute, bancoLabel, onSignOut }: Pro
           {user && (
             <Button variant="outline" size="sm" className="gap-1.5 shrink-0" onClick={() => navigate("/analise")}>
               <BarChart3 className="w-4 h-4" /> Análise
+            </Button>
+          )}
+          {user && (
+            <Button variant="outline" size="sm" className="gap-1.5 shrink-0" onClick={() => navigate("/explica-foto")}>
+              <Camera className="w-4 h-4" /> Explica foto
             </Button>
           )}
         </div>
