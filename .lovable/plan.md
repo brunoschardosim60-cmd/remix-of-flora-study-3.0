@@ -1,68 +1,97 @@
-Vou implementar as melhorias em etapas priorizadas por impacto/risco. Cada etapa é independente e entregável; ao final de cada uma envio um mini-relatório.
+# Plano: Correções + Flora 360°
 
-## Etapa 1 — Fundação técnica (baixo risco, alto valor)
-1. **Logger util** (`src/lib/logger.ts`) — silencia `log/info/debug` em `import.meta.env.PROD`, mantém `warn/error`. Substituir os ~55 `console.*` por `logger.*` (script `sed` + revisão manual nos críticos).
-2. **CSS de foco** → mover `focus-aurora`, `focus-particles`, `study-night` para `src/styles/focus.css` e importar no `main.tsx`. Enxuga `index.css`.
-3. **Lazy loading** — devolver `lazy()` para `KonvaDrawingCanvas`, `Aulao`, `CursoPlayer` (os 3 mais pesados) com `<Suspense fallback={<Loader/>}>`. Manter `NotebookEditor`, `QuizDialog`, `FlashcardSessionDialog` estáticos (foram corrigidos no mobile, regressão alta).
-4. **Service Worker prod flag** — `VITE_ENABLE_SW=true` em `.env.production`, condicional no `main.tsx`.
-5. **Tipagem** — tipar `floraClient`, `aiActivityStore`, `useFloraChatStream` removendo `any`.
+Vou executar em 4 etapas (uma por mensagem) para você validar entre elas. Confirma para eu começar pela Etapa 1.
 
-## Etapa 2 — UX Mobile + Notificações
-6. **BottomNav mobile** — novo `src/components/layout/BottomNav.tsx` com 5 ícones (Hoje, Cadernos, Banco, Flora, Eu). Visível só em `md:hidden`. Esconde scroll horizontal da navbar atual no mobile.
-7. **Resumo único de revisões 19h** — em `src/lib/notifications.ts`:
-   - Remover push imediato por item.
-   - Agendar 1 notificação diária às 19h: "Você tem N revisões pendentes hoje" → clica → abre `/revisoes` (sessão rápida).
-   - Persistir `last_review_digest_date` no localStorage para idempotência.
+---
 
-## Etapa 3 — Onboarding "Tour Flora 30s"
-8. **`src/components/onboarding/FloraTour.tsx`** — overlay 4 steps com Flora resolvendo questão exemplo de matemática (animação de digitação + resultado). Trigger no fim do onboarding atual. Skip button. Marca `flora_tour_seen` no localStorage.
+## Etapa 1 — Bugs críticos (entrego primeiro)
 
-## Etapa 4 — Features de estudo
-9. **Simulado adaptativo semanal** — nova rota `/simulado-semanal`:
-   - Edge function `weekly-adaptive-quiz` que lê `weak_topics` do usuário (já existe análise) e gera 10 questões via Lovable AI.
-   - UI com cronômetro, 1 questão por vez, relatório final.
-   - Card no dashboard "Simulado da semana" (toda segunda).
-10. **"Explica essa foto"** — em `src/pages/Banco.tsx` (ou nova `/explica-foto`):
-    - Botão "Tirar foto do exercício".
-    - Reusa OCR do notebook + envia para Flora resolver passo a passo (chat existente).
-11. **Modo prova ENEM** — nova rota `/simulado-enem`:
-    - 180 questões, 5h30 timer, sem Flora.
-    - Relatório final usando `predictENEM` existente → TRI estimada por área.
-12. **Resumo em áudio do caderno** — botão "🎧 Ouvir resumo" no `NotebookEditor`:
-    - Edge function gera resumo → TTS via Lovable AI (gemini audio) → player inline.
+**1.1 — "Não consigo criar aulas" (`lesson-on-demand` + Aulão)**
+- Adicionar fallback de modelo: tenta `gemini-2.5-pro` → se falhar com timeout/5xx tenta `gemini-2.5-flash` (mais rápido e estável).
+- Sanitizar JSON da IA (remover code-fences ` ```json `, vírgulas finais) antes de `JSON.parse`.
+- Timeout cliente de 45s com mensagem clara em vez de spinner infinito.
+- Mostrar mensagem técnica real ao usuário (status HTTP) em vez de "erro inesperado".
 
-## Etapa 5 — Conteúdo curado
-13. **Biblioteca de aulões** — tabela `curated_lessons` (matéria, tópico, conteúdo MD, video_url opcional). Seed inicial com 30 aulas (script). Página `/aulas` lista por matéria. Aulão sob demanda fica como fallback.
-14. **Trilha "ENEM em 90 dias"** — tabela `study_tracks` + `track_checkins`. Página `/trilhas` com progresso diário e check-in da Flora.
+**1.2 — "Buscar por Assunto só carrega" (`/aulao` modo search)**
+- `handleSearch` hoje invoca `flora-engine/semantic_search`. Adicionar:
+  - `AbortController` com timeout de 12s.
+  - Empty state com botão "Pedir pra Flora gerar um resumo" (fallback que sempre funciona).
+  - Tratamento de erro do `.or()` quando o usuário digita vírgula/aspas (escape).
+- Telemetria: logar query + nº de resultados em `user_actions`.
 
-## Detalhes técnicos por etapa
+**1.3 — Identificação de erros de escrita global**
+- Criar `src/lib/textCorrector.ts` que envolve qualquer `<input>`/`<textarea>` de busca com correção ortográfica leve (lista PT-BR comum: "geografía"→"geografia", "matematica"→"matemática", etc.) usando dicionário local + acentuação. Sem custo de IA.
+- Aplicar nos campos: busca do `/aulao`, busca do `/aulas`, busca da Flora, busca do Banco.
 
-**Etapa 1**
-```text
-src/lib/logger.ts          (novo)
-src/styles/focus.css       (novo, recortado de index.css)
-src/main.tsx               (importa focus.css, SW flag)
-src/App.tsx                (lazy KonvaDrawingCanvas/Aulao/CursoPlayer)
-src/lib/floraClient.ts     (tipos)
-src/lib/aiActivityStore.ts (tipos)
-src/hooks/useFloraChatStream.ts (tipos)
-+ substituição em massa de console.*
-```
+---
 
-**Etapa 2**
-```text
-src/components/layout/BottomNav.tsx (novo)
-src/components/Layout.tsx ou App.tsx (montar BottomNav)
-src/lib/notifications.ts  (digest 19h, remover push por item)
-```
+## Etapa 2 — Tutor de Redação → Autocomplete
 
-**Etapas 3-5**: detalhes nos commits — cada uma com seu mini-relatório.
+**Remover** o `EssayTutorMode` atual (duplica `/redacao` corretor). **Substituir** por:
 
-## Ordem de execução
-Vou rodar **Etapa 1 + Etapa 2 + Etapa 3** agora (são as de menor risco e fundação). Depois confirmo com você antes de partir pras Etapas 4 e 5 (envolvem novas tabelas + edge functions + custo de IA).
+**2.1 — `EssayAutocomplete.tsx`** (novo)
+- Editor com sugestão fantasma (cinza) da próxima frase enquanto o aluno escreve (estilo GitHub Copilot).
+- Tecla `Tab` aceita, `Esc` recusa.
+- Debounce 1.2s, mínimo 15 palavras antes de sugerir.
+- Limite 12 sugestões por redação (controle de custo).
+- Edge function `essay-autocomplete` nova: recebe `{theme, currentText}`, retorna `{suggestion: "..."}` (1 frase, máx 25 palavras). Modelo `gemini-2.5-flash`.
 
-## Relatório
-Ao final de cada etapa envio:
-- Arquivos tocados
-- O que mudou no comportamento
-- O que testar manualmente
+**2.2 — Templates de redação**
+- Página `/redacao/templates` (já existe) ganha 2 abas:
+  - **"Esqueletos"**: estrutura pré-preenchida com `[contextualização]`, `[tese]`, `[argumento 1]`, etc. que o aluno completa.
+  - **"Exemplos nota 1000"**: biblioteca de 8 redações reais comentadas (seed inicial via Flora — gero 1x e cacheio).
+
+**2.3 — Atalho no Aulão**
+- Botão "Começar redação" passa a abrir `/redacao` com `?mode=autocomplete&theme=...` em vez do tutor inline.
+
+---
+
+## Etapa 3 — Flora onisciente (telemetria 360°)
+
+Garantir que **toda** ação relevante grava em `user_actions` + alimenta `flora_decisions` para a Flora ler depois.
+
+**3.1 — Hook global `useFloraTelemetry`**
+- Wrappar pontos cegos atuais:
+  - Quiz: erro/acerto por questão (hoje só salva agregado).
+  - Redação: cada submit + nota por competência.
+  - Caderno: imagem inserida, OCR rodado, tempo na página.
+  - Aulas: bloco lido, exercício final respondido, tempo total.
+  - Foco: sessões + interrupções.
+- Cada evento: `{action, materia, topic_id, metadata: {detail}}`.
+
+**3.2 — `flora-engine` ganha contexto enriquecido**
+- `getStudentContext` passa a incluir últimos 30 eventos de `user_actions` resumidos.
+- Sistema prompt da Flora referencia: "Hoje o aluno errou X em Y", "Acabou de escrever sobre Z", "Está com dificuldade em W há 3 dias".
+
+**3.3 — Painel `/eu/flora-sabe`** (opcional, debug)
+- Mostra ao aluno o que a Flora "sabe" dele. Transparência + confiança.
+
+---
+
+## Etapa 4 — Revisão didática de aulas + mídia
+
+**4.1 — Auditoria prompt-a-prompt** dos 3 geradores de aula:
+- `lesson-on-demand`, `generate-saved-lesson`, `generate_lesson_block` no flora-engine.
+- Garantir em TODOS: introdução com gancho real, 2 analogias do cotidiano por bloco, 1 exemplo resolvido passo a passo, 1 pegadinha típica de prova, 1 macete mnemônico, glossário final.
+
+**4.2 — Imagens automáticas por bloco**
+- Cada bloco gerado dispara `flora-images` em background (não-bloqueante) com prompt do título do bloco. Salva URL em `payload.blocos[i].image_url`.
+- Reusa cache do Pixabay/Pexels (já tem chaves).
+
+**4.3 — Vídeos sugeridos por bloco**
+- `lesson-on-demand` enriquece cada bloco com `youtube_query` (3-5 palavras) → frontend renderiza link "Ver no YouTube".
+
+**4.4 — Modo "ultra didático"** (toggle no player)
+- Quando ativo: cada parágrafo é dividido em frases curtas + emoji âncora + reading-time. Bom pra TDAH/iniciantes.
+
+---
+
+## Detalhes técnicos
+
+- Sem mudanças de schema novas na Etapa 1. Etapa 3 só adiciona linhas em tabelas existentes (`user_actions`).
+- Etapa 2 cria 1 edge function (`essay-autocomplete`).
+- Etapa 4 reusa `flora-images` e `content_cache` existentes.
+- Sem mudanças visuais no layout (memória `no-design-changes` respeitada).
+- Custo IA estimado: Etapa 2 ~$0.001/sugestão, Etapa 4 imagens em batch ~$0.50 pra repopular toda biblioteca.
+
+**Posso começar pela Etapa 1?**

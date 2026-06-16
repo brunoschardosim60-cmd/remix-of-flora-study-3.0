@@ -262,21 +262,29 @@ export default function Aulao() {
   const handleSearch = async () => {
     const q = searchQuery.trim();
     if (!q) { toast.error("Digite um assunto para buscar."); return; }
+    // Escape caracteres que quebram PostgREST .or() — vírgula/aspas/parênteses
+    const safeQ = q.replace(/[,"'()]/g, " ").replace(/\s+/g, " ").trim();
     setSearchLoading(true);
     setSearchResults([]);
+    const ctl = new AbortController();
+    const to = setTimeout(() => ctl.abort(), 12_000);
     try {
       const { data, error } = await supabase.functions.invoke("flora-engine", {
-        body: { action: "semantic_search", data: { query: q, limit: 10 } },
+        body: { action: "semantic_search", data: { query: safeQ, limit: 10 } },
       });
       if (error) throw error;
       if (data?.results?.length) {
         setSearchResults(data.results);
       } else {
-        toast.info(`Nenhum resultado encontrado para "${q}".`);
+        toast.info(`Nenhum resultado para "${q}". Tente pedir uma aula nova na Biblioteca.`);
       }
     } catch (err: any) {
-      toast.error("Erro ao buscar conteúdo. Tente novamente.");
+      const msg = err?.name === "AbortError"
+        ? "Busca demorou demais. Tente um termo mais curto."
+        : (err?.message || "Erro ao buscar. Tente novamente.");
+      toast.error(msg);
     } finally {
+      clearTimeout(to);
       setSearchLoading(false);
     }
   };
