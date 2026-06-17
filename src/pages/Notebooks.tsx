@@ -367,8 +367,8 @@ export default function Notebooks() {
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
 
-                  <div className="bg-black/25 backdrop-blur-sm rounded-lg p-3 relative">
-                    <p className="book-3d__title truncate">{nb.title}</p>
+                  <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3">
+                    <p className="font-heading font-bold text-white text-sm truncate">{nb.title}</p>
                     {nb.subject && (
                       <p className="text-white/70 text-xs truncate">{nb.subject}</p>
                     )}
