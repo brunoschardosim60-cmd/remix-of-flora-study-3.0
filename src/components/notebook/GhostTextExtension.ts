@@ -25,6 +25,8 @@ function hash(s: string): string {
   return h.toString(36);
 }
 
+export const GHOST_ENABLED_KEY = "flora-ghost-enabled";
+
 export const GhostText = Extension.create({
   name: "ghostText",
 
