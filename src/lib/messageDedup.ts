@@ -8,12 +8,14 @@
 
 const PREFIX = "studyflow:msg-seen:";
 
-function todayKey(): string {
-  return new Date().toISOString().split("T")[0];
+/** Bucket de tempo: hora UTC (YYYY-MM-DDTHH). Mensagens repetem 1x por hora. */
+function bucketKey(): string {
+  const iso = new Date().toISOString();
+  return iso.slice(0, 13); // YYYY-MM-DDTHH
 }
 
 function fullKey(userId: string | undefined, key: string): string {
-  return `${PREFIX}${userId || "anon"}:${key}:${todayKey()}`;
+  return `${PREFIX}${userId || "anon"}:${key}:${bucketKey()}`;
 }
 
 export function seenToday(userId: string | undefined, key: string): boolean {
@@ -42,16 +44,16 @@ export function clearSeen(userId: string | undefined, key: string): void {
 
 function pruneOldKeys(userId: string | undefined): void {
   if (typeof window === "undefined") return;
-  const today = todayKey();
+  const current = bucketKey();
   const userPrefix = `${PREFIX}${userId || "anon"}:`;
   try {
     const toRemove: string[] = [];
     for (let i = 0; i < window.localStorage.length; i++) {
       const k = window.localStorage.key(i);
       if (!k || !k.startsWith(userPrefix)) continue;
-      // chave: prefix + msgKey + ":" + YYYY-MM-DD
-      const date = k.slice(-10);
-      if (date !== today) toRemove.push(k);
+      // chave: prefix + msgKey + ":" + YYYY-MM-DDTHH
+      const bucket = k.slice(-13);
+      if (bucket !== current) toRemove.push(k);
     }
     toRemove.forEach((k) => window.localStorage.removeItem(k));
   } catch { /* silent */ }
