@@ -16,6 +16,7 @@ import {
 import {
   ArrowLeft, Plus, Trash2, ChevronLeft, ChevronRight, Loader2, Pencil, Type, Maximize2, Minimize2, Share2,
   Brain, Sparkles, BookPlus, CheckCircle2, XCircle, ZoomIn, ZoomOut, FileText, Cloud, CloudOff, RefreshCw, Eye, Camera,
+  LayoutTemplate, Tag as TagIcon,
 } from "lucide-react";
 
 import { toast } from "sonner";
@@ -72,6 +73,7 @@ import { getNotebookAIActivities, recordAIActivity, type AIActivityItem } from "
 import { scheduleSpacedReviews } from "@/lib/spacedReviews";
 import type { Json } from "@/integrations/supabase/types";
 import { enqueuePageUpdate, flushQueue, pendingCount } from "@/lib/notebookOfflineQueue";
+import { getTemplatesForSubject, suggestTagsFromText } from "@/lib/notebookTemplates";
 
 type PageTemplate = "blank" | "lined" | "grid" | "dotted" | "physics" | "chemistry" | "essay";
 
