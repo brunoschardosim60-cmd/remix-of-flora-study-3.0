@@ -284,6 +284,8 @@ export default function NotebookEditor() {
   const editorContainerRef = useRef<HTMLDivElement>(null);
   const [drawTool, setDrawTool] = useState<"pen" | "marker" | "eraser" | "select" | "line" | "rect" | "circle">("pen");
   const [drawBrush, setDrawBrush] = useState<"ballpoint" | "gel" | "pencil" | "fineliner" | "marker">("ballpoint");
+  const [handwritingMode, setHandwritingMode] = useState(false);
+  const [paperMargin, setPaperMargin] = useState(true);
   const [floraOpen, setFloraOpen] = useState(false);
   const [selectionBounds, setSelectionBounds] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
   const [penColor, setPenColor] = useState("#000000");
