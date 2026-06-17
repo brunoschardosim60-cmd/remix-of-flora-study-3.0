@@ -1,8 +1,18 @@
+export type BrushKind =
+  | "ballpoint"
+  | "gel"
+  | "pencil"
+  | "fineliner"
+  | "marker"
+  | "highlighter";
+
 export interface Stroke {
   points: { x: number; y: number }[];
   color: string;
   width: number;
   tool: "pen" | "marker" | "eraser";
+  /** Brush variant para renderização realista (perfect-freehand). */
+  brush?: BrushKind;
 }
 
 export interface StrokeBounds {
