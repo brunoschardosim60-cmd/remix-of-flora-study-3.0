@@ -1754,6 +1754,18 @@ export default function NotebookEditor() {
                   Quiz do trecho selecionado
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleSuggestTags}>
+                  <TagIcon className="w-4 h-4 mr-2" />
+                  Sugerir tags com Flora
+                </DropdownMenuItem>
+                <DropdownMenuLabel className="text-xs opacity-70 mt-1">Templates de {selectedSubject || "matéria"}</DropdownMenuLabel>
+                {getTemplatesForSubject(selectedSubject).map((tpl) => (
+                  <DropdownMenuItem key={tpl.id} onClick={() => handleInsertTemplate(tpl.html, tpl.label)}>
+                    <LayoutTemplate className="w-4 h-4 mr-2" />
+                    Inserir: {tpl.label}
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => fileInputRef.current?.click()} disabled={ocrLoading}>
                   <Camera className="w-4 h-4 mr-2" />
                   Digitalizar foto (OCR)
