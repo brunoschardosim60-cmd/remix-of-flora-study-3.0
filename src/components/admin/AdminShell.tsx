@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, RefreshCcw } from "lucide-react";
+import { ArrowLeft, RefreshCcw, Command } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -16,6 +16,7 @@ import { CachePanel } from "./panels/CachePanel";
 import { OverviewPanel } from "./panels/OverviewPanel";
 import { ModerationPanel } from "./panels/ModerationPanel";
 import { LogsPanel } from "./panels/LogsPanel";
+import { AdminCommandPalette } from "./AdminCommandPalette";
 
 const SECTION_TITLES: Record<AdminSection, string> = {
   overview: "Visão geral",
@@ -56,6 +57,7 @@ export function AdminShell() {
     <SidebarProvider>
       <div className="flex min-h-dvh w-full bg-background">
         <AdminSidebar active={section} onChange={setSection} userCount={users.length} />
+        <AdminCommandPalette users={users} onNavigate={setSection} onRefresh={refreshUsers} />
 
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-border bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/80">
@@ -84,6 +86,12 @@ export function AdminShell() {
               <RefreshCcw className={`mr-2 h-4 w-4 ${loadingUsers ? "animate-spin" : ""}`} />
               <span className="hidden sm:inline">Atualizar</span>
             </Button>
+            <kbd
+              className="hidden items-center gap-1 rounded-md border border-border bg-muted/40 px-2 py-1 text-[10px] font-medium text-muted-foreground sm:inline-flex"
+              title="Abrir command palette"
+            >
+              <Command className="h-3 w-3" /> K
+            </kbd>
           </header>
 
           <main className="flex-1 overflow-x-hidden p-3 sm:p-5">
