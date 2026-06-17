@@ -1905,13 +1905,13 @@ export default function NotebookEditor() {
 
           {/* Page navigation */}
           <div className="order-5 sm:order-none w-full sm:w-auto flex items-center gap-1">
-            <Button variant="ghost" size="icon" onClick={() => setCurrentPage((prev) => Math.max(0, prev - 1))} disabled={currentPage === 0}>
+            <Button variant="ghost" size="icon" aria-label="Página anterior" onClick={() => setCurrentPage((prev) => Math.max(0, prev - 1))} disabled={currentPage === 0}>
               <ChevronLeft className="w-4 h-4" />
             </Button>
             <span className="text-sm text-muted-foreground">
               Página {currentPage + 1} de {pages.length}
             </span>
-            <Button variant="ghost" size="icon" onClick={() => setCurrentPage((prev) => Math.min(pages.length - 1, prev + 1))} disabled={currentPage === pages.length - 1}>
+            <Button variant="ghost" size="icon" aria-label="Próxima página" onClick={() => setCurrentPage((prev) => Math.min(pages.length - 1, prev + 1))} disabled={currentPage === pages.length - 1}>
               <ChevronRight className="w-4 h-4" />
             </Button>
             <AudioSummaryButton
