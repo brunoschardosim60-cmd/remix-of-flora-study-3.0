@@ -133,7 +133,7 @@ export function StudyGoalsCard({ goals, sessions, topics, isLoggedIn, onSaveGoal
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setForm(goals)}>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setForm(goals)} aria-label="Configurar metas">
               <Settings2 className="w-4 h-4" />
             </Button>
           </DialogTrigger>

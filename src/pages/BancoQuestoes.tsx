@@ -893,7 +893,7 @@ export default function BancoQuestoes() {
       {/* Header */}
       <div className="border-b border-border/60 bg-gradient-to-b from-card via-card to-card/80 backdrop-blur-md sticky top-0 z-10 shadow-sm">
         <div className="container max-w-7xl mx-auto px-3 sm:px-4 py-3 flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="rounded-full">
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="rounded-full" aria-label="Voltar">
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div className="relative w-11 h-11 rounded-2xl bg-gradient-to-br from-primary/20 via-primary/10 to-transparent ring-1 ring-primary/20 flex items-center justify-center shrink-0 shadow-sm">

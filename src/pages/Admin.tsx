@@ -141,7 +141,7 @@ export default function Admin() {
     <div className="min-h-dvh bg-background">
       <div className="mx-auto max-w-7xl px-3 py-4 sm:px-4 sm:py-6">
         <div className="mb-4 flex flex-wrap items-center gap-3">
-          <Button variant="outline" size="icon" onClick={() => navigate("/")}>
+          <Button variant="outline" size="icon" onClick={() => navigate("/")} aria-label="Voltar para o início">
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div className="min-w-[220px] flex-1">
@@ -436,6 +436,7 @@ export default function Admin() {
                                   `Tema "${topic.tema}" removido.`
                                 )}
                                 disabled={saving}
+                                aria-label={`Remover tema ${topic.tema}`}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -519,6 +520,7 @@ export default function Admin() {
                                                   "Sessão removida."
                                                 )}
                                                 disabled={saving}
+                                                aria-label="Remover sessão"
                                               >
                                                 <Trash2 className="h-3 w-3" />
                                               </Button>

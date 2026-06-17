@@ -97,6 +97,7 @@ export function QuickStartChecklist({
         size="icon"
         className="absolute top-3 right-3 h-7 w-7 text-muted-foreground hover:text-foreground"
         onClick={handleDismiss}
+        aria-label="Dispensar checklist"
       >
         <X className="h-3.5 w-3.5" />
       </Button>

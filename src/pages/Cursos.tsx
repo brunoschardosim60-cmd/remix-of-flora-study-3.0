@@ -172,7 +172,7 @@ export default function Cursos() {
     <div className="min-h-dvh bg-background pb-24">
       <header className="sticky top-0 z-10 bg-background/90 backdrop-blur border-b border-border">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => nav(-1)}>
+          <Button variant="ghost" size="icon" onClick={() => nav(-1)} aria-label="Voltar">
             <ArrowLeft size={20} />
           </Button>
           <div className="flex items-center gap-2">

@@ -405,7 +405,7 @@ export default function Analise() {
 
         {/* Header */}
         <div className="mb-5 flex items-center gap-3">
-          <Button variant="outline" size="icon" onClick={() => navigate("/")}>
+          <Button variant="outline" size="icon" onClick={() => navigate("/")} aria-label="Voltar para o início">
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div className="min-w-0 flex-1">

@@ -245,7 +245,7 @@ export function OfflineManager() {
                             <span className="text-xs text-muted-foreground">{formatSize(item.size)}</span>
                           </div>
                         </div>
-                        <Button variant="ghost" size="icon" className="w-7 h-7 text-muted-foreground hover:text-red-500" onClick={() => removeContent(item.id)}>
+                        <Button variant="ghost" size="icon" className="w-7 h-7 text-muted-foreground hover:text-red-500" onClick={() => removeContent(item.id)} aria-label="Remover do offline">
                           <Trash2 className="w-3.5 h-3.5" />
                         </Button>
                       </div>

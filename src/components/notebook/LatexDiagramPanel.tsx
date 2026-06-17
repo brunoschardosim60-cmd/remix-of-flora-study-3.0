@@ -130,7 +130,7 @@ export function LatexDiagramPanel({ editor, onClose }: LatexDiagramPanelProps) {
           <Sigma className="w-4 h-4 text-primary" />
           LaTeX & Diagramas
         </h3>
-        <Button variant="ghost" size="icon" className="w-6 h-6" onClick={onClose}>
+        <Button variant="ghost" size="icon" className="w-6 h-6" onClick={onClose} aria-label="Fechar painel LaTeX">
           <X className="w-4 h-4" />
         </Button>
       </div>

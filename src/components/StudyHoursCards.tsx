@@ -132,7 +132,7 @@ export function StudyHoursCards({ todayHours, weekHours, monthHours, sessions }:
 
       {/* Week navigation */}
       <div className="flex items-center justify-between">
-        <Button variant="ghost" size="icon" className="h-11 w-11 sm:h-7 sm:w-7" onClick={() => setWeekOffset((o) => o - 1)}>
+        <Button variant="ghost" size="icon" className="h-11 w-11 sm:h-7 sm:w-7" onClick={() => setWeekOffset((o) => o - 1)} aria-label="Semana anterior">
           <ChevronLeft className="w-4 h-4" />
         </Button>
         <span className="text-xs font-medium text-muted-foreground">
@@ -144,6 +144,7 @@ export function StudyHoursCards({ todayHours, weekHours, monthHours, sessions }:
           className="h-11 w-11 sm:h-7 sm:w-7"
           onClick={() => setWeekOffset((o) => o + 1)}
           disabled={weekOffset >= 0}
+          aria-label="Próxima semana"
         >
           <ChevronRight className="w-4 h-4" />
         </Button>

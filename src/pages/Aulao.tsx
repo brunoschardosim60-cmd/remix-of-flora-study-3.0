@@ -338,7 +338,7 @@ export default function Aulao() {
     <div className="aulao-page">
       <header className="aulao-header">
         <div className="aulao-header-content">
-          <Button variant="ghost" size="icon" onClick={handleBack} className="aulao-back-btn">
+          <Button variant="ghost" size="icon" onClick={handleBack} className="aulao-back-btn" aria-label="Voltar">
             <ArrowLeft size={20} />
           </Button>
           <h1 className="aulao-title">Aulão com a Flora</h1>

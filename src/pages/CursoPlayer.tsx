@@ -68,7 +68,7 @@ export default function CursoPlayer() {
     <div className="h-dvh flex flex-col bg-background overflow-hidden">
       <header className="shrink-0 bg-background/90 backdrop-blur border-b border-border">
         <div className="px-4 py-2 flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => nav("/cursos")}><ArrowLeft size={20} /></Button>
+          <Button variant="ghost" size="icon" onClick={() => nav("/cursos")} aria-label="Voltar para cursos"><ArrowLeft size={20} /></Button>
           <div className="min-w-0">
             <p className="text-xs text-muted-foreground truncate">{row.subject}</p>
             <h1 className="text-sm font-semibold truncate">{row.title}</h1>
