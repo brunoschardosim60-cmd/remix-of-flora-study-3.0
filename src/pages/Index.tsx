@@ -49,10 +49,8 @@ const WeeklySchedule = lazy(() => import("@/components/WeeklySchedule").then(m =
 const StudyHoursCards = lazy(() => import("@/components/StudyHoursCards").then(m => ({ default: m.StudyHoursCards })));
 const GamificationCard = lazy(() => import("@/components/GamificationCard").then(m => ({ default: m.GamificationCard })));
 const StatsCards = lazy(() => import("@/components/StatsCards").then(m => ({ default: m.StatsCards })));
-const OverdueRevisions = lazy(() => import("@/components/OverdueRevisions").then(m => ({ default: m.OverdueRevisions })));
-const TodayRevisions = lazy(() => import("@/components/TodayRevisions").then(m => ({ default: m.TodayRevisions })));
 const WeeklyRevisionSummary = lazy(() => import("@/components/WeeklyRevisionSummary").then(m => ({ default: m.WeeklyRevisionSummary })));
-const UpcomingRevisions = lazy(() => import("@/components/UpcomingRevisions").then(m => ({ default: m.UpcomingRevisions })));
+const RevisionsPanel = lazy(() => import("@/components/RevisionsPanel").then(m => ({ default: m.RevisionsPanel })));
 const RevisionTable = lazy(() => import("@/components/RevisionTable").then(m => ({ default: m.RevisionTable })));
 
 // Lazy: concurso-specific dashboards (only mounted for users with objetivo === "concurso")
@@ -383,11 +381,13 @@ export default function Index() {
           </>
         )}
 
-        {!minimalistMode && isWidgetVisible("overdue") && (
-          <Suspense fallback={<SectionSkeleton className="min-h-[80px]" />}>
-            <div id="revisoes-atrasadas" className="scroll-mt-20">
-              <OverdueRevisions
-                revisions={overdueRevisions}
+        {!minimalistMode && (isWidgetVisible("overdue") || isWidgetVisible("today_revisions")) && (
+          <Suspense fallback={<SectionSkeleton className="min-h-[160px]" />}>
+            <div id="revisoes" className="scroll-mt-20">
+              <RevisionsPanel
+                overdue={overdueRevisions}
+                today={todayRevisions}
+                upcoming={upcomingRevisions}
                 onComplete={handleToggleRevision}
                 onReschedule={handleRescheduleOverdue}
               />
@@ -395,20 +395,9 @@ export default function Index() {
           </Suspense>
         )}
 
-        {!minimalistMode && isWidgetVisible("today_revisions") && (
-          <Suspense fallback={<SectionSkeleton className="min-h-[80px]" />}>
-            <div id="revisoes-hoje" className="scroll-mt-20">
-              <TodayRevisions revisions={todayRevisions} onComplete={handleToggleRevision} />
-            </div>
-          </Suspense>
-        )}
-
         {!minimalistMode && isWidgetVisible("weekly_summary") && (
           <Suspense fallback={<SectionSkeleton className="min-h-[120px]" />}>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
-              <WeeklyRevisionSummary topics={topics} />
-              <UpcomingRevisions revisions={upcomingRevisions} />
-            </div>
+            <WeeklyRevisionSummary topics={topics} />
           </Suspense>
         )}
 
