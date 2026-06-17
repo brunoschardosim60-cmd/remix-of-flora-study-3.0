@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { FloraIcon } from "@/components/FloraIcon";
-import { Check, X, AlertTriangle, TrendingUp, TrendingDown, CalendarClock, ArrowRight, Sparkles } from "lucide-react";
+import { Check, X, AlertTriangle, TrendingUp, TrendingDown, CalendarClock, ArrowRight, Sparkles, Coffee, Activity, MoonStar } from "lucide-react";
 import { toast } from "sonner";
 import { useStudentObjetivo } from "@/hooks/useStudentObjetivo";
 
@@ -21,6 +21,14 @@ const DECISION_META: Record<string, { icon: typeof TrendingUp; label: string; co
   reduce_load: { icon: TrendingDown, label: "Reduzir carga", color: "text-blue-500" },
   adjust_plan: { icon: CalendarClock, label: "Ajustar plano", color: "text-violet-500" },
   proactive_suggestion: { icon: AlertTriangle, label: "Sugestão da Flora", color: "text-primary" },
+  risk_alert: { icon: AlertTriangle, label: "Alerta da Flora", color: "text-rose-500" },
+};
+
+// Sub-label específico por subtype de risk_alert
+const RISK_SUBTYPE_META: Record<string, { icon: typeof TrendingUp; label: string; color: string }> = {
+  abandono:       { icon: Coffee,    label: "Faz tempo que não estuda", color: "text-rose-500" },
+  queda_acertos:  { icon: TrendingDown, label: "Queda de acertos",       color: "text-amber-500" },
+  excesso_tempo:  { icon: MoonStar,  label: "Excesso de tempo",          color: "text-violet-500" },
 };
 
 // Tenta extrair a primeira matéria mencionada no texto da sugestão
@@ -57,6 +65,27 @@ function nextStepsFor(decision: PendingDecision, bancoRoute: string): NextStep[]
       return [
         { label: "Abrir cronograma", route: "/", primary: true },
       ];
+    case "risk_alert": {
+      const subtype = (decision.recommendation as any)?.subtype;
+      if (subtype === "abandono") {
+        return [
+          { label: "Estudar 15 min agora", route: "/?flora=1", primary: true },
+          { label: "Ver cronograma", route: "/" },
+        ];
+      }
+      if (subtype === "queda_acertos") {
+        return [
+          { label: "Revisar pontos fracos", route: "/analise", primary: true },
+          { label: "Refazer quiz", route: bancoRoute },
+        ];
+      }
+      if (subtype === "excesso_tempo") {
+        return [
+          { label: "Fazer uma pausa", route: "/", primary: true },
+        ];
+      }
+      return [{ label: "Falar com a Flora", route: "/?flora=1", primary: true }];
+    }
     case "proactive_suggestion":
     default:
       return [
@@ -83,7 +112,7 @@ export function FloraConfirmationBanner() {
       .select("*")
       .eq("user_id", user.id)
       .is("accepted", null)
-      .in("decision_type", ["increase_difficulty", "reduce_load", "adjust_plan", "proactive_suggestion"])
+      .in("decision_type", ["increase_difficulty", "reduce_load", "adjust_plan", "proactive_suggestion", "risk_alert"])
       .order("created_at", { ascending: false })
       .limit(3);
     let rows = (data as PendingDecision[] | null) ?? [];
@@ -154,7 +183,12 @@ export function FloraConfirmationBanner() {
   return (
     <div className="space-y-3">
       {pending.map(decision => {
-        const meta = DECISION_META[decision.decision_type] || DECISION_META.proactive_suggestion;
+        const baseMeta = DECISION_META[decision.decision_type] || DECISION_META.proactive_suggestion;
+        const subtype = (decision.recommendation as any)?.subtype;
+        const meta =
+          decision.decision_type === "risk_alert" && subtype && RISK_SUBTYPE_META[subtype]
+            ? RISK_SUBTYPE_META[subtype]
+            : baseMeta;
         const Icon = meta.icon;
         const rec = decision.recommendation as Record<string, unknown>;
         const isLoading = responding === decision.id;
