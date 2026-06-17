@@ -537,7 +537,7 @@ serve(async (req) => {
       if (r2) return r2;
 
       // Síntese SSE a partir de non-stream (fallback final)
-      const opts: CallOptions = { messages, maxTokens: 1500, temperature: 0.55 };
+      const opts: CallOptions = { messages, maxTokens: 800, temperature: 0.55 };
       const full = await runTaskChain(opts, "chat", "flora:chat-synth", { supabase, userId, actionType: "chat" });
       const encoder = new TextEncoder();
       const stream = new ReadableStream({
