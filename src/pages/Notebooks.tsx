@@ -337,16 +337,16 @@ export default function Notebooks() {
             )}
           </div>
         ) : (
-          <div className="bookshelf grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 sm:gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
             {filtered.map((nb) => (
               <div
                 key={nb.id}
                 onClick={() => navigate(`/notebooks/${nb.id}`)}
-                className="group cursor-pointer book-3d"
+                className="group cursor-pointer"
               >
                 <div
-                  className="book-3d__cover"
-                  style={{ ['--cover' as any]: nb.cover_color }}
+                  className="aspect-[3/4] rounded-xl flex flex-col justify-end p-4 relative overflow-hidden transition-transform hover:scale-[1.02] shadow-md"
+                  style={{ backgroundColor: nb.cover_color }}
                 >
                   {/* Decorative pen icon */}
                   <Pencil className="absolute top-3 left-3 w-5 h-5 text-white/30" />
