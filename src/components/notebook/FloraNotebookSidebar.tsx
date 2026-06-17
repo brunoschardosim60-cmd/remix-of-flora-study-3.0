@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Sparkles, X, FileText, Brain, Zap, BookOpen, Loader2 } from "lucide-react";
+import { Sparkles, X, FileText, Brain, Zap, BookOpen, Loader2, ImagePlus } from "lucide-react";
 import type { AIActivityItem } from "@/lib/aiActivityStore";
 import "./notebook-premium.css";
 
@@ -9,12 +9,13 @@ interface FloraNotebookSidebarProps {
   linkedTopicTitle?: string;
   summary: string;
   activities: AIActivityItem[];
-  generatingStudy: "none" | "flashcards" | "quiz" | "summary";
+  generatingStudy: "none" | "flashcards" | "quiz" | "summary" | "image";
   onGenerateSummary: () => void;
   onGenerateFlashcards: () => void;
   onGenerateQuiz: () => void;
   onCreateTopic: () => void;
   onSyncSummary: () => void;
+  onGenerateImage?: () => void;
 }
 
 export function FloraNotebookSidebar({
@@ -29,6 +30,7 @@ export function FloraNotebookSidebar({
   onGenerateQuiz,
   onCreateTopic,
   onSyncSummary,
+  onGenerateImage,
 }: FloraNotebookSidebarProps) {
   const isGenerating = generatingStudy !== "none";
 
@@ -112,6 +114,21 @@ export function FloraNotebookSidebar({
           <BookOpen className="w-3.5 h-3.5" />
           Criar Tópico
         </button>
+        {onGenerateImage && (
+          <button
+            type="button"
+            onClick={onGenerateImage}
+            disabled={isGenerating}
+            className={`nb-flora-action-btn ${generatingStudy === "image" ? "loading" : ""}`}
+          >
+            {generatingStudy === "image" ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <ImagePlus className="w-3.5 h-3.5" />
+            )}
+            Imagem IA
+          </button>
+        )}
         {summary && (
           <button
             type="button"

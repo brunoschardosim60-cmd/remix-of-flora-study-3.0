@@ -88,3 +88,21 @@ export function cacheImage(concept: string, imageUrl: string): void {
     // localStorage cheio ou desabilitado — silencioso
   }
 }
+
+/**
+ * Geração de imagem sob demanda do usuário (chat/caderno).
+ * Chama flora-images com action="ai_generate" — usa IA real (Gemini image).
+ */
+export async function generateImageFromPrompt(prompt: string): Promise<string | null> {
+  try {
+    const { data, error } = await supabase.functions.invoke("flora-images", {
+      body: { action: "ai_generate", prompt },
+    });
+    if (error) throw error;
+    if (data?.success && typeof data.imageUrl === "string") return data.imageUrl;
+    return null;
+  } catch (e) {
+    console.warn("[floraImages] generateImageFromPrompt falhou:", e);
+    return null;
+  }
+}

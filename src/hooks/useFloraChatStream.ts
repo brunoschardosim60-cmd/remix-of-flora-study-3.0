@@ -9,6 +9,18 @@ import {
   type Objetivo,
 } from "@/lib/floraChat";
 import { useFloraActionExecutor } from "@/hooks/useFloraActionExecutor";
+import { generateImageFromPrompt } from "@/lib/floraImages";
+
+// Detecta pedidos de geração de imagem ("desenha…", "gera uma imagem de…", "ilustra…").
+// Retorna o prompt limpo ou null.
+function extractImageRequest(text: string): string | null {
+  const t = text.trim();
+  const re = /^(?:flora,?\s+)?(?:me\s+)?(?:desenha|desenhe|gera(?:r)?(?:\s+uma)?\s+imagem(?:\s+de)?|cria(?:r)?(?:\s+uma)?\s+imagem(?:\s+de)?|faz(?:er)?(?:\s+uma)?\s+imagem(?:\s+de)?|ilustra(?:r|\s+isso)?|imagem\s+de|figura\s+de)\s*[:,]?\s*(.+)$/i;
+  const m = t.match(re);
+  if (!m) return null;
+  const prompt = m[1].trim();
+  return prompt.length >= 2 ? prompt : null;
+}
 
 interface Options {
   isOpen: boolean;
@@ -232,6 +244,31 @@ export function useFloraChatStream({ isOpen, onClose }: Options) {
     setMessages((prev) => [...prev, { role: "user", content: messageToSend }]);
     setInput("");
     setIsSending(true);
+
+    // Intercepta pedidos de imagem antes de chamar o LLM
+    const imgPrompt = extractImageRequest(messageToSend);
+    if (imgPrompt) {
+      try {
+        const url = await generateImageFromPrompt(imgPrompt);
+        if (url) {
+          setMessages((prev) => [...prev, {
+            role: "assistant",
+            content: `Aqui está: **${imgPrompt}**\n\n![${imgPrompt}](${url})`,
+          }]);
+        } else {
+          setMessages((prev) => [...prev, {
+            role: "assistant",
+            content: "Não consegui gerar a imagem agora. Tenta de novo daqui a pouco?",
+          }]);
+        }
+      } catch {
+        setMessages((prev) => [...prev, { role: "assistant", content: "Deu erro ao gerar a imagem." }]);
+      } finally {
+        setIsSending(false);
+      }
+      return;
+    }
+
     let assistantContent = "";
     sendAbortRef.current?.abort();
     const abort = new AbortController();

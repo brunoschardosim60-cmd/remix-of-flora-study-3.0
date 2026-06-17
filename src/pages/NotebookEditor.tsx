@@ -320,7 +320,7 @@ export default function NotebookEditor() {
   const [tagInput, setTagInput] = useState("");
   const [pageSummaries, setPageSummaries] = useState<Record<string, string>>({});
   const [aiActivities, setAiActivities] = useState<AIActivityItem[]>([]);
-  const [generatingStudy, setGeneratingStudy] = useState<"none" | "flashcards" | "quiz" | "summary">("none");
+  const [generatingStudy, setGeneratingStudy] = useState<"none" | "flashcards" | "quiz" | "summary" | "image">("none");
   const [quizDifficulty, setQuizDifficulty] = useState<"facil" | "medio" | "dificil">("medio");
   const [quizDialogOpen, setQuizDialogOpen] = useState(false);
   const [quizQuestions, setQuizQuestions] = useState<NotebookQuizQuestion[]>([]);
@@ -745,6 +745,27 @@ export default function NotebookEditor() {
       solvingMathRef.current = false;
     }
   }, [user?.id, page?.content, handleContentChange]);
+
+  const handleGenerateImageOnPage = useCallback(async () => {
+    if (generatingStudy !== "none") return;
+    const prompt = window.prompt("O que a Flora deve desenhar?", "")?.trim();
+    if (!prompt) return;
+    setGeneratingStudy("image");
+    try {
+      const { generateImageFromPrompt } = await import("@/lib/floraImages");
+      const url = await generateImageFromPrompt(prompt);
+      if (!url) { toast.error("Não consegui gerar a imagem."); return; }
+      const safeAlt = prompt.replace(/"/g, "&quot;").slice(0, 200);
+      const block = `<p><img src="${url}" alt="${safeAlt}" style="max-width:100%;border-radius:8px;" /></p>`;
+      handleContentChange(`${page?.content || ""}${block}`);
+      toast.success("Imagem inserida na página.");
+    } catch (err) {
+      console.error("generate image error:", err);
+      toast.error("Erro ao gerar imagem.");
+    } finally {
+      setGeneratingStudy("none");
+    }
+  }, [generatingStudy, page?.content, handleContentChange]);
 
   const handleSolveSelection = useCallback(async () => {
     if (!selectionBounds) {
@@ -2102,6 +2123,7 @@ export default function NotebookEditor() {
             onGenerateQuiz={handleGenerateQuizFromPage}
             onCreateTopic={handleCreateTopicFromPage}
             onSyncSummary={handleSyncSummaryToTopic}
+            onGenerateImage={handleGenerateImageOnPage}
           />
         </div>
       )}

@@ -394,6 +394,30 @@ serve(async (req: Request) => {
       return json({ success: true, types: detectContentType(subject, topic) });
     }
 
+    // ── ai_generate (IA real, sob demanda do usuário) ────────────
+    // Usado quando o aluno pede explicitamente: "desenha", "gera imagem de…"
+    // Sempre tenta IA primeiro; cai pra busca de foto se IA falhar.
+    if (action === "ai_generate") {
+      const prompt: string = (body.prompt || body.concept || body.query || "").trim();
+      if (!prompt) return json({ error: "prompt obrigatório" }, 400);
+      const tier: string = body.tier || "free";
+      const cacheKey = `img-ai:${normCacheStr(prompt)}:${tier}`;
+      const cached = await cacheLookup(supabase, cacheKey);
+      if (cached?.imageUrl) return json({ success: true, imageUrl: cached.imageUrl, provider: cached.provider, cached: true });
+      const aiUrl = await generateAiImage(prompt, tier);
+      if (aiUrl) {
+        await cacheStore(supabase, cacheKey, { tipo: "image_ai", tema: prompt }, { imageUrl: aiUrl, provider: `ai:${tier}` }, 30 * 24 * 3600);
+        return json({ success: true, imageUrl: aiUrl, provider: `ai:${tier}`, generated: true });
+      }
+      // Fallback: foto real
+      try {
+        const { imageUrl, provider } = await searchPhoto(prompt);
+        return json({ success: true, imageUrl, provider, fallback: true });
+      } catch (e) {
+        return json({ success: false, error: "image_unavailable", reason: e instanceof Error ? e.message : String(e) });
+      }
+    }
+
     // ── search (foto) ────────────────────────────────────────────
     if (action === "search") {
       const rawQuery: string = body.query || body.concept || "";
