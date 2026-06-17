@@ -1656,7 +1656,7 @@ export default function NotebookEditor() {
         <div className="nb-peek-trigger" aria-hidden />
         <header className="nb-peek-content border-b border-border bg-card/80 backdrop-blur-md">
         <div className="container max-w-7xl mx-auto px-3 sm:px-4 py-2 flex flex-wrap items-center gap-2 sm:gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/notebooks")} className="h-11 w-11 sm:h-10 sm:w-10">
+          <Button variant="ghost" size="icon" aria-label="Voltar para cadernos" onClick={() => navigate("/notebooks")} className="h-11 w-11 sm:h-10 sm:w-10">
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <h1 className="font-heading font-bold text-base sm:text-lg truncate min-w-0 flex-1">{notebook?.title}</h1>

@@ -248,7 +248,7 @@ export default function Settings() {
     <div className="min-h-dvh bg-background pb-20 md:pb-6">
       <header className="border-b border-border bg-card sticky top-0 z-10">
         <div className="container max-w-2xl mx-auto px-3 sm:px-4 py-3 flex items-center gap-3">
-          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => navigate("/")}>
+          <Button variant="ghost" size="icon" aria-label="Voltar para o início" className="h-9 w-9" onClick={() => navigate("/")}>
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <h1 className="font-heading font-bold text-lg">Configurações</h1>
