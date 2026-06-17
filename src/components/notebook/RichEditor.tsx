@@ -15,6 +15,7 @@ import { Wand2, CheckCircle2, Minimize2, Sparkles, Loader2 } from "lucide-react"
 import { EditorToolbar } from "./EditorToolbar";
 import { ReactNodeViewRenderer } from "@tiptap/react";
 import { ResizableImageView } from "./ResizableImageView";
+import { GhostText } from "./GhostTextExtension";
 
 interface RichEditorProps {
   content: string;
@@ -92,6 +93,7 @@ export function RichEditor({ content, onChange, userId, notebookId, darkMode, on
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       TextStyle,
       Color,
+      GhostText,
     ],
     content: content || "<p></p>",
     onUpdate: ({ editor }) => {
