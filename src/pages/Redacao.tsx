@@ -442,7 +442,7 @@ export default function Redacao() {
       <div className="mx-auto max-w-7xl px-3 py-4 sm:px-4 sm:py-6">
         {/* Header */}
         <div className="mb-4 flex flex-wrap items-center gap-3">
-          <Button variant="outline" size="icon" onClick={() => navigate("/")}>
+          <Button variant="outline" size="icon" aria-label="Voltar para o início" onClick={() => navigate("/")}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div className="min-w-[220px] flex-1">

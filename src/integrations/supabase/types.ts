@@ -269,7 +269,15 @@ export type Database = {
           tempo_ms?: number
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "concurso_question_attempts_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "concurso_questions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       concurso_questions: {
         Row: {

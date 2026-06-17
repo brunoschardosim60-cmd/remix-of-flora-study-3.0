@@ -1656,7 +1656,7 @@ export default function NotebookEditor() {
         <div className="nb-peek-trigger" aria-hidden />
         <header className="nb-peek-content border-b border-border bg-card/80 backdrop-blur-md">
         <div className="container max-w-7xl mx-auto px-3 sm:px-4 py-2 flex flex-wrap items-center gap-2 sm:gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/notebooks")} className="h-11 w-11 sm:h-10 sm:w-10">
+          <Button variant="ghost" size="icon" aria-label="Voltar para cadernos" onClick={() => navigate("/notebooks")} className="h-11 w-11 sm:h-10 sm:w-10">
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <h1 className="font-heading font-bold text-base sm:text-lg truncate min-w-0 flex-1">{notebook?.title}</h1>
@@ -1905,13 +1905,13 @@ export default function NotebookEditor() {
 
           {/* Page navigation */}
           <div className="order-5 sm:order-none w-full sm:w-auto flex items-center gap-1">
-            <Button variant="ghost" size="icon" onClick={() => setCurrentPage((prev) => Math.max(0, prev - 1))} disabled={currentPage === 0}>
+            <Button variant="ghost" size="icon" aria-label="Página anterior" onClick={() => setCurrentPage((prev) => Math.max(0, prev - 1))} disabled={currentPage === 0}>
               <ChevronLeft className="w-4 h-4" />
             </Button>
             <span className="text-sm text-muted-foreground">
               Página {currentPage + 1} de {pages.length}
             </span>
-            <Button variant="ghost" size="icon" onClick={() => setCurrentPage((prev) => Math.min(pages.length - 1, prev + 1))} disabled={currentPage === pages.length - 1}>
+            <Button variant="ghost" size="icon" aria-label="Próxima página" onClick={() => setCurrentPage((prev) => Math.min(pages.length - 1, prev + 1))} disabled={currentPage === pages.length - 1}>
               <ChevronRight className="w-4 h-4" />
             </Button>
             <AudioSummaryButton
