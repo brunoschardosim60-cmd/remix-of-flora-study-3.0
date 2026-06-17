@@ -288,7 +288,7 @@ export default function NotebookEditor() {
   const [handwritingMode, setHandwritingMode] = useState(false);
   const [paperMargin, setPaperMargin] = useState(true);
   const [ghostEnabled, setGhostEnabled] = useState<boolean>(() =>
-    typeof window !== "undefined" && window.localStorage.getItem(GHOST_ENABLED_KEY) === "1"
+    typeof window === "undefined" ? true : window.localStorage.getItem(GHOST_ENABLED_KEY) !== "0"
   );
   const [floraOpen, setFloraOpen] = useState(false);
   const [selectionBounds, setSelectionBounds] = useState<{ x: number; y: number; width: number; height: number } | null>(null);

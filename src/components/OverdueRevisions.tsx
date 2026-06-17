@@ -28,6 +28,9 @@ function severityClasses(days: number) {
 export function OverdueRevisions({ revisions, onComplete, onReschedule }: OverdueRevisionsProps) {
   if (revisions.length === 0) return null;
 
+  // Mais atrasadas primeiro
+  const sorted = [...revisions].sort((a, b) => daysOverdue(b.date) - daysOverdue(a.date));
+
   return (
     <div className="glass-card rounded-xl p-5 border-destructive/30">
       <div className="flex items-center gap-2 mb-4 flex-wrap">
@@ -37,8 +40,11 @@ export function OverdueRevisions({ revisions, onComplete, onReschedule }: Overdu
           {revisions.length} atrasada{revisions.length > 1 ? "s" : ""}
         </span>
       </div>
+      <p className="text-xs text-muted-foreground mb-3">
+        Faz a mais antiga primeiro — quanto mais espera, mais a curva do esquecimento te derruba.
+      </p>
       <div className="space-y-2">
-        {revisions.map(({ topic, revisionIndex, date }) => {
+        {sorted.map(({ topic, revisionIndex, date }) => {
           const overdueDays = daysOverdue(date);
           return (
           <div
