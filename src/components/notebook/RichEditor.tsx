@@ -25,6 +25,10 @@ interface RichEditorProps {
   paperOverlay?: ReactNode;
   /** When true, paper takes more horizontal space (focus/fullscreen mode). */
   wide?: boolean;
+  /** Tipografia manuscrita (Caveat) opcional. */
+  handwriting?: boolean;
+  /** Margem vermelha clássica de caderno. */
+  showMargin?: boolean;
 }
 
 const TEMPLATE_CLASS: Record<string, string> = {
@@ -37,7 +41,7 @@ const TEMPLATE_CLASS: Record<string, string> = {
   essay: "notebook-essay",
 };
 
-export function RichEditor({ content, onChange, userId, notebookId, darkMode, onToggleDarkMode, template = "blank", zoom = 1, paperOverlay, wide = false }: RichEditorProps) {
+export function RichEditor({ content, onChange, userId, notebookId, darkMode, onToggleDarkMode, template = "blank", zoom = 1, paperOverlay, wide = false, handwriting = false, showMargin = true }: RichEditorProps) {
   const isExternalUpdate = useRef(false);
 
   const editor = useEditor({
@@ -117,7 +121,7 @@ export function RichEditor({ content, onChange, userId, notebookId, darkMode, on
       />
       <div className="flex-1 overflow-auto py-4 sm:py-6 px-2 sm:px-3">
         <div
-          className={`relative mx-auto w-full ${wide ? "max-w-[1400px]" : "max-w-[1180px]"} rounded-2xl transition-shadow duration-300 animate-fade-in ${
+          className={`relative mx-auto w-full ${wide ? "max-w-[1400px]" : "max-w-[1180px]"} rounded-2xl transition-shadow duration-300 animate-fade-in notebook-paper-realistic ${showMargin ? "with-margin" : ""} ${handwriting ? "notebook-handwriting" : ""} ${
             darkMode
               ? "bg-gray-900 shadow-[0_8px_30px_rgba(0,0,0,0.5)] [&_.ProseMirror]:text-gray-100 [&_.ProseMirror_h1]:text-gray-50 [&_.ProseMirror_h2]:text-gray-50 [&_.ProseMirror_h3]:text-gray-50"
               : "bg-white shadow-[0_4px_24px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.08)]"
