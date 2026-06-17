@@ -305,6 +305,15 @@ export default function NotebookEditor() {
   const [mathStatus, setMathStatus] = useState<"idle" | "processing" | "resolved">("idle");
   const [lastMathSuggestion, setLastMathSuggestion] = useState<MathSuggestion | null>(null);
   const [selectedSubject, setSelectedSubject] = useState<Subject>("Matemática");
+  // Matérias que o aluno realmente usa (derivadas dos study_topics dele).
+  // Sem isso o select mostra TODAS (Direito, Contabilidade, etc.) — poluído.
+  const [userSubjects, setUserSubjects] = useState<Subject[]>([]);
+  useEffect(() => {
+    const topics = loadTopics();
+    const set = new Set<string>();
+    topics.forEach((t) => { if (t.materia) set.add(t.materia); });
+    setUserSubjects(Array.from(set) as Subject[]);
+  }, [user?.id]);
   const [pageLinks, setPageLinks] = useState<Record<string, NotebookStudyLink>>({});
   const [pageMeta, setPageMeta] = useState<Record<string, NotebookPageMeta>>({});
   const [searchQuery, setSearchQuery] = useState("");
@@ -1726,7 +1735,7 @@ export default function NotebookEditor() {
               <SelectContent>
                 {(notebook?.subject
                   ? ALL_SUBJECTS.filter((s) => s === notebook.subject)
-                  : ALL_SUBJECTS
+                  : (userSubjects.length > 0 ? userSubjects : ALL_SUBJECTS)
                 ).map((subject) => (
                   <SelectItem key={subject} value={subject}>{subject}</SelectItem>
                 ))}
