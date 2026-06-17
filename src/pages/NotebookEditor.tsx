@@ -61,6 +61,7 @@ import { SamsungStyleToolbar } from "@/components/notebook/SamsungStyleToolbar";
 import { AudioSummaryButton } from "@/components/notebook/AudioSummaryButton";
 import { PageSidebarGrid } from "@/components/notebook/PageSidebarGrid";
 import { FloraNotebookSidebar } from "@/components/notebook/FloraNotebookSidebar";
+import { GHOST_ENABLED_KEY } from "@/components/notebook/GhostTextExtension";
 import "@/components/notebook/notebook-premium.css";
 import { ShareNotebookDialog } from "@/components/notebook/ShareNotebookDialog";
 import { StickyNote, type StickyNoteData } from "@/components/notebook/StickyNote";
@@ -286,6 +287,9 @@ export default function NotebookEditor() {
   const [drawBrush, setDrawBrush] = useState<"ballpoint" | "gel" | "pencil" | "fineliner" | "marker">("ballpoint");
   const [handwritingMode, setHandwritingMode] = useState(false);
   const [paperMargin, setPaperMargin] = useState(true);
+  const [ghostEnabled, setGhostEnabled] = useState<boolean>(() =>
+    typeof window !== "undefined" && window.localStorage.getItem(GHOST_ENABLED_KEY) === "1"
+  );
   const [floraOpen, setFloraOpen] = useState(false);
   const [selectionBounds, setSelectionBounds] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
   const [penColor, setPenColor] = useState("#000000");
@@ -1882,6 +1886,20 @@ export default function NotebookEditor() {
               title="Flora explica o desenho desta página"
             >
               <Wand2 className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => {
+                const next = !ghostEnabled;
+                setGhostEnabled(next);
+                window.localStorage.setItem(GHOST_ENABLED_KEY, next ? "1" : "0");
+                toast.success(next ? "Autocomplete Flora ativado (Tab aceita, Esc descarta)" : "Autocomplete Flora desativado");
+              }}
+              className={`h-11 w-11 sm:h-8 sm:w-8 ${ghostEnabled ? "text-primary" : ""}`}
+              title={ghostEnabled ? "Desativar autocomplete Flora" : "Ativar autocomplete Flora (consome créditos)"}
+            >
+              <Sparkles className="w-4 h-4" />
             </Button>
           </div>
 
