@@ -243,18 +243,20 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
           >
             {ocrLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
           </Button>
-          <Button
-            type="button"
-            variant={recording ? "destructive" : "ghost"}
-            size="icon"
-            className="shrink-0"
-            onClick={recording ? stopRecording : startRecording}
-            disabled={ocrLoading || isSending || transcribing}
-            aria-label={recording ? "Parar gravação" : "Gravar áudio"}
-            title={recording ? "Parar gravação" : "Gravar áudio"}
-          >
-            {transcribing ? <Loader2 className="w-4 h-4 animate-spin" /> : recording ? <Square className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-          </Button>
+          {(input.trim().length === 0 || recording || transcribing) && (
+            <Button
+              type="button"
+              variant={recording ? "destructive" : "ghost"}
+              size="icon"
+              className="shrink-0"
+              onClick={recording ? stopRecording : startRecording}
+              disabled={ocrLoading || isSending}
+              aria-label={recording ? "Parar gravação" : "Gravar áudio"}
+              title={recording ? "Parar gravação" : "Gravar áudio"}
+            >
+              {transcribing ? <Loader2 className="w-4 h-4 animate-spin" /> : recording ? <Square className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+            </Button>
+          )}
           <textarea
             value={input}
             onChange={(e) => {
