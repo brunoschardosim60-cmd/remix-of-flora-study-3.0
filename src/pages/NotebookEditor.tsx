@@ -61,6 +61,7 @@ import { SamsungStyleToolbar } from "@/components/notebook/SamsungStyleToolbar";
 import { AudioSummaryButton } from "@/components/notebook/AudioSummaryButton";
 import { PageSidebarGrid } from "@/components/notebook/PageSidebarGrid";
 import { FloraNotebookSidebar } from "@/components/notebook/FloraNotebookSidebar";
+import { GHOST_ENABLED_KEY } from "@/components/notebook/GhostTextExtension";
 import "@/components/notebook/notebook-premium.css";
 import { ShareNotebookDialog } from "@/components/notebook/ShareNotebookDialog";
 import { StickyNote, type StickyNoteData } from "@/components/notebook/StickyNote";
