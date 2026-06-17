@@ -545,6 +545,9 @@ export default function Analise() {
                   </div>
                 </div>
 
+                {/* Heatmap horário × dia */}
+                <HourDayHeatmap sessions={sessions} />
+
                 {/* Radar de matérias */}
                 {radarData.length >= 3 && (
                   <div className="rounded-2xl border border-border bg-card/70 p-4">
