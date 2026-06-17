@@ -1,4 +1,4 @@
-import { Users, Sparkles, FileQuestion, FileUp, Database, Shield, ShieldAlert, LayoutDashboard, ScrollText } from "lucide-react";
+import { Users, Sparkles, FileQuestion, FileUp, Database, Shield, ShieldAlert, LayoutDashboard, ScrollText, DollarSign } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -16,6 +16,7 @@ export type AdminSection =
   | "usuarios"
   | "moderacao"
   | "ia-tiers"
+  | "custos"
   | "enem"
   | "concurso"
   | "pdf"
@@ -47,6 +48,7 @@ export function AdminSidebar({
     { id: "usuarios", label: "Usuários", icon: Users, group: "Pessoas", badge: userCount },
     { id: "moderacao", label: "Moderação", icon: ShieldAlert, group: "Pessoas" },
     { id: "ia-tiers", label: "IA & Tiers", icon: Sparkles, group: "Sistema" },
+    { id: "custos", label: "Custos IA", icon: DollarSign, group: "Sistema" },
     { id: "enem", label: "ENEM", icon: FileQuestion, group: "Conteúdo" },
     { id: "concurso", label: "Concurso", icon: FileQuestion, group: "Conteúdo" },
     { id: "pdf", label: "Reprocessar PDF", icon: FileUp, group: "Conteúdo" },
