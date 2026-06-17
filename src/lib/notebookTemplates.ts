@@ -68,45 +68,54 @@ const linhaTempo = `
 `;
 
 const TEMPLATES_BY_SUBJECT: Record<string, NotebookTemplate[]> = {
-  Matematica: [
+  "Matemática": [
     { id: "math-formulario", label: "Formulário", description: "Lista de fórmulas + exemplos", html: formulario("Matemática") },
     { id: "math-cornell", label: "Cornell", description: "Palavras-chave + anotações + resumo", html: cornell("Aula de Matemática") },
   ],
-  Fisica: [
+  "Física": [
     { id: "fis-formulario", label: "Formulário", description: "Fórmulas + quando aplicar", html: formulario("Física") },
     { id: "fis-cornell", label: "Cornell", description: "Conceitos + observações", html: cornell("Aula de Física") },
   ],
-  Quimica: [
+  "Química": [
     { id: "qui-formulario", label: "Reações & fórmulas", description: "Equações + observações", html: formulario("Química") },
     { id: "qui-fluxograma", label: "Fluxograma", description: "Etapas de uma reação", html: fluxograma },
   ],
-  Biologia: [
+  "Biologia": [
     { id: "bio-fluxograma", label: "Fluxograma", description: "Processos biológicos passo a passo", html: fluxograma },
     { id: "bio-cornell", label: "Cornell", description: "Conceitos + resumo", html: cornell("Aula de Biologia") },
   ],
-  Historia: [
+  "História": [
     { id: "his-cornell", label: "Cornell", description: "Padrão para aulas teóricas", html: cornell("Aula de História") },
     { id: "his-timeline", label: "Linha do tempo", description: "Eventos em ordem cronológica", html: linhaTempo },
   ],
-  Geografia: [
+  "Geografia": [
     { id: "geo-cornell", label: "Cornell", description: "Conceitos + análise espacial", html: cornell("Aula de Geografia") },
     { id: "geo-timeline", label: "Linha do tempo", description: "Processos históricos/ambientais", html: linhaTempo },
   ],
-  Filosofia: [
-    { id: "fil-cornell", label: "Cornell", description: "Filósofo, ideia central, crítica", html: cornell("Aula de Filosofia") },
-  ],
-  Sociologia: [
-    { id: "soc-cornell", label: "Cornell", description: "Autor, conceito, exemplo atual", html: cornell("Aula de Sociologia") },
-  ],
-  Portugues: [
+  "Português": [
     { id: "por-cornell", label: "Cornell", description: "Regra + exemplos", html: cornell("Aula de Português") },
     { id: "por-redacao", label: "Estrutura de redação", description: "Tese, argumentos, proposta", html: redacao },
   ],
-  Redacao: [
+  "Redação": [
     { id: "red-estrutura", label: "Estrutura ENEM", description: "Tese + 2 argumentos + intervenção", html: redacao },
   ],
-  Ingles: [
+  "Inglês": [
     { id: "ing-cornell", label: "Cornell", description: "Vocabulário + estrutura + exemplos", html: cornell("English class") },
+  ],
+  "Raciocínio Lógico": [
+    { id: "rlm-formulario", label: "Atalhos & padrões", description: "Macetes + exemplos", html: formulario("Raciocínio Lógico") },
+  ],
+  "Direito Constitucional": [
+    { id: "const-cornell", label: "Cornell jurídico", description: "Artigo + interpretação + jurisprudência", html: cornell("Direito Constitucional") },
+  ],
+  "Direito Administrativo": [
+    { id: "adm-cornell", label: "Cornell jurídico", description: "Conceito + lei + exemplo", html: cornell("Direito Administrativo") },
+  ],
+  "Direito Penal": [
+    { id: "penal-cornell", label: "Cornell jurídico", description: "Tipo penal + elementos + exceções", html: cornell("Direito Penal") },
+  ],
+  "Direito Civil": [
+    { id: "civil-cornell", label: "Cornell jurídico", description: "Conceito + artigo + caso", html: cornell("Direito Civil") },
   ],
 };
 
