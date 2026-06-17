@@ -1845,6 +1845,8 @@ export default function NotebookEditor() {
         onModeChange={setMode}
         drawTool={drawTool}
         onDrawToolChange={setDrawTool}
+        drawBrush={drawBrush}
+        onDrawBrushChange={setDrawBrush}
         penColor={penColor}
         onColorChange={setPenColor}
         penWidth={penWidth}
