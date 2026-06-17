@@ -1191,7 +1191,7 @@ Responda SOMENTE com JSON: {"topic_id":"...","materia":"...","tema":"...","forma
         maxTokens: 600, temperature: 0.5, jsonMode: true,
       };
       // Planejamento: Groq como primário
-      const content = await runTaskChain(opts, "plano", "flora:decide", { supabase, userId, actionType: "decide_next_topic" });
+      const content = await runTaskChain(opts, "lite", "flora:decide", { supabase, userId, actionType: "decide_next_topic" });
       const decision = parseAIJSON(content as string) as any;
       await supabase.from("flora_decisions").insert({ user_id: userId, decision_type: "next_topic", reasoning: decision.razao || "", recommendation: decision });
       return jsonResponse(decision);
@@ -1799,9 +1799,9 @@ Responda SOMENTE JSON: {"suggestions":[{"type":"coesao|argumento|estrutura|vocab
 Foque no que está acontecendo AGORA no texto. Português brasileiro.` },
           { role: "user", content: "Dê sugestões para melhorar." },
         ],
-        maxTokens: 300, temperature: 0.4, jsonMode: true,
+        maxTokens: 150, temperature: 0.4, jsonMode: true,
       };
-      const raw = await runTaskChain(opts, "explicacao", "live_essay", { supabase, userId, actionType: "live_essay" });
+      const raw = await runTaskChain(opts, "lite", "live_essay", { supabase, userId, actionType: "live_essay" });
       const parsed = parseAIJSON(raw as string) as any;
       return jsonResponse({ ok: true, suggestions: parsed?.suggestions || [] });
     }
@@ -1837,6 +1837,18 @@ Foque no que está acontecendo AGORA no texto. Português brasileiro.` },
         .limit(1);
       if (existingPending && existingPending.length > 0) return jsonResponse({ ok: true, suggestions: 0, reason: "pending_exists" });
 
+      // Cache 24h: se já gerou QUALQUER decisão hoje, evita re-rodar a análise (economiza ~50% das chamadas
+      // quando o aluno troca de device no mesmo dia).
+      const sinceTodayUTC = new Date(); sinceTodayUTC.setUTCHours(0, 0, 0, 0);
+      const { data: todayDecisions } = await supabase
+        .from("flora_decisions")
+        .select("id")
+        .eq("user_id", userId)
+        .gte("created_at", sinceTodayUTC.toISOString())
+        .in("decision_type", ["increase_difficulty", "reduce_load", "adjust_plan", "proactive_suggestion"])
+        .limit(1);
+      if (todayDecisions && todayDecisions.length > 0) return jsonResponse({ ok: true, suggestions: 0, reason: "already_today" });
+
       const opts: CallOptions = {
         messages: [
           { role: "system", content: `Você é Flora, o motor de decisão do StudyFlow. Analise os dados do aluno e decida se alguma mudança significativa é necessária.
@@ -1861,9 +1873,9 @@ Responda SOMENTE JSON: {"type":"increase_difficulty|reduce_load|adjust_plan|proa
 SEMPRE em português brasileiro.` },
           { role: "user", content: "Analise se o aluno precisa de algum ajuste no plano." },
         ],
-        maxTokens: 500, temperature: 0.4, jsonMode: true,
+        maxTokens: 400, temperature: 0.4, jsonMode: true,
       };
-      const content = await runTaskChain(opts, "plano", "flora:analyze_suggest", { supabase, userId, actionType: "decide_next_topic" });
+      const content = await runTaskChain(opts, "lite", "flora:analyze_suggest", { supabase, userId, actionType: "decide_next_topic" });
       const result = parseAIJSON(content as string) as any;
 
       if (!result?.type || result.type === "nenhuma") return jsonResponse({ ok: true, suggestions: 0 });
@@ -2101,7 +2113,7 @@ dia: 0=seg..6=dom. Max ${Math.floor(onb.tempo_disponivel_min / 30)} slots/dia.\n
         ],
         maxTokens: 60, temperature: 0.5,
       };
-      const raw = await runTaskChain(opts, "chat", "flora:ghost_complete", { supabase, userId, actionType: "chat" });
+      const raw = await runTaskChain(opts, "lite", "flora:ghost_complete", { supabase, userId, actionType: "chat" });
       const suggestion = (typeof raw === "string" ? raw : "").trim().replace(/^["'`]+|["'`]+$/g, "").split("\n")[0].slice(0, 200);
       return jsonResponse({ suggestion });
     }
@@ -2125,7 +2137,7 @@ dia: 0=seg..6=dom. Max ${Math.floor(onb.tempo_disponivel_min / 30)} slots/dia.\n
         ],
         maxTokens: 800, temperature: 0.4,
       };
-      const raw = await runTaskChain(opts, "chat", "flora:rewrite_selection", { supabase, userId, actionType: "chat" });
+      const raw = await runTaskChain(opts, "lite", "flora:rewrite_selection", { supabase, userId, actionType: "chat" });
       const result = (typeof raw === "string" ? raw : "").trim().replace(/^["'`]+|["'`]+$/g, "");
       return jsonResponse({ result });
     }

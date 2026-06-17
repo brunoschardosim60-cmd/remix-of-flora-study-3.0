@@ -35,6 +35,7 @@ export function useFloraChatStream({ isOpen, onClose }: Options) {
   const [objetivo, setObjetivo] = useState<Objetivo>("enem");
   const pendingAssistantTextRef = useRef("");
   const assistantFlushTimerRef = useRef<number | null>(null);
+  const sendAbortRef = useRef<AbortController | null>(null);
   const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/flora-engine`;
 
   const flushAssistantText = useCallback(() => {
@@ -72,7 +73,16 @@ export function useFloraChatStream({ isOpen, onClose }: Options) {
     if (assistantFlushTimerRef.current !== null) {
       window.clearTimeout(assistantFlushTimerRef.current);
     }
+    sendAbortRef.current?.abort();
   }, []);
+
+  // Cancela stream em andamento quando o painel é fechado
+  useEffect(() => {
+    if (!isOpen && sendAbortRef.current) {
+      sendAbortRef.current.abort();
+      sendAbortRef.current = null;
+    }
+  }, [isOpen]);
 
   // Objetivo do onboarding (ajusta chips)
   useEffect(() => {
@@ -223,6 +233,9 @@ export function useFloraChatStream({ isOpen, onClose }: Options) {
     setInput("");
     setIsSending(true);
     let assistantContent = "";
+    sendAbortRef.current?.abort();
+    const abort = new AbortController();
+    sendAbortRef.current = abort;
 
     try {
       const { data: sessionData } = await supabase.auth.getSession();
@@ -234,8 +247,9 @@ export function useFloraChatStream({ isOpen, onClose }: Options) {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
         body: JSON.stringify({
           action: "recommend",
-          data: { message: messageToSend, history: sanitizeHistory(messages.slice(-30)) },
+          data: { message: messageToSend, history: sanitizeHistory(messages.slice(-8)) },
         }),
+        signal: abort.signal,
       });
 
       if (!resp.ok) {
@@ -298,10 +312,15 @@ export function useFloraChatStream({ isOpen, onClose }: Options) {
         });
       }
     } catch (err) {
+      if ((err as any)?.name === "AbortError") {
+        setIsSending(false);
+        return;
+      }
       const msg = err instanceof Error ? err.message : "Tive um problema. Tenta de novo?";
       console.error("Flora chat error:", err);
       setMessages((prev) => [...prev, { role: "assistant", content: msg }]);
     } finally {
+      if (sendAbortRef.current === abort) sendAbortRef.current = null;
       setIsSending(false);
     }
   }, [CHAT_URL, executeAction, input, isSending, messages, queueAssistantText]);

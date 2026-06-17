@@ -40,6 +40,7 @@ export const TOKEN_LIMITS: Record<string, number> = {
   humanas:    3000,
   exatas:     2000,
   chat:       1500,  // respostas curtas da Flora (max 5 linhas)
+  lite:        400,  // ações simples (ghost, rewrite, live feedback, decide, analyze)
   default:    2048,
 };
 
@@ -177,17 +178,22 @@ export async function callOpenAI(opts: CallOptions): Promise<string> {
 }
 
 // ─── Lovable ──────────────────────────────────────────────────────────────────
-export async function callLovable(opts: CallOptions): Promise<string> {
+export async function callLovable(opts: CallOptions, model = "google/gemini-2.5-flash"): Promise<string> {
   const key = Deno.env.get("LOVABLE_API_KEY");
   if (!key) throw Object.assign(new Error("LOVABLE_API_KEY ausente"), { status: 0 });
   const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST", headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model: "google/gemini-2.5-flash", messages: opts.messages, max_tokens: opts.maxTokens ?? TOKEN_LIMITS.default, temperature: opts.temperature ?? 0.55, ...(opts.jsonMode ? { response_format: { type: "json_object" } } : {}) }),
+    body: JSON.stringify({ model, messages: opts.messages, max_tokens: opts.maxTokens ?? TOKEN_LIMITS.default, temperature: opts.temperature ?? 0.55, ...(opts.jsonMode ? { response_format: { type: "json_object" } } : {}) }),
     signal: AbortSignal.timeout(22000),
   });
   if (!r.ok) { const txt = await r.text().catch(() => ""); throw Object.assign(new Error(`Lovable ${r.status}: ${txt.slice(0, 200)}`), { status: r.status }); }
   const d = await r.json(); const c = d.choices?.[0]?.message?.content;
   if (!c) throw Object.assign(new Error("Lovable: vazio"), { status: 500 }); return c;
+}
+
+// Variante econômica: gemini-2.5-flash-lite (~⅓ do custo do flash)
+export async function callLovableLite(opts: CallOptions): Promise<string> {
+  return callLovable(opts, "google/gemini-2.5-flash-lite");
 }
 
 // ─── Cadeia padrão ────────────────────────────────────────────────────────────
@@ -254,7 +260,7 @@ export async function chatWithFallback(opts: CallOptions, tag = "ai"): Promise<s
 // ─── Task types ───────────────────────────────────────────────────────────────
 export type TaskType =
   | "redacao" | "quiz" | "flashcard" | "exatas"
-  | "humanas" | "explicacao" | "plano" | "chat" | "default";
+  | "humanas" | "explicacao" | "plano" | "chat" | "lite" | "default";
 
 /**
  * callWithTaskFallback — provider primário por tarefa + cache + dedup + fallback
@@ -306,6 +312,12 @@ export async function callWithTaskFallbackEx(opts: CallOptions, task: TaskType, 
       taskPrimaries.push(
         ["lovable", () => callLovable(opts)],
         ["groq", () => callGroq(opts)]
+      ); break;
+    case "lite":
+      taskPrimaries.push(
+        ["lovable_lite", () => callLovableLite(opts)],
+        ["gemini",       () => callGemini(opts, key1, "gemini-2.0-flash")],
+        ["groq",         () => callGroq(opts)],
       ); break;
     case "exatas":
       taskPrimaries.push(["deepseek", () => callDeepSeek(opts)]); break;
