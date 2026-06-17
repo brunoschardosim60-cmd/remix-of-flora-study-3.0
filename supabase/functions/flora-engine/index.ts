@@ -554,7 +554,7 @@ serve(async (req) => {
     }
 
     // ─── System prompt da Flora ────────────────────────────────────────────
-    function buildSystemPrompt(context: Awaited<ReturnType<typeof getStudentContext>>, personality: FloraPersonality, explanationStyle: ExplanationStyle) {
+    function buildSystemPrompt(context: Awaited<ReturnType<typeof getStudentContext>>, personality: FloraPersonality, explanationStyle: ExplanationStyle, currentPath: string = "/") {
       const nome = context.profile?.display_name || "aluno";
       const isAdmin = context.profile?.is_admin === true;
       const hasData = context.performance.length > 0 || context.recentActions.length > 0 || context.recentSessions.length > 0;
@@ -791,7 +791,8 @@ ${olderSummary}${recentChatSummary}`;
     // Chat principal
     if (action === "recommend") {
       const context = await getStudentContext(userId);
-      const systemPrompt = buildSystemPrompt(context);
+      const currentPath: string = typeof data?.currentPath === "string" ? data.currentPath : "/";
+      const systemPrompt = buildSystemPrompt(context, personality, explanationStyle, currentPath);
       const userPrompt = data?.message || "Me ajuda a organizar meus estudos?";
 
       const normalizedPrompt = (userPrompt || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[.!?,;:]+/g, " ").replace(/\s+/g, " ").trim();
@@ -802,6 +803,12 @@ ${olderSummary}${recentChatSummary}`;
       // conta como ação direta — não precisa confirmar de novo.
       const directActionVerbs = ["gere","gera","gerar","faz","faca","fazer","cria","criar","monta","montar","manda","mandar","quero","preciso","me da","me de","me passa","me faz","me gera","me cria","me manda","me monta"];
       const isDirectActionRequest = directActionVerbs.some(v => normalizedPrompt === v || normalizedPrompt.startsWith(v + " "));
+
+      // Intenção de navegação: "me ajuda na redação", "corrige redação", "abre caderno",
+      // "quero treinar questões", "ver cronograma"… NAVEGAR não exige confirmação.
+      const navTargets = /(redac|caderno|notebook|quiz|questo|simulado|aulao|aula|cronograma|banco|comunidad|curso|explica.?foto|analise|pomodoro|flashcard)/;
+      const navVerbs = /(ajud|leva|vai|abre|abr[ai]r|abrir|corrig|escrev|cri[ae]?|treina|prati[cq]|ver|mostr|ir |entra|abrir)/;
+      const isNavIntent = navTargets.test(normalizedPrompt) && navVerbs.test(normalizedPrompt);
 
       const wantsNotebook = /\bcaderno\b/.test(normalizedPrompt);
       const wantsQuizLike = /\b(quiz|teste|simulado|prova|perguntas?|questoes?|questões?)\b/.test(normalizedPrompt);
@@ -816,10 +823,10 @@ ${olderSummary}${recentChatSummary}`;
             ? `\n[INTERNO]: O pedido principal é quiz/teste. Use [AÇÃO:QUIZ], a menos que o aluno tenha pedido explicitamente no caderno.`
             : "";
 
-      const guardNote = (isConfirmation || isDirectActionRequest)
+      const guardNote = (isConfirmation || isDirectActionRequest || isNavIntent)
         ? `
 
-[INTERNO]: O aluno PEDIU/CONFIRMOU diretamente ("${userPrompt.slice(0, 80)}"). EXECUTE AGORA incluindo [AÇÃO:...] no final com payload completo. Resposta no chat: 1 frase curta tipo "Abrindo." ou "Vou colocar no caderno." NUNCA escreva o conteúdo (questões, resumo, redação) inline — TUDO vai no payload da ação. OBRIGATÓRIO terminar a resposta com o bloco [AÇÃO:...].${intentNote}`
+[INTERNO]: O aluno PEDIU/CONFIRMOU diretamente ("${userPrompt.slice(0, 80)}"). EXECUTE AGORA incluindo [AÇÃO:...] no final com payload completo. Resposta no chat: 1 frase curta tipo "Abrindo." ou "Vou colocar no caderno." NUNCA escreva o conteúdo (questões, resumo, redação) inline — TUDO vai no payload da ação. OBRIGATÓRIO terminar a resposta com o bloco [AÇÃO:...].${isNavIntent ? `\n[INTERNO]: A intenção é NAVEGAR para uma página específica. Use [AÇÃO:NAVEGAR] com destino, tema/materia/modo quando souber. NÃO peça confirmação — leve o aluno direto.` : ""}${intentNote}`
         : `
 
 [INTERNO]: O aluno NÃO confirmou. Apenas sugira e pergunte. PROIBIDO incluir [AÇÃO:...] nesta resposta.${intentNote}`;
@@ -836,7 +843,7 @@ ${olderSummary}${recentChatSummary}`;
 
       // Se não confirmou NEM pediu ação direta, filtra [AÇÃO:...] do stream
       // (quando confirma OU pede direto tipo "cria redação", a ação DEVE passar)
-      const allowAction = isConfirmation || isDirectActionRequest;
+      const allowAction = isConfirmation || isDirectActionRequest || isNavIntent;
       if (!allowAction && streamResp.body) {
         const { readable, writable } = new TransformStream();
         const writer = writable.getWriter();
