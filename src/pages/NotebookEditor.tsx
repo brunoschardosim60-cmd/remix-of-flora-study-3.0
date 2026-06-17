@@ -1032,6 +1032,56 @@ export default function NotebookEditor() {
     toast.success("Tópico criado a partir da página.");
   };
 
+  // ===== Fase 4b: Templates por matéria, tags inteligentes e auto-resumo =====
+  const autoSummaryRef = useRef<{ pageKey?: string; lastLen: number; timer?: ReturnType<typeof setTimeout> }>({ lastLen: 0 });
+
+  const handleInsertTemplate = useCallback((html: string, label: string) => {
+    const existing = page?.content || "";
+    const separator = existing.trim() ? "<hr/>" : "";
+    handleContentChange(`${existing}${separator}${html}`);
+    toast.success(`Template "${label}" inserido.`);
+  }, [page?.content, handleContentChange]);
+
+  const handleSuggestTags = useCallback(() => {
+    const text = getPlainPageText();
+    if (text.length < 80) {
+      toast.info("Escreva um pouco mais para a Flora sugerir tags.");
+      return;
+    }
+    const suggested = suggestTagsFromText(text, 6);
+    if (suggested.length === 0) {
+      toast.info("Não consegui extrair tags claras desta página.");
+      return;
+    }
+    updateCurrentPageMeta((prev) => {
+      const merged = Array.from(new Set([...(prev.tags ?? []), ...suggested]));
+      return { ...prev, tags: merged.slice(0, 10) };
+    });
+    toast.success(`Flora sugeriu ${suggested.length} tags: ${suggested.join(", ")}`);
+  }, [getPlainPageText, updateCurrentPageMeta]);
+
+  // Auto-resumo: 30s após parar de digitar, se a página tiver >800 chars e ainda não houver resumo
+  useEffect(() => {
+    if (!pageKey) return;
+    if (currentSummary && currentSummary.trim()) return;
+    if (generatingStudy !== "none") return;
+    const text = getPlainPageText();
+    if (text.length < 800) return;
+    if (autoSummaryRef.current.pageKey !== pageKey) {
+      autoSummaryRef.current = { pageKey, lastLen: 0 };
+    }
+    if (text.length === autoSummaryRef.current.lastLen) return;
+    autoSummaryRef.current.lastLen = text.length;
+    if (autoSummaryRef.current.timer) clearTimeout(autoSummaryRef.current.timer);
+    autoSummaryRef.current.timer = setTimeout(() => {
+      if (currentSummary && currentSummary.trim()) return;
+      void handleGenerateSummaryFromPage();
+    }, 30000);
+    return () => {
+      if (autoSummaryRef.current.timer) clearTimeout(autoSummaryRef.current.timer);
+    };
+  }, [pageKey, currentSummary, generatingStudy, getPlainPageText]);
+
   const handleGenerateSummaryFromPage = async () => {
     setGeneratingStudy("summary");
     setFloraOpen(true);
