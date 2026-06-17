@@ -4,7 +4,6 @@ import StarterKit from "@tiptap/starter-kit";
 import Highlight from "@tiptap/extension-highlight";
 import Image from "@tiptap/extension-image";
 import Placeholder from "@tiptap/extension-placeholder";
-import UnderlineExt from "@tiptap/extension-underline";
 import TextAlign from "@tiptap/extension-text-align";
 import { TextStyle } from "@tiptap/extension-text-style";
 import { Color } from "@tiptap/extension-color";
@@ -89,7 +88,6 @@ export function RichEditor({ content, onChange, userId, notebookId, darkMode, on
         HTMLAttributes: { class: "nb-editor-image" },
       }),
       Placeholder.configure({ placeholder: "Comece a escrever..." }),
-      UnderlineExt,
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       TextStyle,
       Color,
