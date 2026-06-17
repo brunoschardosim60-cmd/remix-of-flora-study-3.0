@@ -16,6 +16,7 @@ import { CachePanel } from "./panels/CachePanel";
 import { OverviewPanel } from "./panels/OverviewPanel";
 import { ModerationPanel } from "./panels/ModerationPanel";
 import { LogsPanel } from "./panels/LogsPanel";
+import { CostsPanel } from "./panels/CostsPanel";
 import { AdminCommandPalette } from "./AdminCommandPalette";
 
 const SECTION_TITLES: Record<AdminSection, string> = {
@@ -23,6 +24,7 @@ const SECTION_TITLES: Record<AdminSection, string> = {
   usuarios: "Usuários",
   moderacao: "Moderação",
   "ia-tiers": "IA & Tiers",
+  custos: "Custos IA",
   enem: "ENEM",
   concurso: "Concurso / Direito",
   pdf: "Reprocessar PDF",
@@ -109,6 +111,7 @@ export function AdminShell() {
             {section === "ia-tiers" && (
               <AITiersPanel users={users.map((u) => ({ id: u.id, display_name: u.displayName }))} />
             )}
+            {section === "custos" && <CostsPanel />}
             {section === "enem" && <EnemPanel />}
             {section === "concurso" && <ConcursoPanel />}
             {section === "pdf" && <PdfPanel />}

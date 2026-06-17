@@ -36,6 +36,14 @@ export function useDashboardBootstrap(user: User | null) {
         window.dispatchEvent(new Event("flora-decisions-updated"));
       })
       .catch(() => {});
+    // Risk scan silencioso (heurística pura, sem custo de token).
+    supabase.functions
+      .invoke("flora-engine", { body: { action: "risk_scan" } })
+      .then((res) => {
+        const alerts = (res?.data as any)?.alerts ?? 0;
+        if (alerts > 0) window.dispatchEvent(new Event("flora-decisions-updated"));
+      })
+      .catch(() => {});
   }, [user]);
 
   // Deep link de notificações: rola até a seção pedida
