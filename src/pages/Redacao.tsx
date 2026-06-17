@@ -618,6 +618,12 @@ export default function Redacao() {
                       placeholder={config.placeholder}
                       className="min-h-[420px] font-serif text-base leading-relaxed"
                     />
+                    <p className="text-[11px] text-muted-foreground flex items-start gap-1.5">
+                      <Lightbulb className="h-3 w-3 mt-0.5 flex-shrink-0 text-amber-500" />
+                      <span>
+                        Os <span className="underline decoration-red-500 decoration-wavy">pontinhos vermelhos</span> são do corretor do navegador (ortografia). Clica com o botão direito na palavra para ver sugestões. A <strong>correção completa da Flora</strong> (estrutura, argumentação, nota) sai quando clica em "Corrigir com a Flora".
+                      </span>
+                    </p>
                     <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
                       <div
                         className={`h-full rounded-full transition-all duration-300 ${progressColor}`}

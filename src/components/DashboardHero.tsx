@@ -101,15 +101,9 @@ export function DashboardHero({
               </Button>
               <div className="w-full sm:w-auto rounded-2xl border border-border/70 bg-background/70 px-4 py-3">
                 <p className="text-xs text-muted-foreground">Resumo de hoje</p>
-                {todayMinutes === 0 && revisionsCompletedToday === 0 ? (
-                  <p className="font-medium text-muted-foreground">
-                    Ainda não estudou hoje — clica em <span className="text-primary">{primaryLabel}</span> pra começar.
-                  </p>
-                ) : (
-                  <p className="font-medium">
-                    {todayMinutes} min estudados · {revisionsCompletedToday} revis{revisionsCompletedToday === 1 ? "ada" : "adas"}
-                  </p>
-                )}
+                <p className="font-medium">
+                  {todayMinutes} min estudados · {revisionsCompletedToday} revis{revisionsCompletedToday === 1 ? "ada" : "adas"}
+                </p>
               </div>
             </div>
           </div>
