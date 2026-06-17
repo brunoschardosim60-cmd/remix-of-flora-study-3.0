@@ -1978,6 +1978,65 @@ dia: 0=seg..6=dom. Max ${Math.floor(onb.tempo_disponivel_min / 30)} slots/dia.\n
       return jsonResponse({ ok: true });
     }
 
+    // ─── GHOST_COMPLETE: autocomplete enquanto escreve no caderno ────────────
+    if (action === "ghost_complete") {
+      const before = ((data as any)?.before || "").toString().slice(-800);
+      if (!before.trim()) return jsonResponse({ suggestion: "" });
+      const opts: CallOptions = {
+        messages: [
+          { role: "system", content: `Você é Flora completando o texto que o aluno está escrevendo num caderno de estudos. Continue NATURALMENTE o trecho a seguir com 1 frase curta (5-20 palavras), no MESMO tom e idioma (PT-BR). NÃO repita o que já foi escrito. NÃO comece com pontuação. Apenas a continuação, sem aspas, sem comentários, sem markdown.` },
+          { role: "user", content: before },
+        ],
+        maxTokens: 60, temperature: 0.5,
+      };
+      const raw = await runTaskChain(opts, "chat", "flora:ghost_complete", { supabase, userId, actionType: "chat" });
+      const suggestion = (typeof raw === "string" ? raw : "").trim().replace(/^["'`]+|["'`]+$/g, "").split("\n")[0].slice(0, 200);
+      return jsonResponse({ suggestion });
+    }
+
+    // ─── REWRITE_SELECTION: corrigir/reescrever trecho selecionado ───────────
+    if (action === "rewrite_selection") {
+      const text = ((data as any)?.text || "").toString().slice(0, 4000);
+      const mode = ((data as any)?.mode || "fix") as "fix" | "formal" | "simple" | "summary" | "expand";
+      if (!text.trim()) return jsonResponse({ result: "" });
+      const instruction: Record<string, string> = {
+        fix: "Corrija ortografia, gramática e pontuação. NÃO mude o sentido nem o estilo. Mantenha o mesmo idioma e tom.",
+        formal: "Reescreva em tom formal e claro, preservando 100% do significado.",
+        simple: "Reescreva de forma mais simples e direta, como se explicasse a um colega, preservando o significado.",
+        summary: "Resuma em 1-3 frases curtas mantendo as ideias principais.",
+        expand: "Expanda com 1-2 frases extras de exemplo ou detalhe, mantendo o tom.",
+      };
+      const opts: CallOptions = {
+        messages: [
+          { role: "system", content: `Você é Flora, editora de texto do aluno. ${instruction[mode] || instruction.fix} Responda APENAS com o texto final, sem aspas, sem markdown, sem comentários. PT-BR.` },
+          { role: "user", content: text },
+        ],
+        maxTokens: 800, temperature: 0.4,
+      };
+      const raw = await runTaskChain(opts, "chat", "flora:rewrite_selection", { supabase, userId, actionType: "chat" });
+      const result = (typeof raw === "string" ? raw : "").trim().replace(/^["'`]+|["'`]+$/g, "");
+      return jsonResponse({ result });
+    }
+
+    // ─── EXPLAIN_DRAWING: Flora olha o desenho e explica ─────────────────────
+    if (action === "explain_drawing") {
+      const imageDataUrl = ((data as any)?.image || "").toString();
+      if (!imageDataUrl.startsWith("data:image/")) return jsonResponse({ error: "missing image" }, 400);
+      const question = ((data as any)?.question || "Explique o que tem nesta página do caderno.").toString().slice(0, 400);
+      const opts: CallOptions = {
+        messages: [
+          { role: "system", content: `Você é Flora, professora particular. O aluno te mostrou um desenho/anotação do caderno. Descreva o que vê e explique o conteúdo de forma clara, didática, em PT-BR. 4-10 linhas em markdown. Sem emojis. Se for um diagrama/fórmula/figura de matéria escolar, identifique e ensine. Se não conseguir reconhecer nada, diga isso honestamente.` },
+          { role: "user", content: [
+            { type: "image_url", image_url: { url: imageDataUrl } },
+            { type: "text", text: question },
+          ] as any },
+        ],
+        maxTokens: 700, temperature: 0.5,
+      };
+      const raw = await runTaskChain(opts, "explicacao", "flora:explain_drawing", { supabase, userId, actionType: "chat" });
+      return jsonResponse({ explanation: typeof raw === "string" ? raw : "" });
+    }
+
     return jsonResponse({ error: "Unknown action" }, 400);
   } catch (e) {
     console.error("Flora error:", e);
