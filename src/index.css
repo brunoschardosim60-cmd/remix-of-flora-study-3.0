@@ -257,6 +257,80 @@ html {
   counter-reset: essay-line;
   position: relative;
 }
+
+/* ─────────────────────────────────────────────
+   Fase 2 — Papel realista (textura + margem + sombra)
+   Aplicado em cima de qualquer template via .notebook-paper-realistic
+   ───────────────────────────────────────────── */
+.notebook-paper-realistic {
+  position: relative;
+  /* Textura sutil de fibra de papel via SVG noise embutido */
+  background-color: var(--nb-paper-bg, #fffdf8);
+  background-image:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.55  0 0 0 0 0.45  0 0 0 0 0.32  0 0 0 0.06 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  background-blend-mode: multiply;
+  box-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.04) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.03) inset,
+    0 18px 40px -20px rgba(15, 23, 42, 0.25),
+    0 32px 60px -30px rgba(15, 23, 42, 0.18) !important;
+}
+
+/* Margem vermelha clássica de caderno escolar */
+.notebook-paper-realistic.with-margin::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 56px;
+  width: 1px;
+  background: linear-gradient(
+    to bottom,
+    transparent 0,
+    rgba(239, 68, 68, 0.55) 24px,
+    rgba(239, 68, 68, 0.55) calc(100% - 24px),
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+/* Pequena dobra no canto superior direito (sutil, vetor puro) */
+.notebook-paper-realistic::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 28px;
+  height: 28px;
+  background:
+    linear-gradient(225deg, rgba(0, 0, 0, 0.06), transparent 55%),
+    linear-gradient(225deg, transparent 49%, rgba(0, 0, 0, 0.12) 50%, transparent 52%);
+  border-top-right-radius: inherit;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+/* Dark theme — papel vira tinta */
+.dark .notebook-paper-realistic {
+  background-color: #1c1c1e;
+  background-image: none;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.03) inset,
+    0 18px 40px -20px rgba(0, 0, 0, 0.6),
+    0 32px 60px -30px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Fonte manuscrita opcional */
+.notebook-handwriting,
+.notebook-handwriting .ProseMirror {
+  font-family: "Caveat", "Inter", cursive !important;
+  font-size: 22px !important;
+  line-height: 1.55 !important;
+  letter-spacing: 0.2px;
+}
+.notebook-handwriting .ProseMirror h1 { font-size: 2.6rem; }
+.notebook-handwriting .ProseMirror h2 { font-size: 2rem; }
+.notebook-handwriting .ProseMirror h3 { font-size: 1.6rem; }
 .notebook-essay::before {
   content: "Redação ENEM • máx. 30 linhas";
   position: absolute;
