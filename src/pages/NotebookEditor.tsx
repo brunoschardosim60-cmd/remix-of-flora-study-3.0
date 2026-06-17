@@ -1905,6 +1905,7 @@ export default function NotebookEditor() {
                     penColor={penColor}
                     penWidth={penWidth}
                     tool={drawTool}
+                    brush={drawBrush}
                     zoom={1}
                     onSelectionChange={setSelectionBounds}
                   />
@@ -1960,6 +1961,7 @@ export default function NotebookEditor() {
                     penColor={penColor}
                     penWidth={penWidth}
                     tool={drawTool}
+                    brush={drawBrush}
                     zoom={1}
                     onSelectionChange={setSelectionBounds}
                   />
