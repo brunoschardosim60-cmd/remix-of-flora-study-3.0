@@ -111,10 +111,12 @@ export const GhostText = Extension.create({
               lastRequestedHash = h;
               if (inflight) inflight.abort();
               inflight = new AbortController();
+              const currentSignal = inflight.signal;
               try {
                 const { data, error } = await supabase.functions.invoke("flora-engine", {
                   body: { action: "ghost_complete", data: { before } },
-                });
+                } as any);
+                if (currentSignal.aborted) return;
                 if (error) return;
                 const suggestion = ((data as any)?.suggestion || "").trim();
                 if (!suggestion) return;
