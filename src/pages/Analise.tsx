@@ -492,10 +492,25 @@ export default function Analise() {
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
           </div>
         ) : !hasData ? (
-          <div className="rounded-2xl border border-border bg-card/70 p-8 text-center">
-            <BarChart3 className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
-            <p className="font-heading text-lg font-semibold">Sem dados ainda</p>
-            <p className="mt-1 text-sm text-muted-foreground">Faça quizzes e registre sessões de estudo para ver sua análise aqui.</p>
+          <div className="rounded-2xl border border-border bg-card/70 p-8 text-center space-y-4">
+            <BarChart3 className="mx-auto h-10 w-10 text-muted-foreground" />
+            <div>
+              <p className="font-heading text-lg font-semibold">Sem dados ainda</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                A análise aparece quando você estudar, fizer quizzes ou completar revisões. Comece por algum dos caminhos abaixo:
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <Button onClick={() => navigate("/")} className="gap-1.5">
+                <Clock className="h-4 w-4" /> Começar a estudar
+              </Button>
+              <Button variant="outline" onClick={() => navigate("/aulao")} className="gap-1.5">
+                <BookOpen className="h-4 w-4" /> Fazer um aulão
+              </Button>
+              <Button variant="outline" onClick={() => navigate("/redacao")} className="gap-1.5">
+                <Brain className="h-4 w-4" /> Treinar redação
+              </Button>
+            </div>
           </div>
         ) : (
 
