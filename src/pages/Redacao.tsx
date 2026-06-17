@@ -606,12 +606,6 @@ export default function Redacao() {
                             Offline · salvo localmente
                           </span>
                         )}
-                        {online && hasLocalPending && (
-                          <span className="inline-flex items-center gap-1 text-muted-foreground">
-                            <CloudUpload className="h-3 w-3 animate-pulse" />
-                            Sincronizando…
-                          </span>
-                        )}
                         <span className={lineCount >= config.minLines && lineCount <= config.maxLines
                           ? " text-green-600" : " text-orange-500"}>
                           {" "}(alvo {config.minLines}–{config.maxLines})
