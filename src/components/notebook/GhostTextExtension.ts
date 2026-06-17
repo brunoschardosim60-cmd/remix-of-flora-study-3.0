@@ -96,8 +96,8 @@ export const GhostText = Extension.create({
             if (debounceTimer) clearTimeout(debounceTimer);
             debounceTimer = setTimeout(async () => {
               const { state } = view;
-              // Respect user toggle (default OFF to preserve credits)
-              if (typeof window !== "undefined" && window.localStorage.getItem(GHOST_ENABLED_KEY) !== "1") return;
+              // Autocomplete vem ligado por padrão; usuário pode desligar com o botão Sparkles.
+              if (typeof window !== "undefined" && window.localStorage.getItem(GHOST_ENABLED_KEY) === "0") return;
               const sel = state.selection;
               if (!sel.empty) return;
               const before = getTextBefore(state.doc, sel.from);

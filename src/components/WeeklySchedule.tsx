@@ -7,6 +7,12 @@ import { Progress } from "@/components/ui/progress";
 const DIAS = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
 const DIAS_SHORT = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
 
+// Domingo=0 no Date; nosso array começa em Segunda=0
+const TODAY_IDX = (() => {
+  const d = new Date().getDay(); // 0..6 (dom..sáb)
+  return d === 0 ? 6 : d - 1;
+})();
+
 const DEFAULT_HORARIOS = [
   "07:00", "08:00", "09:00", "10:00", "11:00",
   "13:00", "14:00", "15:00", "16:00",
@@ -123,9 +129,17 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
                   </div>
                 </th>
                 {DIAS.map((dia, i) => (
-                  <th key={dia} className="p-3 font-heading font-semibold text-center">
+                  <th
+                    key={dia}
+                    className={`p-3 font-heading font-semibold text-center ${
+                      i === TODAY_IDX ? "bg-primary/10 text-primary" : ""
+                    }`}
+                  >
                     <span className="hidden sm:inline">{dia}</span>
                     <span className="sm:hidden">{DIAS_SHORT[i]}</span>
+                    {i === TODAY_IDX && (
+                      <span className="ml-1 text-[9px] uppercase tracking-wider opacity-70">hoje</span>
+                    )}
                   </th>
                 ))}
                 <th className="p-2 w-[40px]" />
@@ -151,13 +165,13 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
                     </td>
                     {DIAS.map((_, dia) => {
                       const slot = getSlot(horario, dia);
-                      if (!slot) return <td key={dia} className="p-2" />;
+                      if (!slot) return <td key={dia} className={`p-2 ${dia === TODAY_IDX ? "bg-primary/5" : ""}`} />;
 
                       const isEditing = editingSlot === slot.id;
                       const isHovered = hoveredSlot === slot.id;
 
                       return (
-                        <td key={dia} className="p-1.5">
+                        <td key={dia} className={`p-1.5 ${dia === TODAY_IDX ? "bg-primary/5" : ""}`}>
                           {isEditing ? (
                             <div className="space-y-1.5 p-1">
                               <select
