@@ -26,6 +26,8 @@ import { ConcursoSimuladoHistory } from "@/components/ConcursoSimuladoHistory";
 import { SubjectHeatmap } from "@/components/dashboard/SubjectHeatmap";
 import { EvolutionChart } from "@/components/dashboard/EvolutionChart";
 import { WeakSpotsCard } from "@/components/dashboard/WeakSpotsCard";
+import { HourDayHeatmap } from "@/components/dashboard/HourDayHeatmap";
+import { computeSubjectAlerts, type AttemptLike } from "@/lib/analiseInsights";
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 interface StudySession {
@@ -104,6 +106,7 @@ export default function Analise() {
   const [essays, setEssays] = useState<EssayRow[]>([]);
   const [slots, setSlots] = useState<WeeklySlotRow[]>([]);
   const [onboarding, setOnboarding] = useState<OnboardingRow | null>(null);
+  const [attempts, setAttempts] = useState<AttemptLike[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"geral" | "vivo" | "evolucao" | "enem" | "revisoes" | "relatorio">("geral");
   const [period, setPeriod] = useState<"7d" | "30d" | "all">("7d");
@@ -133,8 +136,13 @@ export default function Analise() {
       supabase.from("weekly_slots").select("id,dia,horario,concluido,materia").eq("user_id", user.id),
       supabase.from("student_onboarding").select("objetivo,tempo_disponivel_min").eq("user_id", user.id).maybeSingle(),
       supabase.from("gamification_profiles").select("*").eq("user_id", user.id).maybeSingle(),
-
-    ]).then(([state, { data: sess }, { data: acts }, { data: pf }, { data: rev }, { data: ess }, { data: sl }, { data: onb }, { data: gami }]) => {
+      supabase.from("question_attempts")
+        .select("created_at,acertou,question:questions(disciplina)")
+        .eq("user_id", user.id)
+        .gte("created_at", new Date(Date.now() - 28 * 24 * 60 * 60 * 1000).toISOString())
+        .order("created_at", { ascending: false })
+        .limit(500),
+    ]).then(([state, { data: sess }, { data: acts }, { data: pf }, { data: rev }, { data: ess }, { data: sl }, { data: onb }, { data: gami }, { data: att }]) => {
       if (cancelled) return;
       setTopics(state?.topics ?? []);
       setSessions((sess ?? []) as StudySession[]);
@@ -145,6 +153,7 @@ export default function Analise() {
       setSlots((sl ?? []) as WeeklySlotRow[]);
       setOnboarding((onb ?? null) as OnboardingRow | null);
       setGamification(gami);
+      setAttempts((att ?? []) as unknown as AttemptLike[]);
 
     }).catch(() => undefined).finally(() => { if (!cancelled) setLoading(false); });
 
@@ -459,6 +468,31 @@ export default function Analise() {
             {activeTab === "geral" && (
               <div className="space-y-4">
 
+                {/* Alertas proativos baseados em question_attempts (últimas 4 semanas) */}
+                {(() => {
+                  const alerts = computeSubjectAlerts(attempts).filter(a => a.direction === "down").slice(0, 3);
+                  if (alerts.length === 0) return null;
+                  return (
+                    <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-4">
+                      <h2 className="mb-2 flex items-center gap-2 font-heading text-base font-semibold text-destructive">
+                        <AlertTriangle className="h-4 w-4" /> Atenção
+                      </h2>
+                      <ul className="space-y-1 text-sm">
+                        {alerts.map(a => (
+                          <li key={a.materia} className="flex items-center justify-between gap-2">
+                            <span>
+                              <strong>{a.materia}</strong> caiu {Math.abs(Math.round(a.deltaPct))}% nas últimas 2 semanas
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {Math.round(a.recentAccuracy * 100)}% vs {Math.round(a.prevAccuracy * 100)}%
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })()}
+
                 {/* KPIs */}
                 <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
                   {[
@@ -510,6 +544,9 @@ export default function Analise() {
                     <span>Mais</span>
                   </div>
                 </div>
+
+                {/* Heatmap horário × dia */}
+                <HourDayHeatmap sessions={sessions} />
 
                 {/* Radar de matérias */}
                 {radarData.length >= 3 && (
