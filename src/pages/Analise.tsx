@@ -26,6 +26,8 @@ import { ConcursoSimuladoHistory } from "@/components/ConcursoSimuladoHistory";
 import { SubjectHeatmap } from "@/components/dashboard/SubjectHeatmap";
 import { EvolutionChart } from "@/components/dashboard/EvolutionChart";
 import { WeakSpotsCard } from "@/components/dashboard/WeakSpotsCard";
+import { HourDayHeatmap } from "@/components/dashboard/HourDayHeatmap";
+import { computeSubjectAlerts, type AttemptLike } from "@/lib/analiseInsights";
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 interface StudySession {
@@ -104,6 +106,7 @@ export default function Analise() {
   const [essays, setEssays] = useState<EssayRow[]>([]);
   const [slots, setSlots] = useState<WeeklySlotRow[]>([]);
   const [onboarding, setOnboarding] = useState<OnboardingRow | null>(null);
+  const [attempts, setAttempts] = useState<AttemptLike[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"geral" | "vivo" | "evolucao" | "enem" | "revisoes" | "relatorio">("geral");
   const [period, setPeriod] = useState<"7d" | "30d" | "all">("7d");
@@ -133,8 +136,13 @@ export default function Analise() {
       supabase.from("weekly_slots").select("id,dia,horario,concluido,materia").eq("user_id", user.id),
       supabase.from("student_onboarding").select("objetivo,tempo_disponivel_min").eq("user_id", user.id).maybeSingle(),
       supabase.from("gamification_profiles").select("*").eq("user_id", user.id).maybeSingle(),
-
-    ]).then(([state, { data: sess }, { data: acts }, { data: pf }, { data: rev }, { data: ess }, { data: sl }, { data: onb }, { data: gami }]) => {
+      supabase.from("question_attempts")
+        .select("created_at,acertou,question:questions(disciplina)")
+        .eq("user_id", user.id)
+        .gte("created_at", new Date(Date.now() - 28 * 24 * 60 * 60 * 1000).toISOString())
+        .order("created_at", { ascending: false })
+        .limit(500),
+    ]).then(([state, { data: sess }, { data: acts }, { data: pf }, { data: rev }, { data: ess }, { data: sl }, { data: onb }, { data: gami }, { data: att }]) => {
       if (cancelled) return;
       setTopics(state?.topics ?? []);
       setSessions((sess ?? []) as StudySession[]);
@@ -145,6 +153,7 @@ export default function Analise() {
       setSlots((sl ?? []) as WeeklySlotRow[]);
       setOnboarding((onb ?? null) as OnboardingRow | null);
       setGamification(gami);
+      setAttempts((att ?? []) as unknown as AttemptLike[]);
 
     }).catch(() => undefined).finally(() => { if (!cancelled) setLoading(false); });
 
