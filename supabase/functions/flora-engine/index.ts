@@ -1181,6 +1181,20 @@ Responda SOMENTE com JSON: {"resumo":"...","flashcards":[{"frente":"...","verso"
 
     if (action === "decide_next_topic") {
       const context = await getStudentContext(userId);
+      // Cache 6h: se já decidiu next_topic recentemente, reusa (mesma sessão / device-switch).
+      const since6h = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
+      const { data: cachedDecide } = await supabase
+        .from("flora_decisions")
+        .select("recommendation")
+        .eq("user_id", userId)
+        .eq("decision_type", "next_topic")
+        .gte("created_at", since6h)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (cachedDecide && cachedDecide.length > 0 && cachedDecide[0].recommendation) {
+        console.log("[flora:decide] cache HIT (6h)");
+        return jsonResponse(cachedDecide[0].recommendation);
+      }
       const opts: CallOptions = {
         messages: [
           { role: "system", content: `Você é Flora. Analise e sugira o melhor tópico pra estudar agora. DADOS: ${JSON.stringify({ onboarding: context.onboarding, performance: context.performance, pendingReviews: context.pendingReviews, recentActions: context.recentActions })}
