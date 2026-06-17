@@ -89,16 +89,6 @@ export function DashboardHero({
             )}
             <div className="space-y-1">
               <h2 className="font-heading text-2xl font-bold sm:text-3xl">{greetingLabel(firstName, isLoggedIn, timeOfDay, minutesAway)}</h2>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                <span className="inline-flex items-center gap-1.5">
-                  <Flame className="w-4 h-4 text-orange-500" />
-                  <span className="font-semibold text-foreground">{streakDays}</span> dias seguidos
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <TrendingUp className="w-4 h-4 text-secondary" />
-                  <span className="font-semibold text-foreground">{weeklyProgressPercent}%</span> da semana ({weeklyCompleted}/{weeklyTotal})
-                </span>
-              </div>
               <p className="text-sm text-muted-foreground sm:text-base">
                 {isLoggedIn
                   ? "Hoje está tudo organizado para você seguir sem pensar demais no próximo passo."
@@ -115,6 +105,25 @@ export function DashboardHero({
                   {todayMinutes} min estudados · {revisionsCompletedToday} revis{revisionsCompletedToday === 1 ? "ada" : "adas"}
                 </p>
               </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 min-w-0 lg:min-w-[360px] w-full lg:w-auto">
+            <div className="rounded-2xl border border-border/70 bg-background/75 p-4">
+              <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                <Flame className="w-4 h-4 text-orange-500" />
+                Streak diário
+              </div>
+              <p className="mt-2 font-heading text-3xl font-bold">{streakDays}</p>
+              <p className="text-xs text-muted-foreground">dias seguidos com atividade</p>
+            </div>
+            <div className="rounded-2xl border border-border/70 bg-background/75 p-4">
+              <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                <TrendingUp className="w-4 h-4 text-secondary" />
+                Semana
+              </div>
+              <p className="mt-2 font-heading text-3xl font-bold">{weeklyProgressPercent}%</p>
+              <p className="text-xs text-muted-foreground">{weeklyCompleted}/{weeklyTotal} revisões da semana</p>
             </div>
           </div>
         </div>
