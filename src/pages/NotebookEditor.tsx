@@ -1538,6 +1538,22 @@ export default function NotebookEditor() {
         e.preventDefault();
         setFocusModeActive((prev) => !prev);
       }
+      // Atalho "F" sozinho: alterna modo foco quando o usuário não está digitando
+      if (
+        (e.key === "f" || e.key === "F") &&
+        !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey
+      ) {
+        const el = document.activeElement as HTMLElement | null;
+        const typing =
+          !!el &&
+          (el.tagName === "INPUT" ||
+            el.tagName === "TEXTAREA" ||
+            el.isContentEditable);
+        if (!typing) {
+          e.preventDefault();
+          setFocusModeActive((prev) => !prev);
+        }
+      }
       if (e.key === "Escape" && autoSolveEnabled) {
         setAutoSolveEnabled(false);
       }
