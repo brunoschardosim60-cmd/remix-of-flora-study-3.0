@@ -1989,6 +1989,98 @@ dia: 0=seg..6=dom. Max ${Math.floor(onb.tempo_disponivel_min / 30)} slots/dia.\n
     }
 
     if (action === "log_action") {
+      // (action continues below)
+    }
+
+    // ─── RISK_SCAN: alertas silenciosos quando aluno está em risco ───
+    // Heurísticas puras (sem IA, sem custo de token). Insere flora_decisions
+    // com decision_type='risk_alert' e accepted=null. Dedup 24h por subtype.
+    if (action === "risk_scan") {
+      const now = Date.now();
+      const since14d = new Date(now - 14 * 86400000).toISOString();
+      const since7d = new Date(now - 7 * 86400000).toISOString();
+      const since24h = new Date(now - 86400000).toISOString();
+
+      const [lastSessRes, attemptsRes, sessions7Res, recentAlertsRes] = await Promise.all([
+        supabase.from("study_sessions").select("start_at").eq("user_id", userId).order("start_at", { ascending: false }).limit(1),
+        supabase.from("question_attempts").select("acertou, created_at").eq("user_id", userId).gte("created_at", since14d).order("created_at", { ascending: false }).limit(500),
+        supabase.from("study_sessions").select("duration_ms, start_at").eq("user_id", userId).gte("start_at", since7d).limit(500),
+        supabase.from("flora_decisions").select("recommendation").eq("user_id", userId).eq("decision_type", "risk_alert").gte("created_at", since24h),
+      ]);
+
+      const recentSubtypes = new Set<string>(
+        (recentAlertsRes.data ?? [])
+          .map((r: any) => r?.recommendation?.subtype)
+          .filter((s: any): s is string => typeof s === "string"),
+      );
+
+      const alerts: Array<{ subtype: string; reasoning: string; details: Record<string, unknown> }> = [];
+
+      // 1) Abandono: >= 3 dias sem sessão (mas já estudou alguma vez antes)
+      const lastStart = lastSessRes.data?.[0]?.start_at as string | undefined;
+      if (lastStart) {
+        const daysSince = Math.floor((now - new Date(lastStart).getTime()) / 86400000);
+        if (daysSince >= 3 && !recentSubtypes.has("abandono")) {
+          alerts.push({
+            subtype: "abandono",
+            reasoning: `Você está ${daysSince} dias sem estudar — que tal voltar com 15 minutinhos?`,
+            details: { daysSinceLast: daysSince, lastStart },
+          });
+        }
+      }
+
+      // 2) Queda de acertos: últimos 7d vs 7d anteriores, delta <= -10pp, >= 5 tentativas cada
+      const attempts = (attemptsRes.data ?? []) as Array<{ acertou: boolean; created_at: string }>;
+      const cut = now - 7 * 86400000;
+      let rH = 0, rT = 0, pH = 0, pT = 0;
+      for (const a of attempts) {
+        const t = new Date(a.created_at).getTime();
+        if (t >= cut) { rT++; if (a.acertou) rH++; }
+        else { pT++; if (a.acertou) pH++; }
+      }
+      if (rT >= 5 && pT >= 5) {
+        const rAcc = rH / rT, pAcc = pH / pT;
+        const deltaPP = (rAcc - pAcc) * 100;
+        if (deltaPP <= -10 && !recentSubtypes.has("queda_acertos")) {
+          alerts.push({
+            subtype: "queda_acertos",
+            reasoning: `Sua taxa de acerto caiu ${Math.abs(Math.round(deltaPP))} pontos nas últimas 2 semanas — vamos revisar juntos?`,
+            details: { recentAcc: Math.round(rAcc * 100), prevAcc: Math.round(pAcc * 100), recentCount: rT, prevCount: pT },
+          });
+        }
+      }
+
+      // 3) Excesso de tempo: > 6h/dia em pelo menos 3 dos últimos 7 dias
+      const dayTotals = new Map<string, number>();
+      for (const s of (sessions7Res.data ?? []) as Array<{ duration_ms: number; start_at: string }>) {
+        const k = String(s.start_at).slice(0, 10);
+        dayTotals.set(k, (dayTotals.get(k) || 0) + (s.duration_ms || 0));
+      }
+      const heavyDays = [...dayTotals.values()].filter((ms) => ms > 6 * 3600_000).length;
+      if (heavyDays >= 3 && !recentSubtypes.has("excesso_tempo")) {
+        alerts.push({
+          subtype: "excesso_tempo",
+          reasoning: `Você passou mais de 6h estudando em ${heavyDays} dos últimos 7 dias — descansar também faz parte.`,
+          details: { heavyDays },
+        });
+      }
+
+      if (alerts.length > 0) {
+        await supabase.from("flora_decisions").insert(
+          alerts.map((a) => ({
+            user_id: userId,
+            decision_type: "risk_alert",
+            reasoning: a.reasoning,
+            recommendation: { subtype: a.subtype, ...a.details },
+            accepted: null,
+          })),
+        );
+      }
+
+      return jsonResponse({ ok: true, alerts: alerts.length, subtypes: alerts.map((a) => a.subtype) });
+    }
+
+    if (action === "_never_matches_placeholder_") {
       const { actionType, topicId, materia, metadata } = data;
       await supabase.from("user_actions").insert({ user_id: userId, action: actionType, topic_id: topicId || null, materia: materia || null, metadata: metadata || {} });
       if (topicId && (actionType === "quiz_correct" || actionType === "quiz_wrong")) {
