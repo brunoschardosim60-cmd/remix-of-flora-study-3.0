@@ -20,7 +20,9 @@ type Action =
   | "set_tier"
   | "impersonate_link"
   | "notify_user"
-  | "bulk_set_tier";
+  | "bulk_set_tier"
+  | "set_role"
+  | "list_roles";
 
 interface Payload {
   action: Action;
@@ -31,6 +33,8 @@ interface Payload {
   is_admin?: boolean;
   message?: string;
   redirect_to?: string;
+  role?: "admin" | "moderator" | "support" | "user";
+  grant?: boolean;
 }
 
 Deno.serve(async (req) => {
@@ -158,6 +162,34 @@ Deno.serve(async (req) => {
         if (error) return json({ error: error.message }, 500);
         await log("notify_user", body.user_id, body.message.slice(0, 200));
         return json({ ok: true });
+      }
+      case "set_role": {
+        if (!body.user_id || !body.role || typeof body.grant !== "boolean")
+          return json({ error: "missing_fields" }, 400);
+        if (body.grant) {
+          const { error } = await svc
+            .from("user_roles")
+            .upsert({ user_id: body.user_id, role: body.role }, { onConflict: "user_id,role" });
+          if (error) return json({ error: error.message }, 500);
+        } else {
+          const { error } = await svc
+            .from("user_roles")
+            .delete()
+            .eq("user_id", body.user_id)
+            .eq("role", body.role);
+          if (error) return json({ error: error.message }, 500);
+        }
+        await log(body.grant ? "grant_role" : "revoke_role", body.user_id, body.role);
+        return json({ ok: true });
+      }
+      case "list_roles": {
+        if (!body.user_id) return json({ error: "missing_user_id" }, 400);
+        const { data, error } = await svc
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", body.user_id);
+        if (error) return json({ error: error.message }, 500);
+        return json({ ok: true, roles: (data ?? []).map((r) => r.role) });
       }
       default:
         return json({ error: "unknown_action" }, 400);

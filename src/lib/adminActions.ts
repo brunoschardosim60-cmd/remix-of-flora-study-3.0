@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
 type Tier = "free" | "pro" | "pro_plus";
+export type AppRole = "admin" | "moderator" | "support" | "user";
 
 async function invoke<T = unknown>(payload: Record<string, unknown>): Promise<T> {
   const { data, error } = await supabase.functions.invoke("admin-actions", { body: payload });
@@ -26,6 +27,10 @@ export const bulkSetTier = (user_ids: string[], tier: Tier) =>
   invoke<{ ok: true; count: number }>({ action: "bulk_set_tier", user_ids, tier });
 export const notifyUser = (user_id: string, message: string) =>
   invoke({ action: "notify_user", user_id, message });
+export const setRole = (user_id: string, role: AppRole, grant: boolean) =>
+  invoke({ action: "set_role", user_id, role, grant });
+export const listUserRoles = (user_id: string) =>
+  invoke<{ ok: true; roles: AppRole[] }>({ action: "list_roles", user_id });
 
 export function exportUsersCSV(rows: Array<Record<string, unknown>>, filename = "usuarios.csv") {
   if (!rows.length) return;

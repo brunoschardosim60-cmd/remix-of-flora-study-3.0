@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { ScrollText, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import { ScrollText, ChevronLeft, ChevronRight, Radio } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { reportError } from "@/lib/errorHandling";
+import { PanelSkeleton, EmptyState } from "../PanelHelpers";
 
 interface LogRow {
   id: string;
@@ -22,6 +23,7 @@ export function LogsPanel() {
   const [page, setPage] = useState(0);
   const [actionFilter, setActionFilter] = useState("");
   const [userFilter, setUserFilter] = useState("");
+  const [live, setLive] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -49,11 +51,43 @@ export function LogsPanel() {
     };
   }, [page, actionFilter, userFilter]);
 
+  // Realtime: append new rows on page 0, no filters set
+  useEffect(() => {
+    if (page !== 0) return;
+    const channel = supabase
+      .channel("admin_action_logs_live")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "admin_action_logs" },
+        (payload) => {
+          const row = payload.new as LogRow;
+          if (actionFilter.trim() && !row.action_type.includes(actionFilter.trim())) return;
+          if (userFilter.trim() && row.user_id !== userFilter.trim()) return;
+          setRows((prev) => [row, ...prev].slice(0, PAGE_SIZE));
+        }
+      )
+      .subscribe((status) => setLive(status === "SUBSCRIBED"));
+    return () => {
+      supabase.removeChannel(channel);
+      setLive(false);
+    };
+  }, [page, actionFilter, userFilter]);
+
   return (
     <section className="space-y-4">
       <div className="flex items-center gap-2">
         <ScrollText className="h-5 w-5 text-primary" />
         <h2 className="font-heading text-xl font-semibold">Logs de ações admin</h2>
+        {page === 0 && (
+          <span
+            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${
+              live ? "bg-emerald-500/10 text-emerald-500" : "bg-muted text-muted-foreground"
+            }`}
+            title={live ? "Recebendo eventos em tempo real" : "Conectando…"}
+          >
+            <Radio className="h-3 w-3" /> {live ? "ao vivo" : "off"}
+          </span>
+        )}
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -101,6 +135,15 @@ export function LogsPanel() {
       </div>
 
       <div className="overflow-x-auto rounded-2xl border border-border bg-card/70">
+        {loading ? (
+          <div className="p-3"><PanelSkeleton rows={6} /></div>
+        ) : rows.length === 0 ? (
+          <EmptyState
+            icon={ScrollText}
+            title="Nenhum log encontrado"
+            description="Ajuste os filtros ou aguarde novas ações administrativas."
+          />
+        ) : (
         <table className="w-full text-sm">
           <thead className="border-b border-border bg-muted/40 text-xs uppercase text-muted-foreground">
             <tr>
@@ -112,20 +155,7 @@ export function LogsPanel() {
             </tr>
           </thead>
           <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan={5} className="px-3 py-8 text-center">
-                  <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" />
-                </td>
-              </tr>
-            ) : rows.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-3 py-8 text-center text-muted-foreground">
-                  Nenhum log encontrado.
-                </td>
-              </tr>
-            ) : (
-              rows.map((r) => (
+            {rows.map((r) => (
                 <tr key={r.id} className="border-b border-border/60 last:border-0">
                   <td className="whitespace-nowrap px-3 py-2 text-xs text-muted-foreground">
                     {new Date(r.created_at).toLocaleString("pt-BR")}
@@ -139,10 +169,10 @@ export function LogsPanel() {
                   <td className="px-3 py-2 font-mono text-[11px] text-muted-foreground">{r.admin_id}</td>
                   <td className="px-3 py-2 text-xs text-muted-foreground">{r.note}</td>
                 </tr>
-              ))
-            )}
+              ))}
           </tbody>
         </table>
+        )}
       </div>
     </section>
   );
