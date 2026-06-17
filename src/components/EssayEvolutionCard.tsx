@@ -57,6 +57,63 @@ export function EssayEvolutionCard({ essays, isENEM }: EssayEvolutionCardProps) 
 
   const prevLabel = relativeLabel(prev.corrected_at || prev.updated_at || prev.created_at);
 
+  // Últimas 5 redações para evolução por competência (apenas ENEM tem c1..c5)
+  const last5 = corrected.slice(-5);
+  const competencias = [1, 2, 3, 4, 5] as const;
+  const compSeries = competencias.map((n) => {
+    const key = `competencia_${n}` as const;
+    const values = last5
+      .map((e) => (e as any)[key] as number | null)
+      .filter((v): v is number => typeof v === "number");
+    let trend: "up" | "down" | "flat" = "flat";
+    if (values.length >= 3) {
+      const tail = values.slice(-2);
+      const head = values.slice(0, values.length - 2);
+      const avgTail = tail.reduce((a, b) => a + b, 0) / tail.length;
+      const avgHead = head.reduce((a, b) => a + b, 0) / head.length;
+      const diff = avgTail - avgHead;
+      if (diff > 8) trend = "up";
+      else if (diff < -8) trend = "down";
+    } else if (values.length === 2) {
+      const diff = values[1] - values[0];
+      if (diff > 8) trend = "up";
+      else if (diff < -8) trend = "down";
+    }
+    return { n, values, trend, last: values[values.length - 1] ?? null };
+  });
+
+  const COMP_LABELS: Record<number, string> = {
+    1: "Norma culta",
+    2: "Compreensão",
+    3: "Argumentação",
+    4: "Coesão",
+    5: "Proposta",
+  };
+
+  function Sparkline({ values }: { values: number[] }) {
+    if (values.length < 2) {
+      return <div className="h-6 w-full rounded bg-muted/40" />;
+    }
+    const w = 80;
+    const h = 24;
+    const max = 200;
+    const step = w / (values.length - 1);
+    const points = values
+      .map((v, i) => `${(i * step).toFixed(1)},${(h - (v / max) * h).toFixed(1)}`)
+      .join(" ");
+    return (
+      <svg viewBox={`0 0 ${w} ${h}`} className="h-6 w-full" preserveAspectRatio="none">
+        <polyline
+          points={points}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          className="text-primary"
+        />
+      </svg>
+    );
+  }
+
   return (
     <section className="rounded-2xl border border-border bg-card/70 p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -103,6 +160,44 @@ export function EssayEvolutionCard({ essays, isENEM }: EssayEvolutionCardProps) 
           );
         })}
       </div>
+
+      {isENEM && last5.length >= 2 && compSeries.some((c) => c.values.length >= 2) && (
+        <div className="mt-4 border-t border-border pt-3">
+          <p className="mb-2 text-xs uppercase tracking-wide text-muted-foreground">
+            Evolução por competência · últimas {last5.length}
+          </p>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-5">
+            {compSeries.map((c) => {
+              const Icon = c.trend === "up" ? TrendingUp : c.trend === "down" ? TrendingDown : Minus;
+              const cls =
+                c.trend === "up"
+                  ? "text-emerald-600 dark:text-emerald-400"
+                  : c.trend === "down"
+                    ? "text-destructive"
+                    : "text-muted-foreground";
+              return (
+                <div key={c.n} className="rounded-lg border border-border/60 bg-background/40 p-2">
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="text-[10px] font-medium text-muted-foreground">
+                      C{c.n} · {COMP_LABELS[c.n]}
+                    </span>
+                    <Icon className={`h-3 w-3 ${cls}`} />
+                  </div>
+                  <div className="mt-1 flex items-baseline gap-1">
+                    <span className="font-heading text-sm font-semibold">
+                      {c.last !== null ? c.last : "—"}
+                    </span>
+                    <span className="text-[9px] text-muted-foreground">/200</span>
+                  </div>
+                  <div className="mt-1">
+                    <Sparkline values={c.values} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </section>
   );
 }
