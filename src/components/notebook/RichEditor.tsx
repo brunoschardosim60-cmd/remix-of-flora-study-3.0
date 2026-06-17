@@ -153,7 +153,6 @@ export function RichEditor({ content, onChange, userId, notebookId, darkMode, on
       {editor && (
         <BubbleMenu
           editor={editor}
-          options={{ placement: "top" }}
           shouldShow={({ editor: ed, from, to }) => from !== to && !ed.state.selection.empty}
         >
           <div className="flex items-center gap-1 rounded-lg border border-border bg-popover/95 backdrop-blur shadow-lg px-1.5 py-1">
