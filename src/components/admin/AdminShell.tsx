@@ -104,7 +104,7 @@ export function AdminShell() {
               />
             )}
             {section === "moderacao" && (
-              <ModerationPanel users={users} onRefreshUsers={refreshUsers} />
+              <ModerationPanel users={users} onRefreshUsers={refreshUsers} loadingUsers={loadingUsers} />
             )}
             {section === "ia-tiers" && (
               <AITiersPanel users={users.map((u) => ({ id: u.id, display_name: u.displayName }))} />

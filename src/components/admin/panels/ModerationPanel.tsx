@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ShieldAlert, Ban, KeyRound, UserCog, LogIn, MessageSquare, Download, Loader2, Crown } from "lucide-react";
+import { ShieldAlert, Ban, KeyRound, UserCog, LogIn, MessageSquare, Download, Loader2, Crown, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,17 +17,22 @@ import {
   bulkSetTier,
   notifyUser,
   exportUsersCSV,
+  setRole,
+  type AppRole,
 } from "@/lib/adminActions";
 import { toErrorMessage } from "@/lib/errorHandling";
+import { EmptyState, PanelSkeleton } from "../PanelHelpers";
 
 type Tier = "free" | "pro" | "pro_plus";
 
 export function ModerationPanel({
   users,
   onRefreshUsers,
+  loadingUsers = false,
 }: {
   users: AdminUserCard[];
   onRefreshUsers: () => Promise<void>;
+  loadingUsers?: boolean;
 }) {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -156,6 +161,15 @@ export function ModerationPanel({
       </div>
 
       <div className="overflow-x-auto rounded-2xl border border-border bg-card/70">
+        {loadingUsers ? (
+          <div className="p-3"><PanelSkeleton rows={6} /></div>
+        ) : filtered.length === 0 ? (
+          <EmptyState
+            icon={Users}
+            title="Nenhum usuário encontrado"
+            description="Ajuste a busca ou aguarde novos cadastros."
+          />
+        ) : (
         <table className="w-full text-sm">
           <thead className="border-b border-border bg-muted/40 text-xs uppercase text-muted-foreground">
             <tr>
@@ -281,20 +295,39 @@ export function ModerationPanel({
                           <SelectItem value="pro_plus">Pro+</SelectItem>
                         </SelectContent>
                       </Select>
+                      <Select
+                        defaultValue="__none__"
+                        onValueChange={(v) => {
+                          if (v === "__none__") return;
+                          const [role, op] = v.split(":") as [AppRole, "grant" | "revoke"];
+                          void wrap(
+                            u.id,
+                            `${op === "grant" ? "Concedido" : "Revogado"}: ${role}`,
+                            () => setRole(u.id, role, op === "grant")
+                          );
+                        }}
+                      >
+                        <SelectTrigger className="h-7 w-28 text-xs" aria-label="Papéis granulares">
+                          <SelectValue placeholder="Role" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none__" disabled>Roles…</SelectItem>
+                          <SelectItem value="moderator:grant">+ moderator</SelectItem>
+                          <SelectItem value="moderator:revoke">− moderator</SelectItem>
+                          <SelectItem value="support:grant">+ support</SelectItem>
+                          <SelectItem value="support:revoke">− support</SelectItem>
+                          <SelectItem value="admin:grant">+ admin</SelectItem>
+                          <SelectItem value="admin:revoke">− admin</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </td>
                 </tr>
               );
             })}
-            {filtered.length === 0 && (
-              <tr>
-                <td colSpan={4} className="px-3 py-8 text-center text-sm text-muted-foreground">
-                  Nenhum usuário encontrado.
-                </td>
-              </tr>
-            )}
           </tbody>
         </table>
+        )}
       </div>
 
       {notifyOpen && (
