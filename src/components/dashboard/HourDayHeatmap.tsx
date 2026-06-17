@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { Fragment, useMemo } from "react";
 import { Clock } from "lucide-react";
 import { computeHourDayHeatmap, peakStudyBucket, DAY_LABELS, type SessionLike } from "@/lib/analiseInsights";
 
@@ -58,8 +58,8 @@ export function HourDayHeatmap({ sessions }: HourDayHeatmapProps) {
           <div key={b.label} className="text-center text-muted-foreground">{b.label}h</div>
         ))}
         {DAY_LABELS.map((day, d) => (
-          <>
-            <div key={`lbl-${d}`} className="text-muted-foreground">{day}</div>
+          <Fragment key={`row-${d}`}>
+            <div className="text-muted-foreground">{day}</div>
             {cells[d].map((v, bi) => (
               <div
                 key={`${d}-${bi}`}
@@ -67,7 +67,7 @@ export function HourDayHeatmap({ sessions }: HourDayHeatmapProps) {
                 className={`h-7 rounded-sm ${intensity(v)} transition-colors`}
               />
             ))}
-          </>
+          </Fragment>
         ))}
       </div>
     </div>
