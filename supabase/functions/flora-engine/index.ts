@@ -1979,6 +1979,8 @@ dia: 0=seg..6=dom. Max ${Math.floor(onb.tempo_disponivel_min / 30)} slots/dia.\n
     }
 
     return jsonResponse({ error: "Unknown action" }, 400);
+
+    // (unreachable — handlers below registered before this return via early returns)
   } catch (e) {
     console.error("Flora error:", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
