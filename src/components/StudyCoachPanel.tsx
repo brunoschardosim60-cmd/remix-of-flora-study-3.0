@@ -1,8 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { StudyTopic } from "@/lib/studyData";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Brain, NotebookPen, PlayCircle, Sparkles } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+
+const DISMISS_STORAGE_KEY = "studyflow:coach-dismissed";
+function todayDateKey(): string { return new Date().toISOString().split("T")[0]; }
 
 interface StudyCoachPanelProps {
   weakTopics: StudyTopic[];
@@ -23,7 +27,31 @@ export function StudyCoachPanel({
   onOpenNotes,
   onOpenQuiz,
 }: StudyCoachPanelProps) {
-  const [dismissed, setDismissed] = useState<Set<DismissKey>>(new Set());
+  const { user } = useAuth();
+  // Dismissals persistem por dia — não voltam toda vez que o aluno recarrega.
+  const storageKey = `${DISMISS_STORAGE_KEY}:${user?.id || "anon"}:${todayDateKey()}`;
+  const [dismissed, setDismissed] = useState<Set<DismissKey>>(() => {
+    if (typeof window === "undefined") return new Set();
+    try {
+      const raw = window.localStorage.getItem(storageKey);
+      if (!raw) return new Set();
+      return new Set(JSON.parse(raw) as DismissKey[]);
+    } catch { return new Set(); }
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(storageKey, JSON.stringify(Array.from(dismissed)));
+      // limpa chaves de dias anteriores
+      const prefix = `${DISMISS_STORAGE_KEY}:${user?.id || "anon"}:`;
+      const today = todayDateKey();
+      for (let i = window.localStorage.length - 1; i >= 0; i--) {
+        const k = window.localStorage.key(i);
+        if (k && k.startsWith(prefix) && !k.endsWith(today)) window.localStorage.removeItem(k);
+      }
+    } catch { /* silent */ }
+  }, [dismissed, storageKey, user?.id]);
 
   const dismiss = (key: DismissKey) => {
     setDismissed((prev) => {
