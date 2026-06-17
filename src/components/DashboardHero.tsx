@@ -1,7 +1,10 @@
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Flame, Target, TrendingUp } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { seenToday, markSeenToday } from "@/lib/messageDedup";
 
 interface DailyGoalCard {
   id: "minutes" | "revisions" | "quiz";
@@ -57,15 +60,33 @@ export function DashboardHero({
   timeOfDay,
   minutesAway,
 }: DashboardHeroProps) {
+  const { user } = useAuth();
+  // Badge "Ritmo em dia / Bem-vindo de volta / Sentimos sua falta": mostra 1x por dia
+  // por status, evitando repetir toda vez que o aluno volta ao dashboard.
+  const statusKey = minutesAway === undefined
+    ? null
+    : minutesAway > 120 ? "hero-badge:away-long"
+    : minutesAway > 30  ? "hero-badge:away-short"
+    : "hero-badge:on-track";
+  const [showBadge, setShowBadge] = useState<boolean>(() =>
+    statusKey ? !seenToday(user?.id, statusKey) : true
+  );
+  useEffect(() => {
+    if (!statusKey) return;
+    if (showBadge) markSeenToday(user?.id, statusKey);
+  }, [statusKey, showBadge, user?.id]);
+
   return (
     <section className="relative overflow-hidden rounded-[28px] border border-border/60 bg-gradient-to-br from-primary/12 via-card to-accent/10 p-5 sm:p-7">
       <div className="absolute inset-y-0 right-0 w-1/2 bg-[radial-gradient(circle_at_top_right,hsl(var(--primary)/0.10),transparent_55%)]" />
       <div className="relative space-y-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="space-y-3 max-w-2xl">
-            <Badge variant="secondary" className="w-fit">
-              {minutesAway !== undefined && minutesAway > 120 ? "Sentimos sua falta" : (minutesAway !== undefined && minutesAway > 30 ? "Bem-vindo de volta" : "Ritmo em dia")}
-            </Badge>
+            {showBadge && (
+              <Badge variant="secondary" className="w-fit">
+                {minutesAway !== undefined && minutesAway > 120 ? "Sentimos sua falta" : (minutesAway !== undefined && minutesAway > 30 ? "Bem-vindo de volta" : "Ritmo em dia")}
+              </Badge>
+            )}
             <div className="space-y-1">
               <h2 className="font-heading text-2xl font-bold sm:text-3xl">{greetingLabel(firstName, isLoggedIn, timeOfDay, minutesAway)}</h2>
               <p className="text-sm text-muted-foreground sm:text-base">
