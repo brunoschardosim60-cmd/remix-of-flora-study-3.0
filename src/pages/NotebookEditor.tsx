@@ -1263,6 +1263,119 @@ export default function NotebookEditor() {
     }
   };
 
+  // Lê o texto selecionado pelo aluno dentro do editor. Retorna null se < 20 chars.
+  const getSelectedText = (): string | null => {
+    const sel = typeof window !== "undefined" ? window.getSelection() : null;
+    const text = sel?.toString().trim() || "";
+    if (text.length < 20) return null;
+    return text;
+  };
+
+  const handleGenerateFlashcardsFromSelection = async () => {
+    const selected = getSelectedText();
+    if (!selected) {
+      toast.error("Selecione pelo menos um parágrafo (20+ caracteres).");
+      return;
+    }
+    setGeneratingStudy("flashcards");
+    setFloraOpen(true);
+    try {
+      const { allTopics, topic } = await ensureLinkedTopic();
+      const { data, error } = await supabase.functions.invoke<GenerateFlashcardsResponse>("flora-engine", {
+        body: {
+          action: "generate_flashcards",
+          userId: user?.id || "anonymous",
+          data: {
+            tema: topic.tema,
+            materia: topic.materia,
+            pageContent: `Trecho selecionado pelo aluno:\n${selected}`,
+          },
+        },
+      });
+      if (error) throw error;
+
+      const generated: Flashcard[] = (data?.flashcards || []).map((card) => ({
+        id: crypto.randomUUID(),
+        frente: card.frente,
+        verso: card.verso,
+      }));
+      if (generated.length === 0) throw new Error("Nenhum flashcard gerado");
+
+      const dedupe = new Map<string, Flashcard>();
+      const nextTopics = allTopics.map((t) => {
+        if (t.id !== topic.id) return t;
+        [...t.flashcards, ...generated].forEach((card) => {
+          const key = `${card.frente.toLowerCase().trim()}::${card.verso.toLowerCase().trim()}`;
+          if (!dedupe.has(key)) dedupe.set(key, card);
+        });
+        return { ...t, flashcards: Array.from(dedupe.values()) };
+      });
+      await saveTopicsForUser(user?.id, nextTopics);
+
+      pushAIActivity({
+        type: "flashcards",
+        title: "Flashcards do trecho",
+        detail: `${generated.length} cards de ${topic.tema}`,
+        notebookId: id,
+        pageId: page?.id,
+        topicId: topic.id,
+      });
+      toast.success(`${generated.length} flashcards gerados do trecho.`);
+    } catch (error) {
+      console.error(error);
+      const { handleQuotaError } = await import("@/lib/quotaErrors");
+      const handled = await handleQuotaError(error, { feature: "flashcards" });
+      if (!handled) toast.error("Não foi possível gerar flashcards do trecho.");
+    } finally {
+      setGeneratingStudy("none");
+    }
+  };
+
+  const handleGenerateQuizFromSelection = async () => {
+    const selected = getSelectedText();
+    if (!selected) {
+      toast.error("Selecione pelo menos um parágrafo (20+ caracteres).");
+      return;
+    }
+    setGeneratingStudy("quiz");
+    try {
+      const { topic } = await ensureLinkedTopic();
+      const { data, error } = await supabase.functions.invoke<GenerateQuizResponse>("flora-engine", {
+        body: {
+          action: "generate_quiz",
+          userId: user?.id || "anonymous",
+          data: {
+            tema: topic.tema,
+            materia: topic.materia,
+            difficulty: quizDifficulty,
+            pageContent: `Trecho selecionado pelo aluno:\n${selected}`,
+          },
+        },
+      });
+      if (error) throw error;
+      if (!Array.isArray(data?.questions) || data.questions.length === 0) throw new Error("Quiz vazio");
+
+      resetNotebookQuiz();
+      setQuizQuestions(data.questions);
+      setQuizDialogOpen(true);
+      pushAIActivity({
+        type: "quiz",
+        title: "Quiz do trecho",
+        detail: `${data.questions.length} perguntas de ${topic.tema}`,
+        notebookId: id,
+        pageId: page?.id,
+        topicId: topic.id,
+      });
+    } catch (error) {
+      console.error(error);
+      const { handleQuotaError } = await import("@/lib/quotaErrors");
+      const handled = await handleQuotaError(error, { feature: "quiz" });
+      if (!handled) toast.error("Não foi possível gerar quiz do trecho.");
+    } finally {
+      setGeneratingStudy("none");
+    }
+  };
+
   const answerNotebookQuiz = (idx: number) => {
     if (quizSelected !== null) return;
     setQuizSelected(idx);
@@ -1578,6 +1691,15 @@ export default function NotebookEditor() {
                 <DropdownMenuItem onClick={handleGenerateQuizFromPage} disabled={generatingStudy !== "none"}>
                   {generatingStudy === "quiz" && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                   Gerar Quiz
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleGenerateFlashcardsFromSelection} disabled={generatingStudy !== "none"}>
+                  {generatingStudy === "flashcards" && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  Flashcards do trecho selecionado
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleGenerateQuizFromSelection} disabled={generatingStudy !== "none"}>
+                  {generatingStudy === "quiz" && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  Quiz do trecho selecionado
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => fileInputRef.current?.click()} disabled={ocrLoading}>
