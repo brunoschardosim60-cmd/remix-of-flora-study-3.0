@@ -25,7 +25,6 @@ import {
   type Essay,
 } from "@/lib/essays";
 import { reportError, toErrorMessage } from "@/lib/errorHandling";
-import { EssayEvolutionCard } from "@/components/EssayEvolutionCard";
 import { exportEssayToPdf } from "@/lib/essayPdfExport";
 import {
   saveLocalDraft,
@@ -548,7 +547,6 @@ export default function Redacao() {
               </div>
             ) : (
               <>
-                <EssayEvolutionCard essays={essays} isENEM={isENEM} />
                 {/* Editor */}
                 <div className="space-y-3 rounded-2xl border border-border bg-card/70 p-4">
                   <div className="flex flex-wrap items-end gap-2">
