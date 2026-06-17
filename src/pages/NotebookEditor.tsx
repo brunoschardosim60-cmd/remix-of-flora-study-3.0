@@ -1823,9 +1823,27 @@ export default function NotebookEditor() {
               size="icon"
               onClick={() => setFocusModeActive((prev) => !prev)}
               className="h-11 w-11 sm:h-8 sm:w-8"
-              title="Modo foco"
+              title="Modo foco (F)"
             >
               <Eye className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setHandwritingMode((v) => !v)}
+              className={`h-11 w-11 sm:h-8 sm:w-8 ${handwritingMode ? "text-primary" : ""}`}
+              title={handwritingMode ? "Voltar para tipografia digital" : "Usar caligrafia manuscrita"}
+            >
+              <span className="text-base font-bold" style={{ fontFamily: "Caveat, cursive" }}>Aa</span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setPaperMargin((v) => !v)}
+              className={`h-11 w-11 sm:h-8 sm:w-8 ${paperMargin ? "text-primary" : ""}`}
+              title={paperMargin ? "Esconder margem vermelha" : "Mostrar margem vermelha"}
+            >
+              <span className="block w-0.5 h-4 mx-auto rounded" style={{ background: paperMargin ? "#ef4444" : "currentColor", opacity: paperMargin ? 1 : 0.4 }} />
             </Button>
             <Button
               variant="ghost"
