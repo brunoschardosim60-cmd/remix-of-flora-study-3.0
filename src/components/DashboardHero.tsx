@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Flame, Target, TrendingUp } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,36 +12,6 @@ interface DailyGoalCard {
   current: number;
   target: number;
   unit: string;
-}
-
-function MiniRing({ percent, label, current, target, unit }: { percent: number; label: string; current: number; target: number; unit: string }) {
-  const size = 72;
-  const stroke = 7;
-  const r = (size - stroke) / 2;
-  const c = 2 * Math.PI * r;
-  const offset = c - (percent / 100) * c;
-  return (
-    <div className="flex flex-col items-center gap-1.5">
-      <div className="relative" style={{ width: size, height: size }}>
-        <svg width={size} height={size} className="-rotate-90">
-          <circle cx={size / 2} cy={size / 2} r={r} stroke="hsl(var(--muted))" strokeWidth={stroke} fill="none" />
-          <circle
-            cx={size / 2} cy={size / 2} r={r}
-            stroke="hsl(var(--primary))" strokeWidth={stroke} fill="none"
-            strokeDasharray={c} strokeDashoffset={offset} strokeLinecap="round"
-            className="transition-all duration-500"
-          />
-        </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-sm font-bold leading-none">{percent}%</span>
-        </div>
-      </div>
-      <div className="text-center">
-        <p className="text-xs font-medium">{label}</p>
-        <p className="text-[10px] text-muted-foreground">{current}/{target} {unit}</p>
-      </div>
-    </div>
-  );
 }
 
 interface DashboardHeroProps {
@@ -153,11 +124,22 @@ export function DashboardHero({
             <Target className="w-4 h-4 text-primary" />
             <p className="font-heading font-semibold">Meta do dia</p>
           </div>
-          <div className="flex items-center justify-around gap-3 flex-wrap">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
             {dailyGoals.map((goal) => {
               const percent = goal.target > 0 ? Math.min(100, Math.round((goal.current / goal.target) * 100)) : 0;
               return (
-                <MiniRing key={goal.id} percent={percent} label={goal.label} current={goal.current} target={goal.target} unit={goal.unit} />
+                <div key={goal.id} className="space-y-2 rounded-xl border border-border/60 bg-card/80 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-medium">{goal.label}</p>
+                    <span className="text-xs text-muted-foreground">
+                      {goal.current}/{goal.target} {goal.unit}
+                    </span>
+                  </div>
+                  <Progress value={percent} className="h-2.5" />
+                  <p className="text-xs text-muted-foreground">
+                    {percent >= 100 ? "Concluído" : `${percent}% concluído`}
+                  </p>
+                </div>
               );
             })}
           </div>
