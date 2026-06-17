@@ -147,7 +147,30 @@ export default function Analise() {
       setTopics(state?.topics ?? []);
       setSessions((sess ?? []) as StudySession[]);
       setActions((acts ?? []) as UserAction[]);
-      setPerfs((pf ?? []) as StudentPerf[]);
+      // Merge: student_performance (canônico) + question_attempts agregado por matéria.
+      // Quando attempts tem mais amostras que a linha em student_performance, ele vence —
+      // resolve a incoerência de o aluno usar Banco de Questões e o radar/predição ENEM ficarem desatualizados.
+      const basePerfs = ((pf ?? []) as StudentPerf[]).slice();
+      const attRows = (att ?? []) as unknown as AttemptLike[];
+      const byMat = new Map<string, { acertos: number; erros: number }>();
+      for (const a of attRows) {
+        const mat = (a.question?.disciplina || "").trim();
+        if (!mat) continue;
+        const cur = byMat.get(mat) ?? { acertos: 0, erros: 0 };
+        if (a.acertou) cur.acertos++; else cur.erros++;
+        byMat.set(mat, cur);
+      }
+      const merged: StudentPerf[] = [...basePerfs];
+      byMat.forEach(({ acertos, erros }, materia) => {
+        const total = acertos + erros;
+        if (total < 3) return; // ruído estatístico
+        const accuracy = Math.round((acertos / total) * 100);
+        const idx = merged.findIndex(p => p.materia === materia);
+        const sample = { materia, accuracy, acertos, erros, erro_recorrente: erros >= 3, prioridade: Math.round(erros * 10 + (100 - accuracy)) };
+        if (idx === -1) merged.push(sample);
+        else if (total > (merged[idx].acertos + merged[idx].erros)) merged[idx] = sample;
+      });
+      setPerfs(merged);
       setReviews((rev ?? []) as SpacedReview[]);
       setEssays((ess ?? []) as EssayRow[]);
       setSlots((sl ?? []) as WeeklySlotRow[]);
@@ -210,28 +233,41 @@ export default function Analise() {
 
   // Evolução de acerto ao longo do tempo (por semana)
   const evolutionData = useMemo(() => {
-    const quizActions = filteredActions.filter(a =>
-      (a.action === "quiz_correct" || a.action === "quiz_wrong") && a.created_at
-    ).reverse();
-
-    if (quizActions.length < 3) return [];
+    // Fonte unificada: user_actions (legado/QuizDialog) + question_attempts (Banco).
+    // Antes só usávamos user_actions, que ficava sempre vazio pra quem só usa o Banco de Questões.
+    type Ev = { ts: string; ok: boolean };
+    const events: Ev[] = [];
+    for (const a of filteredActions) {
+      if (a.action === "quiz_correct" || a.action === "quiz_wrong") {
+        events.push({ ts: a.created_at, ok: a.action === "quiz_correct" });
+      }
+    }
+    for (const a of attempts) {
+      if (!a.created_at) continue;
+      if (periodCutoff && a.created_at < periodCutoff) continue;
+      events.push({ ts: a.created_at, ok: !!a.acertou });
+    }
+    if (events.length < 3) return [];
 
     const weeks: Record<string, { correct: number; total: number }> = {};
-    quizActions.forEach(a => {
-      const d = new Date(a.created_at);
-      d.setDate(d.getDate() - d.getDay());
+    events.forEach(e => {
+      const d = new Date(e.ts);
+      // segunda como início da semana (padrão BR)
+      const dow = d.getDay(); // 0=Dom..6=Sáb
+      const delta = dow === 0 ? -6 : 1 - dow;
+      d.setDate(d.getDate() + delta);
       const wk = d.toISOString().split("T")[0];
       if (!weeks[wk]) weeks[wk] = { correct: 0, total: 0 };
       weeks[wk].total++;
-      if (a.action === "quiz_correct") weeks[wk].correct++;
+      if (e.ok) weeks[wk].correct++;
     });
 
-    return Object.entries(weeks).slice(-8).map(([wk, v]) => ({
+    return Object.entries(weeks).sort(([a], [b]) => a.localeCompare(b)).slice(-8).map(([wk, v]) => ({
       semana: new Date(wk + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
       acerto: Math.round((v.correct / v.total) * 100),
       questoes: v.total,
     }));
-  }, [filteredActions]);
+  }, [filteredActions, attempts, periodCutoff]);
 
   // Radar por matéria
   const radarData = useMemo(() => {

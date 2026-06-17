@@ -607,6 +607,17 @@ export default function BancoConcurso() {
     try {
       await scheduleSpacedReviews(user.id, topicKey, materia, [1, 3, 7, 15]);
     } catch { /* idem */ }
+
+    // 3) Log padronizado em user_actions pra gráficos de evolução da Análise
+    try {
+      await supabase.from("user_actions").insert({
+        user_id: user.id,
+        action: acertou ? "quiz_correct" : "quiz_wrong",
+        materia,
+        topic_id: topicKey,
+        metadata: { source: "banco_concurso", question_id: q.id, modo },
+      });
+    } catch { /* não bloqueia */ }
   }
 
   // ── Salva uma questão como flashcard de revisão espaçada ──────────────

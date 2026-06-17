@@ -661,6 +661,40 @@ export default function BancoQuestoes() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     await supabase.from("question_attempts").insert({ user_id: user.id, question_id: q.id, alternativa_marcada: letter, acertou, modo });
+
+    // Mantém student_performance + user_actions sincronizados pra Análise/Flora/Predição ENEM.
+    const topicKey = `enem::${(q.disciplina || "geral").toLowerCase()}::${(q.tema || "geral").toLowerCase()}`;
+    const materia = q.disciplina || q.area || "ENEM";
+    try {
+      const { data: perf } = await supabase
+        .from("student_performance")
+        .select("acertos,erros")
+        .eq("user_id", user.id)
+        .eq("topic_id", topicKey)
+        .maybeSingle();
+      const acertos = (perf?.acertos ?? 0) + (acertou ? 1 : 0);
+      const erros = (perf?.erros ?? 0) + (acertou ? 0 : 1);
+      const total = acertos + erros;
+      const accuracy = total > 0 ? Math.round((acertos / total) * 100) : 0;
+      await supabase.from("student_performance").upsert(
+        {
+          user_id: user.id, topic_id: topicKey, materia,
+          acertos, erros, accuracy,
+          erro_recorrente: erros >= 3,
+          prioridade: Math.round(erros * 10 + (100 - accuracy)),
+        },
+        { onConflict: "user_id,topic_id" },
+      );
+    } catch { /* não bloqueia o fluxo */ }
+    try {
+      await supabase.from("user_actions").insert({
+        user_id: user.id,
+        action: acertou ? "quiz_correct" : "quiz_wrong",
+        materia,
+        topic_id: topicKey,
+        metadata: { source: "banco_enem", question_id: q.id, modo },
+      });
+    } catch { /* idem */ }
   }
 
   function handleAnswer(q: Question, letter: string) {
