@@ -1916,6 +1916,8 @@ export default function NotebookEditor() {
                 template={pageTemplate}
                 zoom={zoom}
                 wide={expandedEditor}
+                handwriting={handwritingMode}
+                showMargin={paperMargin}
                 paperOverlay={
                   <KonvaDrawingCanvas
                     ref={canvasRef}
@@ -1972,6 +1974,8 @@ export default function NotebookEditor() {
                 template={pageTemplate}
                 zoom={zoom}
                 wide={expandedEditor}
+                handwriting={handwritingMode}
+                showMargin={paperMargin}
                 paperOverlay={
                   <KonvaDrawingCanvas
                     ref={canvasRef}
