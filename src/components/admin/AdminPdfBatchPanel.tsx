@@ -293,7 +293,7 @@ export function AdminPdfBatchPanel() {
       <div>
         <label className="text-xs font-medium text-muted-foreground mb-1 block">Arquivo PDF da prova</label>
         <div className="flex items-center gap-2">
-          <Input type="file" accept="application/pdf" onChange={handleFile} className="flex-1" />
+          <Input aria-label="Arquivo PDF da prova" type="file" accept="application/pdf" onChange={handleFile} className="flex-1" />
           {pdfFile && (
             <Badge variant="secondary" className="shrink-0">
               {pdfFile.name.length > 24 ? pdfFile.name.slice(0, 21) + "…" : pdfFile.name}
@@ -511,7 +511,7 @@ function BatchRow({
               </div>
               <div>
                 <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Tema</label>
-                <Input value={ex.tema} onChange={(e) => onPatchExtracted({ tema: e.target.value })} />
+                <Input aria-label="Tema" value={ex.tema} onChange={(e) => onPatchExtracted({ tema: e.target.value })} />
               </div>
               {ex.observacao && (
                 <p className="text-[11px] italic text-muted-foreground">{ex.observacao}</p>

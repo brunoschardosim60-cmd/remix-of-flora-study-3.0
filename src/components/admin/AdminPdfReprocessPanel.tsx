@@ -233,7 +233,7 @@ export function AdminPdfReprocessPanel() {
         <div>
           <label className="text-xs font-medium text-muted-foreground mb-1 block">Arquivo PDF da prova</label>
           <div className="flex items-center gap-2">
-            <Input type="file" accept="application/pdf" onChange={handleFile} className="flex-1" />
+            <Input aria-label="Arquivo PDF da prova" type="file" accept="application/pdf" onChange={handleFile} className="flex-1" />
             {pdfFile && (
               <Badge variant="secondary" className="shrink-0">
                 {pdfFile.name.length > 28 ? pdfFile.name.slice(0, 25) + "…" : pdfFile.name} · {(pdfFile.size / 1024 / 1024).toFixed(1)}MB
@@ -388,7 +388,7 @@ export function AdminPdfReprocessPanel() {
           <div className="grid sm:grid-cols-[1fr_auto] gap-3 items-end">
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1 block">Tema (opcional)</label>
-              <Input value={extracted.tema} onChange={(e) => setExtracted({ ...extracted, tema: e.target.value })} />
+              <Input aria-label="Tema" value={extracted.tema} onChange={(e) => setExtracted({ ...extracted, tema: e.target.value })} />
             </div>
             <Button onClick={applyToDb} disabled={saving || !questionId}>
               {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
