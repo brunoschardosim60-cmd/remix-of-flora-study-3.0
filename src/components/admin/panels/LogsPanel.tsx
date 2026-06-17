@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
-import { ScrollText, ChevronLeft, ChevronRight, Radio } from "lucide-react";
+import { ScrollText, ChevronLeft, ChevronRight, Radio, Download } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { reportError } from "@/lib/errorHandling";
 import { PanelSkeleton, EmptyState } from "../PanelHelpers";
+import { exportUsersCSV } from "@/lib/adminActions";
+import { toast } from "sonner";
 
 interface LogRow {
   id: string;
@@ -24,6 +26,36 @@ export function LogsPanel() {
   const [actionFilter, setActionFilter] = useState("");
   const [userFilter, setUserFilter] = useState("");
   const [live, setLive] = useState(false);
+  const [exporting, setExporting] = useState(false);
+
+  const exportCSV = async () => {
+    setExporting(true);
+    try {
+      let q = supabase
+        .from("admin_action_logs")
+        .select("id, admin_id, user_id, action_type, note, created_at")
+        .order("created_at", { ascending: false })
+        .limit(5000);
+      if (actionFilter.trim()) q = q.ilike("action_type", `%${actionFilter.trim()}%`);
+      if (userFilter.trim()) q = q.eq("user_id", userFilter.trim());
+      const { data, error } = await q;
+      if (error) throw error;
+      if (!data?.length) {
+        toast.info("Nenhum log para exportar");
+        return;
+      }
+      exportUsersCSV(
+        data as Record<string, unknown>[],
+        `admin-logs-${new Date().toISOString().slice(0, 10)}.csv`,
+      );
+      toast.success(`${data.length} linha(s) exportada(s)`);
+    } catch (e) {
+      reportError("logs export", e);
+      toast.error("Falha ao exportar");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   useEffect(() => {
     let alive = true;
@@ -112,6 +144,16 @@ export function LogsPanel() {
           className="h-9 max-w-sm"
         />
         <div className="ml-auto flex items-center gap-1">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={exportCSV}
+            disabled={exporting || loading}
+            className="mr-2"
+          >
+            <Download className="mr-1 h-4 w-4" />
+            {exporting ? "Exportando…" : "CSV"}
+          </Button>
           <Button
             size="icon"
             variant="outline"
