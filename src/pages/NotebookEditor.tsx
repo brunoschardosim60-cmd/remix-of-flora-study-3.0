@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   ArrowLeft, Plus, Trash2, ChevronLeft, ChevronRight, Loader2, Pencil, Type, Maximize2, Minimize2, Share2,
-  Brain, Sparkles, BookPlus, CheckCircle2, XCircle, ZoomIn, ZoomOut, FileText, Cloud, CloudOff, RefreshCw, Eye, Camera,
+  Brain, Sparkles, BookPlus, CheckCircle2, XCircle, ZoomIn, ZoomOut, FileText, Cloud, CloudOff, RefreshCw, Eye, Camera, Wand2,
   LayoutTemplate, Tag as TagIcon,
 } from "lucide-react";
 
@@ -1853,6 +1853,35 @@ export default function NotebookEditor() {
               title={expandedEditor ? "Sair da tela cheia" : "Tela cheia"}
             >
               {expandedEditor ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={async () => {
+                const img = canvasRef.current?.getImageData?.(null);
+                if (!img) { toast.error("Desenhe algo primeiro."); return; }
+                const tid = toast.loading("Flora analisando o desenho...");
+                try {
+                  const { data, error } = await supabase.functions.invoke("flora-engine", {
+                    body: { action: "explain_drawing", data: { image: img } },
+                  });
+                  if (error) throw error;
+                  const explanation = (data as any)?.explanation?.trim();
+                  toast.dismiss(tid);
+                  if (!explanation) { toast.error("Flora não conseguiu explicar."); return; }
+                  toast.success("Flora explicou seu desenho", {
+                    description: explanation.length > 600 ? explanation.slice(0, 600) + "..." : explanation,
+                    duration: 20000,
+                  });
+                } catch (e: any) {
+                  toast.dismiss(tid);
+                  toast.error(e?.message || "Erro ao chamar Flora.");
+                }
+              }}
+              className="h-11 w-11 sm:h-8 sm:w-8"
+              title="Flora explica o desenho desta página"
+            >
+              <Wand2 className="w-4 h-4" />
             </Button>
           </div>
 
