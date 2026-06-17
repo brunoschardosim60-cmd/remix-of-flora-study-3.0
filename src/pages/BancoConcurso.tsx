@@ -1068,7 +1068,7 @@ export default function BancoConcurso() {
       {/* Header */}
       <div className="border-b border-border bg-card sticky top-0 z-10 shadow-sm">
         <div className="container max-w-7xl mx-auto px-3 sm:px-4 py-3 flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} aria-label="Voltar">
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">

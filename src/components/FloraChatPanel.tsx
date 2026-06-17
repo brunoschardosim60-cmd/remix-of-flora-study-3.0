@@ -144,7 +144,7 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
           <p className="text-xs text-muted-foreground">Sua professora parceira</p>
         </div>
         <FloraQuotaIndicator action="chat" />
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}>
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose} aria-label="Fechar chat da Flora">
           <X className="w-4 h-4" />
         </Button>
       </div>
@@ -271,7 +271,7 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
             rows={1}
             style={{ minHeight: "38px", maxHeight: "120px" }}
           />
-          <Button type="submit" size="icon" className="shrink-0" disabled={!input.trim() || isSending}>
+          <Button type="submit" size="icon" className="shrink-0" disabled={!input.trim() || isSending} aria-label="Enviar mensagem">
             <Send className="w-4 h-4" />
           </Button>
         </form>

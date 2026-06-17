@@ -109,7 +109,7 @@ export function DashboardCustomizer() {
                 <h3 className="font-bold text-sm">Personalizar Dashboard</h3>
                 <p className="text-xs text-muted-foreground">{visibleCount} de {widgets.length} visíveis</p>
               </div>
-              <Button variant="ghost" size="icon" className="w-7 h-7" onClick={() => setIsOpen(false)}>
+              <Button variant="ghost" size="icon" className="w-7 h-7" onClick={() => setIsOpen(false)} aria-label="Fechar personalização">
                 <X className="w-4 h-4" />
               </Button>
             </div>

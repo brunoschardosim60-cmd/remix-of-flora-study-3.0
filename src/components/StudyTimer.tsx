@@ -287,10 +287,10 @@ export function StudyTimer({
         ) : null}
         {!isInitial && (
           <>
-            <Button size="icon" variant="outline" onClick={onReset} className="h-8 w-8">
+            <Button size="icon" variant="outline" onClick={onReset} className="h-8 w-8" aria-label="Reiniciar cronômetro">
               <RotateCcw className="w-3.5 h-3.5" />
             </Button>
-            <Button size="icon" variant="destructive" onClick={onStop} className="h-8 w-8">
+            <Button size="icon" variant="destructive" onClick={onStop} className="h-8 w-8" aria-label="Parar cronômetro">
               <Square className="w-3.5 h-3.5" />
             </Button>
           </>

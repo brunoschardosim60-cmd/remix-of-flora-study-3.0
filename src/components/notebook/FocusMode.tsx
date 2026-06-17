@@ -46,6 +46,7 @@ export function FocusMode({ isActive, onToggle, children }: FocusModeProps) {
             onClick={onToggle}
             className="h-8 w-8"
             title="Sair do Modo Foco"
+            aria-label="Sair do Modo Foco"
           >
             <X className="w-4 h-4" />
           </Button>

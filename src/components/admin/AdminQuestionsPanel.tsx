@@ -413,7 +413,7 @@ export function AdminQuestionsPanel() {
                       className="text-sm"
                       placeholder={`Texto da alternativa ${alt.letra}`}
                     />
-                    <Button variant="ghost" size="icon" onClick={() => removeAlt(i)} className="shrink-0">
+                    <Button variant="ghost" size="icon" onClick={() => removeAlt(i)} className="shrink-0" aria-label="Remover alternativa">
                       <X className="w-4 h-4" />
                     </Button>
                   </div>

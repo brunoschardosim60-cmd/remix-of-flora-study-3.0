@@ -457,7 +457,7 @@ export function AdminConcursoQuestionsPanel() {
                         {alt.letra || "?"}
                       </button>
                       <Textarea value={alt.texto} onChange={(e) => updateAlt(i, "texto", e.target.value)} rows={2} className="text-sm" placeholder={`Texto da alternativa ${alt.letra}`} />
-                      <Button variant="ghost" size="icon" onClick={() => removeAlt(i)} className="shrink-0"><X className="w-4 h-4" /></Button>
+                      <Button variant="ghost" size="icon" onClick={() => removeAlt(i)} className="shrink-0" aria-label="Remover alternativa"><X className="w-4 h-4" /></Button>
                     </div>
                   ))}
                 </div>

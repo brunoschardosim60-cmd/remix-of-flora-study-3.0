@@ -86,7 +86,7 @@ export function CustomThemeDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-10 w-10" title="Personalizar cores">
+        <Button variant="ghost" size="icon" className="h-10 w-10" title="Personalizar cores" aria-label="Personalizar cores">
           <Palette className="w-4 h-4" />
         </Button>
       </DialogTrigger>

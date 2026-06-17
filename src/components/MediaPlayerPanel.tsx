@@ -65,7 +65,7 @@ export function MediaPlayerPanel({ className }: MediaPlayerPanelProps) {
           <h3 className="font-heading font-semibold text-sm">Player de Estudo</h3>
         </div>
         {activePlayer !== "none" && (
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setActivePlayer("none")}>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setActivePlayer("none")} aria-label="Fechar player">
             <X className="w-3.5 h-3.5" />
           </Button>
         )}

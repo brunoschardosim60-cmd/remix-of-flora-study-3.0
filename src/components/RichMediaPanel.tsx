@@ -89,7 +89,7 @@ export function RichMediaPanel({ subject, topic, onClose, onInsertToNotebook, sh
           <p className="text-sm font-semibold truncate">{topic}</p>
         </div>
         {onClose && (
-          <Button variant="ghost" size="icon" className="shrink-0" onClick={onClose}>
+          <Button variant="ghost" size="icon" className="shrink-0" onClick={onClose} aria-label="Fechar painel de mídia">
             <X size={16} />
           </Button>
         )}

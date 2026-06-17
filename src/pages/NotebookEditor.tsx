@@ -1748,7 +1748,7 @@ export default function NotebookEditor() {
 
             <DropdownMenu onOpenChange={(open) => setHeaderPinned(open)}>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-11 w-11 sm:h-8 sm:w-8">
+                <Button variant="ghost" size="icon" className="h-11 w-11 sm:h-8 sm:w-8" aria-label="Ações da Flora">
                   <Brain className="w-4 h-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -1819,6 +1819,7 @@ export default function NotebookEditor() {
               onClick={() => setShareDialogOpen(true)}
               className="h-11 w-11 sm:h-8 sm:w-8"
               title="Compartilhar caderno"
+              aria-label="Compartilhar caderno"
             >
               <Share2 className="w-4 h-4" />
             </Button>
@@ -1828,6 +1829,7 @@ export default function NotebookEditor() {
               onClick={() => setFocusModeActive((prev) => !prev)}
               className="h-11 w-11 sm:h-8 sm:w-8"
               title="Modo foco (F)"
+              aria-label="Alternar modo foco"
             >
               <Eye className="w-4 h-4" />
             </Button>
@@ -1837,6 +1839,8 @@ export default function NotebookEditor() {
               onClick={() => setHandwritingMode((v) => !v)}
               className={`h-11 w-11 sm:h-8 sm:w-8 ${handwritingMode ? "text-primary" : ""}`}
               title={handwritingMode ? "Voltar para tipografia digital" : "Usar caligrafia manuscrita"}
+              aria-label={handwritingMode ? "Voltar para tipografia digital" : "Usar caligrafia manuscrita"}
+              aria-pressed={handwritingMode}
             >
               <span className="text-base font-bold" style={{ fontFamily: "Caveat, cursive" }}>Aa</span>
             </Button>
@@ -1846,6 +1850,8 @@ export default function NotebookEditor() {
               onClick={() => setPaperMargin((v) => !v)}
               className={`h-11 w-11 sm:h-8 sm:w-8 ${paperMargin ? "text-primary" : ""}`}
               title={paperMargin ? "Esconder margem vermelha" : "Mostrar margem vermelha"}
+              aria-label={paperMargin ? "Esconder margem vermelha" : "Mostrar margem vermelha"}
+              aria-pressed={paperMargin}
             >
               <span className="block w-0.5 h-4 mx-auto rounded" style={{ background: paperMargin ? "#ef4444" : "currentColor", opacity: paperMargin ? 1 : 0.4 }} />
             </Button>
@@ -1855,6 +1861,8 @@ export default function NotebookEditor() {
               onClick={() => setExpandedEditor((v) => !v)}
               className="h-11 w-11 sm:h-8 sm:w-8"
               title={expandedEditor ? "Sair da tela cheia" : "Tela cheia"}
+              aria-label={expandedEditor ? "Sair da tela cheia" : "Tela cheia"}
+              aria-pressed={expandedEditor}
             >
               {expandedEditor ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
             </Button>
@@ -1884,6 +1892,7 @@ export default function NotebookEditor() {
               }}
               className="h-11 w-11 sm:h-8 sm:w-8"
               title="Flora explica o desenho desta página"
+              aria-label="Flora explica o desenho desta página"
             >
               <Wand2 className="w-4 h-4" />
             </Button>
@@ -1898,6 +1907,8 @@ export default function NotebookEditor() {
               }}
               className={`h-11 w-11 sm:h-8 sm:w-8 ${ghostEnabled ? "text-primary" : ""}`}
               title={ghostEnabled ? "Desativar autocomplete Flora" : "Ativar autocomplete Flora (consome créditos)"}
+              aria-label={ghostEnabled ? "Desativar autocomplete Flora" : "Ativar autocomplete Flora"}
+              aria-pressed={ghostEnabled}
             >
               <Sparkles className="w-4 h-4" />
             </Button>

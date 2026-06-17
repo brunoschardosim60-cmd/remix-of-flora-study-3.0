@@ -47,10 +47,10 @@ export function MotivationalQuote() {
         {loading ? "Gerando frase motivacional..." : `"${quote}"`}
       </p>
       <div className="flex gap-1 shrink-0">
-        <Button variant="ghost" size="icon" className="h-11 w-11 sm:h-7 sm:w-7" onClick={generate} disabled={loading}>
+        <Button variant="ghost" size="icon" className="h-11 w-11 sm:h-7 sm:w-7" onClick={generate} disabled={loading} aria-label="Gerar nova frase">
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
         </Button>
-        <Button variant="ghost" size="icon" className="h-11 w-11 sm:h-7 sm:w-7" onClick={() => setVisible(false)}>
+        <Button variant="ghost" size="icon" className="h-11 w-11 sm:h-7 sm:w-7" onClick={() => setVisible(false)} aria-label="Ocultar frase">
           <X className="w-3.5 h-3.5" />
         </Button>
       </div>

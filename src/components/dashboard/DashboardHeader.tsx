@@ -65,7 +65,7 @@ export function DashboardHeader({ user, bancoRoute, bancoLabel, onSignOut }: Pro
             </Button>
           )}
           {user && (
-            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={onSignOut}>
+            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={onSignOut} aria-label="Sair">
               <LogOut className="w-4 h-4" />
             </Button>
           )}
