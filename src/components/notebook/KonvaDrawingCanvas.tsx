@@ -13,10 +13,12 @@
  */
 
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { getStroke } from "perfect-freehand";
 import {
   type Stroke,
   type StrokeBounds,
   type DrawingCanvasRef,
+  type BrushKind,
   getStrokesBounds,
 } from "./drawingTypes";
 
@@ -40,26 +42,103 @@ interface KonvaDrawingCanvasProps {
   penColor: string;
   penWidth: number;
   tool: "pen" | "marker" | "eraser" | "select" | "line" | "rect" | "circle";
+  brush?: BrushKind;
   zoom?: number;
   onSelectionChange?: (bounds: StrokeBounds | null) => void;
 }
 
-// Catmull-Rom → Bezier: suaviza o traço igual Samsung Notes
-function catmullRomToBezier(pts: StrokePoint[]): string {
-  if (pts.length < 2) return "";
-  let d = `M ${pts[0].x} ${pts[0].y}`;
-  for (let i = 0; i < pts.length - 1; i++) {
-    const p0 = pts[Math.max(0, i - 1)];
-    const p1 = pts[i];
-    const p2 = pts[i + 1];
-    const p3 = pts[Math.min(pts.length - 1, i + 2)];
-    const cp1x = p1.x + (p2.x - p0.x) / 6;
-    const cp1y = p1.y + (p2.y - p0.y) / 6;
-    const cp2x = p2.x - (p3.x - p1.x) / 6;
-    const cp2y = p2.y - (p3.y - p1.y) / 6;
-    d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`;
+// Perfil de cada pincel (perfect-freehand options)
+function brushOptions(brush: BrushKind, size: number) {
+  switch (brush) {
+    case "gel":
+      return {
+        size: size * 1.6,
+        thinning: 0.35,
+        smoothing: 0.55,
+        streamline: 0.55,
+        easing: (t: number) => t,
+        start: { taper: 4, cap: true },
+        end: { taper: 12, cap: true },
+      };
+    case "fineliner":
+      return {
+        size: size,
+        thinning: 0.05,
+        smoothing: 0.5,
+        streamline: 0.45,
+        easing: (t: number) => t,
+        start: { taper: 0, cap: true },
+        end: { taper: 0, cap: true },
+      };
+    case "pencil":
+      return {
+        size: size * 1.1,
+        thinning: 0.7,
+        smoothing: 0.5,
+        streamline: 0.35,
+        easing: (t: number) => Math.sin((t * Math.PI) / 2),
+        simulatePressure: true,
+        start: { taper: 8, cap: true },
+        end: { taper: 20, cap: true },
+      };
+    case "marker":
+      return {
+        size: size * 2.4,
+        thinning: 0.15,
+        smoothing: 0.5,
+        streamline: 0.5,
+        start: { taper: 0, cap: true },
+        end: { taper: 0, cap: true },
+      };
+    case "highlighter":
+      return {
+        size: size * 3.2,
+        thinning: 0,
+        smoothing: 0.6,
+        streamline: 0.6,
+        start: { taper: 0, cap: false },
+        end: { taper: 0, cap: false },
+      };
+    case "ballpoint":
+    default:
+      return {
+        size: size * 1.25,
+        thinning: 0.6,
+        smoothing: 0.5,
+        streamline: 0.5,
+        easing: (t: number) => t * t,
+        start: { taper: 6, cap: true },
+        end: { taper: 18, cap: true },
+      };
   }
-  return d;
+}
+
+function brushAlpha(brush: BrushKind): number {
+  if (brush === "highlighter") return 0.32;
+  if (brush === "pencil") return 0.85;
+  return 1;
+}
+
+function brushComposite(brush: BrushKind): GlobalCompositeOperation {
+  if (brush === "highlighter") return "multiply";
+  return "source-over";
+}
+
+function pointsForFreehand(pts: StrokePoint[]): [number, number, number][] {
+  return pts.map((p) => [p.x, p.y, p.pressure ?? 0.5]);
+}
+
+function pathFromStrokeOutline(outline: number[][]): Path2D | null {
+  if (outline.length < 2) return null;
+  const path = new Path2D();
+  const [x0, y0] = outline[0];
+  path.moveTo(x0, y0);
+  for (let i = 1; i < outline.length; i++) {
+    const [x, y] = outline[i];
+    path.lineTo(x, y);
+  }
+  path.closePath();
+  return path;
 }
 
 // Desenha um stroke com largura variável (simula tinta real)
@@ -88,63 +167,33 @@ function drawRichStroke(ctx: CanvasRenderingContext2D, stroke: Stroke) {
     return;
   }
 
-  if (stroke.tool === "marker") {
-    ctx.globalCompositeOperation = "source-over";
-    ctx.globalAlpha = 0.35;
+  // Pen/marker family — renderização vetorial via perfect-freehand.
+  // Mapeia tool legado → brush quando o stroke não tiver brush explícito.
+  const inferredBrush: BrushKind =
+    stroke.brush ?? (stroke.tool === "marker" ? "highlighter" : "ballpoint");
+  const opts = brushOptions(inferredBrush, stroke.width);
+  const outline = getStroke(pointsForFreehand(pts), opts);
+  const path = pathFromStrokeOutline(outline as number[][]);
+  if (!path) {
+    ctx.restore();
+    return;
+  }
+  ctx.globalCompositeOperation = brushComposite(inferredBrush);
+  ctx.globalAlpha = brushAlpha(inferredBrush);
+  ctx.fillStyle = stroke.color;
+  ctx.fill(path);
+
+  // Lápis: textura granulada por cima (linhas finas com baixa opacidade)
+  if (inferredBrush === "pencil" && pts.length > 1) {
+    ctx.globalAlpha = 0.18;
     ctx.strokeStyle = stroke.color;
-    ctx.lineWidth = stroke.width;
-    if (pts.length === 1) {
-      ctx.beginPath();
-      ctx.arc(pts[0].x, pts[0].y, stroke.width / 2, 0, Math.PI * 2);
-      ctx.fill();
-    } else {
-      ctx.beginPath();
-      ctx.moveTo(pts[0].x, pts[0].y);
-      for (let i = 1; i < pts.length - 1; i++) {
-        const mx = (pts[i].x + pts[i + 1].x) / 2;
-        const my = (pts[i].y + pts[i + 1].y) / 2;
-        ctx.quadraticCurveTo(pts[i].x, pts[i].y, mx, my);
-      }
-      ctx.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y);
-      ctx.stroke();
-    }
-    ctx.restore();
-    return;
-  }
-
-  // Caneta: largura variável por pressão
-  ctx.globalCompositeOperation = "source-over";
-  ctx.strokeStyle = stroke.color;
-
-  if (pts.length === 1) {
+    ctx.lineWidth = 0.5;
     ctx.beginPath();
-    ctx.arc(pts[0].x, pts[0].y, (pts[0].width ?? stroke.width) / 2, 0, Math.PI * 2);
-    ctx.fillStyle = stroke.color;
-    ctx.fill();
-    ctx.restore();
-    return;
-  }
-
-  // Desenha segmentos com largura variável
-  for (let i = 1; i < pts.length; i++) {
-    const prev = pts[i - 1];
-    const curr = pts[i];
-    const w1 = prev.width ?? stroke.width;
-    const w2 = curr.width ?? stroke.width;
-    const avgW = (w1 + w2) / 2;
-
-    ctx.beginPath();
-    ctx.lineWidth = avgW;
-    ctx.moveTo(prev.x, prev.y);
-
-    // Curva suave via ponto de controle
-    if (i < pts.length - 1) {
-      const next = pts[i + 1];
-      const mx = (curr.x + next.x) / 2;
-      const my = (curr.y + next.y) / 2;
-      ctx.quadraticCurveTo(curr.x, curr.y, mx, my);
-    } else {
-      ctx.lineTo(curr.x, curr.y);
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) {
+      const jitterX = (Math.sin(i * 12.9898) * 43758.5453) % 1;
+      const jitterY = (Math.cos(i * 78.233) * 43758.5453) % 1;
+      ctx.lineTo(pts[i].x + jitterX * 0.6, pts[i].y + jitterY * 0.6);
     }
     ctx.stroke();
   }
@@ -152,7 +201,7 @@ function drawRichStroke(ctx: CanvasRenderingContext2D, stroke: Stroke) {
 }
 
 export const KonvaDrawingCanvas = forwardRef<DrawingCanvasRef, KonvaDrawingCanvasProps>(
-  ({ strokes, onStrokesChange, active, penColor, penWidth, tool, zoom = 1, onSelectionChange }, ref) => {
+  ({ strokes, onStrokesChange, active, penColor, penWidth, tool, brush = "ballpoint", zoom = 1, onSelectionChange }, ref) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [size, setSize] = useState({ width: 800, height: 600 });
@@ -285,6 +334,7 @@ export const KonvaDrawingCanvas = forwardRef<DrawingCanvasRef, KonvaDrawingCanva
         color: penColor,
         width: penWidth,
         tool: tool as "pen" | "marker" | "eraser",
+        brush: tool === "marker" ? "highlighter" : tool === "eraser" ? undefined : brush,
       };
       isDrawingRef.current = true;
     };

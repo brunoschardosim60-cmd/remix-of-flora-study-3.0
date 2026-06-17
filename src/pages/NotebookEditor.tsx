@@ -283,6 +283,7 @@ export default function NotebookEditor() {
   const [zoom, setZoom] = useState(1);
   const editorContainerRef = useRef<HTMLDivElement>(null);
   const [drawTool, setDrawTool] = useState<"pen" | "marker" | "eraser" | "select" | "line" | "rect" | "circle">("pen");
+  const [drawBrush, setDrawBrush] = useState<"ballpoint" | "gel" | "pencil" | "fineliner" | "marker">("ballpoint");
   const [floraOpen, setFloraOpen] = useState(false);
   const [selectionBounds, setSelectionBounds] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
   const [penColor, setPenColor] = useState("#000000");
@@ -1844,6 +1845,8 @@ export default function NotebookEditor() {
         onModeChange={setMode}
         drawTool={drawTool}
         onDrawToolChange={setDrawTool}
+        drawBrush={drawBrush}
+        onDrawBrushChange={setDrawBrush}
         penColor={penColor}
         onColorChange={setPenColor}
         penWidth={penWidth}
@@ -1904,6 +1907,7 @@ export default function NotebookEditor() {
                     penColor={penColor}
                     penWidth={penWidth}
                     tool={drawTool}
+                    brush={drawBrush}
                     zoom={1}
                     onSelectionChange={setSelectionBounds}
                   />
@@ -1959,6 +1963,7 @@ export default function NotebookEditor() {
                     penColor={penColor}
                     penWidth={penWidth}
                     tool={drawTool}
+                    brush={drawBrush}
                     zoom={1}
                     onSelectionChange={setSelectionBounds}
                   />

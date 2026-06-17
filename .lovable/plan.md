@@ -1,92 +1,55 @@
-# Roadmap: Redação + Análise + Cadernos
+# Caderno StudyFlow Premium — Plano em 5 Fases
 
-Você marcou as 4 frentes. Em vez de empilhar tudo num turno (alto risco de quebrar `flora-engine`, `essay-corrector` e o canvas dos cadernos), vou entregar em **fases curtas**, cada uma testável sozinha. Confirme a ordem e eu começo pela Fase 1.
+Vou elevar o caderno ao nível Procreate/Notability + Notion AI, mantendo a identidade visual atual (Space Grotesk/Inter, temas existentes).
 
----
+## Fase 1 — Desenho realista (começa agora)
 
-## Fase 1 — Redação: evolução por competência (baixo risco)
+**Libs novas**: `perfect-freehand` (3kb, vetor suavizado de verdade)
 
-**O que entrego**
-- Card em `Redacao.tsx` com mini-gráfico de linha (Recharts) das últimas 5 redações corrigidas.
-- 5 linhas (uma por competência 1–5), eixo Y 0–200, eixo X data.
-- Indicador "↑ subindo / → estável / ↓ caindo" por competência (compara média das 2 últimas vs 3 anteriores).
+- Substituir o canvas atual por um **stroke engine** baseado em Pointer Events com `pressure`, `tiltX/Y` e `pointerType` reais (Apple Pencil, S-Pen, Wacom, mouse cai em pressão simulada por velocidade).
+- 5 pincéis pro: **Caneta fina**, **Caneta gel**, **Marcador**, **Lápis 6B** (textura), **Marca-texto** (multiply blend).
+- Traço vetorial via `perfect-freehand` → `<path>` SVG, não pixel — escala infinita, sem serrilhado.
+- Borracha de verdade (vetorial, apaga stroke inteiro ou parcial).
+- Undo/redo por stroke, não por bitmap.
+- **Flora Vetor**: botão "Limpar desenho" → manda PNG do canvas pro `flora-engine` com Gemini vision → devolve SVG limpo (forma geométrica reconhecida). Salva ao lado do original.
 
-**Onde mexe**
-- `src/pages/Redacao.tsx` (ou `EssayEvolutionCard.tsx` que já existe — provavelmente só preencher).
-- Query: `essays` filtrado por `status='corrigida'` ordenado por `corrected_at desc limit 5`.
-- Zero migração, zero edge function.
+## Fase 2 — Folha & layout impecáveis
 
----
+- Textura de papel real (SVG noise sutil + sombra interna).
+- 3 tipos: pautado, quadriculado, pontilhado, liso — com margem vermelha clássica.
+- Sombra de profundidade (papel parece flutuar).
+- Tipografia: opção **Caveat** (manuscrita) ou Inter (digital), leading 1.7, tracking ajustado.
+- **Toolbar flutuante** que aparece on-hover e some no modo foco.
+- Modo foco: só a folha, nada mais. Tecla `F`.
 
-## Fase 2 — Redação: banco de repertórios sugeridos pela Flora
+## Fase 3 — Página que dobra (page-flip)
 
-**O que entrego**
-- Antes de escrever, botão "Sugerir repertórios" no editor de redação.
-- Chama edge function nova `essay-repertoires` (Lovable AI Gateway, gemini-flash).
-- Retorna 6 sugestões agrupadas: filósofos, dados/estatísticas, citações, exemplos históricos, obras, leis.
-- Cache em `content_cache` por `tema` normalizado (TTL 30 dias) — repertórios do mesmo tema não recustam.
+**Lib**: `react-pageflip`
 
-**Onde mexe**
-- Nova edge function `supabase/functions/essay-repertoires/index.ts`.
-- Painel novo no `Redacao.tsx` (drawer lateral).
-- Sem mudança em `essay-corrector`.
+- Navegação entre páginas vira animação de virar folha de livro real.
+- Funciona em mobile (swipe) e desktop (drag canto).
+- Toggle: modo livro ↔ modo scroll.
 
----
+## Fase 4 — Capa 3D + estante
 
-## Fase 3 — Análise: heatmap horário×dia + alertas proativos
+- Capa do caderno com perspectiva CSS 3D (transform-style: preserve-3d), lombada visível.
+- Página `/cadernos` vira **estante** com livros lado a lado, hover levanta.
+- Capa gerada por IA (Gemini image) baseada no título + matéria.
 
-**O que entrego**
-- Em `Analise.tsx`: heatmap 7×24 (dias × horas) colorido pela média de acerto de quizzes/questões feitas naquele bucket.
-- Card "Alertas" no topo: detecta quedas >10% por matéria nas últimas 2 semanas vs 2 anteriores.
-- Computado client-side a partir de `question_attempts` + `study_sessions`.
+## Fase 5 — Flora dentro da página (3 superpoderes)
 
-**Onde mexe**
-- `src/pages/Analise.tsx`.
-- `src/lib/predictENEM.ts` ou novo `src/lib/heatmap.ts`.
-- Zero backend novo.
+1. **Ghost text autocomplete**: ao parar de digitar 800ms, Flora sugere continuação em cinza. `Tab` aceita, `Esc` ignora. Endpoint: `flora-engine action: "ghost_complete"`.
+2. **Correção/reescrita por seleção**: seleciona trecho → bubble menu com "Corrigir ortografia", "Reescrever formal", "Reescrever simples", "Resumir".
+3. **Flora vê o desenho**: botão "Explicar isto" no canvas → manda imagem pro Gemini vision → Flora explica o que está desenhado (fórmula, diagrama, mapa mental).
 
----
+## Detalhes técnicos
 
-## Fase 4a — Cadernos: busca full-text + flashcards/quiz do trecho
+- Nenhuma API externa paga — tudo via **Lovable AI Gateway** (Gemini vision já incluso).
+- Libs novas totais: `perfect-freehand` (Fase 1), `react-pageflip` (Fase 3). ~15kb gzip somados.
+- Mantém schema do banco atual (`notebook_pages.content`, `canvas_data`). Stroke vetorial guardado como JSON dentro de `canvas_data`.
+- Migração suave: páginas antigas (canvas raster) continuam abrindo em modo legado.
+- Edge function `flora-engine` ganha 2 ações novas: `ghost_complete` e `vectorize_drawing`.
 
-**O que entrego**
-- Barra de busca no topo de `Notebooks.tsx`: busca em `notebook_pages.content` (ILIKE) + `ocr_cache.text` (já indexado).
-- Resultado lista página + snippet com highlight + link para o caderno.
-- No editor (`PremiumNotebookEditor`), seleção de texto mostra mini-toolbar com "Gerar flashcards do trecho" e "Gerar quiz do trecho" — reusa `flora-engine` actions passando só o texto selecionado.
+## Ordem de entrega
 
-**Onde mexe**
-- `src/pages/Notebooks.tsx`, `src/components/notebook/PremiumNotebookEditor.tsx`.
-- Sem mudança no `flora-engine` (só payload menor).
-
-## Fase 4b — Cadernos: resumo automático + tags inteligentes + templates
-
-**O que entrego**
-- Botão "Resumir página" (já existe em `notebookPageActions.ts`!) — verificar se está exposto na UI.
-- Ao salvar página com >300 chars: Flora sugere 3 tags via `flora-engine` action nova; usuário aceita/recusa.
-- Templates por matéria: ao criar página, dropdown com `Cornell`, `Fluxograma`, `Fórmulas`, `Mapa mental`, `Blank` — pré-popula `content` HTML.
-
-**Onde mexe**
-- `src/components/notebook/PremiumNotebookEditor.tsx`.
-- Templates como constantes em novo `src/lib/notebookTemplates.ts`.
-
----
-
-## Itens que NÃO vão entrar nesse roadmap (e por quê)
-
-- **Backlinks `[[tema]]`** — exige parser + índice reverso + reescrita do RichEditor. Turno dedicado.
-- **Modo apresentação** — escopo grande (slides skill), turno dedicado.
-- **Sincronia desenho ↔ texto OCR no canvas** — mexe no Konva canvas, alto risco, turno dedicado.
-- **Modelos vencedores anotados** — precisa curadoria de redações nota 1000 reais com anotação manual; é trabalho editorial, não código.
-- **Reescrita guiada** — depende de mudar prompt do `essay-corrector` e UI de marcação de trecho; turno próprio.
-
----
-
-## Ordem sugerida
-
-1. **Fase 1** (Redação evolução) — 1 turno, baixo risco, valor visível imediato.
-2. **Fase 4a** (Cadernos busca + flashcards/quiz do trecho) — 1 turno, alto valor.
-3. **Fase 3** (Análise heatmap + alertas) — 1 turno.
-4. **Fase 4b** (Resumo + tags + templates) — 1 turno.
-5. **Fase 2** (Repertórios Flora) — 1 turno, requer edge function nova.
-
-Confirma a ordem ou ajusta, e eu começo pela primeira.
+Implemento **Fase 1 completa agora**. Após validar, sigo Fase 2 → 3 → 4 → 5. Cada fase é independente e não quebra o que já existe.

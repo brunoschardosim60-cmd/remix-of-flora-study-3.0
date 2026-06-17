@@ -1,6 +1,6 @@
 import {
   Pen, Highlighter, Eraser, BoxSelect, Minus, Square, Circle,
-  Type, Pencil, Sparkles, Undo2, Trash2, StickyNote,
+  Type, Pencil, Sparkles, Undo2, Trash2, StickyNote, PenTool, Feather, Paintbrush,
 } from "lucide-react";
 import "./notebook-premium.css";
 
@@ -14,12 +14,23 @@ const PEN_WIDTHS = [1.5, 3, 6, 10];
 const STICKY_COLORS = ["#fef08a", "#fbcfe8", "#bfdbfe", "#bbf7d0", "#e9d5ff"];
 
 export type DrawingTool = "pen" | "marker" | "eraser" | "select" | "line" | "rect" | "circle";
+export type DrawingBrush = "ballpoint" | "gel" | "pencil" | "fineliner" | "marker";
+
+const BRUSHES: { id: DrawingBrush; label: string; Icon: typeof Pen }[] = [
+  { id: "ballpoint", label: "Esferográfica", Icon: Pen },
+  { id: "gel", label: "Gel", Icon: PenTool },
+  { id: "fineliner", label: "Fineliner", Icon: Feather },
+  { id: "pencil", label: "Lápis 6B", Icon: Pencil },
+  { id: "marker", label: "Caneta hidrográfica", Icon: Paintbrush },
+];
 
 interface SamsungStyleToolbarProps {
   mode: "text" | "draw";
   onModeChange: (mode: "text" | "draw") => void;
   drawTool: DrawingTool;
   onDrawToolChange: (tool: DrawingTool) => void;
+  drawBrush: DrawingBrush;
+  onDrawBrushChange: (brush: DrawingBrush) => void;
   penColor: string;
   onColorChange: (color: string) => void;
   penWidth: number;
@@ -57,6 +68,7 @@ function ToolBtn({
 
 export function SamsungStyleToolbar({
   mode, onModeChange, drawTool, onDrawToolChange,
+  drawBrush, onDrawBrushChange,
   penColor, onColorChange, penWidth, onWidthChange,
   onClear, onUndo, onAddSticky, onToggleFlora, floraOpen,
   mathStatus, autoSolveEnabled, onToggleAutoSolve,
@@ -106,6 +118,22 @@ export function SamsungStyleToolbar({
               <Eraser className="w-4 h-4" />
             </ToolBtn>
           </div>
+
+          {/* Brush picker — só quando caneta ativa */}
+          {drawTool === "pen" && (
+            <div className="nb-toolbar-group" title="Tipo de pincel">
+              {BRUSHES.map(({ id, label, Icon }) => (
+                <ToolBtn
+                  key={id}
+                  active={drawBrush === id}
+                  onClick={() => onDrawBrushChange(id)}
+                  title={label}
+                >
+                  <Icon className="w-4 h-4" />
+                </ToolBtn>
+              ))}
+            </div>
+          )}
 
           {/* Shapes */}
           <div className="nb-toolbar-group">
