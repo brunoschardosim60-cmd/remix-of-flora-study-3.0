@@ -1693,6 +1693,15 @@ export default function NotebookEditor() {
                   Gerar Quiz
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleGenerateFlashcardsFromSelection} disabled={generatingStudy !== "none"}>
+                  {generatingStudy === "flashcards" && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  Flashcards do trecho selecionado
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleGenerateQuizFromSelection} disabled={generatingStudy !== "none"}>
+                  {generatingStudy === "quiz" && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  Quiz do trecho selecionado
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => fileInputRef.current?.click()} disabled={ocrLoading}>
                   <Camera className="w-4 h-4 mr-2" />
                   Digitalizar foto (OCR)
