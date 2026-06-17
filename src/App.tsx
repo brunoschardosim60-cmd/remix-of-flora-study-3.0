@@ -12,8 +12,9 @@ import { GlobalFocusMiniPlayer } from "@/components/GlobalFocusMiniPlayer";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { QuotaLimitModal } from "@/components/QuotaLimitModal";
 import Index from "./pages/Index";
-import Notebooks from "./pages/Notebooks";
-import NotebookEditor from "./pages/NotebookEditor";
+// Notebooks e NotebookEditor são pesados (canvas, drawing, rich editor) — lazy
+const Notebooks = lazy(() => import("./pages/Notebooks"));
+const NotebookEditor = lazy(() => import("./pages/NotebookEditor"));
 
 const Auth = lazy(() => import("./pages/Auth"));
 const AuthCallback = lazy(() => import("./pages/AuthCallback"));
