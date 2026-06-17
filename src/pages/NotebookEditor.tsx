@@ -320,7 +320,7 @@ export default function NotebookEditor() {
   const [tagInput, setTagInput] = useState("");
   const [pageSummaries, setPageSummaries] = useState<Record<string, string>>({});
   const [aiActivities, setAiActivities] = useState<AIActivityItem[]>([]);
-  const [generatingStudy, setGeneratingStudy] = useState<"none" | "flashcards" | "quiz" | "summary">("none");
+  const [generatingStudy, setGeneratingStudy] = useState<"none" | "flashcards" | "quiz" | "summary" | "image">("none");
   const [quizDifficulty, setQuizDifficulty] = useState<"facil" | "medio" | "dificil">("medio");
   const [quizDialogOpen, setQuizDialogOpen] = useState(false);
   const [quizQuestions, setQuizQuestions] = useState<NotebookQuizQuestion[]>([]);
