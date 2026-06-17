@@ -39,7 +39,7 @@ export const TOKEN_LIMITS: Record<string, number> = {
   redacao:    3000,  // correção detalhada
   humanas:    3000,
   exatas:     2000,
-  chat:       1500,  // respostas curtas da Flora (max 5 linhas)
+  chat:        800,  // respostas curtas da Flora (max 5 linhas) — reduzido de 1500
   lite:        400,  // ações simples (ghost, rewrite, live feedback, decide, analyze)
   default:    2048,
 };
