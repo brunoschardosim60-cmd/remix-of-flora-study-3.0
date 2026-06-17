@@ -88,7 +88,7 @@ export function BottomNav() {
                   navigate(item.path);
                 }
               }}
-              className={`flex flex-col items-center justify-center gap-0.5 flex-1 h-full text-[10px] font-medium transition-colors ${
+              className={`relative flex flex-col items-center justify-center gap-0.5 flex-1 h-full text-[10px] font-medium transition-colors ${
                 isFloraAction
                   ? "text-primary"
                   : active
