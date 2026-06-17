@@ -353,11 +353,11 @@ export function AdminQuestionsPanel() {
             <div className="grid sm:grid-cols-2 gap-3">
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">Disciplina</label>
-                <Input value={draft.disciplina} onChange={(e) => updateDraft("disciplina", e.target.value)} />
+                <Input aria-label="Disciplina" value={draft.disciplina} onChange={(e) => updateDraft("disciplina", e.target.value)} />
               </div>
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">Tema</label>
-                <Input value={draft.tema} onChange={(e) => updateDraft("tema", e.target.value)} />
+                <Input aria-label="Tema" value={draft.tema} onChange={(e) => updateDraft("tema", e.target.value)} />
               </div>
             </div>
 
