@@ -2023,6 +2023,7 @@ dia: 0=seg..6=dom. Max ${Math.floor(onb.tempo_disponivel_min / 30)} slots/dia.\n
       const imageDataUrl = ((data as any)?.image || "").toString();
       if (!imageDataUrl.startsWith("data:image/")) return jsonResponse({ error: "missing image" }, 400);
       const question = ((data as any)?.question || "Explique o que tem nesta página do caderno.").toString().slice(0, 400);
+      // Gemini suporta visão nativa — chamada direta (mistral/lovable do task chain não fariam vision).
       const opts: CallOptions = {
         messages: [
           { role: "system", content: `Você é Flora, professora particular. O aluno te mostrou um desenho/anotação do caderno. Descreva o que vê e explique o conteúdo de forma clara, didática, em PT-BR. 4-10 linhas em markdown. Sem emojis. Se for um diagrama/fórmula/figura de matéria escolar, identifique e ensine. Se não conseguir reconhecer nada, diga isso honestamente.` },
@@ -2033,7 +2034,23 @@ dia: 0=seg..6=dom. Max ${Math.floor(onb.tempo_disponivel_min / 30)} slots/dia.\n
         ],
         maxTokens: 700, temperature: 0.5,
       };
-      const raw = await runTaskChain(opts, "explicacao", "flora:explain_drawing", { supabase, userId, actionType: "chat" });
+      const key1 = Deno.env.get("GEMINI_API_KEY") ?? "";
+      const key2 = Deno.env.get("GEMINI_API_KEY_2") ?? "";
+      let raw = "";
+      let provider = "gemini";
+      try {
+        raw = await callGemini(opts, key1, "gemini-2.0-flash");
+      } catch (e) {
+        console.warn("[explain_drawing] gemini primary failed, tentando key2:", (e as Error)?.message);
+        try {
+          raw = await callGemini(opts, key2, "gemini-2.0-flash");
+          provider = "gemini_2";
+        } catch (e2) {
+          await logAIUsage(supabase, { userId, actionType: "chat", provider: "gemini", success: false, errorMessage: (e2 as Error)?.message ?? "vision fail" });
+          return jsonResponse({ error: "Não consegui ler o desenho agora. Tente de novo em alguns segundos." }, 502);
+        }
+      }
+      await logAIUsage(supabase, { userId, actionType: "chat", model: "gemini-2.0-flash", provider, success: true });
       return jsonResponse({ explanation: typeof raw === "string" ? raw : "" });
     }
 

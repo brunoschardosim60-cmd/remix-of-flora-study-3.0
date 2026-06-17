@@ -56,13 +56,13 @@ export async function checkQuota(
       p_action: actionType,
     });
     if (error || !data) {
-      console.warn("[usage] check_ai_quota fallback:", error?.message);
-      return { tier: "free", limit: 999, used: 0, remaining: 999, allowed: true };
+      console.error("[usage] check_ai_quota FAIL-CLOSED:", error?.message);
+      return { tier: "free", limit: 0, used: 0, remaining: 0, allowed: false };
     }
     return data as QuotaResult;
   } catch (e) {
-    console.warn("[usage] check_ai_quota exception:", e);
-    return { tier: "free", limit: 999, used: 0, remaining: 999, allowed: true };
+    console.error("[usage] check_ai_quota exception FAIL-CLOSED:", e);
+    return { tier: "free", limit: 0, used: 0, remaining: 0, allowed: false };
   }
 }
 
