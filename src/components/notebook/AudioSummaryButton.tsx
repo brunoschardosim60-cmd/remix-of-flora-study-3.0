@@ -46,8 +46,11 @@ export function AudioSummaryButton({
       });
       if (error) throw error;
       if (!data?.audio_base64) {
-        toast.info(data?.summary ? "Resumo pronto, mas o áudio falhou." : "Sem áudio disponível.");
-        if (data?.summary) toast.message("Resumo", { description: data.summary });
+        if (data?.summary) {
+          toast.message("Resumo pronto", { description: data.summary, duration: 12000 });
+        } else {
+          toast.info("Não consegui gerar agora. Tenta de novo.");
+        }
         return;
       }
       const blob = base64ToBlob(data.audio_base64, data.mime || "audio/mpeg");
