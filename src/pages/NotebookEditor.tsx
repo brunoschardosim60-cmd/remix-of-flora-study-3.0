@@ -1981,7 +1981,7 @@ export default function NotebookEditor() {
             ref={editorContainerRef}
             className={`nb-paper-area ${expandedEditor ? "w-full h-full" : ""}`}
           >
-            <div className="relative min-h-full w-full flex-1">
+            <div key={currentPage} className="relative min-h-full w-full flex-1 page-flip-anim">
               <RichEditor
                 content={page?.content || ""}
                 onChange={handleContentChange}
