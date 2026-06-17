@@ -6,7 +6,8 @@ import { Brain, NotebookPen, PlayCircle, Sparkles } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 const DISMISS_STORAGE_KEY = "studyflow:coach-dismissed";
-function todayDateKey(): string { return new Date().toISOString().split("T")[0]; }
+// Bucket por hora — sugestões dismissadas voltam a aparecer 1h depois.
+function bucketKey(): string { return new Date().toISOString().slice(0, 13); }
 
 interface StudyCoachPanelProps {
   weakTopics: StudyTopic[];
@@ -29,7 +30,7 @@ export function StudyCoachPanel({
 }: StudyCoachPanelProps) {
   const { user } = useAuth();
   // Dismissals persistem por dia — não voltam toda vez que o aluno recarrega.
-  const storageKey = `${DISMISS_STORAGE_KEY}:${user?.id || "anon"}:${todayDateKey()}`;
+  const storageKey = `${DISMISS_STORAGE_KEY}:${user?.id || "anon"}:${bucketKey()}`;
   const [dismissed, setDismissed] = useState<Set<DismissKey>>(() => {
     if (typeof window === "undefined") return new Set();
     try {
@@ -43,12 +44,12 @@ export function StudyCoachPanel({
     if (typeof window === "undefined") return;
     try {
       window.localStorage.setItem(storageKey, JSON.stringify(Array.from(dismissed)));
-      // limpa chaves de dias anteriores
+      // limpa chaves de buckets anteriores (horas passadas)
       const prefix = `${DISMISS_STORAGE_KEY}:${user?.id || "anon"}:`;
-      const today = todayDateKey();
+      const current = bucketKey();
       for (let i = window.localStorage.length - 1; i >= 0; i--) {
         const k = window.localStorage.key(i);
-        if (k && k.startsWith(prefix) && !k.endsWith(today)) window.localStorage.removeItem(k);
+        if (k && k.startsWith(prefix) && !k.endsWith(current)) window.localStorage.removeItem(k);
       }
     } catch { /* silent */ }
   }, [dismissed, storageKey, user?.id]);
