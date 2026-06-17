@@ -2123,6 +2123,7 @@ export default function NotebookEditor() {
             onGenerateQuiz={handleGenerateQuizFromPage}
             onCreateTopic={handleCreateTopicFromPage}
             onSyncSummary={handleSyncSummaryToTopic}
+            onGenerateImage={handleGenerateImageOnPage}
           />
         </div>
       )}
