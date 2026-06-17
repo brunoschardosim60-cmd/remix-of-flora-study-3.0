@@ -132,14 +132,11 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
                   <th
                     key={dia}
                     className={`p-3 font-heading font-semibold text-center ${
-                      i === TODAY_IDX ? "bg-primary/10 text-primary" : ""
+                      i === TODAY_IDX ? "bg-muted/40" : ""
                     }`}
                   >
                     <span className="hidden sm:inline">{dia}</span>
                     <span className="sm:hidden">{DIAS_SHORT[i]}</span>
-                    {i === TODAY_IDX && (
-                      <span className="ml-1 text-[9px] uppercase tracking-wider opacity-70">hoje</span>
-                    )}
                   </th>
                 ))}
                 <th className="p-2 w-[40px]" />
@@ -165,13 +162,13 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
                     </td>
                     {DIAS.map((_, dia) => {
                       const slot = getSlot(horario, dia);
-                      if (!slot) return <td key={dia} className={`p-2 ${dia === TODAY_IDX ? "bg-primary/5" : ""}`} />;
+                      if (!slot) return <td key={dia} className={`p-2 ${dia === TODAY_IDX ? "bg-muted/20" : ""}`} />;
 
                       const isEditing = editingSlot === slot.id;
                       const isHovered = hoveredSlot === slot.id;
 
                       return (
-                        <td key={dia} className={`p-1.5 ${dia === TODAY_IDX ? "bg-primary/5" : ""}`}>
+                        <td key={dia} className={`p-1.5 ${dia === TODAY_IDX ? "bg-muted/20" : ""}`}>
                           {isEditing ? (
                             <div className="space-y-1.5 p-1">
                               <select
