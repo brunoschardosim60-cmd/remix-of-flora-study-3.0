@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Flame, Target, TrendingUp } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
@@ -12,6 +11,36 @@ interface DailyGoalCard {
   current: number;
   target: number;
   unit: string;
+}
+
+function MiniRing({ percent, label, current, target, unit }: { percent: number; label: string; current: number; target: number; unit: string }) {
+  const size = 72;
+  const stroke = 7;
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const offset = c - (percent / 100) * c;
+  return (
+    <div className="flex flex-col items-center gap-1.5">
+      <div className="relative" style={{ width: size, height: size }}>
+        <svg width={size} height={size} className="-rotate-90">
+          <circle cx={size / 2} cy={size / 2} r={r} stroke="hsl(var(--muted))" strokeWidth={stroke} fill="none" />
+          <circle
+            cx={size / 2} cy={size / 2} r={r}
+            stroke="hsl(var(--primary))" strokeWidth={stroke} fill="none"
+            strokeDasharray={c} strokeDashoffset={offset} strokeLinecap="round"
+            className="transition-all duration-500"
+          />
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className="text-sm font-bold leading-none">{percent}%</span>
+        </div>
+      </div>
+      <div className="text-center">
+        <p className="text-xs font-medium">{label}</p>
+        <p className="text-[10px] text-muted-foreground">{current}/{target} {unit}</p>
+      </div>
+    </div>
+  );
 }
 
 interface DashboardHeroProps {
@@ -89,6 +118,16 @@ export function DashboardHero({
             )}
             <div className="space-y-1">
               <h2 className="font-heading text-2xl font-bold sm:text-3xl">{greetingLabel(firstName, isLoggedIn, timeOfDay, minutesAway)}</h2>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                <span className="inline-flex items-center gap-1.5">
+                  <Flame className="w-4 h-4 text-orange-500" />
+                  <span className="font-semibold text-foreground">{streakDays}</span> dias seguidos
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <TrendingUp className="w-4 h-4 text-secondary" />
+                  <span className="font-semibold text-foreground">{weeklyProgressPercent}%</span> da semana ({weeklyCompleted}/{weeklyTotal})
+                </span>
+              </div>
               <p className="text-sm text-muted-foreground sm:text-base">
                 {isLoggedIn
                   ? "Hoje está tudo organizado para você seguir sem pensar demais no próximo passo."
@@ -107,25 +146,6 @@ export function DashboardHero({
               </div>
             </div>
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 min-w-0 lg:min-w-[360px] w-full lg:w-auto">
-            <div className="rounded-2xl border border-border/70 bg-background/75 p-4">
-              <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                <Flame className="w-4 h-4 text-orange-500" />
-                Streak diário
-              </div>
-              <p className="mt-2 font-heading text-3xl font-bold">{streakDays}</p>
-              <p className="text-xs text-muted-foreground">dias seguidos com atividade</p>
-            </div>
-            <div className="rounded-2xl border border-border/70 bg-background/75 p-4">
-              <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                <TrendingUp className="w-4 h-4 text-secondary" />
-                Semana
-              </div>
-              <p className="mt-2 font-heading text-3xl font-bold">{weeklyProgressPercent}%</p>
-              <p className="text-xs text-muted-foreground">{weeklyCompleted}/{weeklyTotal} revisões da semana</p>
-            </div>
-          </div>
         </div>
 
         <div className="rounded-2xl border border-border/70 bg-background/70 p-4 sm:p-5">
@@ -133,22 +153,11 @@ export function DashboardHero({
             <Target className="w-4 h-4 text-primary" />
             <p className="font-heading font-semibold">Meta do dia</p>
           </div>
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <div className="flex items-center justify-around gap-3 flex-wrap">
             {dailyGoals.map((goal) => {
               const percent = goal.target > 0 ? Math.min(100, Math.round((goal.current / goal.target) * 100)) : 0;
               return (
-                <div key={goal.id} className="space-y-2 rounded-xl border border-border/60 bg-card/80 p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm font-medium">{goal.label}</p>
-                    <span className="text-xs text-muted-foreground">
-                      {goal.current}/{goal.target} {goal.unit}
-                    </span>
-                  </div>
-                  <Progress value={percent} className="h-2.5" />
-                  <p className="text-xs text-muted-foreground">
-                    {percent >= 100 ? "Concluído" : `${percent}% concluído`}
-                  </p>
-                </div>
+                <MiniRing key={goal.id} percent={percent} label={goal.label} current={goal.current} target={goal.target} unit={goal.unit} />
               );
             })}
           </div>
