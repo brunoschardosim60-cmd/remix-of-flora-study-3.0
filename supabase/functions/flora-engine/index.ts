@@ -1988,10 +1988,6 @@ dia: 0=seg..6=dom. Max ${Math.floor(onb.tempo_disponivel_min / 30)} slots/dia.\n
       return jsonResponse(plan);
     }
 
-    if (action === "log_action") {
-      // (action continues below)
-    }
-
     // ─── RISK_SCAN: alertas silenciosos quando aluno está em risco ───
     // Heurísticas puras (sem IA, sem custo de token). Insere flora_decisions
     // com decision_type='risk_alert' e accepted=null. Dedup 24h por subtype.
@@ -2080,7 +2076,7 @@ dia: 0=seg..6=dom. Max ${Math.floor(onb.tempo_disponivel_min / 30)} slots/dia.\n
       return jsonResponse({ ok: true, alerts: alerts.length, subtypes: alerts.map((a) => a.subtype) });
     }
 
-    if (action === "_never_matches_placeholder_") {
+    if (action === "log_action") {
       const { actionType, topicId, materia, metadata } = data;
       await supabase.from("user_actions").insert({ user_id: userId, action: actionType, topic_id: topicId || null, materia: materia || null, metadata: metadata || {} });
       if (topicId && (actionType === "quiz_correct" || actionType === "quiz_wrong")) {
