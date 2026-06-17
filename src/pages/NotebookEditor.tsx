@@ -1887,6 +1887,20 @@ export default function NotebookEditor() {
             >
               <Wand2 className="w-4 h-4" />
             </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => {
+                const next = !ghostEnabled;
+                setGhostEnabled(next);
+                window.localStorage.setItem(GHOST_ENABLED_KEY, next ? "1" : "0");
+                toast.success(next ? "Autocomplete Flora ativado (Tab aceita, Esc descarta)" : "Autocomplete Flora desativado");
+              }}
+              className={`h-11 w-11 sm:h-8 sm:w-8 ${ghostEnabled ? "text-primary" : ""}`}
+              title={ghostEnabled ? "Desativar autocomplete Flora" : "Ativar autocomplete Flora (consome créditos)"}
+            >
+              <Sparkles className="w-4 h-4" />
+            </Button>
           </div>
 
           {/* Page navigation */}
