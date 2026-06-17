@@ -68,7 +68,7 @@ export function RichMediaPanel({ subject, topic, onClose, onInsertToNotebook, sh
     }
     if (activeTab === "video" && media.video.data) {
       const v = media.video.data;
-      return `<div style="margin:1rem 0;"><p style="font-size:0.85rem;font-weight:600;margin-bottom:4px;">📺 ${v.title}</p><a href="https://youtu.be/${v.videoId}" target="_blank" style="display:flex;align-items:center;gap:8px;padding:8px;border:1px solid #ddd;border-radius:8px;text-decoration:none;color:inherit;font-size:0.8rem;"><img src="${v.thumbnail}" style="width:80px;border-radius:4px;" /><span>${v.channelTitle}</span></a></div>`;
+      return `<div style="margin:1rem 0;"><p style="font-size:0.85rem;font-weight:600;margin-bottom:4px;">📺 ${v.title}</p><a href="https://youtu.be/${v.videoId}" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;gap:8px;padding:8px;border:1px solid #ddd;border-radius:8px;text-decoration:none;color:inherit;font-size:0.8rem;"><img src="${v.thumbnail}" alt="Thumbnail de ${v.title}" style="width:80px;border-radius:4px;" /><span>${v.channelTitle}</span></a></div>`;
     }
     if (activeTab === "map" && media.map.data) {
       return `<div style="margin:1rem 0;"><p style="font-size:0.8rem;font-weight:600;margin-bottom:4px;">🗺 Mapa: ${media.map.data.label}</p><iframe src="${media.map.data.iframeSrc}" width="100%" height="220" style="border:1px solid #ddd;border-radius:8px;" frameborder="0"></iframe></div>`;
