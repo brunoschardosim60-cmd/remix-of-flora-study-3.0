@@ -147,7 +147,30 @@ export default function Analise() {
       setTopics(state?.topics ?? []);
       setSessions((sess ?? []) as StudySession[]);
       setActions((acts ?? []) as UserAction[]);
-      setPerfs((pf ?? []) as StudentPerf[]);
+      // Merge: student_performance (canônico) + question_attempts agregado por matéria.
+      // Quando attempts tem mais amostras que a linha em student_performance, ele vence —
+      // resolve a incoerência de o aluno usar Banco de Questões e o radar/predição ENEM ficarem desatualizados.
+      const basePerfs = ((pf ?? []) as StudentPerf[]).slice();
+      const attRows = (att ?? []) as unknown as AttemptLike[];
+      const byMat = new Map<string, { acertos: number; erros: number }>();
+      for (const a of attRows) {
+        const mat = (a.question?.disciplina || "").trim();
+        if (!mat) continue;
+        const cur = byMat.get(mat) ?? { acertos: 0, erros: 0 };
+        if (a.acertou) cur.acertos++; else cur.erros++;
+        byMat.set(mat, cur);
+      }
+      const merged: StudentPerf[] = [...basePerfs];
+      byMat.forEach(({ acertos, erros }, materia) => {
+        const total = acertos + erros;
+        if (total < 3) return; // ruído estatístico
+        const accuracy = Math.round((acertos / total) * 100);
+        const idx = merged.findIndex(p => p.materia === materia);
+        const sample = { materia, accuracy, acertos, erros, erro_recorrente: erros >= 3, prioridade: Math.round(erros * 10 + (100 - accuracy)) };
+        if (idx === -1) merged.push(sample);
+        else if (total > (merged[idx].acertos + merged[idx].erros)) merged[idx] = sample;
+      });
+      setPerfs(merged);
       setReviews((rev ?? []) as SpacedReview[]);
       setEssays((ess ?? []) as EssayRow[]);
       setSlots((sl ?? []) as WeeklySlotRow[]);
