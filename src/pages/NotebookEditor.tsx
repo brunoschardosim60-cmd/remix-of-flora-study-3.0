@@ -30,7 +30,7 @@ import {
   type Stroke,
   type DrawingCanvasRef,
 } from "@/components/notebook/drawingTypes";
-import { KonvaDrawingCanvas } from "@/components/notebook/KonvaDrawingCanvas";
+import { LazyKonvaDrawingCanvas as KonvaDrawingCanvas } from "@/components/notebook/LazyKonvaDrawingCanvas";
 
 // MathSuggestion type used locally in the editor
 interface MathSuggestion {
