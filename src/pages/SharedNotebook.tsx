@@ -7,6 +7,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, BookOpen, AlertTriangle, ExternalLink, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import DOMPurify from "dompurify";
 
 interface SharedPage {
   id: string;
@@ -125,7 +126,12 @@ export default function SharedNotebook() {
         {page ? (
           <div
             className="prose prose-lg max-w-none dark:prose-invert prose-headings:font-heading prose-p:leading-relaxed prose-p:text-foreground/90"
-            dangerouslySetInnerHTML={{ __html: page.content || "<p class='text-muted-foreground italic'>Página vazia</p>" }}
+            dangerouslySetInnerHTML={{
+              __html: DOMPurify.sanitize(
+                page.content || "<p class='text-muted-foreground italic'>Página vazia</p>",
+                { USE_PROFILES: { html: true, mathMl: true, svg: true } },
+              ),
+            }}
           />
         ) : (
           <p className="text-muted-foreground text-center py-16">Nenhuma página disponível.</p>
