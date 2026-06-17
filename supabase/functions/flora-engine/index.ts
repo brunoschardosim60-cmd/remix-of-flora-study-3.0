@@ -815,7 +815,9 @@ ${olderSummary}${recentChatSummary}`;
       const wantsSummaryLike = /\b(resumo|resumir|explica|explicar|explicacao|explicação|teoria|aula|material)\b/.test(normalizedPrompt);
       const wantsMoreDetail = /mais completo|mais detalhes|detalha|detalhado|aprofunda|aprofundar/.test(normalizedPrompt);
 
-      const intentNote = wantsNotebook && wantsQuizLike
+      const intentNote = isNavIntent
+        ? ""
+        : wantsNotebook && wantsQuizLike
         ? `\n[INTERNO]: O aluno pediu o material NO CADERNO. Mesmo sendo quiz/teste, use [AÇÃO:CADERNO], NÃO [AÇÃO:QUIZ]. Gere HTML com 10 questões numeradas, alternativas e gabarito no final.`
         : wantsSummaryLike || wantsNotebook || wantsMoreDetail
           ? `\n[INTERNO]: O pedido é de material de estudo em caderno. Use [AÇÃO:CADERNO]. O campo "conteudo" deve vir completo, com subtítulos, exemplos e profundidade real — nunca curto ou superficial.`
