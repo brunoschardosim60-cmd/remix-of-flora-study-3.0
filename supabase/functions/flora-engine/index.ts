@@ -554,7 +554,7 @@ serve(async (req) => {
     }
 
     // ─── System prompt da Flora ────────────────────────────────────────────
-    function buildSystemPrompt(context: Awaited<ReturnType<typeof getStudentContext>>, personality: FloraPersonality, explanationStyle: ExplanationStyle) {
+    function buildSystemPrompt(context: Awaited<ReturnType<typeof getStudentContext>>, personality: FloraPersonality, explanationStyle: ExplanationStyle, currentPath: string = "/") {
       const nome = context.profile?.display_name || "aluno";
       const isAdmin = context.profile?.is_admin === true;
       const hasData = context.performance.length > 0 || context.recentActions.length > 0 || context.recentSessions.length > 0;
@@ -745,14 +745,29 @@ AÇÕES (no FINAL, APÓS CONFIRMAÇÃO):
 [AÇÃO:META_DIA]{"studyMinutes":60,"revisions":5,"quizCount":2}
 [AÇÃO:REMOVER_CRONOGRAMA]{"materia":"..."}
 [AÇÃO:IMAGEM]{"prompt":"descrição curta em inglês ou português do que ilustrar"}    ← usa quando o aluno pedir imagem/foto/ilustração/diagrama/desenho
+[AÇÃO:NAVEGAR]{"destino":"redacao|caderno|quiz|banco|banco_concurso|aulao|aulas|simulado|simulado_semanal|cronograma|analise|explica_foto|cursos|comunidades","tema":"...","materia":"...","modo":"escrever|corrigir"}    ← LEVA o aluno pra página certa quando ele pede ajuda numa área específica
+
+REGRA DE NAVEGAÇÃO (use [AÇÃO:NAVEGAR] SEM precisar de confirmação):
+- "me ajuda numa redação sobre X" / "quero escrever sobre X" → [AÇÃO:NAVEGAR]{"destino":"redacao","tema":"X","modo":"escrever"} + frase curta "Te levo pro editor de redação com o tema X. Pode escrever — eu te ajudo aqui do lado."
+- "corrige minha redação" / "quero corrigir uma redação" → [AÇÃO:NAVEGAR]{"destino":"redacao","modo":"corrigir"} + "Abrindo a página de redação. Cole o texto lá e eu corrijo."
+- "preciso anotar X" / "abre meu caderno" → [AÇÃO:NAVEGAR]{"destino":"caderno","materia":"..."}
+- "quero treinar questões de X" / "quero questões do ENEM" → [AÇÃO:NAVEGAR]{"destino":"banco","materia":"...","tema":"..."}
+- "quero ver minha aula" / "abre o aulão" → [AÇÃO:NAVEGAR]{"destino":"aulao"}
+- "ver meu cronograma" → [AÇÃO:NAVEGAR]{"destino":"cronograma"}
+- "explica essa foto" → [AÇÃO:NAVEGAR]{"destino":"explica_foto"}
+IMPORTANTE: NAVEGAR é a ÚNICA ação que NÃO precisa confirmação — execute na hora.
+Depois de navegar você CONTINUA no chat (painel flutuante) — pode pedir ao aluno "agora cola/escreve o texto que eu te ajudo".
 
 EXEMPLOS DO COMPORTAMENTO CERTO:
 Aluno: "me faz um resumo de mitose" → "Boa. Resumo completo no caderno?"
 Aluno: "sim" → "Vou colocar no caderno." [AÇÃO:CADERNO]{"titulo":"Mitose","materia":"Biologia","conteudo":"<h2>Mitose</h2><p>...</p>..."}
 Aluno: "quiz de funções" → "Quantas questões? 10 padrão?"
 Aluno: "manda" → "Abrindo o quiz." [AÇÃO:QUIZ]{"materia":"Matemática","tema":"Funções","difficulty":"medio"}
+Aluno: "me ajuda numa redação sobre desigualdade no Brasil" → "Te levo pro editor com esse tema. Vai escrevendo, eu te ajudo aqui." [AÇÃO:NAVEGAR]{"destino":"redacao","tema":"Desigualdade no Brasil","modo":"escrever"}
+Aluno: "corrige uma redação" → "Abrindo o corretor. Cola o texto lá." [AÇÃO:NAVEGAR]{"destino":"redacao","modo":"corrigir"}
 
 O nome do aluno é ${nome}. Responda SEMPRE em português brasileiro.
+PÁGINA ATUAL DO ALUNO: ${currentPath || "/"}
 ${onboardingInfo}
 ${hasData ? `
 CONTEXTO (silencioso):
@@ -776,7 +791,8 @@ ${olderSummary}${recentChatSummary}`;
     // Chat principal
     if (action === "recommend") {
       const context = await getStudentContext(userId);
-      const systemPrompt = buildSystemPrompt(context);
+      const currentPath: string = typeof data?.currentPath === "string" ? data.currentPath : "/";
+      const systemPrompt = buildSystemPrompt(context, personality, explanationStyle, currentPath);
       const userPrompt = data?.message || "Me ajuda a organizar meus estudos?";
 
       const normalizedPrompt = (userPrompt || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[.!?,;:]+/g, " ").replace(/\s+/g, " ").trim();
@@ -788,12 +804,20 @@ ${olderSummary}${recentChatSummary}`;
       const directActionVerbs = ["gere","gera","gerar","faz","faca","fazer","cria","criar","monta","montar","manda","mandar","quero","preciso","me da","me de","me passa","me faz","me gera","me cria","me manda","me monta"];
       const isDirectActionRequest = directActionVerbs.some(v => normalizedPrompt === v || normalizedPrompt.startsWith(v + " "));
 
+      // Intenção de navegação: "me ajuda na redação", "corrige redação", "abre caderno",
+      // "quero treinar questões", "ver cronograma"… NAVEGAR não exige confirmação.
+      const navTargets = /(redac|caderno|notebook|quiz|questo|simulado|aulao|aula|cronograma|banco|comunidad|curso|explica.?foto|analise|pomodoro|flashcard)/;
+      const navVerbs = /(ajud|leva|vai|abre|abr[ai]r|abrir|corrig|escrev|cri[ae]?|treina|prati[cq]|ver|mostr|ir |entra|abrir)/;
+      const isNavIntent = navTargets.test(normalizedPrompt) && navVerbs.test(normalizedPrompt);
+
       const wantsNotebook = /\bcaderno\b/.test(normalizedPrompt);
       const wantsQuizLike = /\b(quiz|teste|simulado|prova|perguntas?|questoes?|questões?)\b/.test(normalizedPrompt);
       const wantsSummaryLike = /\b(resumo|resumir|explica|explicar|explicacao|explicação|teoria|aula|material)\b/.test(normalizedPrompt);
       const wantsMoreDetail = /mais completo|mais detalhes|detalha|detalhado|aprofunda|aprofundar/.test(normalizedPrompt);
 
-      const intentNote = wantsNotebook && wantsQuizLike
+      const intentNote = isNavIntent
+        ? ""
+        : wantsNotebook && wantsQuizLike
         ? `\n[INTERNO]: O aluno pediu o material NO CADERNO. Mesmo sendo quiz/teste, use [AÇÃO:CADERNO], NÃO [AÇÃO:QUIZ]. Gere HTML com 10 questões numeradas, alternativas e gabarito no final.`
         : wantsSummaryLike || wantsNotebook || wantsMoreDetail
           ? `\n[INTERNO]: O pedido é de material de estudo em caderno. Use [AÇÃO:CADERNO]. O campo "conteudo" deve vir completo, com subtítulos, exemplos e profundidade real — nunca curto ou superficial.`
@@ -801,10 +825,10 @@ ${olderSummary}${recentChatSummary}`;
             ? `\n[INTERNO]: O pedido principal é quiz/teste. Use [AÇÃO:QUIZ], a menos que o aluno tenha pedido explicitamente no caderno.`
             : "";
 
-      const guardNote = (isConfirmation || isDirectActionRequest)
+      const guardNote = (isConfirmation || isDirectActionRequest || isNavIntent)
         ? `
 
-[INTERNO]: O aluno PEDIU/CONFIRMOU diretamente ("${userPrompt.slice(0, 80)}"). EXECUTE AGORA incluindo [AÇÃO:...] no final com payload completo. Resposta no chat: 1 frase curta tipo "Abrindo." ou "Vou colocar no caderno." NUNCA escreva o conteúdo (questões, resumo, redação) inline — TUDO vai no payload da ação. OBRIGATÓRIO terminar a resposta com o bloco [AÇÃO:...].${intentNote}`
+[INTERNO]: O aluno PEDIU/CONFIRMOU diretamente ("${userPrompt.slice(0, 80)}"). EXECUTE AGORA incluindo [AÇÃO:...] no final com payload completo. Resposta no chat: 1 frase curta tipo "Abrindo." ou "Vou colocar no caderno." NUNCA escreva o conteúdo (questões, resumo, redação) inline — TUDO vai no payload da ação. OBRIGATÓRIO terminar a resposta com o bloco [AÇÃO:...].${isNavIntent ? `\n[INTERNO]: A intenção é NAVEGAR para uma página específica. Use [AÇÃO:NAVEGAR] com destino, tema/materia/modo quando souber. NÃO peça confirmação — leve o aluno direto.` : ""}${intentNote}`
         : `
 
 [INTERNO]: O aluno NÃO confirmou. Apenas sugira e pergunte. PROIBIDO incluir [AÇÃO:...] nesta resposta.${intentNote}`;
@@ -821,7 +845,7 @@ ${olderSummary}${recentChatSummary}`;
 
       // Se não confirmou NEM pediu ação direta, filtra [AÇÃO:...] do stream
       // (quando confirma OU pede direto tipo "cria redação", a ação DEVE passar)
-      const allowAction = isConfirmation || isDirectActionRequest;
+      const allowAction = isConfirmation || isDirectActionRequest || isNavIntent;
       if (!allowAction && streamResp.body) {
         const { readable, writable } = new TransformStream();
         const writer = writable.getWriter();

@@ -17,6 +17,42 @@ export function useFloraActionExecutor(onClose: () => void) {
 
   return useCallback(async (action: FloraAction) => {
     try {
+      // NAVEGAR: ação puramente client-side. Não chama backend (não custa nada).
+      // Leva o aluno pra página certa já com contexto (tema, matéria, modo).
+      if (action.type === "NAVEGAR") {
+        const p = action.payload as { destino?: string; tema?: string; materia?: string; modo?: string; query?: string };
+        const destino = (p.destino || "").toLowerCase();
+        const map: Record<string, string> = {
+          redacao: "/redacao",
+          redacao_temas: "/redacao/temas",
+          caderno: "/notebooks",
+          notebook: "/notebooks",
+          quiz: "/banco",
+          banco: "/banco",
+          banco_concurso: "/banco-concurso",
+          aulao: "/aulao",
+          aulas: "/aulas",
+          simulado: "/simulado-enem",
+          simulado_semanal: "/simulado-semanal",
+          analise: "/analise",
+          cronograma: "/",
+          home: "/",
+          explica_foto: "/explica-foto",
+          cursos: "/cursos",
+          comunidades: "/comunidades",
+        };
+        const path = map[destino];
+        if (!path) { toast.error("Destino desconhecido."); return; }
+        const state: Record<string, unknown> = {};
+        if (p.tema) state.tema = p.tema;
+        if (p.materia) state.materia = p.materia;
+        if (p.modo) state.modo = p.modo;
+        const search = p.query ? `?${p.query}` : "";
+        navigate(`${path}${search}`, { state: Object.keys(state).length ? state : undefined });
+        toast.success(`Te levei pro lugar certo. Continuo aqui pra te ajudar.`);
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke("flora-engine", {
         body: { action: "execute_action", data: { actionType: action.type, payload: action.payload } },
       });

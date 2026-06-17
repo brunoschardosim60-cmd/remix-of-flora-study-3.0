@@ -247,7 +247,11 @@ export function useFloraChatStream({ isOpen, onClose }: Options) {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
         body: JSON.stringify({
           action: "recommend",
-          data: { message: messageToSend, history: sanitizeHistory(messages.slice(-8)) },
+          data: {
+            message: messageToSend,
+            history: sanitizeHistory(messages.slice(-8)),
+            currentPath: typeof window !== "undefined" ? window.location.pathname : "/",
+          },
         }),
         signal: abort.signal,
       });
