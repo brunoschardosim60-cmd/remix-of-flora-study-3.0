@@ -274,7 +274,7 @@ export default function Admin() {
                       <div className="grid gap-3 md:grid-cols-2">
                         <div className="space-y-2">
                           <label className="text-sm font-medium">Nome exibido</label>
-                          <Input value={displayName} onChange={(event) => setDisplayName(event.target.value)} />
+                          <Input aria-label="Nome exibido" value={displayName} onChange={(event) => setDisplayName(event.target.value)} />
                           <Button
                             onClick={() => void withSaving(
                               () => updateAdminUserProfile(selectedUserId, user!.id, displayName.trim()),
@@ -288,6 +288,7 @@ export default function Admin() {
                         <div className="space-y-2">
                           <label className="text-sm font-medium">Criar snapshot</label>
                           <Textarea
+                            aria-label="Motivo do snapshot"
                             value={snapshotReason}
                             onChange={(event) => setSnapshotReason(event.target.value)}
                             placeholder="Ex: antes de ajustar horas que sumiram"
@@ -315,13 +316,13 @@ export default function Admin() {
                       <div className="grid gap-3 md:grid-cols-3">
                         <div className="space-y-2">
                           <label className="text-sm font-medium">Horas</label>
-                          <Input value={hoursToAdd} onChange={(event) => setHoursToAdd(event.target.value)} type="number" step="0.5" min="0" />
+                          <Input aria-label="Horas a adicionar" value={hoursToAdd} onChange={(event) => setHoursToAdd(event.target.value)} type="number" step="0.5" min="0" />
                         </div>
                         <div className="space-y-2">
                           <label className="text-sm font-medium">Data</label>
                           <div className="flex items-center gap-2">
                             <Calendar className="h-4 w-4 text-muted-foreground" />
-                            <Input type="date" value={hoursDate} onChange={(event) => setHoursDate(event.target.value)} />
+                            <Input aria-label="Data" type="date" value={hoursDate} onChange={(event) => setHoursDate(event.target.value)} />
                           </div>
                         </div>
                         <div className="space-y-2">
@@ -396,7 +397,7 @@ export default function Admin() {
                         </div>
                         <div className="space-y-2 md:col-span-2">
                           <label className="text-sm font-medium">Notas</label>
-                          <Textarea value={topicNotes} onChange={(event) => setTopicNotes(event.target.value)} />
+                          <Textarea aria-label="Notas do tópico" value={topicNotes} onChange={(event) => setTopicNotes(event.target.value)} />
                         </div>
                       </div>
                       <Button

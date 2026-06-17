@@ -111,7 +111,7 @@ export function ShareNotebookDialog({
           ) : (
             <div className="space-y-3">
               <div className="flex gap-2">
-                <Input value={shareUrl} readOnly className="text-xs font-mono" />
+                <Input aria-label="URL de compartilhamento" value={shareUrl} readOnly className="text-xs font-mono" />
                 <Button size="icon" variant="outline" onClick={copyLink} aria-label={copied ? "Link copiado" : "Copiar link"}>
                   {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
                 </Button>

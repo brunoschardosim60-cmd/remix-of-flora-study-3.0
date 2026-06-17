@@ -364,7 +364,7 @@ export function AdminConcursoQuestionsPanel() {
               </div>
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">Ano</label>
-                <Input type="number" value={draft.ano ?? ""} onChange={(e) => update("ano", e.target.value ? Number(e.target.value) : null)} />
+                <Input aria-label="Ano" type="number" value={draft.ano ?? ""} onChange={(e) => update("ano", e.target.value ? Number(e.target.value) : null)} />
               </div>
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">Nível</label>
@@ -408,7 +408,7 @@ export function AdminConcursoQuestionsPanel() {
               <label className="text-xs font-medium text-muted-foreground mb-1 block">
                 Enunciado <span className="text-foreground/40">({draft.enunciado.length} chars)</span>
               </label>
-              <Textarea value={draft.enunciado} onChange={(e) => update("enunciado", e.target.value)} rows={6} className="text-sm" />
+              <Textarea aria-label="Enunciado" value={draft.enunciado} onChange={(e) => update("enunciado", e.target.value)} rows={6} className="text-sm" />
             </div>
 
             {draft.tipo === "certo_errado" ? (
