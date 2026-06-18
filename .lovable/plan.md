@@ -1,113 +1,99 @@
-## Objetivo
+# Roadmap StudyFlow — 4 frentes paralelas
 
-Transformar `src/pages/Admin.tsx` (707 linhas, tabs apertadas) em um painel administrativo com **sidebar lateral**, código modular, novas funções de moderação e ações de dados em massa.
+Quatro melhorias em ordem de impacto x esforço. Cada fase é independente e pode ser implementada/parada em qualquer ponto. Tudo respeita o design atual (sem mudanças visuais fora do escopo de cada feature).
 
-## 1. Novo layout (sidebar)
+---
 
-Estrutura nova:
+## Fase 1 — API ENEM + Brasil API *(menor esforço, ganho imediato)*
 
-```text
-┌─────────────────────────────────────────────────┐
-│ AdminShell                                       │
-│ ┌──────────────┬────────────────────────────┐   │
-│ │ AdminSidebar │ Sticky header (busca Cmd+K)│   │
-│ │              ├────────────────────────────┤   │
-│ │ • Visão geral│                            │   │
-│ │ • Usuários   │  <Outlet /> da seção       │   │
-│ │ • Moderação  │                            │   │
-│ │ • Conteúdo   │                            │   │
-│ │   ├ ENEM     │                            │   │
-│ │   └ Concurso │                            │   │
-│ │ • PDFs       │                            │   │
-│ │ • IA & Tiers │                            │   │
-│ │ • Cache      │                            │   │
-│ │ • Logs       │                            │   │
-│ └──────────────┴────────────────────────────┘   │
-└─────────────────────────────────────────────────┘
-```
+**Objetivo:** trazer questões oficiais do ENEM direto da API pública `enem.dev` para o Banco de Questões e Simulado, e usar Brasil API para feriados/CEP.
 
-- `SidebarProvider` + `Sidebar collapsible="icon"`, badges de contagem (ex: "Usuários 1.2k").
-- Seleção via state local (sem mudar rota — mantém URL `/admin`).
-- Sticky header com `<Input>` de busca global + botão `Cmd+K` (command palette).
+- Nova edge function `import-enem-questions` que chama `https://api.enem.dev/v1/exams/{ano}/questions` e popula a tabela `questions` existente (categoriza por disciplina via `classify_question_tema` que já existe).
+- Painel admin para disparar import por ano (2009-2023).
+- No `SimuladoEnem.tsx`: botão "Modo oficial" que filtra apenas questões com `source='enem_oficial'`.
+- Brasil API: hook `useFeriados()` → bloqueia agendamento de revisão em feriado nacional no `WeeklySchedule`/`spaced_reviews`.
+- Brasil API CEP no onboarding para preencher escola/cidade automaticamente.
 
-## 2. Refactor de código
+**Sem chave de API, sem custo.**
 
-Quebrar `Admin.tsx` (707 → ~120 linhas de shell) em:
+---
 
-```text
-src/components/admin/
-  AdminShell.tsx            (layout sidebar + roteamento de seção)
-  AdminSidebar.tsx          (nav)
-  AdminCommandPalette.tsx   (Cmd+K, ações + busca de usuário)
-  panels/
-    OverviewPanel.tsx       (NOVO: cards de métricas, gráfico de uso Flora 7d)
-    UsersPanel.tsx          (lista + filtros + edição inline + bulk)
-    ModerationPanel.tsx     (NOVO: banir, resetar senha, promover, logs)
-    HoursPanel.tsx          (ajuste de horas + snapshots)
-    TopicsPanel.tsx         (gerência de tópicos do usuário selecionado)
-    AITiersPanel.tsx        (já existe: AdminAITierPanel)
-    EnemContentPanel.tsx    (wrapper de AdminQuestionsPanel + GenerateQuestionsDialog + TemaClassifier)
-    ConcursoContentPanel.tsx
-    PdfPanel.tsx            (Single + Batch como sub-tabs internas)
-    CachePanel.tsx
-    LogsPanel.tsx           (NOVO: leitura de admin_action_logs paginada com filtros)
-  hooks/
-    useAdminUsers.ts        (lista, filtros, paginação, search)
-    useAdminMutations.ts    (ban, role, tier, password reset, impersonate)
-    useBulkSelection.ts     (seleção múltipla genérica)
-```
+## Fase 2 — Notificações push + resumo semanal por email
 
-`Admin.tsx` vira só guard + `<AdminShell />`.
+**Objetivo:** trazer o aluno de volta sem depender de ele abrir o app.
 
-## 3. Novas funções
+### Push (Web Push API nativo, sem Firebase)
+- Tabela `push_subscriptions` já existe ✓.
+- Service worker dedicado `public/sw-push.js` (separado do PWA, não interfere no preview).
+- Página Settings → toggle "Receber lembretes" gera VAPID subscription e salva.
+- Edge function `send-push-notification` + cron pg_cron a cada 1h:
+  - Revisão atrasada hoje
+  - Streak prestes a quebrar (último estudo > 20h)
+  - Meta do dia ainda 0% às 19h
+- Secrets necessários: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` (gero e adiciono via add_secret).
 
-### Moderação
-- **Banir/desbanir** (campo `banned_until` em `profiles` ou via `auth.admin.updateUserById`)
-- **Reset de senha** (gerar magic link e copiar)
-- **Promover/rebaixar admin** (insert/delete em `user_roles`)
-- **Impersonar** (gerar magic link de login como o usuário — link copiável, não auto-login pra segurança)
-- **Notificar** (mensagem em `flora_chat_messages` ou toast persistente — usar tabela existente se houver)
-- Toda ação grava em `admin_action_logs` (já existe).
+### Email semanal
+- Usa Lovable Emails (infra nativa, sem provedor externo).
+- Template React Email `weekly-summary.tsx`: horas estudadas, top matérias, pontos fracos, plano da próxima semana.
+- Edge function `send-weekly-summary` agendada domingo 18h via pg_cron.
+- Conteúdo gerado pela Flora (já tem `flora-engine`).
+- Pré-requisito: domínio de email (mostro botão de setup se ainda não tem).
 
-### Dados
-- **Edição inline** de qualquer campo do usuário (nome, email, tier, role, theme) com `<Input>` que salva onBlur
-- **Filtros avançados**: tier, role, theme, status (banido), última atividade, busca por email/nome
-- **Bulk actions** (checkbox em massa): mudar tier, deletar, notificar, exportar CSV dos selecionados
-- **Exportar CSV**: usuários filtrados, questões, horas, snapshots
-- **Gráfico de uso da Flora** (últimos 7d) no Overview — Recharts já existe no projeto
+---
 
-### Liberdade
-- **Cmd+K command palette**: busca usuário, ações rápidas ("Banir @email", "Mudar tier de @email para pro"), navegação entre painéis
-- **Query builder visual** simples no `UsersPanel`: chips AND/OR sobre colunas conhecidas (sem SQL bruto)
+## Fase 3 — Flora proativa + diagnóstico inicial
 
-## 4. Edge functions (admin)
+**Objetivo:** Flora deixa de esperar o aluno e passa a agir.
 
-Criar `supabase/functions/admin-actions/index.ts` que centraliza ações privilegiadas:
-- `ban_user`, `unban_user`, `reset_password`, `set_role`, `set_tier`, `delete_user`, `impersonate_link`, `bulk_update`
-- Verifica `has_role(auth.uid(), 'admin')` no início
-- Grava em `admin_action_logs`
-- Usa `service_role` (não exposto ao cliente)
+### Onboarding diagnóstico
+- Nova etapa em `pages/Onboarding.tsx`: 10 questões adaptativas (2 por área ENEM).
+- Resultado vira `student_performance` inicial + Flora gera plano de 30 dias.
+- Tela final: "Aqui está seu mapa de pontos fortes/fracos".
 
-## 5. Migração SQL
+### Flora proativa
+- Hook `useFloraProactive()` no shell do app:
+  - Por horário (manhã: revisões; tarde: novo conteúdo; noite: 5 questões rápidas).
+  - Por desempenho: se 3 erros seguidos no mesmo tópico → sugere pausa/troca.
+  - Por inatividade: > 2 dias sem estudar → mensagem motivacional.
+- Mensagens entram como `flora_decisions` com `decision_type='proactive'` e aparecem no chat como cards de ação.
+- Limite: máx 1 sugestão proativa não-lida por vez (evita spam).
 
-- Adicionar `banned_until timestamptz` a `profiles` (se não existir).
-- Index em `admin_action_logs(created_at desc)` para LogsPanel.
-- Nada destrutivo.
+---
+
+## Fase 4 — Páginas públicas SEO *(maior alcance, maior esforço)*
+
+**Objetivo:** transformar conteúdo gerado pela Flora em tráfego orgânico.
+
+- Nova rota pública `/conteudo/:slug` (sem login).
+- Tabela `public_content` (slug, título, h1, meta_description, body_markdown, materia, tema, views).
+- Edge function `generate-public-content` (admin) gera lote: "Resumo de [tema]" para todos os temas do `classify_question_tema`.
+- Template visual reaproveita design do notebook (sem alterar UI dos cadernos).
+- SEO: title <60c, meta <160c, H1 único, JSON-LD Article, canonical, OG tags.
+- `public/sitemap.xml` gerado dinamicamente via edge function que lê `public_content`.
+- CTA discreto no fim de cada página: "Estude com a Flora →" → leva ao signup.
+- Redações modelo nota 1000 (lote inicial de 20) como primeira leva.
+
+---
+
+## Ordem sugerida e estimativa
+
+| Ordem | Fase | Esforço | Impacto |
+|------|------|---------|---------|
+| 1ª | API ENEM + Brasil API | Pequeno | Alto (qualidade do banco) |
+| 2ª | Flora proativa + diagnóstico | Médio | Alto (retenção) |
+| 3ª | Push + email semanal | Médio | Alto (retorno) |
+| 4ª | SEO público | Grande | Alto (aquisição) |
+
+---
 
 ## Detalhes técnicos
 
-- Sidebar usa o shadcn `Sidebar` (já no projeto) com `collapsible="icon"`.
-- Command palette: `cmdk` (já no projeto via shadcn `Command`).
-- Mantém o design tokens existente — sem mudar cores nem fontes.
-- Cada painel é lazy (`React.lazy`) para não inflar bundle inicial do Admin.
-- `useAdminUsers` busca via RPC `admin_list_profiles` (já existe em outras telas? se não, query direta a `profiles` validada por RLS de admin).
+- **Sem mudança de design** em telas existentes — apenas novas telas/cards seguem o sistema atual (Space Grotesk + Inter, tokens semânticos).
+- **Backend:** tudo em Lovable Cloud (edge functions + pg_cron + pgmq para email).
+- **IA:** continua usando o fallback existente em `_shared/providers.ts` (Gemini → Groq → Mistral...).
+- **Sem novos secrets pagos**: Brasil API e ENEM API são abertas; Web Push usa VAPID auto-gerado; email via Lovable Emails.
+- **Migrations necessárias:** `questions` ganha coluna `source`, nova `public_content`, índices em `flora_decisions(decision_type, read_at)`.
 
-## Ordem de entrega
+---
 
-Vou entregar em 3 sub-pacotes para validar cedo:
-
-1. **Pacote A (shell + refactor)**: `AdminShell`, `AdminSidebar`, mover painéis existentes pra `panels/`, `Admin.tsx` enxuto. Sem nova função ainda.
-2. **Pacote B (moderação + edição inline)**: edge function `admin-actions`, `ModerationPanel`, edição inline em `UsersPanel`, bulk selection, export CSV.
-3. **Pacote C (Cmd+K + Overview + Logs)**: command palette, `OverviewPanel` com gráficos, `LogsPanel`.
-
-Confirme e começo pelo **Pacote A**.
+Posso começar pela **Fase 1 (ENEM + Brasil API)** que é a mais rápida e já entrega valor visível, ou prefere outra ordem?
