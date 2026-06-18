@@ -1,6 +1,7 @@
 import { FileQuestion } from "lucide-react";
 import { AdminQuestionsPanel } from "@/components/admin/AdminQuestionsPanel";
 import { AdminTemaClassifierPanel } from "@/components/admin/AdminTemaClassifierPanel";
+import { AdminEnemImportPanel } from "@/components/admin/AdminEnemImportPanel";
 
 export function EnemPanel() {
   return (
@@ -12,6 +13,7 @@ export function EnemPanel() {
       <p className="text-xs text-muted-foreground mb-3">
         Encontre questões quebradas (alternativas faltando, sem gabarito, enunciado vazio…) e corrija manualmente.
       </p>
+      <AdminEnemImportPanel />
       <AdminTemaClassifierPanel />
       <AdminQuestionsPanel />
     </section>

@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { startIdlePrefetch, prefetchForContext } from "@/lib/prefetch";
+import { useFeriados } from "@/hooks/useFeriados";
 import type { User } from "@supabase/supabase-js";
 
 /**
@@ -16,6 +17,10 @@ import type { User } from "@supabase/supabase-js";
  */
 export function useDashboardBootstrap(user: User | null) {
   const [searchParams, setSearchParams] = useSearchParams();
+
+  // Pré-aquece cache de feriados nacionais (Brasil API) — usado por spacedReviews
+  // pra evitar agendar revisão em feriado.
+  useFeriados(new Date().getFullYear());
 
   // Custom colors + idle prefetch (uma vez no mount)
   useEffect(() => {

@@ -40,19 +40,23 @@ export default function SimuladoEnem() {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [remaining, setRemaining] = useState(DURATION_SECONDS);
   const [finished, setFinished] = useState(false);
+  const [onlyOfficial, setOnlyOfficial] = useState(true);
   const startedAt = useRef<number>(0);
 
   const startExam = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from("questions")
         .select("id, enunciado, alternativas, correta, area, disciplina, ano")
-        .eq("incomplete", false)
-        .limit(200);
+        .eq("incomplete", false);
+      if (onlyOfficial) query = query.eq("origem", "enem.dev");
+      const { data, error } = await query.limit(400);
       if (error) throw error;
       const rows = (data || []) as DbQuestao[];
-      if (rows.length === 0) throw new Error("Banco vazio. Importe questões primeiro.");
+      if (rows.length === 0) throw new Error(onlyOfficial
+        ? "Nenhuma questão oficial importada ainda. Desative 'Apenas oficiais' ou peça ao admin para importar."
+        : "Banco vazio. Importe questões primeiro.");
       // Embaralha e pega N
       const shuffled = [...rows].sort(() => Math.random() - 0.5).slice(0, QUESTIONS_TARGET);
       setQuestoes(shuffled);
@@ -126,6 +130,15 @@ export default function SimuladoEnem() {
             <p className="text-sm text-muted-foreground">
               Simulado oficial, sem ajuda da Flora. Cronômetro de 5h30 e relatório de pontuação estimada (TRI) ao final.
             </p>
+            <label className="inline-flex items-center gap-2 text-xs text-muted-foreground cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={onlyOfficial}
+                onChange={(e) => setOnlyOfficial(e.target.checked)}
+                className="rounded border-border"
+              />
+              Usar apenas questões oficiais do ENEM
+            </label>
             <Button onClick={startExam} disabled={loading} size="lg" className="gap-2">
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
               Iniciar prova
