@@ -139,7 +139,7 @@ export default function Onboarding() {
     );
   }
 
-  const TOTAL = 3;
+  const TOTAL = 4;
   const progress = ((step) / TOTAL) * 100;
 
   return (
