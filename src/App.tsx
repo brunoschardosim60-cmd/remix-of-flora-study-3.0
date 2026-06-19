@@ -31,7 +31,6 @@ const BancoQuestoes = lazy(() => import("./pages/BancoQuestoes"));
 const BancoConcurso = lazy(() => import("./pages/BancoConcurso"));
 const RedacaoTemas = lazy(() => import("./pages/RedacaoTemas"));
 const Aulao = lazy(() => import("./pages/Aulao"));
-const Comunidades = lazy(() => import("./pages/Comunidades"));
 const Pricing = lazy(() => import("./pages/Pricing"));
 const PublicProfile = lazy(() => import("./pages/PublicProfile"));
 const Cursos = lazy(() => import("./pages/Cursos"));
@@ -204,7 +203,6 @@ const App = () => (
                 <Route path="/aulao" element={<ProtectedRoute><Aulao /></ProtectedRoute>} />
                 <Route path="/cursos" element={<ProtectedRoute><Cursos /></ProtectedRoute>} />
                 <Route path="/cursos/:id" element={<ProtectedRoute><CursoPlayer /></ProtectedRoute>} />
-                <Route path="/comunidades" element={<ProtectedRoute><Comunidades /></ProtectedRoute>} />
                 <Route path="/simulado-semanal" element={<ProtectedRoute><SimuladoSemanal /></ProtectedRoute>} />
                 <Route path="/simulado-enem" element={<ProtectedRoute><SimuladoEnem /></ProtectedRoute>} />
                 <Route path="/explica-foto" element={<ProtectedRoute><ExplicaFoto /></ProtectedRoute>} />

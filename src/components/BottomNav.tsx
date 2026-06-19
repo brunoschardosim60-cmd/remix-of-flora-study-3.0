@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Home, NotebookPen, FileText, BarChart3, Sparkles, Library, BookOpen, GraduationCap } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useStudentObjetivo } from "@/hooks/useStudentObjetivo";
 import { loadTopics } from "@/lib/studyData";
 import { isPastDateLocal } from "@/lib/dateUtils";
 
@@ -24,14 +24,13 @@ const CONCURSO_ITEMS: Item[] = [
   { path: "/analise", label: "Análise", icon: BarChart3 },
   // Comunidade omitida intencionalmente: alunos de concurso usam o Banco como hub social.
   // Para adicionar, substitua um dos itens acima por:
-  // { path: "/comunidades", label: "Comunidade", icon: Users },
 ];
 
 export function BottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [isConcurso, setIsConcurso] = useState(false);
+  const { isConcurso } = useStudentObjetivo(user);
   const [overdueCount, setOverdueCount] = useState(0);
 
   useEffect(() => {
@@ -53,20 +52,6 @@ export function BottomNav() {
     const interval = setInterval(compute, 30000);
     return () => { window.removeEventListener("storage", onStorage); clearInterval(interval); };
   }, [location.pathname]);
-
-  useEffect(() => {
-    if (!user) { setIsConcurso(false); return; }
-    let cancelled = false;
-    supabase
-      .from("student_onboarding")
-      .select("objetivo")
-      .eq("user_id", user.id)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (!cancelled) setIsConcurso((data?.objetivo || "").toLowerCase() === "concurso");
-      });
-    return () => { cancelled = true; };
-  }, [user]);
 
   const items = isConcurso ? CONCURSO_ITEMS : BASE_ITEMS;
 

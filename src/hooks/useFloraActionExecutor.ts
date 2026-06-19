@@ -39,7 +39,6 @@ export function useFloraActionExecutor(onClose: () => void) {
           home: "/",
           explica_foto: "/explica-foto",
           cursos: "/cursos",
-          comunidades: "/comunidades",
         };
         const path = map[destino];
         if (!path) { toast.error("Destino desconhecido."); return; }
