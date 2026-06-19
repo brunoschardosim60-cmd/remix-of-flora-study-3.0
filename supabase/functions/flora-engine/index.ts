@@ -2126,6 +2126,61 @@ dia: 0=seg..6=dom. Max ${Math.floor(onb.tempo_disponivel_min / 30)} slots/dia.\n
       return jsonResponse({ ok: true, alerts: alerts.length, subtypes: alerts.map((a) => a.subtype) });
     }
 
+    // ─── PROCESS_DIAGNOSTIC: recebe respostas do onboarding diagnóstico,
+    // semeia student_performance por área e dispara generate_initial_plan
+    // levando em conta os pontos fracos identificados.
+    if (action === "process_diagnostic") {
+      const answers = ((data as any)?.answers || []) as Array<{ area: string; materia?: string; correct: boolean }>;
+      if (!Array.isArray(answers) || answers.length === 0) {
+        return jsonResponse({ error: "no answers" }, 400);
+      }
+      // Agrupa por área → acertos/erros
+      const byArea = new Map<string, { acertos: number; erros: number; materia: string }>();
+      for (const a of answers) {
+        const k = (a.area || "geral").toLowerCase();
+        const cur = byArea.get(k) || { acertos: 0, erros: 0, materia: a.materia || k };
+        if (a.correct) cur.acertos++; else cur.erros++;
+        byArea.set(k, cur);
+      }
+      // Upsert em student_performance usando topic_id sintético "diag:<area>"
+      const rows = [...byArea.entries()].map(([area, v]) => {
+        const total = v.acertos + v.erros;
+        const accuracy = total > 0 ? Math.round((v.acertos / total) * 100) : 0;
+        return {
+          user_id: userId,
+          topic_id: `diag:${area}`,
+          materia: v.materia,
+          acertos: v.acertos,
+          erros: v.erros,
+          accuracy,
+          erro_recorrente: v.erros >= 2,
+          prioridade: Math.round(v.erros * 15 + (100 - accuracy)),
+        };
+      });
+      await supabase.from("student_performance").upsert(rows, { onConflict: "user_id,topic_id" });
+
+      // Identifica pontos fracos
+      const fracos = rows.filter(r => r.accuracy < 60).map(r => r.materia);
+      const fortes = rows.filter(r => r.accuracy >= 80).map(r => r.materia);
+
+      await supabase.from("flora_decisions").insert({
+        user_id: userId,
+        decision_type: "diagnostic_result",
+        reasoning: fracos.length
+          ? `Você foi bem em ${fortes.join(", ") || "alguns temas"}, mas vamos reforçar ${fracos.join(", ")}.`
+          : `Bom diagnóstico! Vamos manter o ritmo.`,
+        recommendation: { fracos, fortes, rows },
+      });
+
+      await supabase.from("user_actions").insert({
+        user_id: userId,
+        action: "diagnostic_completed",
+        metadata: { total: answers.length, accuracy_geral: Math.round((rows.reduce((s,r)=>s+r.accuracy,0) / Math.max(rows.length,1))) },
+      });
+
+      return jsonResponse({ ok: true, fracos, fortes, rows });
+    }
+
     if (action === "log_action") {
       const { actionType, topicId, materia, metadata } = data;
       await supabase.from("user_actions").insert({ user_id: userId, action: actionType, topic_id: topicId || null, materia: materia || null, metadata: metadata || {} });
