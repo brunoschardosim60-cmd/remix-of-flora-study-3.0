@@ -24,7 +24,6 @@ const CONCURSO_ITEMS: Item[] = [
   { path: "/analise", label: "Análise", icon: BarChart3 },
   // Comunidade omitida intencionalmente: alunos de concurso usam o Banco como hub social.
   // Para adicionar, substitua um dos itens acima por:
-  // { path: "/comunidades", label: "Comunidade", icon: Users },
 ];
 
 export function BottomNav() {
