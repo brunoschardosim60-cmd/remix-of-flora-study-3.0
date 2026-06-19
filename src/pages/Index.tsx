@@ -22,6 +22,7 @@ import { useStudentObjetivo } from "@/hooks/useStudentObjetivo";
 import { useDashboardHeroData } from "@/hooks/useDashboardHeroData";
 import { useDashboardPrimaryAction } from "@/hooks/useDashboardPrimaryAction";
 import { usePresence } from "@/hooks/usePresence";
+import { useFatigueDetector } from "@/hooks/useFatigueDetector";
 import { loadStringStorage } from "@/lib/storage";
 import { Loader2 as Loader2Icon } from "lucide-react";
 import { loadAIActivities } from "@/lib/aiActivityStore";
@@ -176,6 +177,7 @@ export default function Index() {
 
   const { firstName, dailyGoals } = useDashboardHeroData(user, profile, gamification);
   const { minutesAway, timeOfDay } = usePresence();
+  useFatigueDetector(user?.id);
   const studyNightMode = new Date().getHours() >= 20 || new Date().getHours() < 5;
 
   const handleNotesDialogUpdate = useCallback((topicId: string, notas: string) => {
