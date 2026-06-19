@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Loader2, ArrowRight, BookOpen, Trophy, Target, Sparkles, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DiagnosticStep } from "@/components/onboarding/DiagnosticStep";
 
 // ─── Tipos ───────────────────────────────────────────────────────────────────
 type Objetivo = "enem" | "vestibular" | "concurso" | "faculdade" | "aprender";
@@ -42,7 +43,7 @@ export default function Onboarding() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const [step, setStep] = useState(0); // 0=objetivo, 1=matérias, 2=meta
+  const [step, setStep] = useState(0); // 0=objetivo, 1=matérias, 2=diagnóstico, 3=meta
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
 
@@ -52,6 +53,7 @@ export default function Onboarding() {
   const [cargo, setCargo] = useState("");
   const [materiasDificeis, setMateriasDificeis] = useState<string[]>([]);
   const [metaResultado, setMetaResultado] = useState("");
+  const [diagnosticAnswers, setDiagnosticAnswers] = useState<Array<{ area: string; materia: string; correct: boolean }> | null>(null);
 
   const isConcurso = objetivo === "concurso";
   const subjects = isConcurso ? CONCURSO_SUBJECTS : ENEM_SUBJECTS;
@@ -93,10 +95,19 @@ export default function Onboarding() {
       } as any);
       if (error) throw error;
 
-      // Gera plano em background
-      supabase.functions.invoke("flora-engine", {
-        body: { action: "generate_initial_plan", userId: user.id },
-      }).catch(() => {});
+      // Processa diagnóstico (se houve) e depois gera plano adaptativo
+      (async () => {
+        try {
+          if (diagnosticAnswers && diagnosticAnswers.length > 0) {
+            await supabase.functions.invoke("flora-engine", {
+              body: { action: "process_diagnostic", userId: user.id, data: { answers: diagnosticAnswers } },
+            });
+          }
+          await supabase.functions.invoke("flora-engine", {
+            body: { action: "generate_initial_plan", userId: user.id },
+          });
+        } catch {}
+      })();
 
       setDone(true);
       setTimeout(() => navigate("/"), 2200);
