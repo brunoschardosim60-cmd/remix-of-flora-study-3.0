@@ -299,6 +299,27 @@ export default function Onboarding() {
               initial={{ opacity: 0, x: 40 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -40 }}
+              className="w-full"
+            >
+              <DiagnosticStep
+                onComplete={(answers) => { setDiagnosticAnswers(answers); setStep(3); }}
+                onSkip={() => { setDiagnosticAnswers([]); setStep(3); }}
+              />
+              <div className="mt-4">
+                <Button variant="outline" className="w-full h-10" onClick={() => setStep(1)}>
+                  Voltar
+                </Button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* ─── Step 3: Meta ────────────────────────────────────────── */}
+          {step === 3 && (
+            <motion.div
+              key="step3"
+              initial={{ opacity: 0, x: 40 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -40 }}
               className="w-full space-y-6"
             >
               <div className="text-center space-y-2">
@@ -336,7 +357,7 @@ export default function Onboarding() {
               </div>
 
               <div className="flex gap-3">
-                <Button variant="outline" className="flex-1 h-12" onClick={() => setStep(1)}>
+                <Button variant="outline" className="flex-1 h-12" onClick={() => setStep(2)}>
                   Voltar
                 </Button>
                 <Button
@@ -355,7 +376,7 @@ export default function Onboarding() {
 
       {/* Step indicators */}
       <div className="pb-8 flex justify-center gap-2">
-        {[0, 1, 2].map((i) => (
+        {[0, 1, 2, 3].map((i) => (
           <div
             key={i}
             className={`h-1.5 rounded-full transition-all duration-300 ${
