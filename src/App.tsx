@@ -31,7 +31,6 @@ const BancoQuestoes = lazy(() => import("./pages/BancoQuestoes"));
 const BancoConcurso = lazy(() => import("./pages/BancoConcurso"));
 const RedacaoTemas = lazy(() => import("./pages/RedacaoTemas"));
 const Aulao = lazy(() => import("./pages/Aulao"));
-const Comunidades = lazy(() => import("./pages/Comunidades"));
 const Pricing = lazy(() => import("./pages/Pricing"));
 const PublicProfile = lazy(() => import("./pages/PublicProfile"));
 const Cursos = lazy(() => import("./pages/Cursos"));
