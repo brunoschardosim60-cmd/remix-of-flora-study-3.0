@@ -39,27 +39,29 @@ export function DiagnosticStep({ onComplete, onSkip }: Props) {
         for (const a of AREAS) {
           const { data } = await supabase
             .from("questions")
-            .select("id,area,materia,enunciado,alternativas,resposta_correta")
+            .select("id,area,disciplina,enunciado,alternativas,correta")
             .eq("area", a.key)
             .eq("origem", "enem.dev")
+            .eq("incomplete", false)
             .limit(50);
           const pool = (data || []) as any[];
           // shuffle e pega 2
           const picks = pool.sort(() => Math.random() - 0.5).slice(0, 2);
           for (const q of picks) {
-            const alts = Array.isArray(q.alternativas) ? q.alternativas : [];
-            const normAlts = alts.map((x: any) => ({
-              letra: x.letra || x.letter || "",
-              texto: x.texto || x.text || "",
-            })).filter((x: any) => x.letra && x.texto);
-            if (normAlts.length >= 4 && q.resposta_correta) {
+            // alternativas é Record<letter, text>
+            const altsRec = (q.alternativas && typeof q.alternativas === "object") ? q.alternativas as Record<string, string> : {};
+            const normAlts = Object.entries(altsRec)
+              .map(([letra, texto]) => ({ letra, texto: String(texto || "") }))
+              .filter(x => x.letra && x.texto)
+              .sort((x, y) => x.letra.localeCompare(y.letra));
+            if (normAlts.length >= 4 && q.correta) {
               collected.push({
                 id: q.id,
                 area: q.area,
-                materia: q.materia || a.label,
+                materia: q.disciplina || a.label,
                 enunciado: q.enunciado || "",
                 alternativas: normAlts,
-                correta: q.resposta_correta,
+                correta: q.correta,
               });
             }
           }
