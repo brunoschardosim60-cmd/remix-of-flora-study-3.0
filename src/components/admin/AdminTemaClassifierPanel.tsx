@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Loader2, Tags } from "lucide-react";
+import { Loader2, Tags, PlayCircle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,8 @@ export function AdminTemaClassifierPanel() {
   const [running, setRunning] = useState(false);
   const [force, setForce] = useState(false);
   const [result, setResult] = useState<{ updated: number; skipped: number; total: number; temas: Record<string, number> } | null>(null);
+  const [bulkRunning, setBulkRunning] = useState(false);
+  const [bulkLog, setBulkLog] = useState<string[]>([]);
 
   async function runClassification() {
     setRunning(true);
@@ -36,6 +38,50 @@ export function AdminTemaClassifierPanel() {
       toast.error("Falha ao classificar: " + ((e as Error)?.message || e));
     } finally {
       setRunning(false);
+    }
+  }
+
+  async function runBulkAll() {
+    if (!confirm("Reclassificar TODAS as disciplinas (force=true)? Pode demorar vários minutos e consumir cota de IA.")) return;
+    setBulkRunning(true);
+    setBulkLog([]);
+    const append = (s: string) => setBulkLog((l) => [...l, s]);
+    try {
+      for (const disc of DISCIPLINAS) {
+        append(`▶ ${disc}: iniciando…`);
+        let totalUpdated = 0, totalSkipped = 0, rounds = 0;
+        // Loop em chunks de 100 até retornar 0 atualizadas
+        while (rounds < 30) {
+          rounds++;
+          try {
+            const { data, error } = await supabase.functions.invoke("classify-question-temas", {
+              body: { disciplina: disc, limit: 100, force: true },
+            });
+            if (error) throw error;
+            if ((data as any)?.error) throw new Error((data as any).error);
+            const upd = (data as any).updated ?? 0;
+            const skp = (data as any).skipped ?? 0;
+            const tot = (data as any).total ?? 0;
+            totalUpdated += upd; totalSkipped += skp;
+            append(`   lote ${rounds}: ${upd} atualizadas / ${skp} puladas / ${tot} no lote`);
+            // Se nada foi tocado, encerra (já passou por todas com force)
+            if (tot === 0 || (upd === 0 && skp === 0)) break;
+            // Como force=true reprocessa as mesmas, paramos quando rounds >= ceil(total/100) por disciplina.
+            // Estimativa: paramos após 1 ciclo completo já que reprocessa todas a cada chamada.
+            // Para não loop infinito, paramos após primeiro lote com mesmo updated count baixo:
+            if (rounds * 100 >= tot * 3) break;
+          } catch (e) {
+            append(`   ⚠ erro: ${(e as Error)?.message || e}`);
+            break;
+          }
+        }
+        append(`✓ ${disc}: ${totalUpdated} atualizadas, ${totalSkipped} puladas`);
+      }
+      toast.success("Reclassificação completa.");
+    } catch (e) {
+      toast.error("Falha no bulk: " + ((e as Error)?.message || e));
+    } finally {
+      setBulkRunning(false);
     }
   }
 
@@ -66,6 +112,17 @@ export function AdminTemaClassifierPanel() {
         <input type="checkbox" checked={force} onChange={(e) => setForce(e.target.checked)} />
         Reclassificar TUDO (sobrescreve temas existentes — use pra reparar buckets gigantes tipo "Funções")
       </label>
+      <div className="mt-4 pt-3 border-t border-border">
+        <Button onClick={runBulkAll} disabled={bulkRunning || running} variant="secondary" className="w-full">
+          {bulkRunning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlayCircle className="mr-2 h-4 w-4" />}
+          Reclassificar TODAS as disciplinas (force, em lotes de 100)
+        </Button>
+        {bulkLog.length > 0 && (
+          <div className="mt-2 max-h-64 overflow-auto rounded-xl border border-border bg-background p-3 font-mono text-[11px] leading-5">
+            {bulkLog.map((l, i) => <div key={i}>{l}</div>)}
+          </div>
+        )}
+      </div>
       {result && (
         <div className="mt-3 rounded-xl border border-border bg-background p-3 text-sm">
           <p><strong>{result.updated}</strong> atualizadas · {result.skipped} puladas · {result.total} no lote</p>
