@@ -966,7 +966,7 @@ export default function BancoQuestoes() {
         <Card className="p-3 sm:p-4 space-y-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-            <Input placeholder="Buscar por enunciado ou tema…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+            <Input placeholder="Buscar por tema classificado…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <Select key={`ano-${anos.length}`} value={ano} onValueChange={setAno}>
