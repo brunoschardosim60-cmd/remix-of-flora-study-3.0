@@ -578,7 +578,8 @@ export default function BancoQuestoes() {
       const temaQ = (q.tema || "").trim().toLowerCase();
       const discQ = (q.disciplina || "").trim().toLowerCase();
       const areaQ = (q.area || "").trim().toLowerCase();
-      const hay = cleanedById.get(q.id)?.haystack ?? "";
+      const temaSearch = temaQ;
+      const discSearch = `${discQ} ${areaQ}`;
 
       // 1. Filtro de Ano (Sempre Independente)
       if (ano !== "Todos" && String(q.ano) !== ano) return false;
@@ -609,8 +610,12 @@ export default function BancoQuestoes() {
         if (!targets.some(t => areaQ.includes(t) || discQ.includes(t))) return false;
       }
 
-      // 5. Busca Textual Final (Aplica-se sobre o conjunto já filtrado)
-      if (s && !hay.includes(s)) return false;
+      // 5. Busca por classificação: com tema selecionado, pesquisa só no tema;
+      // com disciplina selecionada, pesquisa em tema/disciplina/área — nunca no enunciado.
+      if (s) {
+        const searchScope = tema !== "Todos" ? temaSearch : disciplina !== "Todas" ? `${temaSearch} ${discSearch}` : `${temaSearch} ${discSearch}`;
+        if (!searchScope.includes(s)) return false;
+      }
 
       // Filtros de estado persistentes
       if (onlyErrors && attempts[q.id]?.acertou !== false) return false;
