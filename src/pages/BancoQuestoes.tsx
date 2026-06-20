@@ -84,6 +84,14 @@ async function saveFavoritesRemote(userId: string, s: Set<string>): Promise<void
 
 const AREAS = ["Todas", "Linguagens", "Ciências Humanas", "Ciências da Natureza", "Matemática"];
 
+function normalizeSearchText(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+}
+
 function getAlternativas(q: Question) {
   return Array.isArray(q.alternativas) ? q.alternativas : [];
 }
@@ -573,11 +581,11 @@ export default function BancoQuestoes() {
   }
 
   const filtered = useMemo(() => {
-    const s = debouncedSearch.trim().toLowerCase();
+    const s = normalizeSearchText(debouncedSearch);
     return questions.filter((q) => {
-      const temaQ = (q.tema || "").trim().toLowerCase();
-      const discQ = (q.disciplina || "").trim().toLowerCase();
-      const areaQ = (q.area || "").trim().toLowerCase();
+      const temaQ = normalizeSearchText(q.tema || "");
+      const discQ = normalizeSearchText(q.disciplina || "");
+      const areaQ = normalizeSearchText(q.area || "");
       const temaSearch = temaQ;
       const discSearch = `${discQ} ${areaQ}`;
 
@@ -586,25 +594,25 @@ export default function BancoQuestoes() {
 
       // 2. Filtro de Tema (EXATO — usa apenas o campo `tema` classificado no banco)
       if (tema !== "Todos") {
-        if (temaQ !== tema.toLowerCase()) return false;
+        if (temaQ !== normalizeSearchText(tema)) return false;
       }
 
       // 3. Filtro de Disciplina — agora SEMPRE aplica (mesmo com tema selecionado),
       // pra "Matemática" não trazer questões de outras áreas.
       if (disciplina !== "Todas") {
-        const allow = (discAliases[disciplina] || [disciplina]).map((s) => s.toLowerCase());
+        const allow = (discAliases[disciplina] || [disciplina]).map(normalizeSearchText);
         if (!allow.some((t) => discQ === t)) return false;
       }
 
       // 4. Filtro de Área
       // Se tema ou disciplina foram selecionados, a área torna-se secundária para garantir o retorno.
       if (tema === "Todos" && disciplina === "Todas" && area !== "Todas") {
-        const selectedArea = area.toLowerCase();
+        const selectedArea = normalizeSearchText(area);
         const areaMap: Record<string, string[]> = {
           "linguagens": ["linguagens", "português", "literatura", "inglês", "espanhol", "artes", "códigos"],
-          "ciências humanas": ["humanas", "história", "geografia", "filosofia", "sociologia"],
-          "ciências da natureza": ["natureza", "biologia", "física", "química"],
-          "matemática": ["matemática"]
+          "ciencias humanas": ["humanas", "historia", "geografia", "filosofia", "sociologia"],
+          "ciencias da natureza": ["natureza", "biologia", "fisica", "quimica"],
+          "matematica": ["matematica"]
         };
         const targets = areaMap[selectedArea] || [selectedArea];
         if (!targets.some(t => areaQ.includes(t) || discQ.includes(t))) return false;
