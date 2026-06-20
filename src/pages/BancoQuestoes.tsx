@@ -28,6 +28,8 @@ type Question = {
   area: string;
   disciplina: string;
   tema: string;
+  tema_confidence?: number | null;
+  tema_reason?: string | null;
   enunciado: string;
   correta: string;
   imagem_urls: string[];
@@ -395,9 +397,9 @@ export default function BancoQuestoes() {
       const fetchAllQuestions = async () => {
         const all: any[] = [];
         for (let from = 0; ; from += PAGE) {
-          const { data, error } = await supabase
+          const { data, error } = await (supabase as any)
             .from("questions")
-            .select("id,ano,numero,area,disciplina,tema,enunciado,correta,imagem_urls,alternativas,incomplete")
+            .select("id,ano,numero,area,disciplina,tema,tema_confidence,tema_reason,enunciado,correta,imagem_urls,alternativas,incomplete")
             .order("ano", { ascending: false })
             .order("numero", { ascending: true })
             .range(from, from + PAGE - 1);
@@ -536,29 +538,19 @@ export default function BancoQuestoes() {
 
 
 
-  // Pré-computa enunciado limpo, preview e haystack de busca por questão.
+  // Pré-computa enunciado limpo e preview por questão.
   // Evita rodar cleanPdfArtifacts toda hora durante render/filter.
   const cleanedById = useMemo(() => {
     const map = new Map<
       string,
-      { cleaned: string; preview: string; haystack: string; tema: string }
+      { cleaned: string; preview: string; tema: string }
     >();
     for (const q of questions) {
       const hasAlts = getAlternativas(q).length === 5;
       const cleaned = normalizeEnunciado(q.enunciado, hasAlts);
       const preview = plainPreview(q.enunciado, hasAlts);
       const tema = (q.tema || "").toLowerCase();
-      // Haystack = texto sem LaTeX e sem lixo, em minúsculas, pra busca confiável.
-      const haystack = (
-        cleaned
-          .replace(/\$\$([\s\S]+?)\$\$/g, " ")
-          .replace(/\\\[([\s\S]+?)\\\]/g, " ")
-          .replace(/\$([^\n$]+?)\$/g, " ")
-          .replace(/\\\(([\s\S]+?)\\\)/g, " ") +
-        " " +
-        tema
-      ).toLowerCase();
-      map.set(q.id, { cleaned, preview, haystack, tema });
+      map.set(q.id, { cleaned, preview, tema });
     }
     return map;
   }, [questions]);
