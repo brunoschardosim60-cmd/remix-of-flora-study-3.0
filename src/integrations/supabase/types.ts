@@ -1883,6 +1883,15 @@ export type Database = {
         Args: { p_disciplina: string; p_enunciado: string }
         Returns: string
       }
+      classify_question_tema_audit: {
+        Args: {
+          p_alternativas?: Json
+          p_area: string
+          p_disciplina: string
+          p_enunciado: string
+        }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
