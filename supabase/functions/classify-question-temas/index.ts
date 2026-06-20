@@ -6,12 +6,28 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const CLASSIFIER_VERSION = "enem-tema-v3-json-confidence";
+
+function parseAiJson(raw: string): { tema: string; confidence: number; reason: string } | null {
+  const cleaned = raw.trim().replace(/^```(?:json)?/i, "").replace(/```$/i, "").trim();
+  const start = cleaned.indexOf("{");
+  const end = cleaned.lastIndexOf("}");
+  if (start < 0 || end < start) return null;
+  try {
+    const parsed = JSON.parse(cleaned.slice(start, end + 1));
+    return {
+      tema: String(parsed.tema || "").trim(),
+      confidence: Math.max(0, Math.min(1, Number(parsed.confidence ?? 0.5))),
+      reason: String(parsed.reason || "").trim().slice(0, 500),
+    };
+  } catch {
+    return null;
+  }
+}
+
 /**
- * Classifica o `tema` de questões reais do ENEM com `tema` vazio.
+ * Classifica o `tema` de questões reais do ENEM, salvando confiança e motivo.
  * Apenas admin. Roda em lotes pra evitar timeout.
- *
- * Input: { disciplina?: string, limit?: number (default 30) }
- * Output: { updated: number, skipped: number, total: number, temas: Record<string, number> }
  */
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -44,14 +60,17 @@ serve(async (req) => {
     const disciplina: string | undefined = body.disciplina;
     const limit: number = Math.min(100, Math.max(1, Number(body.limit ?? 30)));
     const force: boolean = Boolean(body.force);
+    const uncertainOnly: boolean = Boolean(body.uncertainOnly);
+    const maxConfidence: number = Math.max(0, Math.min(1, Number(body.maxConfidence ?? 0.7)));
     const offset: number = Math.max(0, Number(body.offset ?? 0));
 
     let q = admin
       .from("questions")
-      .select("id,disciplina,enunciado,tema")
+      .select("id,disciplina,enunciado,tema,tema_confidence")
       .order("id", { ascending: true })
       .range(offset, offset + limit - 1);
-    if (!force) q = q.or("tema.is.null,tema.eq.");
+    if (uncertainOnly) q = q.or(`tema_confidence.is.null,tema_confidence.lte.${maxConfidence}`);
+    else if (!force) q = q.or("tema.is.null,tema.eq.");
     if (disciplina) q = q.eq("disciplina", disciplina);
     const { data: rows, error: selErr } = await q;
     if (selErr) throw selErr;
@@ -72,9 +91,9 @@ serve(async (req) => {
       "Literatura": ["Barroco","Arcadismo","Romantismo","Realismo","Naturalismo","Parnasianismo","Simbolismo","Modernismo","Literatura Contemporânea"],
       "Linguagens": ["Interpretação de Texto","Gêneros Textuais","Variação Linguística","Literatura","Artes","Educação Física"],
       "Humanas": ["História do Brasil","História Geral","Geografia","Filosofia","Sociologia","Atualidades"],
-      "Natureza": ["Biologia","Química","Física","Ecologia"],
-      "Ciências Humanas": ["História do Brasil","História Geral","Geografia","Filosofia","Sociologia"],
-      "Ciências da Natureza": ["Biologia","Química","Física","Ecologia"],
+      "Natureza": ["Citologia","Genética","Ecologia","Evolução","Botânica","Zoologia","Fisiologia Humana","Microbiologia","Bioquímica","Saúde e Doenças","Biotecnologia","Origem da Vida","Química Orgânica","Estequiometria","Soluções","Termoquímica","Eletroquímica","Cinética","Equilíbrio Químico","Ácidos e Bases","Tabela Periódica","Ligações Químicas","Química Ambiental","Mecânica","Termodinâmica","Óptica","Eletromagnetismo","Ondulatória","Hidrostática","Energia","Cinemática","Dinâmica","Física Moderna"],
+      "Ciências Humanas": ["Brasil Colônia","Brasil Império","Brasil República","Era Vargas","Ditadura Militar","Idade Antiga","Idade Média","Idade Moderna","Revolução Industrial","Guerras Mundiais","Guerra Fria","América Latina","África","Movimentos Sociais","Cartografia","Geopolítica","População","Urbanização","Industrialização","Agropecuária","Clima","Relevo","Hidrografia","Meio Ambiente","Globalização","Brasil Regional","Filosofia Antiga","Filosofia Medieval","Filosofia Moderna","Filosofia Contemporânea","Ética","Política","Estética","Lógica","Trabalho","Cultura","Cidadania","Indústria Cultural","Estratificação","Sociologia Clássica","Atualidades"],
+      "Ciências da Natureza": ["Citologia","Genética","Ecologia","Evolução","Botânica","Zoologia","Fisiologia Humana","Microbiologia","Bioquímica","Saúde e Doenças","Biotecnologia","Origem da Vida","Química Orgânica","Estequiometria","Soluções","Termoquímica","Eletroquímica","Cinética","Equilíbrio Químico","Ácidos e Bases","Tabela Periódica","Ligações Químicas","Química Ambiental","Mecânica","Termodinâmica","Óptica","Eletromagnetismo","Ondulatória","Hidrostática","Energia","Cinemática","Dinâmica","Física Moderna"],
       "Inglês": ["Interpretação de Texto","Vocabulário","Gramática"],
       "Espanhol": ["Interpretación de Texto","Vocabulario","Gramática"],
       "Artes": ["História da Arte","Música","Artes Visuais","Teatro"],
@@ -92,7 +111,7 @@ serve(async (req) => {
       const enunciado = String(row.enunciado || "").slice(0, 1800);
       if (!enunciado.trim()) { skipped++; continue; }
 
-      const prompt = `Você é um especialista em ENEM. Classifique a questão escolhendo APENAS UM tema da LISTA PERMITIDA.\n\nREGRAS IMPORTANTES:\n- NÃO escolha um tema só porque "encaixa mais ou menos". Escolha o tema que REALMENTE descreve o conteúdo central da questão.\n- Se a questão envolve REGRA DE TRÊS, PROPORÇÃO, ESCALA ou comparação de grandezas, use "Razão e Proporção" (NÃO "Funções").\n- Se envolve %, descontos, juros simples → "Porcentagem".\n- "Funções" é APENAS pra questões com função afim, quadrática, exponencial ou logarítmica EXPLÍCITAS (com fórmulas f(x)=...).\n- Use "Geometria Plana" pra áreas/perímetros 2D; "Geometria Espacial" pra volumes 3D.\n- Se o enunciado for muito curto ou genérico e você não tiver certeza, responda exatamente NENHUM (sem aspas).\n\nDISCIPLINA: ${disc}\nTEMAS PERMITIDOS: ${allowed.join(", ")}\n\nENUNCIADO:\n${enunciado}\n\nResponda APENAS com o nome exato do tema escolhido da lista, ou NENHUM. Sem explicações.`;
+      const prompt = `Você é um especialista em ENEM. Classifique a questão escolhendo APENAS UM tema da LISTA PERMITIDA e informe confiança.\n\nREGRAS IMPORTANTES:\n- Escolha o tema central da questão, não uma palavra solta do texto.\n- Nunca deixe sem tema: se estiver incerto, escolha o melhor tema e reduza confidence.\n- Se envolve REGRA DE TRÊS, PROPORÇÃO, ESCALA, taxa, densidade, velocidade média, consumo, rendimento, conversão de unidades ou comparação de grandezas, use "Razão e Proporção" (NÃO "Funções").\n- Se envolve %, descontos, acréscimos ou juros → "Porcentagem".\n- "Funções" é APENAS para função afim, quadrática, exponencial ou logarítmica explícita, fórmula f(x), gráfico de função ou modelagem funcional direta.\n- Use "Geometria Plana" para áreas/perímetros/figuras 2D; "Geometria Espacial" para volume/sólidos 3D.\n- Para Educação Física, use apenas temas corporais/esportivos; não use temas de Física.\n\nDISCIPLINA: ${disc}\nTEMAS PERMITIDOS: ${allowed.join(", ")}\n\nENUNCIADO:\n${enunciado}\n\nResponda SOMENTE JSON válido neste formato:\n{"tema":"um tema exato da lista","confidence":0.0,"reason":"motivo curto"}`;
 
       try {
         const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -102,20 +121,27 @@ serve(async (req) => {
             model: "google/gemini-2.5-flash-lite",
             messages: [{ role: "user", content: prompt }],
             temperature: 0.1,
-            max_tokens: 30,
+            max_tokens: 160,
           }),
         });
         if (!aiRes.ok) { skipped++; continue; }
         const json = await aiRes.json();
-        const raw = String(json?.choices?.[0]?.message?.content || "").trim().replace(/^["'`]+|["'`.]+$/g, "");
-        if (/^nenhum$/i.test(raw)) { skipped++; continue; }
+        const parsed = parseAiJson(String(json?.choices?.[0]?.message?.content || ""));
+        if (!parsed?.tema) { skipped++; continue; }
         // Match case-insensitive contra os permitidos
-        const match = allowed.find((t) => t.toLowerCase() === raw.toLowerCase())
-          || allowed.find((t) => raw.toLowerCase().includes(t.toLowerCase()))
-          || allowed.find((t) => t.toLowerCase().includes(raw.toLowerCase()));
+        const rawTema = parsed.tema.replace(/^["'`]+|["'`.]+$/g, "");
+        const match = allowed.find((t) => t.toLowerCase() === rawTema.toLowerCase())
+          || allowed.find((t) => rawTema.toLowerCase().includes(t.toLowerCase()))
+          || allowed.find((t) => t.toLowerCase().includes(rawTema.toLowerCase()));
         if (!match) { skipped++; continue; }
 
-        const { error: updErr } = await admin.from("questions").update({ tema: match }).eq("id", row.id);
+        const { error: updErr } = await admin.from("questions").update({
+          tema: match,
+          tema_confidence: parsed.confidence,
+          tema_reason: parsed.reason || `Classificada como ${match}`,
+          tema_classified_at: new Date().toISOString(),
+          tema_classifier_version: CLASSIFIER_VERSION,
+        }).eq("id", row.id);
         if (updErr) { skipped++; continue; }
         tally[match] = (tally[match] || 0) + 1;
         updated++;

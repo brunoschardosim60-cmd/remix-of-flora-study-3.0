@@ -28,6 +28,8 @@ type Question = {
   area: string;
   disciplina: string;
   tema: string;
+  tema_confidence?: number | null;
+  tema_reason?: string | null;
   enunciado: string;
   correta: string;
   imagem_urls: string[];
@@ -81,6 +83,14 @@ async function saveFavoritesRemote(userId: string, s: Set<string>): Promise<void
 }
 
 const AREAS = ["Todas", "Linguagens", "Ciências Humanas", "Ciências da Natureza", "Matemática"];
+
+function normalizeSearchText(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+}
 
 function getAlternativas(q: Question) {
   return Array.isArray(q.alternativas) ? q.alternativas : [];
@@ -395,9 +405,9 @@ export default function BancoQuestoes() {
       const fetchAllQuestions = async () => {
         const all: any[] = [];
         for (let from = 0; ; from += PAGE) {
-          const { data, error } = await supabase
+          const { data, error } = await (supabase as any)
             .from("questions")
-            .select("id,ano,numero,area,disciplina,tema,enunciado,correta,imagem_urls,alternativas,incomplete")
+            .select("id,ano,numero,area,disciplina,tema,tema_confidence,tema_reason,enunciado,correta,imagem_urls,alternativas,incomplete")
             .order("ano", { ascending: false })
             .order("numero", { ascending: true })
             .range(from, from + PAGE - 1);
@@ -536,29 +546,19 @@ export default function BancoQuestoes() {
 
 
 
-  // Pré-computa enunciado limpo, preview e haystack de busca por questão.
+  // Pré-computa enunciado limpo e preview por questão.
   // Evita rodar cleanPdfArtifacts toda hora durante render/filter.
   const cleanedById = useMemo(() => {
     const map = new Map<
       string,
-      { cleaned: string; preview: string; haystack: string; tema: string }
+      { cleaned: string; preview: string; tema: string }
     >();
     for (const q of questions) {
       const hasAlts = getAlternativas(q).length === 5;
       const cleaned = normalizeEnunciado(q.enunciado, hasAlts);
       const preview = plainPreview(q.enunciado, hasAlts);
       const tema = (q.tema || "").toLowerCase();
-      // Haystack = texto sem LaTeX e sem lixo, em minúsculas, pra busca confiável.
-      const haystack = (
-        cleaned
-          .replace(/\$\$([\s\S]+?)\$\$/g, " ")
-          .replace(/\\\[([\s\S]+?)\\\]/g, " ")
-          .replace(/\$([^\n$]+?)\$/g, " ")
-          .replace(/\\\(([\s\S]+?)\\\)/g, " ") +
-        " " +
-        tema
-      ).toLowerCase();
-      map.set(q.id, { cleaned, preview, haystack, tema });
+      map.set(q.id, { cleaned, preview, tema });
     }
     return map;
   }, [questions]);
@@ -581,44 +581,49 @@ export default function BancoQuestoes() {
   }
 
   const filtered = useMemo(() => {
-    const s = debouncedSearch.trim().toLowerCase();
+    const s = normalizeSearchText(debouncedSearch);
     return questions.filter((q) => {
-      const temaQ = (q.tema || "").trim().toLowerCase();
-      const discQ = (q.disciplina || "").trim().toLowerCase();
-      const areaQ = (q.area || "").trim().toLowerCase();
-      const hay = cleanedById.get(q.id)?.haystack ?? "";
+      const temaQ = normalizeSearchText(q.tema || "");
+      const discQ = normalizeSearchText(q.disciplina || "");
+      const areaQ = normalizeSearchText(q.area || "");
+      const temaSearch = temaQ;
+      const discSearch = `${discQ} ${areaQ}`;
 
       // 1. Filtro de Ano (Sempre Independente)
       if (ano !== "Todos" && String(q.ano) !== ano) return false;
 
       // 2. Filtro de Tema (EXATO — usa apenas o campo `tema` classificado no banco)
       if (tema !== "Todos") {
-        if (temaQ !== tema.toLowerCase()) return false;
+        if (temaQ !== normalizeSearchText(tema)) return false;
       }
 
       // 3. Filtro de Disciplina — agora SEMPRE aplica (mesmo com tema selecionado),
       // pra "Matemática" não trazer questões de outras áreas.
       if (disciplina !== "Todas") {
-        const allow = (discAliases[disciplina] || [disciplina]).map((s) => s.toLowerCase());
+        const allow = (discAliases[disciplina] || [disciplina]).map(normalizeSearchText);
         if (!allow.some((t) => discQ === t)) return false;
       }
 
       // 4. Filtro de Área
       // Se tema ou disciplina foram selecionados, a área torna-se secundária para garantir o retorno.
       if (tema === "Todos" && disciplina === "Todas" && area !== "Todas") {
-        const selectedArea = area.toLowerCase();
+        const selectedArea = normalizeSearchText(area);
         const areaMap: Record<string, string[]> = {
           "linguagens": ["linguagens", "português", "literatura", "inglês", "espanhol", "artes", "códigos"],
-          "ciências humanas": ["humanas", "história", "geografia", "filosofia", "sociologia"],
-          "ciências da natureza": ["natureza", "biologia", "física", "química"],
-          "matemática": ["matemática"]
+          "ciencias humanas": ["humanas", "historia", "geografia", "filosofia", "sociologia"],
+          "ciencias da natureza": ["natureza", "biologia", "fisica", "quimica"],
+          "matematica": ["matematica"]
         };
         const targets = areaMap[selectedArea] || [selectedArea];
         if (!targets.some(t => areaQ.includes(t) || discQ.includes(t))) return false;
       }
 
-      // 5. Busca Textual Final (Aplica-se sobre o conjunto já filtrado)
-      if (s && !hay.includes(s)) return false;
+      // 5. Busca por classificação: com tema selecionado, pesquisa só no tema;
+      // com disciplina selecionada, pesquisa em tema/disciplina/área — nunca no enunciado.
+      if (s) {
+        const searchScope = tema !== "Todos" ? temaSearch : disciplina !== "Todas" ? `${temaSearch} ${discSearch}` : `${temaSearch} ${discSearch}`;
+        if (!searchScope.includes(s)) return false;
+      }
 
       // Filtros de estado persistentes
       if (onlyErrors && attempts[q.id]?.acertou !== false) return false;
@@ -969,7 +974,7 @@ export default function BancoQuestoes() {
         <Card className="p-3 sm:p-4 space-y-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-            <Input placeholder="Buscar por enunciado ou tema…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+            <Input placeholder="Buscar por tema classificado…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <Select key={`ano-${anos.length}`} value={ano} onValueChange={setAno}>

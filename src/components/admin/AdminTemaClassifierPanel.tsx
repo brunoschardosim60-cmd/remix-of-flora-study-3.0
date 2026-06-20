@@ -19,6 +19,8 @@ export function AdminTemaClassifierPanel() {
   const [batch, setBatch] = useState("30");
   const [running, setRunning] = useState(false);
   const [force, setForce] = useState(false);
+  const [uncertainOnly, setUncertainOnly] = useState(false);
+  const [maxConfidence, setMaxConfidence] = useState("0.70");
   const [result, setResult] = useState<{ updated: number; skipped: number; total: number; temas: Record<string, number> } | null>(null);
   const [bulkRunning, setBulkRunning] = useState(false);
   const [bulkLog, setBulkLog] = useState<string[]>([]);
@@ -28,7 +30,7 @@ export function AdminTemaClassifierPanel() {
     setResult(null);
     try {
       const { data, error } = await supabase.functions.invoke("classify-question-temas", {
-        body: { disciplina, limit: Math.min(100, Math.max(1, Number(batch) || 30)), force },
+        body: { disciplina, limit: Math.min(100, Math.max(1, Number(batch) || 30)), force, uncertainOnly, maxConfidence: Number(maxConfidence) || 0.7 },
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
@@ -82,6 +84,39 @@ export function AdminTemaClassifierPanel() {
     }
   }
 
+  async function runBulkUncertain() {
+    if (!confirm(`Reprocessar só questões incertas (confiança ≤ ${maxConfidence || "0.70"})?`)) return;
+    setBulkRunning(true);
+    setBulkLog([]);
+    const append = (s: string) => setBulkLog((l) => [...l, s]);
+    try {
+      for (const disc of DISCIPLINAS) {
+        append(`▶ ${disc}: reprocessando incertas…`);
+        let totalUpdated = 0, totalSkipped = 0, rounds = 0;
+        while (rounds < 50) {
+          rounds++;
+          const { data, error } = await supabase.functions.invoke("classify-question-temas", {
+            body: { disciplina: disc, limit: 100, uncertainOnly: true, maxConfidence: Number(maxConfidence) || 0.7, offset: 0 },
+          });
+          if (error) throw error;
+          if ((data as any)?.error) throw new Error((data as any).error);
+          const upd = (data as any).updated ?? 0;
+          const skp = (data as any).skipped ?? 0;
+          const tot = (data as any).total ?? 0;
+          totalUpdated += upd; totalSkipped += skp;
+          append(`   lote ${rounds}: ${upd} atualizadas / ${skp} puladas / ${tot} incertas`);
+          if (tot === 0 || (upd === 0 && skp === 0)) break;
+        }
+        append(`✓ ${disc}: ${totalUpdated} atualizadas, ${totalSkipped} puladas`);
+      }
+      toast.success("Reprocessamento das incertas completo.");
+    } catch (e) {
+      toast.error("Falha no bulk incerto: " + ((e as Error)?.message || e));
+    } finally {
+      setBulkRunning(false);
+    }
+  }
+
   return (
     <div className="mb-4 rounded-2xl border border-border bg-card/70 p-4">
       <div className="mb-3 flex items-center gap-2">
@@ -109,11 +144,24 @@ export function AdminTemaClassifierPanel() {
         <input type="checkbox" checked={force} onChange={(e) => setForce(e.target.checked)} />
         Reclassificar TUDO (sobrescreve temas existentes — use pra reparar buckets gigantes tipo "Funções")
       </label>
+      <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" checked={uncertainOnly} onChange={(e) => setUncertainOnly(e.target.checked)} />
+          Só incertas/baixa confiança
+        </label>
+        <Input className="h-8 w-24" type="number" min={0} max={1} step={0.05} value={maxConfidence} onChange={(e) => setMaxConfidence(e.target.value)} />
+      </div>
       <div className="mt-4 pt-3 border-t border-border">
+        <div className="grid gap-2 md:grid-cols-2">
         <Button onClick={runBulkAll} disabled={bulkRunning || running} variant="secondary" className="w-full">
           {bulkRunning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlayCircle className="mr-2 h-4 w-4" />}
           Reclassificar TODAS as disciplinas (force, em lotes de 100)
         </Button>
+        <Button onClick={runBulkUncertain} disabled={bulkRunning || running} variant="secondary" className="w-full">
+          {bulkRunning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlayCircle className="mr-2 h-4 w-4" />}
+          Reprocessar só incertas
+        </Button>
+        </div>
         {bulkLog.length > 0 && (
           <div className="mt-2 max-h-64 overflow-auto rounded-xl border border-border bg-background p-3 font-mono text-[11px] leading-5">
             {bulkLog.map((l, i) => <div key={i}>{l}</div>)}
