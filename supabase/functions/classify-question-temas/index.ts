@@ -43,8 +43,10 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const disciplina: string | undefined = body.disciplina;
     const limit: number = Math.min(100, Math.max(1, Number(body.limit ?? 30)));
+    const force: boolean = Boolean(body.force);
 
-    let q = admin.from("questions").select("id,disciplina,enunciado").or("tema.is.null,tema.eq.").limit(limit);
+    let q = admin.from("questions").select("id,disciplina,enunciado,tema").limit(limit);
+    if (!force) q = q.or("tema.is.null,tema.eq.");
     if (disciplina) q = q.eq("disciplina", disciplina);
     const { data: rows, error: selErr } = await q;
     if (selErr) throw selErr;
@@ -85,7 +87,7 @@ serve(async (req) => {
       const enunciado = String(row.enunciado || "").slice(0, 1800);
       if (!enunciado.trim()) { skipped++; continue; }
 
-      const prompt = `Classifique a questão do ENEM abaixo escolhendo APENAS UM tema da lista permitida.\n\nDISCIPLINA: ${disc}\nTEMAS PERMITIDOS: ${allowed.join(", ")}\n\nENUNCIADO:\n${enunciado}\n\nResponda APENAS com o nome exato do tema escolhido da lista. Sem explicações, sem aspas, sem pontuação extra.`;
+      const prompt = `Você é um especialista em ENEM. Classifique a questão escolhendo APENAS UM tema da LISTA PERMITIDA.\n\nREGRAS IMPORTANTES:\n- NÃO escolha um tema só porque "encaixa mais ou menos". Escolha o tema que REALMENTE descreve o conteúdo central da questão.\n- Se a questão envolve REGRA DE TRÊS, PROPORÇÃO, ESCALA ou comparação de grandezas, use "Razão e Proporção" (NÃO "Funções").\n- Se envolve %, descontos, juros simples → "Porcentagem".\n- "Funções" é APENAS pra questões com função afim, quadrática, exponencial ou logarítmica EXPLÍCITAS (com fórmulas f(x)=...).\n- Use "Geometria Plana" pra áreas/perímetros 2D; "Geometria Espacial" pra volumes 3D.\n- Se o enunciado for muito curto ou genérico e você não tiver certeza, responda exatamente NENHUM (sem aspas).\n\nDISCIPLINA: ${disc}\nTEMAS PERMITIDOS: ${allowed.join(", ")}\n\nENUNCIADO:\n${enunciado}\n\nResponda APENAS com o nome exato do tema escolhido da lista, ou NENHUM. Sem explicações.`;
 
       try {
         const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -101,6 +103,7 @@ serve(async (req) => {
         if (!aiRes.ok) { skipped++; continue; }
         const json = await aiRes.json();
         const raw = String(json?.choices?.[0]?.message?.content || "").trim().replace(/^["'`]+|["'`.]+$/g, "");
+        if (/^nenhum$/i.test(raw)) { skipped++; continue; }
         // Match case-insensitive contra os permitidos
         const match = allowed.find((t) => t.toLowerCase() === raw.toLowerCase())
           || allowed.find((t) => raw.toLowerCase().includes(t.toLowerCase()))

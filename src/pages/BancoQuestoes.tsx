@@ -490,20 +490,49 @@ export default function BancoQuestoes() {
     return ["Todas", "Biologia", "Física", "Química", "História", "Geografia", "Filosofia", "Sociologia", "Português", "Literatura", "Artes", "Inglês", "Espanhol", "Matemática"];
   }, []);
 
-  const temas = useMemo(() => {
-    // Lista simplificada dos temas principais que mais caem
-    return [
-      "Todos",
-      "Citologia", "Ecologia", "Genética", "Fisiologia Humana", "Botânica", // Bio
-      "Mecânica", "Eletricidade", "Termologia", "Óptica", "Ondulatória", // Física
-      "Química Orgânica", "Estequiometria", "Ácidos e Bases", "Eletroquímica", // Química
-      "Brasil República", "Brasil Colônia", "Idade Moderna", "Antiguidade", // História
-      "Geografia Física", "Geopolítica", "Urbanização", "Meio Ambiente", // Geo
-      "Ética", "Política", "Filosofia Moderna", "Sociologia Clássica", // Filo/Socio
-      "Interpretação de Texto", "Gêneros Textuais", "Variação Linguística", "Literatura Contemporânea", // Linguagens
-      "Funções", "Geometria", "Estatística", "Probabilidade", "Razão e Proporção" // Matemática
-    ].sort();
-  }, []);
+  // Mapa de quais disciplinas "agrupadas" devem aparecer ao escolher uma disciplina.
+  // Ex: ao escolher "Biologia", também consideramos questões classificadas como
+  // "Ciências da Natureza" (área agregada do ENEM).
+  const discAliases = useMemo<Record<string, string[]>>(() => ({
+    "Biologia": ["Biologia", "Ciências da Natureza", "Natureza"],
+    "Física": ["Física", "Ciências da Natureza", "Natureza"],
+    "Química": ["Química", "Ciências da Natureza", "Natureza"],
+    "História": ["História", "Ciências Humanas", "Humanas"],
+    "Geografia": ["Geografia", "Ciências Humanas", "Humanas"],
+    "Filosofia": ["Filosofia", "Ciências Humanas", "Humanas"],
+    "Sociologia": ["Sociologia", "Ciências Humanas", "Humanas"],
+    "Português": ["Português", "Linguagens"],
+    "Literatura": ["Literatura", "Linguagens"],
+    "Inglês": ["Inglês", "Linguagens"],
+    "Espanhol": ["Espanhol", "Linguagens"],
+    "Artes": ["Artes", "Linguagens"],
+    "Matemática": ["Matemática"],
+  }), []);
+
+  // Temas derivados do banco real, filtrados pela disciplina selecionada.
+  // Mostra a contagem ao lado para ficar claro quantas questões existem.
+  const temas = useMemo<{ value: string; label: string }[]>(() => {
+    const counts = new Map<string, number>();
+    const allow = disciplina === "Todas" ? null : new Set(discAliases[disciplina] || [disciplina]);
+    for (const q of questions) {
+      const t = (q.tema || "").trim();
+      if (!t) continue;
+      const d = (q.disciplina || "").trim();
+      if (allow && !allow.has(d)) continue;
+      counts.set(t, (counts.get(t) || 0) + 1);
+    }
+    const arr = Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .map(([t, n]) => ({ value: t, label: `${t} (${n})` }));
+    return arr;
+  }, [questions, disciplina, discAliases]);
+
+  // Reseta o tema se a lista mudar e o atual não estiver mais disponível.
+  useEffect(() => {
+    if (tema !== "Todos" && !temas.some((t) => t.value === tema)) {
+      setTema("Todos");
+    }
+  }, [temas, tema]);
 
 
 
@@ -562,38 +591,16 @@ export default function BancoQuestoes() {
       // 1. Filtro de Ano (Sempre Independente)
       if (ano !== "Todos" && String(q.ano) !== ano) return false;
 
-      // 2. Filtro de Tema (Inclusivo: Busca por sinônimos e termos relacionados em todo o conteúdo)
+      // 2. Filtro de Tema (EXATO — usa apenas o campo `tema` classificado no banco)
       if (tema !== "Todos") {
-        const selectedTema = tema.toLowerCase();
-        const synonyms: Record<string, string[]> = {
-          "meio ambiente": ["meio ambiente", "ecologia", "sustentabilidade", "poluição", "recursos naturais", "impacto ambiental", "bioma", "natureza"],
-          "ecologia": ["ecologia", "meio ambiente", "sustentabilidade", "bioma", "ecossistema", "habitat", "população"],
-          "citologia": ["citologia", "celular", "célula", "organela", "mitocôndria", "núcleo", "membrana"],
-          "brasil república": ["república", "era vargas", "ditadura", "democracia", "fhc", "lula", "jk", "populismo", "constituição"],
-          "interpretação de texto": ["interpretação", "texto", "leitura", "compreensão", "sentido", "análise", "gênero"],
-          "funções": ["função", "afim", "quadrática", "exponencial", "logaritmo", "primeiro grau", "segundo grau", "gráfico"],
-          "geometria": ["geometria", "plana", "espacial", "área", "volume", "triângulo", "círculo", "perímetro", "ângulo"]
-        };
-        const targets = synonyms[selectedTema] || [selectedTema];
-        const isMatch = targets.some(t => temaQ.includes(t) || discQ.includes(t) || hay.includes(t));
-        if (!isMatch) return false;
+        if (temaQ !== tema.toLowerCase()) return false;
       }
 
-      // 3. Filtro de Disciplina (Agrupado por Área se necessário)
-      // Se um tema já foi selecionado, não restringimos pela disciplina para evitar conflitos de classificação.
-      if (tema === "Todos" && disciplina !== "Todas") {
-        const selectedDisc = disciplina.toLowerCase();
-        const discMap: Record<string, string[]> = {
-          "biologia": ["biologia", "natureza", "ciências da natureza"],
-          "física": ["física", "fisica", "natureza", "ciências da natureza"],
-          "química": ["química", "quimica", "natureza", "ciências da natureza"],
-          "história": ["história", "historia", "humanas", "ciências humanas"],
-          "geografia": ["geografia", "humanas", "ciências humanas"],
-          "português": ["português", "portugues", "linguagens", "texto", "gramática"],
-          "matemática": ["matemática", "matematica"]
-        };
-        const targets = discMap[selectedDisc] || [selectedDisc];
-        if (!targets.some(t => discQ.includes(t) || areaQ.includes(t))) return false;
+      // 3. Filtro de Disciplina — agora SEMPRE aplica (mesmo com tema selecionado),
+      // pra "Matemática" não trazer questões de outras áreas.
+      if (disciplina !== "Todas") {
+        const allow = (discAliases[disciplina] || [disciplina]).map((s) => s.toLowerCase());
+        if (!allow.some((t) => discQ === t)) return false;
       }
 
       // 4. Filtro de Área
@@ -619,7 +626,7 @@ export default function BancoQuestoes() {
       if (q.incomplete && !showIncomplete) return false;
       return true;
     });
-  }, [questions, debouncedSearch, area, ano, disciplina, tema, onlyErrors, onlyFavorites, showIncomplete, favorites, attempts, cleanedById]);
+  }, [questions, debouncedSearch, area, ano, disciplina, tema, onlyErrors, onlyFavorites, showIncomplete, favorites, attempts, cleanedById, discAliases]);
 
 
 
@@ -1000,8 +1007,10 @@ export default function BancoQuestoes() {
               <SelectContent className="max-h-72">
                 <SelectItem value="Todos">Todos os Temas</SelectItem>
                 {temas && temas.length > 0 ? (
-                  temas.filter(t => t !== "Todos").map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)
-                ) : null}
+                  temas.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)
+                ) : (
+                  <SelectItem value="__none__" disabled>Nenhum tema disponível</SelectItem>
+                )}
               </SelectContent>
             </Select>
           </div>

@@ -18,6 +18,7 @@ export function AdminTemaClassifierPanel() {
   const [disciplina, setDisciplina] = useState<string>("Biologia");
   const [batch, setBatch] = useState("30");
   const [running, setRunning] = useState(false);
+  const [force, setForce] = useState(false);
   const [result, setResult] = useState<{ updated: number; skipped: number; total: number; temas: Record<string, number> } | null>(null);
 
   async function runClassification() {
@@ -25,7 +26,7 @@ export function AdminTemaClassifierPanel() {
     setResult(null);
     try {
       const { data, error } = await supabase.functions.invoke("classify-question-temas", {
-        body: { disciplina, limit: Math.min(100, Math.max(1, Number(batch) || 30)) },
+        body: { disciplina, limit: Math.min(100, Math.max(1, Number(batch) || 30)), force },
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
@@ -45,8 +46,8 @@ export function AdminTemaClassifierPanel() {
         <p className="font-medium">Classificar temas das questões (Citologia, Genética…)</p>
       </div>
       <p className="mb-3 text-xs text-muted-foreground">
-        Usa IA pra preencher o campo <code>tema</code> de questões reais do ENEM que estão sem tema.
-        Roda em lotes — clique várias vezes até zerar pendentes.
+        Usa IA pra classificar o <code>tema</code>. Por padrão só processa questões SEM tema.
+        Marque "Reclassificar tudo" pra revisar também as já classificadas (útil quando muitas caíram no bucket errado).
       </p>
       <div className="grid gap-3 md:grid-cols-[1fr_120px_auto]">
         <Select value={disciplina} onValueChange={setDisciplina}>
@@ -61,6 +62,10 @@ export function AdminTemaClassifierPanel() {
           Classificar lote
         </Button>
       </div>
+      <label className="mt-3 flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+        <input type="checkbox" checked={force} onChange={(e) => setForce(e.target.checked)} />
+        Reclassificar TUDO (sobrescreve temas existentes — use pra reparar buckets gigantes tipo "Funções")
+      </label>
       {result && (
         <div className="mt-3 rounded-xl border border-border bg-background p-3 text-sm">
           <p><strong>{result.updated}</strong> atualizadas · {result.skipped} puladas · {result.total} no lote</p>
