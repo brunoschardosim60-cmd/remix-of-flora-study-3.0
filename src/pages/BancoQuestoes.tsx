@@ -1007,8 +1007,10 @@ export default function BancoQuestoes() {
               <SelectContent className="max-h-72">
                 <SelectItem value="Todos">Todos os Temas</SelectItem>
                 {temas && temas.length > 0 ? (
-                  temas.filter(t => t !== "Todos").map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)
-                ) : null}
+                  temas.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)
+                ) : (
+                  <SelectItem value="__none__" disabled>Nenhum tema disponível</SelectItem>
+                )}
               </SelectContent>
             </Select>
           </div>
