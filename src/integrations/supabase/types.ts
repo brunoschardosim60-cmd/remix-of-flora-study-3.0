@@ -1323,6 +1323,10 @@ export type Database = {
           prova: string
           tem_imagem: boolean
           tema: string
+          tema_classified_at: string | null
+          tema_classifier_version: string | null
+          tema_confidence: number | null
+          tema_reason: string | null
           updated_at: string
         }
         Insert: {
@@ -1347,6 +1351,10 @@ export type Database = {
           prova?: string
           tem_imagem?: boolean
           tema?: string
+          tema_classified_at?: string | null
+          tema_classifier_version?: string | null
+          tema_confidence?: number | null
+          tema_reason?: string | null
           updated_at?: string
         }
         Update: {
@@ -1371,6 +1379,10 @@ export type Database = {
           prova?: string
           tem_imagem?: boolean
           tema?: string
+          tema_classified_at?: string | null
+          tema_classifier_version?: string | null
+          tema_confidence?: number | null
+          tema_reason?: string | null
           updated_at?: string
         }
         Relationships: []
