@@ -44,8 +44,13 @@ serve(async (req) => {
     const disciplina: string | undefined = body.disciplina;
     const limit: number = Math.min(100, Math.max(1, Number(body.limit ?? 30)));
     const force: boolean = Boolean(body.force);
+    const offset: number = Math.max(0, Number(body.offset ?? 0));
 
-    let q = admin.from("questions").select("id,disciplina,enunciado,tema").limit(limit);
+    let q = admin
+      .from("questions")
+      .select("id,disciplina,enunciado,tema")
+      .order("id", { ascending: true })
+      .range(offset, offset + limit - 1);
     if (!force) q = q.or("tema.is.null,tema.eq.");
     if (disciplina) q = q.eq("disciplina", disciplina);
     const { data: rows, error: selErr } = await q;
@@ -119,7 +124,7 @@ serve(async (req) => {
       }
     }
 
-    return new Response(JSON.stringify({ updated, skipped, total: rows.length, temas: tally }), {
+    return new Response(JSON.stringify({ updated, skipped, total: rows.length, temas: tally, nextOffset: offset + rows.length }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
