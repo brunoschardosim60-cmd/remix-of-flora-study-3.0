@@ -49,27 +49,24 @@ export function AdminTemaClassifierPanel() {
     try {
       for (const disc of DISCIPLINAS) {
         append(`▶ ${disc}: iniciando…`);
-        let totalUpdated = 0, totalSkipped = 0, rounds = 0;
-        // Loop em chunks de 100 até retornar 0 atualizadas
-        while (rounds < 30) {
+        let totalUpdated = 0, totalSkipped = 0, rounds = 0, offset = 0;
+        // Loop em chunks de 100 paginando até esgotar a disciplina
+        while (rounds < 50) {
           rounds++;
           try {
             const { data, error } = await supabase.functions.invoke("classify-question-temas", {
-              body: { disciplina: disc, limit: 100, force: true },
+              body: { disciplina: disc, limit: 100, force: true, offset },
             });
             if (error) throw error;
             if ((data as any)?.error) throw new Error((data as any).error);
             const upd = (data as any).updated ?? 0;
             const skp = (data as any).skipped ?? 0;
             const tot = (data as any).total ?? 0;
+            const next = (data as any).nextOffset ?? (offset + tot);
             totalUpdated += upd; totalSkipped += skp;
-            append(`   lote ${rounds}: ${upd} atualizadas / ${skp} puladas / ${tot} no lote`);
-            // Se nada foi tocado, encerra (já passou por todas com force)
-            if (tot === 0 || (upd === 0 && skp === 0)) break;
-            // Como force=true reprocessa as mesmas, paramos quando rounds >= ceil(total/100) por disciplina.
-            // Estimativa: paramos após 1 ciclo completo já que reprocessa todas a cada chamada.
-            // Para não loop infinito, paramos após primeiro lote com mesmo updated count baixo:
-            if (rounds * 100 >= tot * 3) break;
+            append(`   lote ${rounds} (off ${offset}): ${upd} atualizadas / ${skp} puladas / ${tot} questões`);
+            if (tot === 0) break;
+            offset = next;
           } catch (e) {
             append(`   ⚠ erro: ${(e as Error)?.message || e}`);
             break;
