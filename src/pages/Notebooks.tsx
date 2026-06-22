@@ -399,6 +399,13 @@ export default function Notebooks() {
           </div>
         )}
       </div>
+      {shareNotebook && (
+        <ShareToCommunityDialog
+          open={!!shareNotebook}
+          onClose={() => setShareNotebook(null)}
+          defaultContent={`Acabei de organizar meu caderno "${shareNotebook.title}"${shareNotebook.subject ? ` de ${shareNotebook.subject}` : ""}. Quem mais está estudando isso?`}
+        />
+      )}
     </div>
   );
 }
