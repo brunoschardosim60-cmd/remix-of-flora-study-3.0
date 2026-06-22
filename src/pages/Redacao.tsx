@@ -467,6 +467,26 @@ export default function Redacao() {
   const metaObj = feedbackComp?._meta as any;
   const paragrafos = feedbackComp?._paragrafos;
 
+  // Divide o texto do usuário em até 4 parágrafos lógicos (intro, dev1, dev2, conclusão).
+  // Se o usuário escreveu mais que 4 parágrafos, junta o excedente no penúltimo.
+  const userParagraphs: Record<string, string> = (() => {
+    const raw = (selected?.texto || "").trim();
+    if (!raw) return {};
+    const parts = raw.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
+    if (parts.length === 0) return {};
+    const keys = ["introducao", "desenvolvimento_1", "desenvolvimento_2", "conclusao"];
+    const out: Record<string, string> = {};
+    if (parts.length <= 4) {
+      parts.forEach((p, i) => { out[keys[i]] = p; });
+    } else {
+      out.introducao = parts[0];
+      out.desenvolvimento_1 = parts[1];
+      out.conclusao = parts[parts.length - 1];
+      out.desenvolvimento_2 = parts.slice(2, -1).join("\n\n");
+    }
+    return out;
+  })();
+
   return (
     <div className="min-h-dvh bg-background">
       <div className="mx-auto max-w-7xl px-3 py-4 sm:px-4 sm:py-6">
