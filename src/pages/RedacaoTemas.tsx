@@ -74,7 +74,7 @@ export default function RedacaoTemas() {
   return (
     <div className="min-h-dvh bg-background pb-20 md:pb-6">
       <div className="border-b border-border bg-card sticky top-0 z-10">
-        <div className="container max-w-5xl mx-auto px-3 sm:px-4 py-3 flex items-center gap-3">
+        <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-16 py-3 flex items-center gap-3">
           <Button variant="ghost" size="icon" aria-label="Voltar" onClick={() => navigate(-1)}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
@@ -91,7 +91,7 @@ export default function RedacaoTemas() {
         </div>
       </div>
 
-      <div className="container max-w-5xl mx-auto px-3 sm:px-4 py-4 space-y-4">
+      <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-16 py-4 space-y-4">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input placeholder="Buscar tema…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />

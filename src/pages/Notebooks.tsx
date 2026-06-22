@@ -187,7 +187,7 @@ export default function Notebooks() {
   if (loading) {
     return (
       <div className="min-h-dvh bg-background animate-fade-in">
-        <div className="container max-w-5xl mx-auto px-2 sm:px-4 py-5 sm:py-8 space-y-5">
+        <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-16 py-5 sm:py-8 space-y-5">
           <div className="h-8 w-48 rounded bg-muted animate-pulse" />
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
             {[1,2,3,4].map(i => <div key={i} className="h-40 rounded-2xl bg-muted/40 animate-pulse" />)}
@@ -199,7 +199,7 @@ export default function Notebooks() {
 
   return (
     <div className="min-h-dvh bg-background">
-      <div className="container max-w-5xl mx-auto px-2 sm:px-4 py-5 sm:py-8 space-y-5 sm:space-y-6">
+      <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-16 py-5 sm:py-8 space-y-5 sm:space-y-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <Button

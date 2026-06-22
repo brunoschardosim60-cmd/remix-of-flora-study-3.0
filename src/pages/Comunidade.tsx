@@ -406,7 +406,7 @@ export default function Comunidade() {
       </div>
       {/* Mobile: header compacto com voltar */}
       <header className="md:hidden sticky top-0 z-20 border-b border-border bg-card/95 backdrop-blur">
-        <div className="container max-w-2xl mx-auto px-3 sm:px-4 py-3 flex items-center gap-3">
+        <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-16 py-3 flex items-center gap-3">
           <Button
             variant="ghost"
             size="icon"
@@ -422,7 +422,7 @@ export default function Comunidade() {
         </div>
       </header>
 
-      <main className="container max-w-2xl mx-auto px-3 sm:px-4 py-4 space-y-4">
+      <main className="w-full px-4 sm:px-6 lg:px-10 xl:px-16 py-4 space-y-4">
         <div className="hidden md:flex items-center gap-3">
           <Button
             variant="ghost"

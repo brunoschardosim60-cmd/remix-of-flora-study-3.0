@@ -91,13 +91,13 @@ export default function PublicProfile() {
   return (
     <div className="min-h-dvh bg-background">
       <header className="border-b border-border bg-card">
-        <div className="container max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-16 py-3 flex items-center justify-between">
           <Link to="/" className="font-heading font-bold text-base">StudyFlow</Link>
           <Link to="/auth"><Button size="sm" variant="outline">Entrar</Button></Link>
         </div>
       </header>
 
-      <main className="container max-w-3xl mx-auto px-4 py-8 space-y-6">
+      <main className="w-full px-4 sm:px-6 lg:px-10 xl:px-16 py-8 space-y-6">
         <section className="rounded-2xl border border-border bg-card p-6 flex items-center gap-4">
           <div className="w-20 h-20 rounded-full bg-primary/10 grid place-items-center overflow-hidden shrink-0">
             {profile.avatar_url

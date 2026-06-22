@@ -1496,7 +1496,7 @@ export default function BancoQuestoes() {
       {examMode && (
         <div className="fixed inset-0 z-50 bg-background overflow-y-auto">
           <div className="border-b border-border bg-card sticky top-0 z-10 shadow-sm">
-            <div className="container max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
+            <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-16 py-3 flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                 <Timer className="w-4 h-4 text-primary" />
               </div>
@@ -1548,7 +1548,7 @@ export default function BancoQuestoes() {
             </div>
           </div>
 
-          <div className="container max-w-2xl mx-auto px-4 py-6 space-y-5">
+          <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-16 py-6 space-y-5">
             {!examFinished && examQueue[examIndex] && (() => {
               const q = examQueue[examIndex];
               const chosen = examAnswers[q.id];

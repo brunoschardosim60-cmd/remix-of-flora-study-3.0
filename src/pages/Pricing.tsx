@@ -66,7 +66,7 @@ export default function Pricing() {
   return (
     <div className="min-h-dvh bg-background text-foreground">
       <header className="border-b border-border/60 sticky top-0 bg-background/80 backdrop-blur z-10">
-        <div className="container max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-16 py-3 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
             <ArrowLeft className="w-4 h-4" /> Voltar
           </Link>
@@ -75,14 +75,14 @@ export default function Pricing() {
         </div>
       </header>
 
-      <section className="container max-w-6xl mx-auto px-4 py-12 text-center">
+      <section className="w-full px-4 sm:px-6 lg:px-10 xl:px-16 py-12 text-center">
         <h1 className="font-heading text-4xl md:text-5xl font-bold tracking-tight">Escolha seu plano</h1>
         <p className="mt-4 text-muted-foreground max-w-xl mx-auto">
           Comece gr\u00e1tis. Suba quando quiser mais da Flora.
         </p>
       </section>
 
-      <section className="container max-w-6xl mx-auto px-4 pb-16 grid grid-cols-1 md:grid-cols-3 gap-5">
+      <section className="w-full px-4 sm:px-6 lg:px-10 xl:px-16 pb-16 grid grid-cols-1 md:grid-cols-3 gap-5">
         {PLANS.map((plan) => (
           <div
             key={plan.id}
@@ -131,7 +131,7 @@ export default function Pricing() {
       </section>
 
       <footer className="border-t border-border/60">
-        <div className="container max-w-6xl mx-auto px-4 py-6 text-center text-xs text-muted-foreground">
+        <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-16 py-6 text-center text-xs text-muted-foreground">
           Cancele quando quiser. Sem taxa de cancelamento. Pagamento processado pelo Stripe.
         </div>
       </footer>

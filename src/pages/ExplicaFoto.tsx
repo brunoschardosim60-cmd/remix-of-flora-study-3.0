@@ -79,7 +79,7 @@ export default function ExplicaFoto() {
   return (
     <div className="min-h-dvh bg-background pb-20 md:pb-6">
       <header className="border-b border-border bg-card sticky top-0 z-10">
-        <div className="container max-w-3xl mx-auto px-3 sm:px-4 py-3 flex items-center gap-3">
+        <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-16 py-3 flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)} aria-label="Voltar">
             <ArrowLeft className="w-5 h-5" />
           </Button>
@@ -97,7 +97,7 @@ export default function ExplicaFoto() {
         </div>
       </header>
 
-      <main className="container max-w-3xl mx-auto px-3 sm:px-4 py-6 space-y-4">
+      <main className="w-full px-4 sm:px-6 lg:px-10 xl:px-16 py-6 space-y-4">
         {!imageUrl && (
           <button
             onClick={() => fileRef.current?.click()}
