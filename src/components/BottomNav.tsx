@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Home, NotebookPen, FileText, BarChart3, Sparkles, Library, BookOpen, GraduationCap } from "lucide-react";
+import { Home, NotebookPen, FileText, BarChart3, Sparkles, Library, BookOpen, GraduationCap, Users } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useStudentObjetivo } from "@/hooks/useStudentObjetivo";
 import { loadTopics } from "@/lib/studyData";
@@ -12,7 +12,7 @@ const BASE_ITEMS: Item[] = [
   { path: "/", label: "Início", icon: Home },
   { path: "/redacao", label: "Redação", icon: FileText },
   { path: "flora", label: "Flora", icon: Sparkles, isAction: true },
-  { path: "/aulao", label: "Aulão", icon: BookOpen },
+  { path: "/comunidade", label: "Comunidade", icon: Users },
   { path: "/analise", label: "Análise", icon: BarChart3 },
 ];
 
