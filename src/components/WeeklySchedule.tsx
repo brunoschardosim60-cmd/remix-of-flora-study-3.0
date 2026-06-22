@@ -242,6 +242,19 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
                           ) : (
                             <div
                               draggable={!!slot.materia}
+                              role={slot.materia ? "button" : undefined}
+                              tabIndex={0}
+                              aria-label={
+                                slot.materia
+                                  ? `${slot.materia}${slot.descricao ? " — " + slot.descricao : ""}, ${DIAS[dia]} às ${horario}${slot.concluido ? ", concluído" : ""}. Clique para editar, arraste para trocar.`
+                                  : `Slot vazio, ${DIAS[dia]} às ${horario}. Clique para adicionar matéria.`
+                              }
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                  e.preventDefault();
+                                  setEditingSlot(slot.id);
+                                }
+                              }}
                               onDragStart={(e) => {
                                 if (!slot.materia) return;
                                 setDraggingId(slot.id);
@@ -270,7 +283,7 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
                               onMouseEnter={() => setHoveredSlot(slot.id)}
                               onMouseLeave={() => setHoveredSlot(null)}
                               onTouchStart={() => setHoveredSlot(slot.id)}
-                              className={`p-2 rounded-lg cursor-pointer min-h-[52px] flex flex-col gap-1 relative group
+                              className={`p-2 rounded-lg cursor-pointer min-h-[52px] flex flex-col gap-1 relative group outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-background
                                 ${displaySlot.materia
                                   ? `${SUBJECT_COLORS[displaySlot.materia]} bg-opacity-15 cursor-grab active:cursor-grabbing ${displaySlot.concluido ? "ring-2 ring-secondary/40" : ""}`
                                   : "bg-muted/20 border border-dashed border-border/50"
