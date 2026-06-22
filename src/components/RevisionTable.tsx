@@ -1,9 +1,11 @@
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { StudyTopic, REVISION_INTERVALS } from "@/lib/studyData";
 import { isPastDateLocal } from "@/lib/dateUtils";
 import { SubjectBadge } from "./SubjectBadge";
 import { StarRating } from "./StarRating";
-import { Check, Trash2, StickyNote, Brain, PlayCircle, Target } from "lucide-react";
+import { Check, Trash2, StickyNote, Brain, PlayCircle, Target, Share2 } from "lucide-react";
+import { ShareToCommunityDialog } from "@/components/ShareToCommunityDialog";
 
 interface RevisionTableProps {
   topics: StudyTopic[];
@@ -27,6 +29,7 @@ function isOverdue(iso: string | null) {
 
 export function RevisionTable({ topics, onToggleRevision, onRatingChange, onDelete, onOpenNotes, onOpenQuiz, onStartStudy }: RevisionTableProps) {
   const navigate = useNavigate();
+  const [shareTopic, setShareTopic] = useState<StudyTopic | null>(null);
 
   function handlePracticeQuestions(topic: StudyTopic) {
     const params = new URLSearchParams();
@@ -136,6 +139,13 @@ export function RevisionTable({ topics, onToggleRevision, onRatingChange, onDele
                       <Brain className="w-4 h-4" />
                     </button>
                     <button
+                      onClick={() => setShareTopic(topic)}
+                      title="Compartilhar na Comunidade"
+                      className="min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 p-2 sm:p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all"
+                    >
+                      <Share2 className="w-4 h-4" />
+                    </button>
+                    <button
                       onClick={() => onDelete(topic.id)}
                       title="Excluir"
                       className="min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 p-2 sm:p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
@@ -149,6 +159,13 @@ export function RevisionTable({ topics, onToggleRevision, onRatingChange, onDele
           </tbody>
         </table>
       </div>
+      {shareTopic && (
+        <ShareToCommunityDialog
+          open={!!shareTopic}
+          onClose={() => setShareTopic(null)}
+          defaultContent={`Estou estudando "${shareTopic.tema}"${shareTopic.materia ? ` (${shareTopic.materia})` : ""}. Alguma dica ou material bom sobre isso?`}
+        />
+      )}
     </div>
   );
 }

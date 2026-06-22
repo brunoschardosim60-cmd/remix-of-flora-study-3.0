@@ -23,6 +23,7 @@ interface Community {
   name: string;
   slug: string;
   category: string | null;
+  member_count?: number;
 }
 
 type FeedMode = "geral" | "trending" | string;
@@ -100,6 +101,7 @@ export default function Comunidade() {
   const [composerCommunity, setComposerCommunity] = useState<string>("");
   const [communities, setCommunities] = useState<Community[]>([]);
   const [feedMode, setFeedMode] = useState<FeedMode>("geral");
+  const [myCommunities, setMyCommunities] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const meAsProfile: ProfileLite | null = user
     ? {
@@ -172,11 +174,40 @@ export default function Comunidade() {
     void (async () => {
       const { data } = await supabase
         .from("communities")
-        .select("id, name, slug, category")
+        .select("id, name, slug, category, member_count")
         .order("name");
       setCommunities((data ?? []) as Community[]);
     })();
   }, []);
+
+  // Carrega comunidades em que o usuário entrou
+  useEffect(() => {
+    if (!user) { setMyCommunities(new Set()); return; }
+    void (async () => {
+      const { data } = await supabase
+        .from("community_members")
+        .select("community_id")
+        .eq("user_id", user.id);
+      setMyCommunities(new Set((data ?? []).map((r: any) => r.community_id)));
+    })();
+  }, [user]);
+
+  async function toggleJoin(c: Community) {
+    if (!user) { toast.error("Entre na sua conta."); return; }
+    const joined = myCommunities.has(c.id);
+    // Otimista
+    setMyCommunities((prev) => {
+      const next = new Set(prev);
+      if (joined) next.delete(c.id); else next.add(c.id);
+      return next;
+    });
+    setCommunities((prev) => prev.map((x) => x.id === c.id ? { ...x, member_count: Math.max(0, (x.member_count ?? 0) + (joined ? -1 : 1)) } : x));
+    if (joined) {
+      await supabase.from("community_members").delete().eq("community_id", c.id).eq("user_id", user.id);
+    } else {
+      await supabase.from("community_members").insert({ community_id: c.id, user_id: user.id });
+    }
+  }
 
   useEffect(() => {
     void fetchFeed();
@@ -419,6 +450,29 @@ export default function Comunidade() {
           ))}
         </div>
 
+        {/* Card da comunidade ativa */}
+        {feedMode !== "geral" && feedMode !== "trending" && (() => {
+          const c = communities.find((x) => x.id === feedMode);
+          if (!c) return null;
+          const joined = myCommunities.has(c.id);
+          return (
+            <div className="rounded-2xl border border-border bg-card p-3 sm:p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/15 text-primary flex items-center justify-center">
+                <Hash className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-sm">{c.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {(c.member_count ?? 0).toLocaleString("pt-BR")} {(c.member_count ?? 0) === 1 ? "membro" : "membros"}
+                </p>
+              </div>
+              <Button size="sm" variant={joined ? "outline" : "default"} onClick={() => toggleJoin(c)}>
+                {joined ? "Sair" : "Entrar"}
+              </Button>
+            </div>
+          );
+        })()}
+
         {/* Composer */}
         <div className="rounded-2xl border border-border bg-card p-3 sm:p-4 space-y-3">
           <div className="flex gap-3">
@@ -582,8 +636,8 @@ export default function Comunidade() {
               {post.content.trim().endsWith("?") && user && post.user_id !== user.id && (
                 <button
                   onClick={() => {
-                    const q = encodeURIComponent(post.content.trim());
-                    navigate(`/?flora=${q}`);
+                    sessionStorage.setItem("flora.suggestedQuestion", post.content.trim());
+                    navigate(`/?flora=1`);
                   }}
                   className="w-full flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors px-3 py-2 text-left"
                 >
