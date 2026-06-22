@@ -195,7 +195,6 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
                       if (!slot) return <td key={dia} className={`p-2 ${dia === TODAY_IDX ? "bg-muted/20" : ""}`} />;
 
                       const isEditing = editingSlot === slot.id;
-                      const isHovered = hoveredSlot === slot.id;
                       const displaySlot = slot;
                       const isPreview = false;
                       const isDragSource = draggingId === slot.id;
@@ -279,9 +278,6 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
                                 setDragOverId(null);
                               }}
                               onClick={() => setEditingSlot(slot.id)}
-                              onMouseEnter={() => setHoveredSlot(slot.id)}
-                              onMouseLeave={() => setHoveredSlot(null)}
-                              onTouchStart={() => setHoveredSlot(slot.id)}
                               className={`p-2 rounded-lg cursor-pointer min-h-[52px] flex flex-col gap-1 relative group outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-background
                                 ${displaySlot.materia
                                   ? `${SUBJECT_COLORS[displaySlot.materia]} bg-opacity-15 cursor-grab active:cursor-grabbing ${displaySlot.concluido ? "ring-2 ring-secondary/40" : ""}`
@@ -300,9 +296,7 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
 
                               {/* Action buttons */}
                               {slot.materia && !isPreview && (
-                                <div className={`absolute top-0.5 right-0.5 flex gap-0.5 transition-all z-10 ${
-                                  isHovered ? "opacity-100 scale-100" : "opacity-0 scale-75"
-                                }`}>
+                                <div className="absolute top-0.5 right-0.5 flex gap-0.5 transition-all z-10 opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100 group-focus-within:opacity-100 group-focus-within:scale-100">
                                   <button
                                     onClick={(e) => { e.stopPropagation(); toggleConcluido(slot.id); }}
                                     className={`p-1 rounded-md transition-all ${slot.concluido ? "bg-secondary/20 text-secondary" : "hover:bg-muted text-muted-foreground"}`}
