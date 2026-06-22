@@ -450,6 +450,29 @@ export default function Comunidade() {
           ))}
         </div>
 
+        {/* Card da comunidade ativa */}
+        {feedMode !== "geral" && feedMode !== "trending" && (() => {
+          const c = communities.find((x) => x.id === feedMode);
+          if (!c) return null;
+          const joined = myCommunities.has(c.id);
+          return (
+            <div className="rounded-2xl border border-border bg-card p-3 sm:p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/15 text-primary flex items-center justify-center">
+                <Hash className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-sm">{c.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {(c.member_count ?? 0).toLocaleString("pt-BR")} {(c.member_count ?? 0) === 1 ? "membro" : "membros"}
+                </p>
+              </div>
+              <Button size="sm" variant={joined ? "outline" : "default"} onClick={() => toggleJoin(c)}>
+                {joined ? "Sair" : "Entrar"}
+              </Button>
+            </div>
+          );
+        })()}
+
         {/* Composer */}
         <div className="rounded-2xl border border-border bg-card p-3 sm:p-4 space-y-3">
           <div className="flex gap-3">
