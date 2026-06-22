@@ -578,6 +578,21 @@ export default function Comunidade() {
                 </div>
               </div>
               <p className="text-sm whitespace-pre-wrap leading-relaxed">{post.content}</p>
+              {/* Flora CTA: post parece pergunta */}
+              {post.content.trim().endsWith("?") && user && post.user_id !== user.id && (
+                <button
+                  onClick={() => {
+                    const q = encodeURIComponent(post.content.trim());
+                    navigate(`/?flora=${q}`);
+                  }}
+                  className="w-full flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors px-3 py-2 text-left"
+                >
+                  <Sparkles className="w-4 h-4 text-primary shrink-0" />
+                  <span className="text-xs text-foreground/80">
+                    <span className="font-semibold text-primary">Pergunte à Flora</span> sobre esta dúvida — ela monta a explicação em segundos.
+                  </span>
+                </button>
+              )}
               {post.media_url && (
                 <img
                   src={post.media_url}
