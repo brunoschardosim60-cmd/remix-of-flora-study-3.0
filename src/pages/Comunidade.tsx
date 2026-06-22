@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Heart, MessageCircle, Send, Loader2, Image as ImageIcon, X, Flag, MoreHorizontal, TrendingUp, Hash, Sparkles } from "lucide-react";
+import { ArrowLeft, Heart, MessageCircle, Send, Loader2, Image as ImageIcon, X, Flag, MoreHorizontal, TrendingUp, Hash, Sparkles, Users as UsersIcon, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { validatePostContent, canPostNow, markPosted, containsProfanity } from "@/lib/moderation";
+import { MensagensPanel } from "./Mensagens";
+import { GruposPanel } from "./Grupos";
 
 interface Community {
   id: string;
@@ -102,6 +104,7 @@ export default function Comunidade() {
   const [communities, setCommunities] = useState<Community[]>([]);
   const [feedMode, setFeedMode] = useState<FeedMode>("geral");
   const [myCommunities, setMyCommunities] = useState<Set<string>>(new Set());
+  const [section, setSection] = useState<"feed" | "grupos" | "mensagens">("feed");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const meAsProfile: ProfileLite | null = user
     ? {
@@ -425,6 +428,32 @@ export default function Comunidade() {
           <p className="text-sm text-muted-foreground">Compartilhe progresso, dúvidas e dicas.</p>
         </div>
 
+        {/* Tabs de seção: Feed / Grupos / Mensagens */}
+        <div className="flex gap-1 bg-muted/50 rounded-xl p-1">
+          <button
+            onClick={() => setSection("feed")}
+            className={`flex-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1.5 ${section === "feed" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            <Hash className="w-3.5 h-3.5" /> Feed
+          </button>
+          <button
+            onClick={() => setSection("grupos")}
+            className={`flex-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1.5 ${section === "grupos" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            <UsersIcon className="w-3.5 h-3.5" /> Grupos
+          </button>
+          <button
+            onClick={() => setSection("mensagens")}
+            className={`flex-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1.5 ${section === "mensagens" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            <Mail className="w-3.5 h-3.5" /> Mensagens
+          </button>
+        </div>
+
+        {section === "grupos" && <GruposPanel />}
+        {section === "mensagens" && <MensagensPanel />}
+
+        {section === "feed" && <>
         {/* Tabs de feed */}
         <div className="flex gap-1 overflow-x-auto bg-muted/50 rounded-xl p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <button
@@ -706,6 +735,7 @@ export default function Comunidade() {
             </article>
           ))
         )}
+        </>}
       </main>
 
       <BottomNav />

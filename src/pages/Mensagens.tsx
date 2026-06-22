@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Send, MessageCircle, Loader2, Plus } from "lucide-react";
+import { Send, Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 interface Thread {
@@ -17,9 +16,8 @@ interface Thread {
 }
 interface Msg { id: string; thread_id: string; sender_id: string; content: string; created_at: string; }
 
-export default function Mensagens() {
+export function MensagensPanel() {
   const { user } = useAuth();
-  const nav = useNavigate();
   const [threads, setThreads] = useState<Thread[]>([]);
   const [active, setActive] = useState<Thread | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
@@ -115,14 +113,7 @@ export default function Mensagens() {
   }
 
   return (
-    <div className="min-h-dvh bg-background">
-      <header className="border-b border-border bg-card sticky top-0 z-10">
-        <div className="container max-w-5xl mx-auto px-4 py-3 flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => nav(-1)}><ArrowLeft className="w-4 h-4" /></Button>
-          <h1 className="font-heading font-bold text-lg flex items-center gap-2"><MessageCircle className="w-5 h-5" /> Mensagens</h1>
-        </div>
-      </header>
-      <div className="container max-w-5xl mx-auto p-4 grid grid-cols-1 md:grid-cols-[280px_1fr] gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-4">
         <aside className="space-y-2">
           <div className="flex gap-1">
             <Input placeholder="@username" value={newUsername} onChange={(e) => setNewUsername(e.target.value)}
@@ -161,7 +152,10 @@ export default function Mensagens() {
             </>
           )}
         </section>
-      </div>
     </div>
   );
+}
+
+export default function Mensagens() {
+  return <MensagensPanel />;
 }
