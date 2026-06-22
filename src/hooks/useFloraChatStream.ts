@@ -366,6 +366,45 @@ export function useFloraChatStream({ isOpen, onClose }: Options) {
     }
   }, [CHAT_URL, executeAction, input, isSending, messages, queueAssistantText]);
 
+  const stop = useCallback(() => {
+    sendAbortRef.current?.abort();
+    sendAbortRef.current = null;
+    if (assistantFlushTimerRef.current !== null) {
+      window.clearTimeout(assistantFlushTimerRef.current);
+      assistantFlushTimerRef.current = null;
+    }
+    const pending = pendingAssistantTextRef.current;
+    if (pending) {
+      setMessages((prev) => {
+        const last = prev[prev.length - 1];
+        if (last?.role === "assistant") {
+          return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content: pending + " _(interrompido)_" } : m));
+        }
+        return [...prev, { role: "assistant", content: pending + " _(interrompido)_" }];
+      });
+    }
+    pendingAssistantTextRef.current = "";
+    setIsSending(false);
+  }, []);
+
+  const regenerate = useCallback(async () => {
+    if (isSending) return;
+    // Find last user message; drop everything after it (incluindo última assistente)
+    let lastUserIdx = -1;
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === "user") { lastUserIdx = i; break; }
+    }
+    if (lastUserIdx === -1) return;
+    const lastUserMsg = messages[lastUserIdx].content;
+    setMessages((prev) => prev.slice(0, lastUserIdx));
+    setInput(lastUserMsg);
+    // pequena espera pro state assentar e então dispara
+    setTimeout(() => {
+      // Reusa send lendo input atual — usamos um fluxo simples: dispara via evento
+      window.dispatchEvent(new CustomEvent("flora-chat-regenerate-trigger"));
+    }, 30);
+  }, [isSending, messages]);
+
   return {
     messages,
     input,
@@ -373,5 +412,7 @@ export function useFloraChatStream({ isOpen, onClose }: Options) {
     isSending,
     objetivo,
     send,
+    stop,
+    regenerate,
   };
 }
