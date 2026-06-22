@@ -82,11 +82,11 @@ const COMP_COLOR: Record<number, { bg: string; ring: string; text: string; label
   5: { bg: "bg-emerald-500/15", ring: "ring-emerald-500/40", text: "text-emerald-700 dark:text-emerald-300", label: "C5" },
 };
 
-// Interpola gradiente vermelho → âmbar → verde conforme percentual 0-100
+// Cor sólida por faixa: <50% ruim (vermelho), 50-74% médio (amarelo), >=75% bom (verde)
 function gradientBarStyle(pct: number): string {
-  // hue: 0 (vermelho) -> 120 (verde)
-  const hue = Math.max(0, Math.min(120, (pct / 100) * 120));
-  return `hsl(${hue} 75% 45%)`;
+  if (pct >= 75) return "hsl(142 70% 42%)"; // verde
+  if (pct >= 50) return "hsl(45 95% 50%)";  // amarelo
+  return "hsl(0 75% 50%)";                  // vermelho
 }
 
 // Renderiza um texto cru com destaques (trechos da Flora). Faz match case-insensitive.
