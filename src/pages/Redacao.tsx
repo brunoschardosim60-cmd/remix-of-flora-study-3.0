@@ -36,6 +36,40 @@ import {
   isOnline as isOnlineNow,
 } from "@/lib/essayDraftStore";
 
+// ─── Card que vira (flip) ao clicar — usado para revelar a sugestão da Flora ──
+function RewriteFlipCard({ suggestion }: { suggestion: string }) {
+  const [flipped, setFlipped] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={() => setFlipped((v) => !v)}
+      className="group relative w-full text-left [perspective:1200px]"
+      aria-label={flipped ? "Ocultar sugestão da Flora" : "Ver sugestão da Flora"}
+    >
+      <div
+        className={`relative w-full min-h-[96px] rounded-lg transition-transform duration-500 [transform-style:preserve-3d] ${flipped ? "[transform:rotateY(180deg)]" : ""}`}
+      >
+        {/* Frente */}
+        <div className="absolute inset-0 flex items-center justify-between gap-2 rounded-lg border border-primary/20 bg-primary/5 p-3 [backface-visibility:hidden]">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary" />
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-primary">Sugestão de reescrita</p>
+              <p className="text-xs text-muted-foreground">Toque para ver a versão da Flora</p>
+            </div>
+          </div>
+          <span className="text-[10px] text-primary/70 group-hover:text-primary">Virar →</span>
+        </div>
+        {/* Verso */}
+        <div className="absolute inset-0 rounded-lg border border-primary/30 bg-primary/10 p-3 [transform:rotateY(180deg)] [backface-visibility:hidden] overflow-auto">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-primary">Versão da Flora</p>
+          <p className="mt-1 text-sm italic">{suggestion}</p>
+        </div>
+      </div>
+    </button>
+  );
+}
+
 // ─── Configuração por objetivo ────────────────────────────────────────────────
 
 type Objetivo = "enem" | "vestibular" | "concurso" | "faculdade" | "aprender" | string;
@@ -362,17 +396,14 @@ export default function Redacao() {
       toast.error(`Escreva pelo menos ${config.minLines} linhas para uma redação completa.`);
       return;
     }
-    // 🧠 Cache persistente: se o texto+tema bate com o que já foi corrigido no banco, reaproveita
+    // Mantém o fingerprint só para informar — o clique sempre dispara nova correção
     const currentFp = fingerprintOf(tema, texto);
     const savedFp =
       selected.status === "corrigida" && selected.corrected_at
         ? fingerprintOf(selected.tema, selected.texto)
         : null;
     if (savedFp && savedFp === currentFp) {
-      toast.info("Usando resposta anterior — sem mudanças no texto.", {
-        description: "Edite o tema ou texto para gerar uma nova correção.",
-      });
-      return;
+      toast.info("Reenviando para a Flora — texto sem alterações.");
     }
     setCorrecting(true);
     setCorrectionStep("Salvando rascunho...");
@@ -862,10 +893,7 @@ export default function Redacao() {
                                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
                                 <p className="text-sm">{p.diagnostico}</p>
                                 {p.sugestao_reescrita && (
-                                  <div className="rounded-lg border border-primary/20 bg-primary/5 p-2">
-                                    <p className="text-[11px] font-semibold uppercase tracking-wide text-primary">Sugestão de reescrita</p>
-                                    <p className="mt-1 text-sm italic">{p.sugestao_reescrita}</p>
-                                  </div>
+                                  <RewriteFlipCard suggestion={p.sugestao_reescrita} />
                                 )}
                               </div>
                             );
