@@ -238,11 +238,12 @@ export function useFloraChatStream({ isOpen, onClose }: Options) {
     return () => clearTimeout(timer);
   }, [messages, user, chatLoaded]);
 
-  const send = useCallback(async () => {
-    if (!input.trim() || isSending) return;
-    const messageToSend = input.trim();
+  const send = useCallback(async (overrideText?: string) => {
+    const raw = overrideText !== undefined ? overrideText : input;
+    if (!raw.trim() || isSending) return;
+    const messageToSend = raw.trim();
     setMessages((prev) => [...prev, { role: "user", content: messageToSend }]);
-    setInput("");
+    if (overrideText === undefined) setInput("");
     setIsSending(true);
 
     // Intercepta pedidos de imagem antes de chamar o LLM
@@ -366,6 +367,40 @@ export function useFloraChatStream({ isOpen, onClose }: Options) {
     }
   }, [CHAT_URL, executeAction, input, isSending, messages, queueAssistantText]);
 
+  const stop = useCallback(() => {
+    sendAbortRef.current?.abort();
+    sendAbortRef.current = null;
+    if (assistantFlushTimerRef.current !== null) {
+      window.clearTimeout(assistantFlushTimerRef.current);
+      assistantFlushTimerRef.current = null;
+    }
+    const pending = pendingAssistantTextRef.current;
+    if (pending) {
+      setMessages((prev) => {
+        const last = prev[prev.length - 1];
+        if (last?.role === "assistant") {
+          return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content: pending + " _(interrompido)_" } : m));
+        }
+        return [...prev, { role: "assistant", content: pending + " _(interrompido)_" }];
+      });
+    }
+    pendingAssistantTextRef.current = "";
+    setIsSending(false);
+  }, []);
+
+  const regenerate = useCallback(async () => {
+    if (isSending) return;
+    let lastUserIdx = -1;
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === "user") { lastUserIdx = i; break; }
+    }
+    if (lastUserIdx === -1) return;
+    const lastUserMsg = messages[lastUserIdx].content;
+    setMessages((prev) => prev.slice(0, lastUserIdx));
+    // pequena espera pro state assentar e então redispara o envio
+    setTimeout(() => { void send(lastUserMsg); }, 30);
+  }, [isSending, messages, send]);
+
   return {
     messages,
     input,
@@ -373,5 +408,7 @@ export function useFloraChatStream({ isOpen, onClose }: Options) {
     isSending,
     objetivo,
     send,
+    stop,
+    regenerate,
   };
 }

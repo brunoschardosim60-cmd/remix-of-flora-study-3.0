@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Send, X, Camera, Loader2, Mic, Square } from "lucide-react";
+import { Send, X, Camera, Loader2, Mic, Square, StopCircle, RefreshCw, Copy, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { FloraQuotaIndicator } from "@/components/FloraQuotaIndicator";
@@ -16,12 +16,14 @@ interface FloraChat {
 }
 
 export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
-  const { messages, input, setInput, isSending, objetivo, send } = useFloraChatStream({ isOpen, onClose });
+  const { messages, input, setInput, isSending, objetivo, send, stop, regenerate } = useFloraChatStream({ isOpen, onClose });
   const scrollRef = useRef<HTMLDivElement>(null);
   const photoRef = useRef<HTMLInputElement>(null);
   const [ocrLoading, setOcrLoading] = useState(false);
   const [recording, setRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
+  const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
+  const [isAtBottom, setIsAtBottom] = useState(true);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
 
@@ -125,14 +127,36 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
     if (isOpen && initialMessage) setInput(initialMessage);
   }, [isOpen, initialMessage, setInput]);
 
-  // Auto-scroll
+  // Sticky-to-bottom: só auto-scroll se já está no fundo
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const dist = el.scrollHeight - el.scrollTop - el.clientHeight;
+    setIsAtBottom(dist < 80);
+  }, []);
+
   useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-  }, [messages]);
+    if (isAtBottom && scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages, isAtBottom]);
+
+  const copyMessage = async (content: string, idx: number) => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopiedIdx(idx);
+      setTimeout(() => setCopiedIdx((c) => (c === idx ? null : c)), 1500);
+    } catch {
+      toast.error("Não consegui copiar");
+    }
+  };
 
   if (!isOpen) return null;
 
   const chips = getSuggestionChips(objetivo);
+  const lastMsg = messages[messages.length - 1];
+  const showFollowupChips =
+    !isSending && messages.length > 0 && lastMsg?.role === "assistant";
 
   return (
     <div className="fixed bottom-0 right-0 w-full h-[80vh] sm:bottom-20 sm:right-4 sm:w-[380px] sm:h-[500px] sm:max-w-[calc(100vw-2rem)] sm:max-h-[calc(100vh-6rem)] z-50 sm:rounded-2xl rounded-t-2xl border border-border bg-card shadow-2xl flex flex-col overflow-hidden">
@@ -150,7 +174,7 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
       </div>
 
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto p-4 space-y-3">
         {messages.length === 0 && (
           <div className="text-center py-6 space-y-3 px-2">
             <FloraIcon className="w-10 h-10 text-primary mx-auto" />
@@ -181,7 +205,7 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
         )}
 
         {messages.map((msg, i) => (
-          <div key={i} className="animate-fade-in">
+          <div key={i} className="animate-fade-in group">
             <div className={`rounded-xl px-3 py-2 text-sm overflow-hidden break-words ${
               msg.role === "user"
                 ? "bg-primary text-primary-foreground ml-8"
@@ -202,6 +226,28 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
                 msg.content
               )}
             </div>
+            {msg.role === "assistant" && msg.content && (
+              <div className="flex gap-1 mt-1 mr-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  onClick={() => copyMessage(msg.content, i)}
+                  className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-muted"
+                  aria-label="Copiar mensagem"
+                >
+                  {copiedIdx === i ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                  {copiedIdx === i ? "Copiado" : "Copiar"}
+                </button>
+                {i === messages.length - 1 && !isSending && (
+                  <button
+                    onClick={() => void regenerate()}
+                    className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-muted"
+                    aria-label="Regenerar resposta"
+                  >
+                    <RefreshCw className="w-3 h-3" />
+                    Regenerar
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         ))}
 
@@ -216,6 +262,20 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
                 <span className="w-1 h-1 rounded-full bg-primary animate-bounce" style={{ animationDelay: "300ms" }} />
               </span>
             </div>
+          </div>
+        )}
+
+        {showFollowupChips && (
+          <div className="flex flex-wrap gap-1.5 mr-8 pt-1">
+            {chips.slice(0, 3).map((q) => (
+              <button
+                key={q}
+                onClick={() => setInput(q)}
+                className="text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+              >
+                {q}
+              </button>
+            ))}
           </div>
         )}
       </div>
@@ -273,9 +333,23 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
             rows={1}
             style={{ minHeight: "38px", maxHeight: "120px" }}
           />
-          <Button type="submit" size="icon" className="shrink-0" disabled={!input.trim() || isSending} aria-label="Enviar mensagem">
-            <Send className="w-4 h-4" />
-          </Button>
+          {isSending ? (
+            <Button
+              type="button"
+              size="icon"
+              variant="destructive"
+              className="shrink-0"
+              onClick={stop}
+              aria-label="Parar geração"
+              title="Parar geração"
+            >
+              <StopCircle className="w-4 h-4" />
+            </Button>
+          ) : (
+            <Button type="submit" size="icon" className="shrink-0" disabled={!input.trim()} aria-label="Enviar mensagem">
+              <Send className="w-4 h-4" />
+            </Button>
+          )}
         </form>
       </div>
     </div>
