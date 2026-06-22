@@ -3,7 +3,6 @@ import { BookOpen, NotebookPen, FileText, BarChart3, Sun, Moon, CircleDot, LogOu
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { CustomThemeDialog } from "@/components/CustomThemeDialog";
-import { NotificationBell } from "@/components/NotificationBell";
 import { prefetchRoute } from "@/lib/prefetch";
 import type { User } from "@supabase/supabase-js";
 
@@ -62,7 +61,6 @@ export function DashboardHeader({ user, bancoRoute, bancoLabel, onSignOut }: Pro
         </div>
         <div className="flex items-center gap-1">
           <CustomThemeDialog />
-          <NotificationBell />
           <Button variant="ghost" size="icon" className="h-9 w-9" onClick={cycleTheme} aria-label="Trocar tema">
             <ThemeIcon className="w-4 h-4" />
           </Button>
