@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { WeeklySlot, Subject, ALL_SUBJECTS, SUBJECT_COLORS } from "@/lib/studyData";
-import { Check, Trash2, Plus, Clock, ChevronDown, ChevronUp, BookOpen } from "lucide-react";
+import { Check, Trash2, Plus, Clock, ChevronDown, ChevronUp, BookOpen, ArrowLeftRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 
@@ -33,6 +33,8 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
   const [newHorario, setNewHorario] = useState("");
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const [flashIds, setFlashIds] = useState<string[]>([]);
+  const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const horarios = [...new Set(slots.map((s) => s.horario))].sort();
 
@@ -66,6 +68,10 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
         return s;
       })
     );
+    // Flash animation nos dois slots envolvidos
+    setFlashIds([sourceId, targetId]);
+    if (flashTimer.current) clearTimeout(flashTimer.current);
+    flashTimer.current = setTimeout(() => setFlashIds([]), 480);
   };
 
   const addHorario = () => {
@@ -184,6 +190,23 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
                       const isEditing = editingSlot === slot.id;
                       const isHovered = hoveredSlot === slot.id;
 
+                      // Pré-visualização da troca: enquanto arrasta, o slot exibe o conteúdo que terá após o drop
+                      const dragSrc = draggingId ? slots.find((s) => s.id === draggingId) : null;
+                      const dragTgt = dragOverId ? slots.find((s) => s.id === dragOverId) : null;
+                      const isPreviewingSwap = !!(dragSrc && dragTgt && draggingId !== dragOverId);
+                      let displaySlot = slot;
+                      let isPreview = false;
+                      if (isPreviewingSwap) {
+                        if (slot.id === draggingId && dragTgt) {
+                          displaySlot = { ...slot, materia: dragTgt.materia, descricao: dragTgt.descricao, concluido: dragTgt.concluido };
+                          isPreview = true;
+                        } else if (slot.id === dragOverId && dragSrc) {
+                          displaySlot = { ...slot, materia: dragSrc.materia, descricao: dragSrc.descricao, concluido: dragSrc.concluido };
+                          isPreview = true;
+                        }
+                      }
+                      const isFlashing = flashIds.includes(slot.id);
+
                       return (
                         <td key={dia} className={`p-1.5 ${dia === TODAY_IDX ? "bg-muted/20" : ""}`}>
                           {isEditing ? (
@@ -248,16 +271,26 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
                               onMouseEnter={() => setHoveredSlot(slot.id)}
                               onMouseLeave={() => setHoveredSlot(null)}
                               onTouchStart={() => setHoveredSlot(slot.id)}
-                              className={`p-2 rounded-lg cursor-pointer min-h-[52px] flex flex-col gap-1 transition-all relative group
-                                ${slot.materia
-                                  ? `${SUBJECT_COLORS[slot.materia]} bg-opacity-15 cursor-grab active:cursor-grabbing ${slot.concluido ? "ring-2 ring-secondary/40" : "hover:ring-2 hover:ring-primary/20"}`
+                              className={`p-2 rounded-lg cursor-pointer min-h-[52px] flex flex-col gap-1 transition-all duration-200 relative group
+                                ${displaySlot.materia
+                                  ? `${SUBJECT_COLORS[displaySlot.materia]} bg-opacity-15 cursor-grab active:cursor-grabbing ${displaySlot.concluido ? "ring-2 ring-secondary/40" : "hover:ring-2 hover:ring-primary/20"}`
                                   : "bg-muted/20 hover:bg-muted/40 border border-dashed border-border/50"
                                 }
-                                ${draggingId === slot.id ? "opacity-40" : ""}
-                                ${dragOverId === slot.id ? "ring-2 ring-primary scale-[1.02]" : ""}`}
+                                ${isPreview ? "ring-2 ring-primary/70 ring-dashed scale-[1.03] shadow-lg shadow-primary/20" : ""}
+                                ${draggingId === slot.id && !isPreview ? "opacity-40" : ""}
+                                ${dragOverId === slot.id && !isPreview ? "ring-2 ring-primary scale-[1.02]" : ""}
+                                ${isFlashing ? "animate-swap-pop" : ""}`}
                             >
+                              {/* Badge de pré-visualização da troca */}
+                              {isPreview && (
+                                <div className="absolute -top-2 -left-2 z-20 flex items-center gap-0.5 rounded-full bg-primary px-1.5 py-0.5 text-[9px] font-bold text-primary-foreground shadow-md animate-fade-in">
+                                  <ArrowLeftRight className="w-2.5 h-2.5" />
+                                  trocar
+                                </div>
+                              )}
+
                               {/* Action buttons */}
-                              {slot.materia && (
+                              {slot.materia && !isPreview && (
                                 <div className={`absolute top-0.5 right-0.5 flex gap-0.5 transition-all z-10 ${
                                   isHovered ? "opacity-100 scale-100" : "opacity-0 scale-75"
                                 }`}>
@@ -278,25 +311,25 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
                                 </div>
                               )}
 
-                              {slot.materia ? (
+                              {displaySlot.materia ? (
                                 <>
                                   <div className="flex items-center gap-1">
-                                    <span className="text-[10px] font-bold uppercase tracking-wider text-primary-foreground">
-                                      {slot.materia}
+                                    <span className={`text-[10px] font-bold uppercase tracking-wider text-primary-foreground ${isPreview ? "italic" : ""}`}>
+                                      {displaySlot.materia}
                                     </span>
-                                    {slot.concluido && (
+                                    {displaySlot.concluido && (
                                       <Check className="w-3 h-3 text-secondary flex-shrink-0" />
                                     )}
                                   </div>
-                                  {slot.descricao && (
-                                    <span className="text-[10px] text-primary-foreground/80 truncate leading-tight">
-                                      {slot.descricao}
+                                  {displaySlot.descricao && (
+                                    <span className={`text-[10px] text-primary-foreground/80 truncate leading-tight ${isPreview ? "italic" : ""}`}>
+                                      {displaySlot.descricao}
                                     </span>
                                   )}
                                 </>
                               ) : (
                                 <span className="text-[10px] text-muted-foreground/50 text-center m-auto">
-                                  +
+                                  {isPreview ? "—" : "+"}
                                 </span>
                               )}
                             </div>
