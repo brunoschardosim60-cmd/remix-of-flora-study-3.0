@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { prefetchForContext } from "@/lib/prefetch";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, FileText, Loader2, PlusCircle, Sparkles, Trash2, Wand2, Save, CheckCircle2, AlertCircle, Target, CalendarDays, CalendarRange, Dumbbell, Lightbulb, PanelLeftClose, PanelLeftOpen, WifiOff, CloudUpload, Download } from "lucide-react";
@@ -36,35 +36,37 @@ import {
   isOnline as isOnlineNow,
 } from "@/lib/essayDraftStore";
 
-// ─── Card de reescrita: mostra a sugestão da Flora por padrão.
-// Ao clicar, alterna para o trecho que o usuário escreveu nesse parágrafo,
-// para comparar lado a lado o original com a sugestão.
-function RewriteFlipCard({ suggestion, original }: { suggestion: string; original?: string }) {
-  const [showOriginal, setShowOriginal] = useState(false);
-  const canToggle = !!(original && original.trim());
+// ─── Card de reescrita: mostra a sugestão da Flora.
+// Ao clicar em "Mostrar no texto", rola o textarea da redação até o parágrafo
+// correspondente e dispara um pulse rápido pra localizar visualmente.
+function RewriteFlipCard({
+  suggestion,
+  onJump,
+  canJump,
+}: {
+  suggestion: string;
+  onJump?: () => void;
+  canJump?: boolean;
+}) {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-primary" />
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-primary">
-            {showOriginal ? "Seu texto neste parágrafo" : "Sugestão de reescrita"}
-          </p>
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-primary">Sugestão de reescrita</p>
         </div>
-        {canToggle && (
+        {canJump && (
           <button
             type="button"
-            onClick={() => setShowOriginal((v) => !v)}
+            onClick={onJump}
             className="text-[10px] font-medium uppercase tracking-wide text-primary/80 hover:text-primary"
           >
-            {showOriginal ? "Ver sugestão" : "Ver meu texto"}
+            Mostrar no texto →
           </button>
         )}
       </div>
       <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
-        <p className={`text-sm whitespace-pre-line ${showOriginal ? "" : "italic"}`}>
-          {showOriginal ? original : suggestion}
-        </p>
+        <p className="text-sm whitespace-pre-line italic">{suggestion}</p>
       </div>
     </div>
   );
