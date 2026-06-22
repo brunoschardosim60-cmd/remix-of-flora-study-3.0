@@ -508,4 +508,6 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
       </div>
     </div>
   );
+
+  return typeof document !== "undefined" ? createPortal(panel, document.body) : panel;
 }
