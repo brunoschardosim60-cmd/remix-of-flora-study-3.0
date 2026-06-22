@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { useTheme } from "next-themes";
 import {
   Pause, Play, X, Square, RotateCcw,
@@ -87,7 +88,7 @@ export function FocusModeOverlay({
     if (viewMode === "minimal") setShowMinimalControls(true);
   };
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-50 overflow-hidden bg-background/95 backdrop-blur-2xl"
       onMouseMove={revealMinimalControls}
@@ -205,6 +206,7 @@ export function FocusModeOverlay({
           </div>
         </div>
       )}
-    </div>
+    </div>,
+    document.body,
   );
 }
