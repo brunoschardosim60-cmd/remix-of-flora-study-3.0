@@ -33,9 +33,9 @@ export function DashboardHeader({ user, bancoRoute, bancoLabel, onSignOut }: Pro
         </div>
         <div className="flex-1 min-w-[120px]">
           <h1 className="font-heading font-bold text-lg sm:text-xl">StudyFlow</h1>
-          <p className="text-xs text-muted-foreground hidden sm:block">Seu plano de estudos inteligente</p>
+          <p className="text-xs text-muted-foreground hidden lg:block">Seu plano de estudos inteligente</p>
         </div>
-        <div className="hidden md:flex items-center gap-2">
+        <div className="hidden lg:flex items-center gap-2">
           <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate("/notebooks")} onMouseEnter={() => prefetchRoute("/notebooks")}>
             <NotebookPen className="w-4 h-4" /> Cadernos
           </Button>
@@ -78,8 +78,8 @@ export function DashboardHeader({ user, bancoRoute, bancoLabel, onSignOut }: Pro
           )}
         </div>
       </div>
-      {/* Mobile quick-nav: aparece em portrait/celular sem precisar girar a tela */}
-      <div className="md:hidden border-t border-border/60 bg-card/80">
+      {/* Quick-nav: aparece em telas até lg para não cortar os ícones do header */}
+      <div className="lg:hidden border-t border-border/60 bg-card/80">
         <div className="container max-w-7xl mx-auto px-2 py-2 flex items-center gap-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           <Button variant="outline" size="sm" className="gap-1.5 shrink-0" onClick={() => navigate("/notebooks")}>
             <NotebookPen className="w-4 h-4" /> Cadernos
