@@ -3,6 +3,7 @@ import { WeeklySlot, Subject, ALL_SUBJECTS, SUBJECT_COLORS } from "@/lib/studyDa
 import { Check, Trash2, Plus, Clock, ChevronDown, ChevronUp, BookOpen, ArrowLeftRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { toast } from "sonner";
 
 const DIAS = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
 const DIAS_SHORT = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
@@ -61,6 +62,7 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
     const src = slots.find((s) => s.id === sourceId);
     const tgt = slots.find((s) => s.id === targetId);
     if (!src || !tgt) return;
+    const prevSlots = slots;
     onChange(
       slots.map((s) => {
         if (s.id === sourceId) return { ...s, materia: tgt.materia, descricao: tgt.descricao, concluido: tgt.concluido };
@@ -72,6 +74,12 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
     setFlashIds([sourceId, targetId]);
     if (flashTimer.current) clearTimeout(flashTimer.current);
     flashTimer.current = setTimeout(() => setFlashIds([]), 480);
+    // Undo
+    const wasMove = !tgt.materia; // destino estava vazio → foi um "mover"
+    toast(wasMove ? "Atividade movida" : "Atividades trocadas", {
+      action: { label: "Desfazer", onClick: () => onChange(prevSlots) },
+      duration: 5000,
+    });
   };
 
   const addHorario = () => {
@@ -234,6 +242,19 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
                           ) : (
                             <div
                               draggable={!!slot.materia}
+                              role={slot.materia ? "button" : undefined}
+                              tabIndex={0}
+                              aria-label={
+                                slot.materia
+                                  ? `${slot.materia}${slot.descricao ? " — " + slot.descricao : ""}, ${DIAS[dia]} às ${horario}${slot.concluido ? ", concluído" : ""}. Clique para editar, arraste para trocar.`
+                                  : `Slot vazio, ${DIAS[dia]} às ${horario}. Clique para adicionar matéria.`
+                              }
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                  e.preventDefault();
+                                  setEditingSlot(slot.id);
+                                }
+                              }}
                               onDragStart={(e) => {
                                 if (!slot.materia) return;
                                 setDraggingId(slot.id);
@@ -262,7 +283,7 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
                               onMouseEnter={() => setHoveredSlot(slot.id)}
                               onMouseLeave={() => setHoveredSlot(null)}
                               onTouchStart={() => setHoveredSlot(slot.id)}
-                              className={`p-2 rounded-lg cursor-pointer min-h-[52px] flex flex-col gap-1 relative group
+                              className={`p-2 rounded-lg cursor-pointer min-h-[52px] flex flex-col gap-1 relative group outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-background
                                 ${displaySlot.materia
                                   ? `${SUBJECT_COLORS[displaySlot.materia]} bg-opacity-15 cursor-grab active:cursor-grabbing ${displaySlot.concluido ? "ring-2 ring-secondary/40" : ""}`
                                   : "bg-muted/20 border border-dashed border-border/50"
@@ -287,6 +308,7 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
                                     onClick={(e) => { e.stopPropagation(); toggleConcluido(slot.id); }}
                                     className={`p-1 rounded-md transition-all ${slot.concluido ? "bg-secondary/20 text-secondary" : "hover:bg-muted text-muted-foreground"}`}
                                     title={slot.concluido ? "Desmarcar" : "Concluir"}
+                                    aria-label={slot.concluido ? "Desmarcar como concluído" : "Marcar como concluído"}
                                   >
                                     <Check className="w-3 h-3" />
                                   </button>
@@ -294,6 +316,7 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
                                     onClick={(e) => { e.stopPropagation(); clearSlot(slot.id); }}
                                     className="p-1 rounded-md hover:bg-muted text-muted-foreground transition-all"
                                     title="Limpar"
+                                    aria-label="Limpar esta atividade"
                                   >
                                     <Trash2 className="w-3 h-3" />
                                   </button>
@@ -329,6 +352,7 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
                         onClick={() => removeHorario(horario)}
                         className="p-1 rounded-md text-muted-foreground/30 hover:text-destructive hover:bg-destructive/10 transition-all opacity-0 group-hover/row:opacity-100"
                         title="Remover horário"
+                        aria-label={`Remover linha do horário ${horario}`}
                       >
                         <Trash2 className="w-3 h-3" />
                       </button>
