@@ -7,6 +7,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, X, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -117,7 +118,7 @@ export function FloraTour({ forceOpen = false, onClose }: { forceOpen?: boolean;
 
   const isLast = step === STEPS.length - 1;
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {open && (
         <motion.div
@@ -202,6 +203,8 @@ export function FloraTour({ forceOpen = false, onClose }: { forceOpen?: boolean;
         </motion.div>
       )}
     </AnimatePresence>
+  ,
+    document.body,
   );
 }
 
