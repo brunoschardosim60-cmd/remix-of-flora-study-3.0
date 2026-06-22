@@ -10,8 +10,11 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Sparkles, ArrowRight, X, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
 
-const SEEN_KEY = "flora_tour_seen";
+const SEEN_KEY_BASE = "flora_tour_seen";
+const seenKeyFor = (userId?: string | null) =>
+  userId ? `${SEEN_KEY_BASE}:${userId}` : SEEN_KEY_BASE;
 
 type Step = {
   title: string;
@@ -81,19 +84,32 @@ function TypingLine({ children, delay }: { children: React.ReactNode; delay: num
 export function FloraTour({ forceOpen = false, onClose }: { forceOpen?: boolean; onClose?: () => void }) {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0);
+  const { user, loading } = useAuth();
 
   useEffect(() => {
     if (forceOpen) {
       setOpen(true);
       return;
     }
+    // Só mostra para usuários logados, uma vez por usuário (por dispositivo).
+    if (loading || !user) return;
     try {
-      if (!localStorage.getItem(SEEN_KEY)) setOpen(true);
+      const key = seenKeyFor(user.id);
+      if (localStorage.getItem(key)) return;
+      // Migração: se já viu antes (chave antiga global), não reabre.
+      if (localStorage.getItem(SEEN_KEY_BASE)) {
+        localStorage.setItem(key, "1");
+        return;
+      }
+      setOpen(true);
     } catch { /* ignore */ }
-  }, [forceOpen]);
+  }, [forceOpen, loading, user]);
 
   const close = () => {
-    try { localStorage.setItem(SEEN_KEY, "1"); } catch { /* ignore */ }
+    try {
+      localStorage.setItem(seenKeyFor(user?.id), "1");
+      localStorage.setItem(SEEN_KEY_BASE, "1");
+    } catch { /* ignore */ }
     setOpen(false);
     onClose?.();
   };
