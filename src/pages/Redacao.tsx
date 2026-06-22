@@ -151,7 +151,7 @@ export default function Redacao() {
   const [loadingRealPlan, setLoadingRealPlan] = useState(false);
   // Pulse de localização ao clicar em "Mostrar no texto"
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-  const [pulseKey, setPulseKey] = useState(0);
+  const [pulsing, setPulsing] = useState(false);
   function hashText(s: string): string {
     let h = 5381;
     for (let i = 0; i < s.length; i++) h = ((h << 5) + h) ^ s.charCodeAt(i);
@@ -273,7 +273,9 @@ export default function Redacao() {
       ta.scrollTop = ratio * (ta.scrollHeight - ta.clientHeight);
     }
     ta.scrollIntoView({ behavior: "smooth", block: "center" });
-    setPulseKey((k) => k + 1);
+    setPulsing(false);
+    requestAnimationFrame(() => setPulsing(true));
+    window.setTimeout(() => setPulsing(false), 1400);
   }
 
   const selected = useMemo(() => essays.find((e) => e.id === selectedId) ?? null, [essays, selectedId]);
@@ -723,11 +725,10 @@ export default function Redacao() {
                     </div>
                     <Textarea
                       ref={textareaRef}
-                      key={`ta-${pulseKey}`}
                       value={texto}
                       onChange={(e) => setTexto(e.target.value)}
                       placeholder={config.placeholder}
-                      className={`min-h-[420px] font-serif text-base leading-relaxed transition-shadow ${pulseKey > 0 ? "animate-[pulse_1.2s_ease-out_1] ring-2 ring-primary/60" : ""}`}
+                      className={`min-h-[420px] font-serif text-base leading-relaxed transition-shadow ${pulsing ? "ring-4 ring-primary/70 shadow-[0_0_0_6px_hsl(var(--primary)/0.15)] animate-pulse" : ""}`}
                     />
                     <p className="text-[11px] text-muted-foreground flex items-start gap-1.5">
                       <Lightbulb className="h-3 w-3 mt-0.5 flex-shrink-0 text-amber-500" />
