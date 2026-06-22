@@ -189,22 +189,10 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
 
                       const isEditing = editingSlot === slot.id;
                       const isHovered = hoveredSlot === slot.id;
-
-                      // Pré-visualização da troca: enquanto arrasta, o slot exibe o conteúdo que terá após o drop
-                      const dragSrc = draggingId ? slots.find((s) => s.id === draggingId) : null;
-                      const dragTgt = dragOverId ? slots.find((s) => s.id === dragOverId) : null;
-                      const isPreviewingSwap = !!(dragSrc && dragTgt && draggingId !== dragOverId);
-                      let displaySlot = slot;
-                      let isPreview = false;
-                      if (isPreviewingSwap) {
-                        if (slot.id === draggingId && dragTgt) {
-                          displaySlot = { ...slot, materia: dragTgt.materia, descricao: dragTgt.descricao, concluido: dragTgt.concluido };
-                          isPreview = true;
-                        } else if (slot.id === dragOverId && dragSrc) {
-                          displaySlot = { ...slot, materia: dragSrc.materia, descricao: dragSrc.descricao, concluido: dragSrc.concluido };
-                          isPreview = true;
-                        }
-                      }
+                      const displaySlot = slot;
+                      const isPreview = false;
+                      const isDragSource = draggingId === slot.id;
+                      const isDragTarget = dragOverId === slot.id && draggingId && draggingId !== slot.id;
                       const isFlashing = flashIds.includes(slot.id);
 
                       return (
