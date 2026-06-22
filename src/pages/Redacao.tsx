@@ -1240,81 +1240,93 @@ export default function Redacao() {
                       )}
 
                       {realPlan && (
-                        <div className="space-y-3">
+                        <Accordion type="multiple" defaultValue={["diag"]} className="space-y-2">
                           {realPlan.diagnostico?.length > 0 && (
-                            <div className="rounded-xl border border-border bg-background/70 p-3">
-                              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Diagnóstico</p>
-                              <ul className="space-y-1 text-sm">
-                                {realPlan.diagnostico.map((d: string, i: number) => (
-                                  <li key={i} className="flex gap-2"><span className="text-primary">•</span><span>{d}</span></li>
-                                ))}
-                              </ul>
-                            </div>
+                            <AccordionItem value="diag" className="rounded-xl border border-border bg-background/70 px-3">
+                              <AccordionTrigger className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Diagnóstico</AccordionTrigger>
+                              <AccordionContent>
+                                <ul className="space-y-1 text-sm">
+                                  {realPlan.diagnostico.map((d: string, i: number) => (
+                                    <li key={i} className="flex gap-2"><span className="text-primary">•</span><span>{d}</span></li>
+                                  ))}
+                                </ul>
+                              </AccordionContent>
+                            </AccordionItem>
                           )}
 
-                          <div className="grid gap-3 md:grid-cols-2">
-                            {realPlan.pontos_fortes?.length > 0 && (
-                              <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3">
-                                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-400 mb-1">Pontos fortes</p>
-                                <ul className="space-y-1 text-sm">
-                                  {realPlan.pontos_fortes.map((p: string, i: number) => (<li key={i}>✓ {p}</li>))}
-                                </ul>
-                              </div>
-                            )}
-                            {realPlan.pontos_criticos?.length > 0 && (
-                              <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3">
-                                <p className="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400 mb-1">Pontos críticos</p>
-                                <ul className="space-y-1 text-sm">
-                                  {realPlan.pontos_criticos.map((p: string, i: number) => (<li key={i}>! {p}</li>))}
-                                </ul>
-                              </div>
-                            )}
-                          </div>
+                          {(realPlan.pontos_fortes?.length > 0 || realPlan.pontos_criticos?.length > 0) && (
+                            <AccordionItem value="pontos" className="rounded-xl border border-border bg-background/70 px-3">
+                              <AccordionTrigger className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Pontos fortes e críticos</AccordionTrigger>
+                              <AccordionContent>
+                                <div className="grid gap-3 sm:grid-cols-1 lg:grid-cols-2">
+                                  {realPlan.pontos_fortes?.length > 0 && (
+                                    <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3">
+                                      <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-400 mb-1">Pontos fortes</p>
+                                      <ul className="space-y-1 text-sm">
+                                        {realPlan.pontos_fortes.map((p: string, i: number) => (<li key={i}>✓ {p}</li>))}
+                                      </ul>
+                                    </div>
+                                  )}
+                                  {realPlan.pontos_criticos?.length > 0 && (
+                                    <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
+                                      <p className="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400 mb-1">Pontos críticos</p>
+                                      <ul className="space-y-1 text-sm">
+                                        {realPlan.pontos_criticos.map((p: string, i: number) => (<li key={i}>! {p}</li>))}
+                                      </ul>
+                                    </div>
+                                  )}
+                                </div>
+                              </AccordionContent>
+                            </AccordionItem>
+                          )}
 
                           {realPlan.dicas_redacao?.length > 0 && (
-                            <div className="rounded-xl border border-border bg-background/70 p-3">
-                              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Dicas pra sua redação</p>
-                              <ul className="space-y-1 text-sm">
-                                {realPlan.dicas_redacao.map((d: string, i: number) => (
-                                  <li key={i} className="flex gap-2"><Lightbulb className="h-4 w-4 shrink-0 text-primary" /><span>{d}</span></li>
-                                ))}
-                              </ul>
-                            </div>
+                            <AccordionItem value="dicas" className="rounded-xl border border-border bg-background/70 px-3">
+                              <AccordionTrigger className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Dicas pra sua redação</AccordionTrigger>
+                              <AccordionContent>
+                                <ul className="space-y-1 text-sm">
+                                  {realPlan.dicas_redacao.map((d: string, i: number) => (
+                                    <li key={i} className="flex gap-2"><Lightbulb className="h-4 w-4 shrink-0 text-primary" /><span>{d}</span></li>
+                                  ))}
+                                </ul>
+                              </AccordionContent>
+                            </AccordionItem>
                           )}
 
                           {realPlan.plano_semanal?.length > 0 && (
-                            <div className="rounded-xl border border-border bg-background/70 p-3">
-                              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Plano da semana</p>
-                              <div className="space-y-2">
-                                {realPlan.plano_semanal.map((d: any, i: number) => (
-                                  <div key={i} className="flex flex-wrap items-center gap-2 rounded-lg border border-border/60 p-2 text-sm">
-                                    <Badge variant="secondary" className="text-[10px]">{d.dia}</Badge>
-                                    <span className="font-medium">{d.foco}</span>
-                                    <span className="text-muted-foreground">— {d.tarefa}</span>
-                                    {d.duracao_min && <span className="ml-auto text-xs text-muted-foreground">{d.duracao_min} min</span>}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
+                            <AccordionItem value="semana" className="rounded-xl border border-border bg-background/70 px-3">
+                              <AccordionTrigger className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Plano da semana</AccordionTrigger>
+                              <AccordionContent>
+                                <div className="space-y-2">
+                                  {realPlan.plano_semanal.map((d: any, i: number) => (
+                                    <div key={i} className="flex flex-wrap items-center gap-2 rounded-lg border border-border/60 p-2 text-sm">
+                                      <Badge variant="secondary" className="text-[10px]">{d.dia}</Badge>
+                                      <span className="font-medium">{d.foco}</span>
+                                      <span className="text-muted-foreground">— {d.tarefa}</span>
+                                      {d.duracao_min && <span className="ml-auto text-xs text-muted-foreground">{d.duracao_min} min</span>}
+                                    </div>
+                                  ))}
+                                </div>
+                              </AccordionContent>
+                            </AccordionItem>
                           )}
 
                           {realPlan.metas_curto_prazo?.length > 0 && (
-                            <div className="rounded-xl border border-primary/30 bg-primary/5 p-3">
-                              <p className="text-xs font-semibold uppercase tracking-wide text-primary mb-1">Metas dos próximos 7 dias</p>
-                              <ul className="space-y-1 text-sm">
-                                {realPlan.metas_curto_prazo.map((m: string, i: number) => (
-                                  <li key={i} className="flex gap-2"><span className="text-primary font-bold">{i + 1}.</span>{m}</li>
-                                ))}
-                              </ul>
-                            </div>
+                            <AccordionItem value="metas" className="rounded-xl border border-primary/30 bg-primary/5 px-3">
+                              <AccordionTrigger className="text-xs font-semibold uppercase tracking-wide text-primary">Metas dos próximos 7 dias</AccordionTrigger>
+                              <AccordionContent>
+                                <ul className="space-y-1 text-sm">
+                                  {realPlan.metas_curto_prazo.map((m: string, i: number) => (
+                                    <li key={i} className="flex gap-2"><span className="text-primary font-bold">{i + 1}.</span>{m}</li>
+                                  ))}
+                                </ul>
+                                {realPlan.indicador_acompanhamento && (
+                                  <p className="mt-3 rounded-lg border border-primary/30 bg-background/60 p-2 text-sm italic">📊 {realPlan.indicador_acompanhamento}</p>
+                                )}
+                              </AccordionContent>
+                            </AccordionItem>
                           )}
-
-                          {realPlan.indicador_acompanhamento && (
-                            <div className="rounded-xl border border-primary/30 bg-background/60 p-3 text-sm italic">
-                              📊 {realPlan.indicador_acompanhamento}
-                            </div>
-                          )}
-                        </div>
+                        </Accordion>
                       )}
                     </div>
                   </div>
