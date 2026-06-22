@@ -41,6 +41,8 @@ const SimuladoEnem = lazy(() => import("./pages/SimuladoEnem"));
 const ExplicaFoto = lazy(() => import("./pages/ExplicaFoto"));
 const Aulas = lazy(() => import("./pages/Aulas"));
 const Comunidade = lazy(() => import("./pages/Comunidade"));
+const Mensagens = lazy(() => import("./pages/Mensagens"));
+const Grupos = lazy(() => import("./pages/Grupos"));
 
 
 
@@ -212,6 +214,8 @@ const App = () => (
                 <Route path="/explica-foto" element={<ProtectedRoute><ExplicaFoto /></ProtectedRoute>} />
                 <Route path="/aulas" element={<ProtectedRoute><Aulas /></ProtectedRoute>} />
                 <Route path="/comunidade" element={<ProtectedRoute><Comunidade /></ProtectedRoute>} />
+                <Route path="/mensagens" element={<ProtectedRoute><Mensagens /></ProtectedRoute>} />
+                <Route path="/grupos" element={<ProtectedRoute><Grupos /></ProtectedRoute>} />
                 <Route path="/pricing" element={<Suspense fallback={<RouteFallback />}><Pricing /></Suspense>} />
                 <Route path="/u/:username" element={<Suspense fallback={<RouteFallback />}><PublicProfile /></Suspense>} />
                 

@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { BookOpen, NotebookPen, FileText, BarChart3, Sun, Moon, CircleDot, LogOut, Settings, Library, Users } from "lucide-react";
+import { BookOpen, NotebookPen, FileText, BarChart3, Sun, Moon, CircleDot, LogOut, Settings, Library, Users, MessageCircle } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { CustomThemeDialog } from "@/components/CustomThemeDialog";
@@ -59,6 +59,16 @@ export function DashboardHeader({ user, bancoRoute, bancoLabel, onSignOut }: Pro
               <Users className="w-4 h-4" /> Comunidade
             </Button>
           )}
+          {user && (
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate("/grupos")} onMouseEnter={() => prefetchRoute("/grupos")}>
+              <Users className="w-4 h-4" /> Grupos
+            </Button>
+          )}
+          {user && (
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate("/mensagens")} onMouseEnter={() => prefetchRoute("/mensagens")}>
+              <MessageCircle className="w-4 h-4" /> Mensagens
+            </Button>
+          )}
         </div>
         <div className="flex items-center gap-1">
           <CustomThemeDialog />
@@ -102,6 +112,16 @@ export function DashboardHeader({ user, bancoRoute, bancoLabel, onSignOut }: Pro
           {user && (
             <Button variant="outline" size="sm" className="gap-1.5 shrink-0" onClick={() => navigate("/comunidade")}>
               <Users className="w-4 h-4" /> Comunidade
+            </Button>
+          )}
+          {user && (
+            <Button variant="outline" size="sm" className="gap-1.5 shrink-0" onClick={() => navigate("/grupos")}>
+              <Users className="w-4 h-4" /> Grupos
+            </Button>
+          )}
+          {user && (
+            <Button variant="outline" size="sm" className="gap-1.5 shrink-0" onClick={() => navigate("/mensagens")}>
+              <MessageCircle className="w-4 h-4" /> Mensagens
             </Button>
           )}
         </div>
