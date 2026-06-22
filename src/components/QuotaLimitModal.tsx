@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Sparkles, Clock, TrendingUp } from "lucide-react";
+import { Sparkles, Clock, CreditCard, Zap } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -62,6 +62,23 @@ export function QuotaLimitModal() {
     navigate("/settings?tab=plano");
   };
 
+  // Mensagem de pagamento por plano
+  const upgradeCopy = quota.tier === "free"
+    ? {
+        targetPlan: "Pro",
+        price: "R$ 19,90/mês",
+        pitch: "5x mais chamadas da Flora, redações ilimitadas e quizzes adaptativos.",
+        cta: "Assinar Pro",
+      }
+    : quota.tier === "pro"
+      ? {
+          targetPlan: "Pro+",
+          price: "R$ 39,90/mês",
+          pitch: "Uso praticamente ilimitado da Flora, simulados ENEM com explicação e prioridade na fila.",
+          cta: "Fazer upgrade para Pro+",
+        }
+      : null;
+
   const Body = (
     <div className="space-y-4">
       <div className="flex items-start gap-3 rounded-xl bg-muted/50 p-3">
@@ -86,24 +103,33 @@ export function QuotaLimitModal() {
         <span>O limite reseta em <strong className="text-foreground">{reset}</strong>.</span>
       </div>
 
-      {canUpgrade && (
-        <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-2">
-          <div className="flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-primary" />
-            <span className="text-sm font-medium">Quer continuar agora?</span>
+      {canUpgrade && upgradeCopy && (
+        <div className="rounded-xl border border-primary/30 bg-gradient-to-br from-primary/10 to-primary/5 p-4 space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-primary/15 flex items-center justify-center">
+                <Zap className="w-4 h-4 text-primary" />
+              </div>
+              <span className="text-sm font-semibold">Continue estudando agora</span>
+            </div>
+            <Badge className="bg-primary text-primary-foreground">{upgradeCopy.targetPlan}</Badge>
           </div>
-          <p className="text-xs text-muted-foreground">
-            Faça upgrade para o plano {quota.tier === "free" ? "Pro" : "Pro+"} e tenha mais chamadas diárias da Flora, correções de redação e quizzes.
-          </p>
+          <p className="text-xs text-muted-foreground leading-relaxed">{upgradeCopy.pitch}</p>
+          <div className="flex items-center gap-1.5 text-xs font-medium text-foreground pt-1">
+            <CreditCard className="w-3.5 h-3.5 text-primary" />
+            <span>A partir de <strong>{upgradeCopy.price}</strong> · cancele quando quiser</span>
+          </div>
         </div>
       )}
     </div>
   );
 
-  const title = `Limite${feature ? ` de ${feature}` : ""} atingido`;
+  const title = canUpgrade
+    ? `Seus créditos${feature ? ` de ${feature}` : ""} acabaram`
+    : `Limite${feature ? ` de ${feature}` : ""} atingido`;
   const description = canUpgrade
-    ? `Você usou todas as suas chamadas diárias do plano ${tierLabel}.`
-    : `Você usou todas as suas chamadas diárias.`;
+    ? `Você usou todas as chamadas diárias incluídas no plano ${tierLabel}. Para continuar agora, faça upgrade — ou aguarde o reset diário.`
+    : `Você usou todas as suas chamadas diárias. O limite reseta em ${reset}.`;
 
   if (isMobile) {
     return (
@@ -115,8 +141,10 @@ export function QuotaLimitModal() {
           </SheetHeader>
           <div className="py-4">{Body}</div>
           <SheetFooter className="flex-col gap-2 sm:flex-col">
-            {canUpgrade && (
-              <Button onClick={handleUpgrade} className="w-full">Fazer upgrade</Button>
+            {canUpgrade && upgradeCopy && (
+              <Button onClick={handleUpgrade} className="w-full gap-2">
+                <CreditCard className="w-4 h-4" /> {upgradeCopy.cta}
+              </Button>
             )}
             <Button variant="outline" onClick={() => setOpen(false)} className="w-full">
               Aguardar reset
@@ -137,7 +165,11 @@ export function QuotaLimitModal() {
         {Body}
         <DialogFooter className="gap-2 sm:gap-2">
           <Button variant="outline" onClick={() => setOpen(false)}>Aguardar reset</Button>
-          {canUpgrade && <Button onClick={handleUpgrade}>Fazer upgrade</Button>}
+          {canUpgrade && upgradeCopy && (
+            <Button onClick={handleUpgrade} className="gap-2">
+              <CreditCard className="w-4 h-4" /> {upgradeCopy.cta}
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
