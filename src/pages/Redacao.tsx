@@ -1025,7 +1025,7 @@ export default function Redacao() {
                     {paragrafos && (
                       <div className="space-y-3">
                         <h3 className="font-heading text-base font-semibold">Análise por parágrafo</h3>
-                        <div className="grid gap-3 md:grid-cols-2">
+                        <div className="grid gap-3 sm:grid-cols-1 lg:grid-cols-2">
                           {([
                             ["introducao", "Introdução"],
                             ["desenvolvimento_1", "Desenvolvimento 1"],
@@ -1051,6 +1051,57 @@ export default function Redacao() {
                         </div>
                       </div>
                     )}
+
+                    {/* Texto com marcações inline */}
+                    {(() => {
+                      const trechos = (feedbackComp as any)?._trechos as Array<{ trecho: string; competencia: number; problema: string; sugestao?: string }> | undefined;
+                      if (!trechos || trechos.length === 0) return null;
+                      return (
+                        <div className="space-y-2 rounded-2xl border border-border bg-background/60 p-4">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <h3 className="font-heading text-base font-semibold">Sua redação com marcações</h3>
+                            <div className="flex flex-wrap items-center gap-1.5 text-[10px]">
+                              {[1, 2, 3, 4, 5].map((n) => (
+                                <span key={n} className={`rounded px-1.5 py-0.5 ring-1 ${COMP_COLOR[n].bg} ${COMP_COLOR[n].text} ${COMP_COLOR[n].ring}`}>
+                                  C{n}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                          <p className="text-[11px] text-muted-foreground">Passe o mouse sobre um trecho destacado para ver o problema apontado pela Flora.</p>
+                          <div className="rounded-lg border border-border bg-background p-3 max-h-[420px] overflow-y-auto">
+                            <HighlightedEssay text={selected?.texto || ""} trechos={trechos} />
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Repertórios sugeridos */}
+                    {(() => {
+                      const reps = (feedbackComp as any)?._repertorios as Array<{ tipo: string; titulo: string; descricao: string; como_usar: string }> | undefined;
+                      if (!reps || reps.length === 0) return null;
+                      return (
+                        <div className="space-y-3 rounded-2xl border border-border bg-background/60 p-4">
+                          <div className="flex items-center gap-2">
+                            <Lightbulb className="h-5 w-5 text-primary" />
+                            <h3 className="font-heading text-base font-semibold">Repertórios para esse tema</h3>
+                            <Badge variant="outline" className="text-[10px] uppercase tracking-wide">Flora</Badge>
+                          </div>
+                          <div className="grid gap-3 sm:grid-cols-1 lg:grid-cols-2">
+                            {reps.map((r, i) => (
+                              <div key={i} className="space-y-1.5 rounded-xl border border-border bg-background/70 p-3">
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="secondary" className="text-[10px]">{r.tipo}</Badge>
+                                  <p className="text-sm font-semibold">{r.titulo}</p>
+                                </div>
+                                <p className="text-xs text-muted-foreground">{r.descricao}</p>
+                                <p className="text-sm"><span className="text-[10px] font-semibold uppercase tracking-wide text-primary">Como usar: </span>{r.como_usar}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
 
                     {/* ── Plano de estudo personalizado ── */}
                     {(() => {
