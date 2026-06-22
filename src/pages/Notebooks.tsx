@@ -4,10 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, BookOpen, Trash2, Loader2, ArrowLeft, Star, StarOff, FolderOpen, Pencil, Search } from "lucide-react";
+import { Plus, BookOpen, Trash2, Loader2, ArrowLeft, Star, StarOff, FolderOpen, Pencil, Search, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { ALL_SUBJECTS } from "@/lib/studyData";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ShareToCommunityDialog } from "@/components/ShareToCommunityDialog";
 
 interface Notebook {
   id: string;
@@ -34,6 +35,7 @@ export default function Notebooks() {
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
   const [subjectFolders, setSubjectFolders] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [shareNotebook, setShareNotebook] = useState<Notebook | null>(null);
   const [creating, setCreating] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [newTitle, setNewTitle] = useState("");
