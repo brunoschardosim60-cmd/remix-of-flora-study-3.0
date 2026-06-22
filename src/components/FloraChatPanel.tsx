@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Send, X, Camera, Loader2, Mic, Square, StopCircle, RefreshCw, Copy, Check, Volume2, VolumeX, Maximize2, Minimize2, MessageSquarePlus, History, Trash2 } from "lucide-react";
+import { Send, X, Camera, Loader2, Mic, Square, StopCircle, RefreshCw, Copy, Check, Volume2, VolumeX, Maximize2, Minimize2, MessageSquarePlus, History, Trash2, Pencil, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { FloraQuotaIndicator } from "@/components/FloraQuotaIndicator";
@@ -17,7 +17,7 @@ interface FloraChat {
 }
 
 export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
-  const { messages, input, setInput, isSending, objetivo, send, stop, regenerate, resetChat, threadId, threads, selectThread, deleteThread } = useFloraChatStream({ isOpen, onClose });
+  const { messages, input, setInput, isSending, objetivo, send, stop, regenerate, resetChat, threadId, threads, selectThread, deleteThread, renameThread } = useFloraChatStream({ isOpen, onClose });
   const scrollRef = useRef<HTMLDivElement>(null);
   const photoRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -29,6 +29,9 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
   const [speakingIdx, setSpeakingIdx] = useState<number | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [showThreads, setShowThreads] = useState(false);
+  const [threadQuery, setThreadQuery] = useState("");
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameDraft, setRenameDraft] = useState("");
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
 
@@ -239,31 +242,78 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
       </div>
 
       {showThreads && (
-        <div className="border-b border-border bg-muted/30 max-h-48 overflow-y-auto">
-          {threads.length === 0 ? (
-            <p className="text-xs text-muted-foreground px-4 py-3">Sem conversas salvas ainda.</p>
-          ) : (
-            <ul className="divide-y divide-border">
-              {threads.map((t) => (
-                <li key={t.id} className={`flex items-center gap-2 px-3 py-2 hover:bg-muted/60 ${threadId === t.id ? "bg-primary/5" : ""}`}>
-                  <button
-                    onClick={() => { selectThread(t.id); setShowThreads(false); }}
-                    className="flex-1 min-w-0 text-left"
-                  >
-                    <p className="text-xs font-medium truncate">{t.title}</p>
-                    <p className="text-[10px] text-muted-foreground">{new Date(t.updated_at).toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}</p>
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); if (confirm("Apagar essa conversa?")) void deleteThread(t.id); }}
-                    className="text-muted-foreground hover:text-destructive p-1 rounded"
-                    aria-label="Apagar conversa"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
+        <div className="border-b border-border bg-muted/30 flex flex-col max-h-64">
+          <div className="px-3 py-2 border-b border-border/60">
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+              <input
+                value={threadQuery}
+                onChange={(e) => setThreadQuery(e.target.value)}
+                placeholder="Buscar conversa..."
+                className="w-full text-xs pl-7 pr-2 py-1.5 rounded-md border border-input bg-background focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              />
+            </div>
+          </div>
+          <div className="overflow-y-auto">
+            {(() => {
+              const q = threadQuery.trim().toLowerCase();
+              const filtered = q ? threads.filter((t) => t.title.toLowerCase().includes(q)) : threads;
+              if (filtered.length === 0) {
+                return <p className="text-xs text-muted-foreground px-4 py-3">{q ? "Nenhuma conversa encontrada." : "Sem conversas salvas ainda."}</p>;
+              }
+              return (
+                <ul className="divide-y divide-border">
+                  {filtered.map((t) => (
+                    <li key={t.id} className={`flex items-center gap-1 px-3 py-2 hover:bg-muted/60 ${threadId === t.id ? "bg-primary/5" : ""}`}>
+                      {renamingId === t.id ? (
+                        <form
+                          className="flex-1 min-w-0 flex gap-1"
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            void renameThread(t.id, renameDraft);
+                            setRenamingId(null);
+                          }}
+                        >
+                          <input
+                            autoFocus
+                            value={renameDraft}
+                            onChange={(e) => setRenameDraft(e.target.value)}
+                            onBlur={() => setRenamingId(null)}
+                            onKeyDown={(e) => { if (e.key === "Escape") setRenamingId(null); }}
+                            className="flex-1 text-xs px-2 py-1 rounded border border-input bg-background"
+                            maxLength={60}
+                          />
+                        </form>
+                      ) : (
+                        <button
+                          onClick={() => { selectThread(t.id); setShowThreads(false); }}
+                          className="flex-1 min-w-0 text-left"
+                        >
+                          <p className="text-xs font-medium truncate">{t.title}</p>
+                          <p className="text-[10px] text-muted-foreground">{new Date(t.updated_at).toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}</p>
+                        </button>
+                      )}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setRenameDraft(t.title); setRenamingId(t.id); }}
+                        className="text-muted-foreground hover:text-foreground p-1 rounded"
+                        aria-label="Renomear conversa"
+                        title="Renomear"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); if (confirm("Apagar essa conversa?")) void deleteThread(t.id); }}
+                        className="text-muted-foreground hover:text-destructive p-1 rounded"
+                        aria-label="Apagar conversa"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              );
+            })()}
+          </div>
         </div>
       )}
 
