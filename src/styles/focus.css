@@ -37,7 +37,7 @@
   background: radial-gradient(circle at center, transparent 48%, hsl(var(--accent) / 0.10) 100%);
 }
 
-.study-night > * {
+.study-night > *:not(.fixed) {
   position: relative;
   z-index: 1;
 }
