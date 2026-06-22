@@ -238,11 +238,12 @@ export function useFloraChatStream({ isOpen, onClose }: Options) {
     return () => clearTimeout(timer);
   }, [messages, user, chatLoaded]);
 
-  const send = useCallback(async () => {
-    if (!input.trim() || isSending) return;
-    const messageToSend = input.trim();
+  const send = useCallback(async (overrideText?: string) => {
+    const raw = overrideText !== undefined ? overrideText : input;
+    if (!raw.trim() || isSending) return;
+    const messageToSend = raw.trim();
     setMessages((prev) => [...prev, { role: "user", content: messageToSend }]);
-    setInput("");
+    if (overrideText === undefined) setInput("");
     setIsSending(true);
 
     // Intercepta pedidos de imagem antes de chamar o LLM
