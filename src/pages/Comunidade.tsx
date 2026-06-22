@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Heart, MessageCircle, Send, Loader2, Image as ImageIcon, X, Flag, MoreHorizontal } from "lucide-react";
+import { ArrowLeft, Heart, MessageCircle, Send, Loader2, Image as ImageIcon, X, Flag, MoreHorizontal, TrendingUp, Hash, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { validatePostContent, canPostNow, markPosted, containsProfanity } from "@/lib/moderation";
 
+interface Community {
+  id: string;
+  name: string;
+  slug: string;
+  category: string | null;
+}
+
+type FeedMode = "geral" | "trending" | string;
+
 interface ProfileLite {
   id: string;
   display_name: string | null;
@@ -33,6 +42,7 @@ interface Post {
   likes_count: number;
   comments_count: number;
   created_at: string;
+  community_id?: string | null;
   profile?: ProfileLite | null;
   liked_by_me?: boolean;
 }
@@ -87,6 +97,9 @@ export default function Comunidade() {
   const [composerMedia, setComposerMedia] = useState("");
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const [posting, setPosting] = useState(false);
+  const [composerCommunity, setComposerCommunity] = useState<string>("");
+  const [communities, setCommunities] = useState<Community[]>([]);
+  const [feedMode, setFeedMode] = useState<FeedMode>("geral");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const meAsProfile: ProfileLite | null = user
     ? {
@@ -103,11 +116,22 @@ export default function Comunidade() {
 
   const fetchFeed = useCallback(async () => {
     setLoading(true);
-    const { data: postRows, error } = await supabase
+    let q = supabase
       .from("posts")
-      .select("id, user_id, content, media_url, likes_count, comments_count, created_at")
-      .order("created_at", { ascending: false })
+      .select("id, user_id, content, media_url, likes_count, comments_count, created_at, community_id")
       .limit(50);
+    if (feedMode === "trending") {
+      const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      q = q
+        .gte("created_at", since)
+        .order("likes_count", { ascending: false })
+        .order("comments_count", { ascending: false });
+    } else if (feedMode !== "geral") {
+      q = q.eq("community_id", feedMode).order("created_at", { ascending: false });
+    } else {
+      q = q.order("created_at", { ascending: false });
+    }
+    const { data: postRows, error } = await q;
     if (error) {
       toast.error("Não consegui carregar o feed.");
       setLoading(false);
@@ -142,7 +166,17 @@ export default function Comunidade() {
       })),
     );
     setLoading(false);
-  }, [user]);
+  }, [user, feedMode]);
+
+  useEffect(() => {
+    void (async () => {
+      const { data } = await supabase
+        .from("communities")
+        .select("id, name, slug, category")
+        .order("name");
+      setCommunities((data ?? []) as Community[]);
+    })();
+  }, []);
 
   useEffect(() => {
     void fetchFeed();
@@ -184,6 +218,7 @@ export default function Comunidade() {
       user_id: user.id,
       content,
       media_url: composerMedia.trim() || null,
+      community_id: composerCommunity || null,
     });
     setPosting(false);
     if (error) {
@@ -193,6 +228,7 @@ export default function Comunidade() {
     markPosted();
     setComposer("");
     setComposerMedia("");
+    setComposerCommunity("");
     toast.success("Publicado!");
     void fetchFeed();
   }
@@ -357,6 +393,32 @@ export default function Comunidade() {
           <h1 className="text-2xl font-heading font-bold tracking-tight">Comunidade</h1>
           <p className="text-sm text-muted-foreground">Compartilhe progresso, dúvidas e dicas.</p>
         </div>
+
+        {/* Tabs de feed */}
+        <div className="flex gap-1 overflow-x-auto bg-muted/50 rounded-xl p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <button
+            onClick={() => setFeedMode("geral")}
+            className={`shrink-0 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${feedMode === "geral" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            <Hash className="w-3.5 h-3.5 inline mr-1" /> Geral
+          </button>
+          <button
+            onClick={() => setFeedMode("trending")}
+            className={`shrink-0 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${feedMode === "trending" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            <TrendingUp className="w-3.5 h-3.5 inline mr-1" /> Em alta
+          </button>
+          {communities.map((c) => (
+            <button
+              key={c.id}
+              onClick={() => setFeedMode(c.id)}
+              className={`shrink-0 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${feedMode === c.id ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              {c.name}
+            </button>
+          ))}
+        </div>
+
         {/* Composer */}
         <div className="rounded-2xl border border-border bg-card p-3 sm:p-4 space-y-3">
           <div className="flex gap-3">
@@ -410,14 +472,26 @@ export default function Comunidade() {
               )}
               {uploadingMedia ? "Enviando..." : composerMedia ? "Trocar imagem" : "Adicionar imagem"}
             </Button>
-            <Button
+            <div className="flex items-center gap-2">
+              <select
+                value={composerCommunity}
+                onChange={(e) => setComposerCommunity(e.target.value)}
+                className="text-xs bg-muted border border-border rounded-md px-2 py-1.5 max-w-[140px]"
+              >
+                <option value="">Sem comunidade</option>
+                {communities.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+              <Button
               size="sm"
               onClick={submitPost}
               disabled={posting || !composer.trim()}
-            >
+              >
               {posting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 mr-1" />}
               Publicar
-            </Button>
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -465,6 +539,12 @@ export default function Comunidade() {
                   </div>
                 )}
                 <div className="ml-auto">
+                  {post.community_id && (
+                    <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary mr-2">
+                      <Hash className="w-3 h-3" />
+                      {communities.find((c) => c.id === post.community_id)?.name || "comunidade"}
+                    </span>
+                  )}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Mais ações">
@@ -498,6 +578,21 @@ export default function Comunidade() {
                 </div>
               </div>
               <p className="text-sm whitespace-pre-wrap leading-relaxed">{post.content}</p>
+              {/* Flora CTA: post parece pergunta */}
+              {post.content.trim().endsWith("?") && user && post.user_id !== user.id && (
+                <button
+                  onClick={() => {
+                    const q = encodeURIComponent(post.content.trim());
+                    navigate(`/?flora=${q}`);
+                  }}
+                  className="w-full flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors px-3 py-2 text-left"
+                >
+                  <Sparkles className="w-4 h-4 text-primary shrink-0" />
+                  <span className="text-xs text-foreground/80">
+                    <span className="font-semibold text-primary">Pergunte à Flora</span> sobre esta dúvida — ela monta a explicação em segundos.
+                  </span>
+                </button>
+              )}
               {post.media_url && (
                 <img
                   src={post.media_url}
