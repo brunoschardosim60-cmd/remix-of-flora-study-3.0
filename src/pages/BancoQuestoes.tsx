@@ -939,7 +939,7 @@ export default function BancoQuestoes() {
 
       {/* Header */}
       <div className="border-b border-border/60 bg-gradient-to-b from-card via-card to-card/80 backdrop-blur-md sticky top-0 z-10 shadow-sm">
-        <div className="container max-w-7xl mx-auto px-3 sm:px-4 py-3 flex items-center gap-3">
+        <div className="w-full mx-auto px-3 sm:px-4 py-3 flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="rounded-full" aria-label="Voltar">
             <ArrowLeft className="w-5 h-5" />
           </Button>
@@ -960,7 +960,7 @@ export default function BancoQuestoes() {
         </div>
       </div>
 
-      <div className="container max-w-7xl mx-auto px-3 sm:px-4 py-4 space-y-4">
+      <div className="w-full mx-auto px-3 sm:px-4 py-4 space-y-4">
 
         {/* Simular prova */}
         <Button
