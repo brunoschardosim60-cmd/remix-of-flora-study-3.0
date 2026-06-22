@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { useTheme } from "next-themes";
 import {
   Pause, Play, X, Square, RotateCcw,
@@ -43,6 +44,8 @@ export function FocusModeOverlay({
       setShowMinimalControls(true);
       return;
     }
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
 
     const onKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
@@ -61,7 +64,10 @@ export function FocusModeOverlay({
     };
 
     window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = prevOverflow;
+    };
   }, [isOpen, onClose, onPause, onResume, running]);
 
   useEffect(() => {
@@ -87,7 +93,7 @@ export function FocusModeOverlay({
     if (viewMode === "minimal") setShowMinimalControls(true);
   };
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-50 overflow-hidden bg-background/95 backdrop-blur-2xl"
       onMouseMove={revealMinimalControls}
@@ -205,6 +211,7 @@ export function FocusModeOverlay({
           </div>
         </div>
       )}
-    </div>
+    </div>,
+    document.body,
   );
 }
