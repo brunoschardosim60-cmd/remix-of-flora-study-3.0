@@ -203,6 +203,8 @@ export function FloraTour({ forceOpen = false, onClose }: { forceOpen?: boolean;
         </motion.div>
       )}
     </AnimatePresence>
+  ,
+    document.body,
   );
 }
 
