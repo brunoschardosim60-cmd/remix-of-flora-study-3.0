@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Heart, MessageCircle, Send, Loader2, Image as ImageIcon, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -75,8 +75,9 @@ export default function Comunidade() {
   const [loading, setLoading] = useState(true);
   const [composer, setComposer] = useState("");
   const [composerMedia, setComposerMedia] = useState("");
-  const [showMediaInput, setShowMediaInput] = useState(false);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
   const [posting, setPosting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const meAsProfile: ProfileLite | null = user
     ? {
         id: user.id,
@@ -174,6 +175,35 @@ export default function Comunidade() {
     setComposerMedia("");
     toast.success("Publicado!");
     void fetchFeed();
+  }
+
+  async function handleFileSelected(file: File) {
+    if (!user) {
+      toast.error("Entre na sua conta para enviar imagem.");
+      return;
+    }
+    if (!file.type.startsWith("image/")) {
+      toast.error("Selecione um arquivo de imagem.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Imagem muito grande (máx. 5MB).");
+      return;
+    }
+    setUploadingMedia(true);
+    const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+    const path = `posts/${user.id}/${Date.now()}.${ext}`;
+    const { error: upErr } = await supabase.storage
+      .from("notebook-images")
+      .upload(path, file, { contentType: file.type, upsert: false });
+    if (upErr) {
+      setUploadingMedia(false);
+      toast.error("Não consegui enviar a imagem.");
+      return;
+    }
+    const { data: pub } = supabase.storage.from("notebook-images").getPublicUrl(path);
+    setComposerMedia(pub.publicUrl);
+    setUploadingMedia(false);
   }
 
   async function toggleLike(post: Post) {
