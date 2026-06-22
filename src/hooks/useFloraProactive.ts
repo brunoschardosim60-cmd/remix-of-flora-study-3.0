@@ -20,7 +20,7 @@ const COOLDOWN_MS = 6 * 3600_000;       // 6h por subtype
 const LS_PREFIX = "flora.proactive.lastAt.";
 const ADAPT_THROTTLE_MS = 5 * 60_000;   // re-analisa no máx a cada 5 min
 
-type Subtype = "morning_revision" | "afternoon_topic" | "night_quiz" | "inactivity" | "performance_drop";
+type Subtype = "morning_revision" | "afternoon_topic" | "night_quiz" | "inactivity" | "performance_drop" | "errors_pattern";
 
 function getTimeOfDay(): "morning" | "afternoon" | "evening" | "off" {
   const h = new Date().getHours();
@@ -73,7 +73,7 @@ export function useFloraProactive(userId: string | undefined | null) {
             .order("start_at", { ascending: false })
             .limit(1),
           supabase.from("question_attempts")
-            .select("acertou,created_at")
+            .select("acertou,created_at,question_id")
             .eq("user_id", userId)
             .gte("created_at", since14d)
             .order("created_at", { ascending: false })
@@ -91,6 +91,39 @@ export function useFloraProactive(userId: string | undefined | null) {
             { daysSinceLast: daysSince, action: "start_short_session" });
           markCooldown("inactivity");
           return;
+        }
+
+        // 1.5) Flora Mentor — padrão de erros nas últimas 24h
+        //      Se errou ≥3 questões da mesma matéria/tema hoje, oferece aula rápida + 3 exercícios.
+        if (cooldownOk("errors_pattern")) {
+          const since24h = new Date(now - 86400000).toISOString();
+          const wrongIds = (attemptsRes.data ?? [])
+            .filter((a: any) => !a.acertou && a.created_at >= since24h)
+            .map((a: any) => a.question_id)
+            .filter(Boolean);
+          if (wrongIds.length >= 3) {
+            const { data: qs } = await supabase
+              .from("questions")
+              .select("id, materia, tema")
+              .in("id", wrongIds.slice(0, 50));
+            // conta por matéria/tema
+            const buckets = new Map<string, { materia: string; tema: string; count: number }>();
+            for (const q of (qs ?? []) as any[]) {
+              const key = `${q.materia || "Geral"}__${q.tema || "-"}`;
+              const cur = buckets.get(key) ?? { materia: q.materia || "Geral", tema: q.tema || "", count: 0 };
+              cur.count++;
+              buckets.set(key, cur);
+            }
+            const top = Array.from(buckets.values()).sort((a, b) => b.count - a.count)[0];
+            if (top && top.count >= 3) {
+              const temaLabel = top.tema ? ` em ${top.tema}` : "";
+              await insert(userId, "errors_pattern",
+                `Você errou ${top.count} questões${temaLabel} hoje. Quer uma explicação rápida e 3 exercícios parecidos?`,
+                { materia: top.materia, tema: top.tema, count: top.count, action: "quick_lesson_and_quiz" });
+              markCooldown("errors_pattern");
+              return;
+            }
+          }
         }
 
         // 2) Queda de desempenho (últimos 7d vs anteriores)

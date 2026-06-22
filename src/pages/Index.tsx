@@ -41,6 +41,7 @@ import { FloraButton } from "@/components/dashboard/FloraButton";
 import { Button } from "@/components/ui/button";
 import { QuizDialog } from "@/components/QuizDialog";
 import { FlashcardSessionDialog } from "@/components/FlashcardSessionDialog";
+import { WeeklySummaryCard } from "@/components/WeeklySummaryCard";
 
 // Lazy: heavy components that DON'T appear on first render
 const FocusModeOverlay = lazy(() => import("@/components/FocusModeOverlay").then(m => ({ default: m.FocusModeOverlay })));
@@ -404,6 +405,8 @@ export default function Index() {
             <WeeklyRevisionSummary topics={topics} />
           </Suspense>
         )}
+
+        {!minimalistMode && <WeeklySummaryCard userId={user?.id} />}
 
 
         {/* Tabs */}
