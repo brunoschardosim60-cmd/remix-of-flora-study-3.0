@@ -97,6 +97,9 @@ export default function Comunidade() {
   const [composerMedia, setComposerMedia] = useState("");
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const [posting, setPosting] = useState(false);
+  const [composerCommunity, setComposerCommunity] = useState<string>("");
+  const [communities, setCommunities] = useState<Community[]>([]);
+  const [feedMode, setFeedMode] = useState<FeedMode>("geral");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const meAsProfile: ProfileLite | null = user
     ? {
