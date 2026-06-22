@@ -308,6 +308,7 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
                                     onClick={(e) => { e.stopPropagation(); toggleConcluido(slot.id); }}
                                     className={`p-1 rounded-md transition-all ${slot.concluido ? "bg-secondary/20 text-secondary" : "hover:bg-muted text-muted-foreground"}`}
                                     title={slot.concluido ? "Desmarcar" : "Concluir"}
+                                    aria-label={slot.concluido ? "Desmarcar como concluído" : "Marcar como concluído"}
                                   >
                                     <Check className="w-3 h-3" />
                                   </button>
@@ -315,6 +316,7 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
                                     onClick={(e) => { e.stopPropagation(); clearSlot(slot.id); }}
                                     className="p-1 rounded-md hover:bg-muted text-muted-foreground transition-all"
                                     title="Limpar"
+                                    aria-label="Limpar esta atividade"
                                   >
                                     <Trash2 className="w-3 h-3" />
                                   </button>
@@ -350,6 +352,7 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
                         onClick={() => removeHorario(horario)}
                         className="p-1 rounded-md text-muted-foreground/30 hover:text-destructive hover:bg-destructive/10 transition-all opacity-0 group-hover/row:opacity-100"
                         title="Remover horário"
+                        aria-label={`Remover linha do horário ${horario}`}
                       >
                         <Trash2 className="w-3 h-3" />
                       </button>
