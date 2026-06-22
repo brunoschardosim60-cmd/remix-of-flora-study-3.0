@@ -956,7 +956,8 @@ export default function Redacao() {
                                 {p.sugestao_reescrita && (
                                   <RewriteFlipCard
                                     suggestion={p.sugestao_reescrita}
-                                    original={userParagraphs[key]}
+                                    canJump={!!userParagraphs[key]}
+                                    onJump={() => jumpToParagraph(userParagraphs[key])}
                                   />
                                 )}
                               </div>
