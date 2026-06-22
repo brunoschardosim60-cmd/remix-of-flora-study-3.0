@@ -303,7 +303,7 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
                               {displaySlot.materia ? (
                                 <>
                                   <div className="flex items-center gap-1">
-                                    <span className={`text-[10px] font-bold uppercase tracking-wider text-primary-foreground ${isPreview ? "italic" : ""}`}>
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-primary-foreground">
                                       {displaySlot.materia}
                                     </span>
                                     {displaySlot.concluido && (
@@ -311,15 +311,13 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
                                     )}
                                   </div>
                                   {displaySlot.descricao && (
-                                    <span className={`text-[10px] text-primary-foreground/80 truncate leading-tight ${isPreview ? "italic" : ""}`}>
+                                    <span className="text-[10px] text-primary-foreground/80 truncate leading-tight">
                                       {displaySlot.descricao}
                                     </span>
                                   )}
                                 </>
                               ) : (
-                                <span className="text-[10px] text-muted-foreground/50 text-center m-auto">
-                                  {isPreview ? "—" : "+"}
-                                </span>
+                                <span className="text-[10px] text-muted-foreground/50 text-center m-auto">+</span>
                               )}
                             </div>
                           )}
