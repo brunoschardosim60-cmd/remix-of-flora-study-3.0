@@ -410,7 +410,7 @@ export default function Comunidade() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate("/")}
+            onClick={() => section === "feed" ? navigate("/") : setSection("feed")}
             aria-label="Voltar"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -423,9 +423,20 @@ export default function Comunidade() {
       </header>
 
       <main className="container max-w-2xl mx-auto px-3 sm:px-4 py-4 space-y-4">
-        <div className="hidden md:block">
-          <h1 className="text-2xl font-heading font-bold tracking-tight">Comunidade</h1>
-          <p className="text-sm text-muted-foreground">Compartilhe progresso, dúvidas e dicas.</p>
+        <div className="hidden md:flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => section === "feed" ? navigate("/") : setSection("feed")}
+            aria-label="Voltar"
+            className="shrink-0"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          <div>
+            <h1 className="text-2xl font-heading font-bold tracking-tight">Comunidade</h1>
+            <p className="text-sm text-muted-foreground">Compartilhe progresso, dúvidas e dicas.</p>
+          </div>
         </div>
 
         {/* Tabs de seção: Feed / Grupos / Mensagens */}
