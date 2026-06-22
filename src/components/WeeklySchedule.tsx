@@ -189,22 +189,10 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
 
                       const isEditing = editingSlot === slot.id;
                       const isHovered = hoveredSlot === slot.id;
-
-                      // Pré-visualização da troca: enquanto arrasta, o slot exibe o conteúdo que terá após o drop
-                      const dragSrc = draggingId ? slots.find((s) => s.id === draggingId) : null;
-                      const dragTgt = dragOverId ? slots.find((s) => s.id === dragOverId) : null;
-                      const isPreviewingSwap = !!(dragSrc && dragTgt && draggingId !== dragOverId);
-                      let displaySlot = slot;
-                      let isPreview = false;
-                      if (isPreviewingSwap) {
-                        if (slot.id === draggingId && dragTgt) {
-                          displaySlot = { ...slot, materia: dragTgt.materia, descricao: dragTgt.descricao, concluido: dragTgt.concluido };
-                          isPreview = true;
-                        } else if (slot.id === dragOverId && dragSrc) {
-                          displaySlot = { ...slot, materia: dragSrc.materia, descricao: dragSrc.descricao, concluido: dragSrc.concluido };
-                          isPreview = true;
-                        }
-                      }
+                      const displaySlot = slot;
+                      const isPreview = false;
+                      const isDragSource = draggingId === slot.id;
+                      const isDragTarget = dragOverId === slot.id && draggingId && draggingId !== slot.id;
                       const isFlashing = flashIds.includes(slot.id);
 
                       return (
@@ -274,19 +262,17 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
                               onMouseEnter={() => setHoveredSlot(slot.id)}
                               onMouseLeave={() => setHoveredSlot(null)}
                               onTouchStart={() => setHoveredSlot(slot.id)}
-                              className={`p-2 rounded-lg cursor-pointer min-h-[52px] flex flex-col gap-1 transition-all duration-200 relative group
+                              className={`p-2 rounded-lg cursor-pointer min-h-[52px] flex flex-col gap-1 relative group
                                 ${displaySlot.materia
-                                  ? `${SUBJECT_COLORS[displaySlot.materia]} bg-opacity-15 cursor-grab active:cursor-grabbing ${displaySlot.concluido ? "ring-2 ring-secondary/40" : "hover:ring-2 hover:ring-primary/20"}`
-                                  : "bg-muted/20 hover:bg-muted/40 border border-dashed border-border/50"
+                                  ? `${SUBJECT_COLORS[displaySlot.materia]} bg-opacity-15 cursor-grab active:cursor-grabbing ${displaySlot.concluido ? "ring-2 ring-secondary/40" : ""}`
+                                  : "bg-muted/20 border border-dashed border-border/50"
                                 }
-                                ${isPreview ? "ring-2 ring-primary/70 ring-dashed scale-[1.03] shadow-lg shadow-primary/20" : ""}
-                                ${draggingId === slot.id && !isPreview ? "opacity-40" : ""}
-                                ${dragOverId === slot.id && !isPreview ? "ring-2 ring-primary scale-[1.02]" : ""}
+                                ${isDragSource ? "opacity-60" : ""}
+                                ${isDragTarget ? "ring-2 ring-primary" : ""}
                                 ${isFlashing ? "animate-swap-pop" : ""}`}
                             >
-                              {/* Badge de pré-visualização da troca */}
-                              {isPreview && (
-                                <div className="absolute -top-2 -left-2 z-20 flex items-center gap-0.5 rounded-full bg-primary px-1.5 py-0.5 text-[9px] font-bold text-primary-foreground shadow-md animate-fade-in">
+                              {isDragTarget && (
+                                <div className="absolute -top-2 -left-2 z-20 flex items-center gap-0.5 rounded-full bg-primary px-1.5 py-0.5 text-[9px] font-bold text-primary-foreground shadow-md">
                                   <ArrowLeftRight className="w-2.5 h-2.5" />
                                   trocar
                                 </div>
@@ -317,7 +303,7 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
                               {displaySlot.materia ? (
                                 <>
                                   <div className="flex items-center gap-1">
-                                    <span className={`text-[10px] font-bold uppercase tracking-wider text-primary-foreground ${isPreview ? "italic" : ""}`}>
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-primary-foreground">
                                       {displaySlot.materia}
                                     </span>
                                     {displaySlot.concluido && (
@@ -325,15 +311,13 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
                                     )}
                                   </div>
                                   {displaySlot.descricao && (
-                                    <span className={`text-[10px] text-primary-foreground/80 truncate leading-tight ${isPreview ? "italic" : ""}`}>
+                                    <span className="text-[10px] text-primary-foreground/80 truncate leading-tight">
                                       {displaySlot.descricao}
                                     </span>
                                   )}
                                 </>
                               ) : (
-                                <span className="text-[10px] text-muted-foreground/50 text-center m-auto">
-                                  {isPreview ? "—" : "+"}
-                                </span>
+                                <span className="text-[10px] text-muted-foreground/50 text-center m-auto">+</span>
                               )}
                             </div>
                           )}
