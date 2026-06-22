@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { WeeklySlot, Subject, ALL_SUBJECTS, SUBJECT_COLORS } from "@/lib/studyData";
-import { Check, Trash2, Plus, Clock, ChevronDown, ChevronUp, BookOpen } from "lucide-react";
+import { Check, Trash2, Plus, Clock, ChevronDown, ChevronUp, BookOpen, ArrowLeftRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 
@@ -33,6 +33,8 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
   const [newHorario, setNewHorario] = useState("");
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const [flashIds, setFlashIds] = useState<string[]>([]);
+  const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const horarios = [...new Set(slots.map((s) => s.horario))].sort();
 
@@ -66,6 +68,10 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
         return s;
       })
     );
+    // Flash animation nos dois slots envolvidos
+    setFlashIds([sourceId, targetId]);
+    if (flashTimer.current) clearTimeout(flashTimer.current);
+    flashTimer.current = setTimeout(() => setFlashIds([]), 480);
   };
 
   const addHorario = () => {
