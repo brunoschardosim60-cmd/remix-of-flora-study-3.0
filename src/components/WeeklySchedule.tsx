@@ -31,6 +31,8 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
   const [hoveredSlot, setHoveredSlot] = useState<string | null>(null);
   const [showAddRow, setShowAddRow] = useState(false);
   const [newHorario, setNewHorario] = useState("");
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
 
   const horarios = [...new Set(slots.map((s) => s.horario))].sort();
 
@@ -49,6 +51,21 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
     const slot = slots.find((s) => s.id === id);
     if (!slot) return;
     onChange(slots.map((s) => (s.id === id ? { ...s, concluido: !s.concluido } : s)));
+  };
+
+  // Drag & drop: troca o conteúdo (materia/descricao/concluido) entre dois slots
+  const swapSlots = (sourceId: string, targetId: string) => {
+    if (sourceId === targetId) return;
+    const src = slots.find((s) => s.id === sourceId);
+    const tgt = slots.find((s) => s.id === targetId);
+    if (!src || !tgt) return;
+    onChange(
+      slots.map((s) => {
+        if (s.id === sourceId) return { ...s, materia: tgt.materia, descricao: tgt.descricao, concluido: tgt.concluido };
+        if (s.id === targetId) return { ...s, materia: src.materia, descricao: src.descricao, concluido: src.concluido };
+        return s;
+      })
+    );
   };
 
   const addHorario = () => {
@@ -205,15 +222,39 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
                             </div>
                           ) : (
                             <div
+                              draggable={!!slot.materia}
+                              onDragStart={(e) => {
+                                if (!slot.materia) return;
+                                setDraggingId(slot.id);
+                                e.dataTransfer.effectAllowed = "move";
+                                e.dataTransfer.setData("text/plain", slot.id);
+                              }}
+                              onDragEnd={() => { setDraggingId(null); setDragOverId(null); }}
+                              onDragOver={(e) => {
+                                if (!draggingId || draggingId === slot.id) return;
+                                e.preventDefault();
+                                e.dataTransfer.dropEffect = "move";
+                                if (dragOverId !== slot.id) setDragOverId(slot.id);
+                              }}
+                              onDragLeave={() => { if (dragOverId === slot.id) setDragOverId(null); }}
+                              onDrop={(e) => {
+                                e.preventDefault();
+                                const sourceId = e.dataTransfer.getData("text/plain") || draggingId;
+                                if (sourceId) swapSlots(sourceId, slot.id);
+                                setDraggingId(null);
+                                setDragOverId(null);
+                              }}
                               onClick={() => setEditingSlot(slot.id)}
                               onMouseEnter={() => setHoveredSlot(slot.id)}
                               onMouseLeave={() => setHoveredSlot(null)}
                               onTouchStart={() => setHoveredSlot(slot.id)}
                               className={`p-2 rounded-lg cursor-pointer min-h-[52px] flex flex-col gap-1 transition-all relative group
                                 ${slot.materia
-                                  ? `${SUBJECT_COLORS[slot.materia]} bg-opacity-15 ${slot.concluido ? "ring-2 ring-secondary/40" : "hover:ring-2 hover:ring-primary/20"}`
+                                  ? `${SUBJECT_COLORS[slot.materia]} bg-opacity-15 cursor-grab active:cursor-grabbing ${slot.concluido ? "ring-2 ring-secondary/40" : "hover:ring-2 hover:ring-primary/20"}`
                                   : "bg-muted/20 hover:bg-muted/40 border border-dashed border-border/50"
-                                }`}
+                                }
+                                ${draggingId === slot.id ? "opacity-40" : ""}
+                                ${dragOverId === slot.id ? "ring-2 ring-primary scale-[1.02]" : ""}`}
                             >
                               {/* Action buttons */}
                               {slot.materia && (
