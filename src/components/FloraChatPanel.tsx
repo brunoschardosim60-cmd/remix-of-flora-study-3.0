@@ -20,6 +20,7 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
   const { messages, input, setInput, isSending, objetivo, send, stop, regenerate, resetChat } = useFloraChatStream({ isOpen, onClose });
   const scrollRef = useRef<HTMLDivElement>(null);
   const photoRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [ocrLoading, setOcrLoading] = useState(false);
   const [recording, setRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
@@ -143,6 +144,24 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, isAtBottom]);
+
+  // Foco automático no textarea ao abrir, ao terminar envio e ao começar nova conversa
+  useEffect(() => {
+    if (!isOpen) return;
+    if (isSending) return;
+    textareaRef.current?.focus();
+  }, [isOpen, isSending, messages.length]);
+
+  // Atalho Esc: para geração se streaming, senão fecha o painel
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (isSending) { e.preventDefault(); stop(); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isOpen, isSending, stop]);
 
   const copyMessage = async (content: string, idx: number) => {
     try {
@@ -370,6 +389,7 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
             </Button>
           )}
           <textarea
+            ref={textareaRef}
             value={input}
             onChange={(e) => {
               setInput(e.target.value);
