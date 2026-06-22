@@ -880,7 +880,7 @@ export default function Redacao() {
                               toast.success("PDF gerado");
                             } catch (err) {
                               toast.error("Falha ao gerar PDF");
-                              reportError(err, { tag: "essay-pdf" });
+                              reportError("essay-pdf", err, { devOnly: true });
                             }
                           }}
                         >
