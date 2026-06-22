@@ -362,17 +362,14 @@ export default function Redacao() {
       toast.error(`Escreva pelo menos ${config.minLines} linhas para uma redação completa.`);
       return;
     }
-    // 🧠 Cache persistente: se o texto+tema bate com o que já foi corrigido no banco, reaproveita
+    // Mantém o fingerprint só para informar — o clique sempre dispara nova correção
     const currentFp = fingerprintOf(tema, texto);
     const savedFp =
       selected.status === "corrigida" && selected.corrected_at
         ? fingerprintOf(selected.tema, selected.texto)
         : null;
     if (savedFp && savedFp === currentFp) {
-      toast.info("Usando resposta anterior — sem mudanças no texto.", {
-        description: "Edite o tema ou texto para gerar uma nova correção.",
-      });
-      return;
+      toast.info("Reenviando para a Flora — texto sem alterações.");
     }
     setCorrecting(true);
     setCorrectionStep("Salvando rascunho...");
