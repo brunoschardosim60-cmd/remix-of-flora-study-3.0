@@ -105,6 +105,20 @@ export function FloraConfirmationBanner() {
   const [responding, setResponding] = useState<string | null>(null);
   const [acceptedInfo, setAcceptedInfo] = useState<Record<string, { summary: string; steps: NextStep[]; meta: typeof DECISION_META[string] }>>({});
 
+  // Limite: 1 sugestão por dia por usuário (por dispositivo).
+  // Quando o aluno aceita ou clica em "Manter atual", marcamos o dia como visto
+  // e o banner só volta a aparecer no dia seguinte.
+  const dailyKey = user ? `flora-suggestion-day:${user.id}` : null;
+  const today = new Date().toISOString().slice(0, 10);
+  const seenToday = (() => {
+    if (!dailyKey) return false;
+    try { return localStorage.getItem(dailyKey) === today; } catch { return false; }
+  })();
+  const markSeenToday = useCallback(() => {
+    if (!dailyKey) return;
+    try { localStorage.setItem(dailyKey, today); } catch { /* ignore */ }
+  }, [dailyKey, today]);
+
   const loadPending = useCallback(async () => {
     if (!user) return;
     const { data } = await supabase
@@ -124,7 +138,8 @@ export function FloraConfirmationBanner() {
         return !concursoOnly.test(txt);
       });
     }
-    setPending(rows);
+    // Apenas 1 sugestão por dia
+    setPending(rows.slice(0, 1));
   }, [user, isConcurso]);
 
   useEffect(() => { loadPending(); }, [loadPending]);
@@ -159,6 +174,7 @@ export function FloraConfirmationBanner() {
           } catch { /* non-critical */ }
           const meta = DECISION_META[decision.decision_type] || DECISION_META.proactive_suggestion;
           setAcceptedInfo((prev) => ({ ...prev, [id]: { summary, steps: nextStepsFor(decision, bancoRoute), meta } }));
+          markSeenToday();
           // Mantém o card visível mostrando o estado "feito"; removerá depois
           setTimeout(() => {
             setAcceptedInfo((prev) => { const n = { ...prev }; delete n[id]; return n; });
@@ -169,6 +185,7 @@ export function FloraConfirmationBanner() {
         }
       } else {
         toast("Sugestão rejeitada. Flora vai manter o plano atual.");
+        markSeenToday();
       }
       setPending(prev => prev.filter(d => d.id !== id));
     } catch {
@@ -178,7 +195,7 @@ export function FloraConfirmationBanner() {
     }
   };
 
-  if (pending.length === 0) return null;
+  if (seenToday || pending.length === 0) return null;
 
   return (
     <div className="space-y-3">
