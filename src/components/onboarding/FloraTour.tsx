@@ -8,8 +8,9 @@
 
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Sparkles, ArrowRight, X, Check } from "lucide-react";
+import { ArrowRight, X, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { FloraIcon } from "@/components/FloraIcon";
 import { useAuth } from "@/hooks/useAuth";
 
 const SEEN_KEY_BASE = "flora_tour_seen";
@@ -137,7 +138,7 @@ export function FloraTour({ forceOpen = false, onClose }: { forceOpen?: boolean;
             <div className="flex items-center justify-between px-5 py-3 border-b border-border">
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 rounded-lg bg-primary/15 flex items-center justify-center">
-                  <Sparkles className="w-4 h-4 text-primary" />
+                  <FloraIcon className="w-4 h-4 text-primary" />
                 </div>
                 <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   {STEPS[step].caption}
