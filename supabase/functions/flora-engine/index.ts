@@ -1278,7 +1278,19 @@ Responda SOMENTE com JSON: {"resumo":"...","flashcards":[{"frente":"...","verso"
       }
       const opts: CallOptions = {
         messages: [
-          { role: "system", content: `Você é Flora. Analise e sugira o melhor tópico pra estudar agora. DADOS: ${JSON.stringify({ onboarding: context.onboarding, performance: context.performance, pendingReviews: context.pendingReviews, recentActions: context.recentActions })}
+          { role: "system", content: `Você é Flora. Analise TUDO sobre o aluno e sugira o melhor próximo passo (tópico/ação) agora, levando em conta objetivo, rotina, desempenho recente, revisões pendentes, gamificação, redações e histórico no banco de questões. DADOS: ${JSON.stringify({
+              onboarding: context.onboarding,
+              performance: context.performance,
+              pendingReviews: context.pendingReviews,
+              recentActions: context.recentActions,
+              recentSessions: context.recentSessions,
+              recentEssays: context.recentEssays,
+              studyTopics: (context.studyTopics ?? []).slice(0, 20),
+              questionBankStats: context.questionBankStats,
+              concursoBankStats: context.concursoBankStats,
+              weeklySlots: context.weeklySlots,
+              gamification: (context.studyState as any)?.gamification ?? null,
+            })}
 REGRA CRÍTICA: Se o objetivo do aluno for ENEM, você deve sugerir APENAS matérias do ENEM (Matemática, Biologia, Física, Química, Português, História, Geografia, Filosofia, Sociologia, Inglês/Espanhol, Redação). PROIBIDO sugerir Direito, Raciocínio Lógico (fora de matemática), Informática para concursos ou matérias jurídicas.
 Responda SOMENTE com JSON: {"topic_id":"...","materia":"...","tema":"...","formato":"quiz|explicacao|resumo|exercicio","razao":"frase curta específica","prioridade":"alta|media|baixa"}\nSEMPRE responda em português brasileiro.` },
           { role: "user", content: "Qual o melhor tópico para estudar agora?" },
