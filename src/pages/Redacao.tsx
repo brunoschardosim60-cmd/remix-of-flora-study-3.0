@@ -958,7 +958,6 @@ export default function Redacao() {
                           const fbRaw = feedbackComp?.[comp.key as keyof CompetenciaFeedback];
                           const fb = typeof fbRaw === "string" ? fbRaw : "";
                           const pct = (score / 200) * 100;
-                          const barColor = pct >= 80 ? "bg-green-500" : pct >= 60 ? "bg-yellow-500" : pct >= 40 ? "bg-orange-500" : "bg-red-400";
                           return (
                             <div key={comp.key} className="space-y-2 rounded-xl border border-border bg-background/60 p-3">
                               <div className="flex items-center justify-between">
@@ -973,7 +972,13 @@ export default function Redacao() {
                                 </span>
                               </div>
                               <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-                                <div className={`h-full rounded-full transition-all duration-500 ${barColor}`} style={{ width: `${pct}%` }} />
+                                <div
+                                  className="h-full rounded-full transition-all duration-500"
+                                  style={{
+                                    width: `${pct}%`,
+                                    background: `linear-gradient(90deg, hsl(0 75% 50%), hsl(40 85% 50%), ${gradientBarStyle(pct)})`,
+                                  }}
+                                />
                               </div>
                               <p className="text-xs text-muted-foreground">{comp.description}</p>
                               {fb && <p className="text-sm whitespace-pre-line">{fb}</p>}
