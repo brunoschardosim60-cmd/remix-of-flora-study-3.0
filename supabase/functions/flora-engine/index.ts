@@ -896,11 +896,25 @@ ${olderSummary}${recentChatSummary}`;
 
     if (action === "save_chat") {
       const messages = data?.messages;
-      if (!Array.isArray(messages) || messages.length === 0) return jsonResponse({ ok: true });
-      await supabase.from("flora_chat_messages").delete().eq("user_id", userId);
+      const threadId = typeof data?.threadId === "string" ? data.threadId : null;
+      if (!Array.isArray(messages)) return jsonResponse({ ok: true });
+      // Apaga tudo da thread (ou do usuário se não houver thread, legado)
+      if (threadId) {
+        await supabase.from("flora_chat_messages").delete().eq("user_id", userId).eq("thread_id", threadId);
+      } else {
+        await supabase.from("flora_chat_messages").delete().eq("user_id", userId).is("thread_id", null);
+      }
+      if (messages.length === 0) {
+        // Atualiza updated_at da thread se existir
+        if (threadId) {
+          await supabase.from("flora_chat_threads").update({ updated_at: new Date().toISOString() }).eq("id", threadId).eq("user_id", userId);
+        }
+        return jsonResponse({ ok: true, saved: 0 });
+      }
       const now = Date.now();
       const inserts = messages.slice(-80).map((m: any, i: number) => ({
         user_id: userId,
+        thread_id: threadId,
         role: m.role,
         content: m.content?.slice(0, 4000) || "",
         created_at: new Date(now + i).toISOString(),
@@ -908,12 +922,55 @@ ${olderSummary}${recentChatSummary}`;
         metadata: m.metadata && typeof m.metadata === "object" ? m.metadata : {},
       }));
       await supabase.from("flora_chat_messages").insert(inserts);
+      if (threadId) {
+        // Auto-título com base na primeira msg do usuário se ainda for default
+        const firstUser = messages.find((m: any) => m.role === "user");
+        const updates: any = { updated_at: new Date().toISOString() };
+        if (firstUser?.content) {
+          const { data: t } = await supabase.from("flora_chat_threads").select("title").eq("id", threadId).maybeSingle();
+          if (t?.title === "Nova conversa") {
+            updates.title = String(firstUser.content).slice(0, 60);
+          }
+        }
+        await supabase.from("flora_chat_threads").update(updates).eq("id", threadId).eq("user_id", userId);
+      }
       return jsonResponse({ ok: true, saved: inserts.length });
     }
 
     if (action === "load_chat") {
-      const { data: messages } = await supabase.from("flora_chat_messages").select("role, content, created_at, seq, metadata").eq("user_id", userId).order("seq", { ascending: true }).order("created_at", { ascending: true }).limit(80);
+      const threadId = typeof data?.threadId === "string" ? data.threadId : null;
+      let q = supabase.from("flora_chat_messages").select("role, content, created_at, seq, metadata").eq("user_id", userId).order("seq", { ascending: true }).order("created_at", { ascending: true }).limit(80);
+      q = threadId ? q.eq("thread_id", threadId) : q.is("thread_id", null);
+      const { data: messages } = await q;
       return jsonResponse({ messages: messages ?? [] });
+    }
+
+    if (action === "list_threads") {
+      const { data: threads } = await supabase.from("flora_chat_threads").select("id, title, updated_at, created_at").eq("user_id", userId).order("updated_at", { ascending: false }).limit(50);
+      return jsonResponse({ threads: threads ?? [] });
+    }
+
+    if (action === "create_thread") {
+      const title = String(data?.title || "Nova conversa").slice(0, 60);
+      const { data: row, error } = await supabase.from("flora_chat_threads").insert({ user_id: userId, title }).select("id, title, created_at, updated_at").single();
+      if (error) return jsonResponse({ error: error.message }, 500);
+      return jsonResponse({ thread: row });
+    }
+
+    if (action === "delete_thread") {
+      const threadId = String(data?.threadId || "");
+      if (!threadId) return jsonResponse({ error: "threadId required" }, 400);
+      await supabase.from("flora_chat_messages").delete().eq("user_id", userId).eq("thread_id", threadId);
+      await supabase.from("flora_chat_threads").delete().eq("user_id", userId).eq("id", threadId);
+      return jsonResponse({ ok: true });
+    }
+
+    if (action === "rename_thread") {
+      const threadId = String(data?.threadId || "");
+      const title = String(data?.title || "").slice(0, 60).trim();
+      if (!threadId || !title) return jsonResponse({ error: "threadId & title required" }, 400);
+      await supabase.from("flora_chat_threads").update({ title }).eq("user_id", userId).eq("id", threadId);
+      return jsonResponse({ ok: true });
     }
 
     if (action === "execute_action") {

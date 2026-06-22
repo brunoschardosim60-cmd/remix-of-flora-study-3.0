@@ -45,6 +45,11 @@ export function useFloraChatStream({ isOpen, onClose }: Options) {
   const [isDailySummaryLoading, setIsDailySummaryLoading] = useState(false);
   const [chatLoaded, setChatLoaded] = useState(false);
   const [objetivo, setObjetivo] = useState<Objetivo>("enem");
+  const [threadId, setThreadId] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return window.localStorage.getItem("flora-active-thread") || null;
+  });
+  const [threads, setThreads] = useState<Array<{ id: string; title: string; updated_at: string }>>([]);
   const pendingAssistantTextRef = useRef("");
   const assistantFlushTimerRef = useRef<number | null>(null);
   const sendAbortRef = useRef<AbortController | null>(null);
@@ -109,13 +114,38 @@ export function useFloraChatStream({ isOpen, onClose }: Options) {
       });
   }, [user]);
 
-  // Carrega histórico ao abrir
+  // Lista threads ao abrir
   useEffect(() => {
-    if (!isOpen || chatLoaded || !user) return;
+    if (!isOpen || !user) return;
+    supabase.functions.invoke("flora-engine", { body: { action: "list_threads" } })
+      .then(({ data }) => {
+        const list = (data?.threads || []) as Array<{ id: string; title: string; updated_at: string }>;
+        setThreads(list);
+        // Se temos threadId no storage mas não existe, descarta
+        if (threadId && !list.some((t) => t.id === threadId)) {
+          setThreadId(null);
+          window.localStorage.removeItem("flora-active-thread");
+        }
+      })
+      .catch(() => {});
+  }, [isOpen, user, threadId]);
+
+  // Persiste threadId selecionado
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (threadId) window.localStorage.setItem("flora-active-thread", threadId);
+    else window.localStorage.removeItem("flora-active-thread");
+  }, [threadId]);
+
+  // Carrega histórico ao abrir / trocar thread
+  useEffect(() => {
+    if (!isOpen || !user) return;
+    setChatLoaded(false);
+    setMessages([]);
     (async () => {
       try {
         const { data } = await supabase.functions.invoke("flora-engine", {
-          body: { action: "load_chat" },
+          body: { action: "load_chat", data: { threadId } },
         });
         if (data?.messages?.length) {
           const loaded: (FloraMessage & { seq?: number; created_at?: string })[] = data.messages.map((m: any) => ({
@@ -140,7 +170,7 @@ export function useFloraChatStream({ isOpen, onClose }: Options) {
       } catch { /* silent */ }
       setChatLoaded(true);
     })();
-  }, [isOpen, chatLoaded, user]);
+  }, [isOpen, user, threadId]);
 
   // Resumo diário (1x/dia, só se chat vazio)
   useEffect(() => {
@@ -231,12 +261,12 @@ export function useFloraChatStream({ isOpen, onClose }: Options) {
       supabase.functions.invoke("flora-engine", {
         body: {
           action: "save_chat",
-          data: { messages: messages.slice(-100).map((m) => ({ role: m.role, content: m.content, metadata: m.metadata || {} })) },
+          data: { threadId, messages: messages.slice(-100).map((m) => ({ role: m.role, content: m.content, metadata: m.metadata || {} })) },
         },
       }).catch(() => {});
     }, 2000);
     return () => clearTimeout(timer);
-  }, [messages, user, chatLoaded]);
+  }, [messages, user, chatLoaded, threadId]);
 
   const send = useCallback(async (overrideText?: string) => {
     const raw = overrideText !== undefined ? overrideText : input;
@@ -409,11 +439,36 @@ export function useFloraChatStream({ isOpen, onClose }: Options) {
     setInput("");
     setIsSending(false);
     try {
-      await supabase.functions.invoke("flora-engine", {
-        body: { action: "save_chat", data: { messages: [] } },
+      const { data } = await supabase.functions.invoke("flora-engine", {
+        body: { action: "create_thread", data: { title: "Nova conversa" } },
       });
+      if (data?.thread?.id) {
+        setThreads((prev) => [{ id: data.thread.id, title: data.thread.title, updated_at: data.thread.updated_at }, ...prev]);
+        setThreadId(data.thread.id);
+      }
     } catch { /* silent */ }
   }, []);
+
+  const selectThread = useCallback((id: string | null) => {
+    if (id === threadId) return;
+    sendAbortRef.current?.abort();
+    sendAbortRef.current = null;
+    pendingAssistantTextRef.current = "";
+    setInput("");
+    setIsSending(false);
+    setThreadId(id);
+  }, [threadId]);
+
+  const deleteThread = useCallback(async (id: string) => {
+    try {
+      await supabase.functions.invoke("flora-engine", { body: { action: "delete_thread", data: { threadId: id } } });
+      setThreads((prev) => prev.filter((t) => t.id !== id));
+      if (threadId === id) {
+        setThreadId(null);
+        setMessages([]);
+      }
+    } catch { /* silent */ }
+  }, [threadId]);
 
   return {
     messages,
@@ -425,5 +480,9 @@ export function useFloraChatStream({ isOpen, onClose }: Options) {
     stop,
     regenerate,
     resetChat,
+    threadId,
+    threads,
+    selectThread,
+    deleteThread,
   };
 }

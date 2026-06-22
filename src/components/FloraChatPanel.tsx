@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Send, X, Camera, Loader2, Mic, Square, StopCircle, RefreshCw, Copy, Check, Volume2, VolumeX, Maximize2, Minimize2, MessageSquarePlus } from "lucide-react";
+import { Send, X, Camera, Loader2, Mic, Square, StopCircle, RefreshCw, Copy, Check, Volume2, VolumeX, Maximize2, Minimize2, MessageSquarePlus, History, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { FloraQuotaIndicator } from "@/components/FloraQuotaIndicator";
@@ -17,7 +17,7 @@ interface FloraChat {
 }
 
 export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
-  const { messages, input, setInput, isSending, objetivo, send, stop, regenerate, resetChat } = useFloraChatStream({ isOpen, onClose });
+  const { messages, input, setInput, isSending, objetivo, send, stop, regenerate, resetChat, threadId, threads, selectThread, deleteThread } = useFloraChatStream({ isOpen, onClose });
   const scrollRef = useRef<HTMLDivElement>(null);
   const photoRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -28,6 +28,7 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [speakingIdx, setSpeakingIdx] = useState<number | null>(null);
   const [expanded, setExpanded] = useState(false);
+  const [showThreads, setShowThreads] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
 
@@ -194,12 +195,10 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
   };
 
   const handleNewChat = async () => {
-    if (messages.length === 0) return;
-    if (!confirm("Começar uma nova conversa? O histórico atual será apagado.")) return;
     floraTTS.stopAudio();
     setSpeakingIdx(null);
     await resetChat();
-    toast.success("Nova conversa começada.");
+    toast.success("Nova conversa criada.");
   };
 
   if (!isOpen) return null;
@@ -225,6 +224,9 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
           <p className="text-xs text-muted-foreground">Sua professora parceira</p>
         </div>
         <FloraQuotaIndicator action="chat" />
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowThreads((v) => !v)} aria-label="Histórico de conversas" title="Histórico">
+          <History className="w-4 h-4" />
+        </Button>
         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleNewChat} aria-label="Nova conversa" title="Nova conversa">
           <MessageSquarePlus className="w-4 h-4" />
         </Button>
@@ -235,6 +237,35 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
           <X className="w-4 h-4" />
         </Button>
       </div>
+
+      {showThreads && (
+        <div className="border-b border-border bg-muted/30 max-h-48 overflow-y-auto">
+          {threads.length === 0 ? (
+            <p className="text-xs text-muted-foreground px-4 py-3">Sem conversas salvas ainda.</p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {threads.map((t) => (
+                <li key={t.id} className={`flex items-center gap-2 px-3 py-2 hover:bg-muted/60 ${threadId === t.id ? "bg-primary/5" : ""}`}>
+                  <button
+                    onClick={() => { selectThread(t.id); setShowThreads(false); }}
+                    className="flex-1 min-w-0 text-left"
+                  >
+                    <p className="text-xs font-medium truncate">{t.title}</p>
+                    <p className="text-[10px] text-muted-foreground">{new Date(t.updated_at).toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}</p>
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); if (confirm("Apagar essa conversa?")) void deleteThread(t.id); }}
+                    className="text-muted-foreground hover:text-destructive p-1 rounded"
+                    aria-label="Apagar conversa"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
 
       {/* Messages */}
       <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto p-4 space-y-3">
