@@ -236,6 +236,24 @@ export default function Redacao() {
     requestAnimationFrame(() => setFeedbackRevealed(true));
   }
 
+  async function generateRealPlan() {
+    setLoadingRealPlan(true);
+    setRealPlan(null);
+    setRealPlanMetrics(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-personalized-plan", { body: {} });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      setRealPlan(data?.data?.plano ?? null);
+      setRealPlanMetrics(data?.data?.metricas ?? null);
+      toast.success("Plano personalizado gerado com seus dados reais.");
+    } catch (err) {
+      toast.error(toErrorMessage(err, "Não consegui gerar o plano agora."));
+    } finally {
+      setLoadingRealPlan(false);
+    }
+  }
+
   const selected = useMemo(() => essays.find((e) => e.id === selectedId) ?? null, [essays, selectedId]);
 
   // Salva no localStorage com debounce (sobrevivência offline) para evitar stuttering em textos longos
