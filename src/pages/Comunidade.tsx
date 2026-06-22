@@ -8,6 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { BottomNav } from "@/components/BottomNav";
+import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
+import { useStudentObjetivo } from "@/hooks/useStudentObjetivo";
 
 interface ProfileLite {
   id: string;
@@ -69,7 +71,8 @@ function Avatar({ profile, size = 40 }: { profile?: ProfileLite | null; size?: n
 }
 
 export default function Comunidade() {
-  const { user, profile } = useAuth();
+  const { user, profile, signOut } = useAuth();
+  const { bancoRoute, bancoLabel } = useStudentObjetivo(user);
   const navigate = useNavigate();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
@@ -283,7 +286,17 @@ export default function Comunidade() {
 
   return (
     <div className="min-h-dvh bg-background pb-20 md:pb-8">
-      <header className="sticky top-0 z-20 border-b border-border bg-card/95 backdrop-blur">
+      {/* Desktop: header global do app */}
+      <div className="hidden md:block">
+        <DashboardHeader
+          user={user}
+          bancoRoute={bancoRoute}
+          bancoLabel={bancoLabel}
+          onSignOut={signOut}
+        />
+      </div>
+      {/* Mobile: header compacto com voltar */}
+      <header className="md:hidden sticky top-0 z-20 border-b border-border bg-card/95 backdrop-blur">
         <div className="container max-w-2xl mx-auto px-3 sm:px-4 py-3 flex items-center gap-3">
           <Button
             variant="ghost"
@@ -301,6 +314,10 @@ export default function Comunidade() {
       </header>
 
       <main className="container max-w-2xl mx-auto px-3 sm:px-4 py-4 space-y-4">
+        <div className="hidden md:block">
+          <h1 className="text-2xl font-heading font-bold tracking-tight">Comunidade</h1>
+          <p className="text-sm text-muted-foreground">Compartilhe progresso, dúvidas e dicas.</p>
+        </div>
         {/* Composer */}
         <div className="rounded-2xl border border-border bg-card p-3 sm:p-4 space-y-3">
           <div className="flex gap-3">
