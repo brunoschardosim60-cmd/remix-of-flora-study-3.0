@@ -43,10 +43,10 @@ export function FloraButton() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-16 md:bottom-4 right-4 z-40 w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:scale-105 transition-transform"
+        className="fixed bottom-[calc(env(safe-area-inset-bottom,0px)+5rem)] md:bottom-6 right-4 z-40 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-xl flex items-center justify-center hover:scale-105 transition-transform"
         aria-label="Falar com Flora"
       >
-        <FloraIcon className="w-6 h-6" />
+        <FloraIcon className="w-7 h-7" />
       </button>
       <Suspense fallback={null}>
         <FloraChatPanel

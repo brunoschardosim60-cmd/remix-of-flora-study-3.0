@@ -241,8 +241,13 @@ export function StudyTimer({
           >
             <Clock className="w-4 h-4" />
           </button>
-          {onOpenFocusMode && !isInitial && (
-            <button onClick={onOpenFocusMode} className="rounded-lg p-2 text-muted-foreground hover:bg-muted transition-colors" title="Modo foco">
+          {onOpenFocusMode && (
+            <button
+              onClick={onOpenFocusMode}
+              className="rounded-lg p-2 text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors"
+              title="Abrir modo zen"
+              aria-label="Abrir modo zen"
+            >
               <Maximize2 className="w-4 h-4" />
             </button>
           )}

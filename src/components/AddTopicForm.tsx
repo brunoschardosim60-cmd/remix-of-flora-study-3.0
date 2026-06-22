@@ -23,7 +23,7 @@ export function AddTopicForm({ onAdd, openSignal = 0, subjects }: AddTopicFormPr
     setOpen(true);
     window.requestAnimationFrame(() => {
       topicInputRef.current?.focus();
-      topicInputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      topicInputRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
     });
   }, [openSignal]);
 
