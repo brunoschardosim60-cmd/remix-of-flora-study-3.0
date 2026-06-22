@@ -29,7 +29,6 @@ interface WeeklyScheduleProps {
 export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProps) {
   const subjectOptions = subjects && subjects.length ? subjects : ALL_SUBJECTS;
   const [editingSlot, setEditingSlot] = useState<string | null>(null);
-  const [hoveredSlot, setHoveredSlot] = useState<string | null>(null);
   const [showAddRow, setShowAddRow] = useState(false);
   const [newHorario, setNewHorario] = useState("");
   const [draggingId, setDraggingId] = useState<string | null>(null);
