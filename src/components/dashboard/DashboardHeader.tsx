@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { BookOpen, NotebookPen, FileText, BarChart3, Sun, Moon, CircleDot, LogOut, Settings, Library, Users, MessageCircle } from "lucide-react";
+import { BookOpen, NotebookPen, FileText, BarChart3, Sun, Moon, CircleDot, Settings, Library, Users, MessageCircle } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { CustomThemeDialog } from "@/components/CustomThemeDialog";
@@ -10,10 +10,10 @@ interface Props {
   user: User | null;
   bancoRoute: string;
   bancoLabel: string;
-  onSignOut: () => void;
+  onSignOut?: () => void;
 }
 
-export function DashboardHeader({ user, bancoRoute, bancoLabel, onSignOut }: Props) {
+export function DashboardHeader({ user, bancoRoute, bancoLabel }: Props) {
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
 
@@ -67,11 +67,6 @@ export function DashboardHeader({ user, bancoRoute, bancoLabel, onSignOut }: Pro
           {user && (
             <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => navigate("/settings")} aria-label="Configurações">
               <Settings className="w-4 h-4" />
-            </Button>
-          )}
-          {user && (
-            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={onSignOut} aria-label="Sair">
-              <LogOut className="w-4 h-4" />
             </Button>
           )}
         </div>
