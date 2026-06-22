@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Send, Hash, LogOut, Copy } from "lucide-react";
+import { Plus, Send, Hash, LogOut, Copy, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 
 interface Group {
@@ -138,7 +138,7 @@ export function GruposPanel() {
             </Dialog>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-4">
-        <aside className="space-y-2">
+        <aside className={`space-y-2 ${active ? "hidden md:block" : ""}`}>
           {groups.length === 0 ? (
             <p className="text-xs text-muted-foreground text-center py-4">Você ainda não está em nenhum grupo. Crie ou entre com um código.</p>
           ) : groups.map((g) => (
@@ -149,12 +149,15 @@ export function GruposPanel() {
             </button>
           ))}
         </aside>
-        <section className="border border-border rounded-lg bg-card min-h-[60dvh] flex flex-col">
+        <section className={`border border-border rounded-lg bg-card min-h-[60dvh] flex flex-col ${active ? "" : "hidden md:flex"}`}>
           {!active ? (
             <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">Selecione um grupo.</div>
           ) : (
             <>
               <div className="px-4 py-3 border-b border-border flex items-center gap-2">
+                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => setActive(null)} aria-label="Voltar">
+                  <ArrowLeft className="w-4 h-4" />
+                </Button>
                 <div className="flex-1">
                   <p className="font-medium">{active.name}</p>
                   {active.description && <p className="text-xs text-muted-foreground">{active.description}</p>}
