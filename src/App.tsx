@@ -1,8 +1,9 @@
 import { lazy, Suspense, useEffect } from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, QueryCache, MutationCache } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { Toaster as Sonner } from "@/components/ui/sonner";
+import { toast } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
@@ -46,7 +47,32 @@ const Grupos = lazy(() => import("./pages/Grupos"));
 
 
 
+// Toast global para falhas de rede / servidor (ignora quota — tratado em outro lugar)
+function notifyNetworkError(error: unknown) {
+  const err = error as { status?: number; message?: string; error?: string };
+  const status = err?.status;
+  // Erros de quota já têm modal próprio; auth/RLS não fazem sentido como toast genérico
+  if (status === 401 || status === 402 || status === 403 || status === 429) return;
+  if (err?.error === "quota_exceeded") return;
+  const msg = err?.message || "";
+  if (/failed to fetch|networkerror|load failed|network request failed/i.test(msg)) {
+    toast.error("Sem conexão", {
+      description: "Verifique sua internet e tente novamente.",
+      duration: 4000,
+    });
+    return;
+  }
+  if (status && status >= 500) {
+    toast.error("Erro no servidor", {
+      description: "Algo deu errado do nosso lado. Já fomos notificados.",
+      duration: 4000,
+    });
+  }
+}
+
 const queryClient = new QueryClient({
+  queryCache: new QueryCache({ onError: notifyNetworkError }),
+  mutationCache: new MutationCache({ onError: notifyNetworkError }),
   defaultOptions: {
     queries: {
       // Não faz retry em erros 4xx (RLS, auth, not found) — só em erros de servidor/rede
