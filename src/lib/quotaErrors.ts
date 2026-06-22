@@ -29,7 +29,7 @@ export async function parseFunctionError(err: unknown): Promise<ParsedFunctionEr
       const status = ctx.status;
       try {
         const body = await ctx.clone().json();
-        if (body?.error === "quota_exceeded" || status === 429 || status === 402) {
+        if (body?.error === "quota_exceeded" || body?.error === "rate_limited" || status === 429 || status === 402) {
           return { isQuota: true, status, message: body?.message, quota: body?.quota };
         }
         return { isQuota: false, status, message: body?.message ?? anyErr.message };
@@ -40,7 +40,7 @@ export async function parseFunctionError(err: unknown): Promise<ParsedFunctionEr
     // Sem context: detectar pelo status/error plano no objeto.
     const plain = err as { status?: number; message?: string; error?: string };
     const status = plain?.status;
-    const isQuota = plain?.error === "quota_exceeded" || status === 402 || status === 429;
+    const isQuota = plain?.error === "quota_exceeded" || plain?.error === "rate_limited" || status === 402 || status === 429;
     return { isQuota, status, message: plain?.message };
   } catch {
     return { isQuota: false };
@@ -73,6 +73,18 @@ function timeUntilReset(): string {
 export async function handleQuotaError(err: unknown, opts?: { feature?: string; onUpgrade?: () => void }): Promise<boolean> {
   const parsed = await parseFunctionError(err);
   if (!parsed.isQuota) return false;
+
+  // Rate-limit: toast curto pedindo pra aguardar — não abre modal de upgrade
+  const isRateLimited = (parsed.quota as { rate_limited?: boolean } | undefined)?.rate_limited;
+  if (isRateLimited) {
+    const retryAfter = (parsed.quota as { retry_after?: number } | undefined)?.retry_after ?? 60;
+    const wait = retryAfter >= 3600 ? "uma hora" : `${retryAfter} segundos`;
+    toast.warning("Muitas requisições", {
+      description: `Aguarde ${wait} antes de tentar de novo.`,
+      duration: 5000,
+    });
+    return true;
+  }
 
   const tier = parsed.quota?.tier ?? "free";
   const tierLabel = TIER_LABEL[tier] ?? tier;

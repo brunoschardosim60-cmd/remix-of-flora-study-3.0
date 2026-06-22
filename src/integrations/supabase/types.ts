@@ -2135,6 +2135,10 @@ export type Database = {
         Args: { p_action: string; p_user_id: string }
         Returns: Json
       }
+      check_user_rate_limit: {
+        Args: { p_max: number; p_user_id: string; p_window_seconds: number }
+        Returns: Json
+      }
       classify_question_tema: {
         Args: { p_disciplina: string; p_enunciado: string }
         Returns: string
