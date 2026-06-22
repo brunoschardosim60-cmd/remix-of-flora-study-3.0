@@ -529,13 +529,14 @@ export default function BancoQuestoes() {
       if (!t) continue;
       const d = (q.disciplina || "").trim();
       if (allow && !allow.has(d)) continue;
+      if (ano !== "Todos" && String(q.ano) !== ano) continue;
       counts.set(t, (counts.get(t) || 0) + 1);
     }
     const arr = Array.from(counts.entries())
       .sort((a, b) => b[1] - a[1])
       .map(([t, n]) => ({ value: t, label: `${t} (${n})` }));
     return arr;
-  }, [questions, disciplina, discAliases]);
+  }, [questions, disciplina, discAliases, ano]);
 
   // Reseta o tema se a lista mudar e o atual não estiver mais disponível.
   useEffect(() => {
