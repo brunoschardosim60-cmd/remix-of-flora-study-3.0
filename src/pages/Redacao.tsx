@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { prefetchForContext } from "@/lib/prefetch";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, FileText, Loader2, PlusCircle, Sparkles, Trash2, Wand2, Save, CheckCircle2, AlertCircle, Target, CalendarDays, CalendarRange, Dumbbell, Lightbulb, PanelLeftClose, PanelLeftOpen, WifiOff, CloudUpload, Download } from "lucide-react";
@@ -36,35 +36,37 @@ import {
   isOnline as isOnlineNow,
 } from "@/lib/essayDraftStore";
 
-// ─── Card de reescrita: mostra a sugestão da Flora por padrão.
-// Ao clicar, alterna para o trecho que o usuário escreveu nesse parágrafo,
-// para comparar lado a lado o original com a sugestão.
-function RewriteFlipCard({ suggestion, original }: { suggestion: string; original?: string }) {
-  const [showOriginal, setShowOriginal] = useState(false);
-  const canToggle = !!(original && original.trim());
+// ─── Card de reescrita: mostra a sugestão da Flora.
+// Ao clicar em "Mostrar no texto", rola o textarea da redação até o parágrafo
+// correspondente e dispara um pulse rápido pra localizar visualmente.
+function RewriteFlipCard({
+  suggestion,
+  onJump,
+  canJump,
+}: {
+  suggestion: string;
+  onJump?: () => void;
+  canJump?: boolean;
+}) {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-primary" />
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-primary">
-            {showOriginal ? "Seu texto neste parágrafo" : "Sugestão de reescrita"}
-          </p>
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-primary">Sugestão de reescrita</p>
         </div>
-        {canToggle && (
+        {canJump && (
           <button
             type="button"
-            onClick={() => setShowOriginal((v) => !v)}
+            onClick={onJump}
             className="text-[10px] font-medium uppercase tracking-wide text-primary/80 hover:text-primary"
           >
-            {showOriginal ? "Ver sugestão" : "Ver meu texto"}
+            Mostrar no texto →
           </button>
         )}
       </div>
       <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
-        <p className={`text-sm whitespace-pre-line ${showOriginal ? "" : "italic"}`}>
-          {showOriginal ? original : suggestion}
-        </p>
+        <p className="text-sm whitespace-pre-line italic">{suggestion}</p>
       </div>
     </div>
   );
@@ -147,6 +149,9 @@ export default function Redacao() {
   const [realPlan, setRealPlan] = useState<any | null>(null);
   const [realPlanMetrics, setRealPlanMetrics] = useState<any | null>(null);
   const [loadingRealPlan, setLoadingRealPlan] = useState(false);
+  // Pulse de localização ao clicar em "Mostrar no texto"
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const [pulsing, setPulsing] = useState(false);
   function hashText(s: string): string {
     let h = 5381;
     for (let i = 0; i < s.length; i++) h = ((h << 5) + h) ^ s.charCodeAt(i);
@@ -252,6 +257,25 @@ export default function Redacao() {
     } finally {
       setLoadingRealPlan(false);
     }
+  }
+
+  // Rola o textarea até o parágrafo correspondente e dispara um pulse visual.
+  function jumpToParagraph(paragraph?: string) {
+    if (!paragraph) return;
+    const ta = textareaRef.current;
+    if (!ta) return;
+    const idx = texto.indexOf(paragraph.trim().slice(0, 40));
+    if (idx >= 0) {
+      ta.focus({ preventScroll: true });
+      ta.setSelectionRange(idx, idx + paragraph.length);
+      // Aproxima o scroll do textarea pra parte selecionada
+      const ratio = idx / Math.max(1, texto.length);
+      ta.scrollTop = ratio * (ta.scrollHeight - ta.clientHeight);
+    }
+    ta.scrollIntoView({ behavior: "smooth", block: "center" });
+    setPulsing(false);
+    requestAnimationFrame(() => setPulsing(true));
+    window.setTimeout(() => setPulsing(false), 1400);
   }
 
   const selected = useMemo(() => essays.find((e) => e.id === selectedId) ?? null, [essays, selectedId]);
@@ -700,10 +724,11 @@ export default function Redacao() {
                       </span>
                     </div>
                     <Textarea
+                      ref={textareaRef}
                       value={texto}
                       onChange={(e) => setTexto(e.target.value)}
                       placeholder={config.placeholder}
-                      className="min-h-[420px] font-serif text-base leading-relaxed"
+                      className={`min-h-[420px] font-serif text-base leading-relaxed transition-shadow ${pulsing ? "ring-4 ring-primary/70 shadow-[0_0_0_6px_hsl(var(--primary)/0.15)] animate-pulse" : ""}`}
                     />
                     <p className="text-[11px] text-muted-foreground flex items-start gap-1.5">
                       <Lightbulb className="h-3 w-3 mt-0.5 flex-shrink-0 text-amber-500" />
@@ -951,7 +976,8 @@ export default function Redacao() {
                                 {p.sugestao_reescrita && (
                                   <RewriteFlipCard
                                     suggestion={p.sugestao_reescrita}
-                                    original={userParagraphs[key]}
+                                    canJump={!!userParagraphs[key]}
+                                    onJump={() => jumpToParagraph(userParagraphs[key])}
                                   />
                                 )}
                               </div>
