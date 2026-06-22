@@ -339,7 +339,10 @@ export default function Notebooks() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
+          <div
+            className="grid gap-3 sm:gap-4"
+            style={{ gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))" }}
+          >
             {filtered.map((nb) => (
               <div
                 key={nb.id}
@@ -347,7 +350,7 @@ export default function Notebooks() {
                 className="group cursor-pointer"
               >
                 <div
-                  className="aspect-[3/4] rounded-xl flex flex-col justify-end p-4 relative overflow-hidden transition-transform hover:scale-[1.02] shadow-md"
+                  className="aspect-[4/5] rounded-xl flex flex-col justify-end p-4 relative overflow-hidden transition-transform hover:scale-[1.02] shadow-md"
                   style={{ backgroundColor: nb.cover_color }}
                 >
                   {/* Decorative pen icon */}
@@ -379,10 +382,14 @@ export default function Notebooks() {
                   </button>
 
                   <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3">
-                    <p className="font-heading font-bold text-white text-sm truncate">{nb.title}</p>
-                    {nb.subject && (
-                      <p className="text-white/70 text-xs truncate">{nb.subject}</p>
-                    )}
+                    <p className="font-heading font-bold text-white text-sm truncate">
+                      {nb.title?.trim() && nb.title.trim().length > 1
+                        ? nb.title
+                        : "Sem título"}
+                    </p>
+                    <p className="text-white/70 text-xs truncate">
+                      {nb.subject || "Sem matéria"}
+                    </p>
                     {nb.folder && (
                       <p className="text-white/50 text-[10px] truncate mt-0.5">📁 {nb.folder}</p>
                     )}

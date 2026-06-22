@@ -216,6 +216,9 @@ const App = () => (
                 <Route path="/comunidade" element={<ProtectedRoute><Comunidade /></ProtectedRoute>} />
                 <Route path="/mensagens" element={<ProtectedRoute><Mensagens /></ProtectedRoute>} />
                 <Route path="/grupos" element={<ProtectedRoute><Grupos /></ProtectedRoute>} />
+                {/* Aliases: cronograma vive na Home (Index), evita 404 em links externos/legados */}
+                <Route path="/cronograma" element={<Navigate to="/" replace />} />
+                <Route path="/cronograma/semanal" element={<Navigate to="/" replace />} />
                 <Route path="/pricing" element={<Suspense fallback={<RouteFallback />}><Pricing /></Suspense>} />
                 <Route path="/u/:username" element={<Suspense fallback={<RouteFallback />}><PublicProfile /></Suspense>} />
                 

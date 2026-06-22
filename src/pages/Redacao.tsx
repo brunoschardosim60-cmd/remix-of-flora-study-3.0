@@ -535,12 +535,26 @@ export default function Redacao() {
                   >
                     <div className="flex items-start justify-between gap-2">
                       <p className="line-clamp-2 text-sm font-medium">{e.tema || "Sem tema"}</p>
-                      {e.status === "corrigida" && e.nota_total !== null ? (
-                        <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
-                          {isENEM ? e.nota_total : (e.nota_total / 100).toFixed(1)}
-                          {!isENEM && "/10"}
-                        </span>
-                      ) : (
+                      {e.status === "corrigida" && e.nota_total !== null ? (() => {
+                        const total10 = isENEM
+                          ? (e.nota_total / 100)
+                          : (e.nota_total / 100); // both already normalize to 0-10 scale below
+                        const enemFaixa = isENEM ? e.nota_total : null;
+                        const score10 = !isENEM ? (e.nota_total / 100) : null;
+                        // Faixas: ENEM <600 vermelho, 600-799 âmbar, 800+ verde
+                        // Outras: <6 vermelho, 6-7.9 âmbar, 8+ verde
+                        const tone =
+                          (enemFaixa !== null && enemFaixa >= 800) || (score10 !== null && score10 >= 8)
+                            ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-500/30"
+                            : (enemFaixa !== null && enemFaixa >= 600) || (score10 !== null && score10 >= 6)
+                            ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 ring-1 ring-amber-500/30"
+                            : "bg-rose-500/15 text-rose-600 dark:text-rose-400 ring-1 ring-rose-500/30";
+                        return (
+                          <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${tone}`}>
+                            {isENEM ? e.nota_total : `${(e.nota_total / 100).toFixed(1)}/10`}
+                          </span>
+                        );
+                      })() : (
                         <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
                           Rascunho
                         </span>
