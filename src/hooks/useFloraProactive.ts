@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 const CHECK_INTERVAL_MS = 30 * 60_000; // 30 min
 const COOLDOWN_MS = 6 * 3600_000;       // 6h por subtype
 const LS_PREFIX = "flora.proactive.lastAt.";
+const ADAPT_THROTTLE_MS = 5 * 60_000;   // re-analisa no máx a cada 5 min
 
 type Subtype = "morning_revision" | "afternoon_topic" | "night_quiz" | "inactivity" | "performance_drop";
 
@@ -40,6 +41,7 @@ function markCooldown(subtype: Subtype) {
 
 export function useFloraProactive(userId: string | undefined | null) {
   const running = useRef(false);
+  const lastAdaptAt = useRef(0);
 
   useEffect(() => {
     if (!userId) return;
@@ -148,10 +150,47 @@ export function useFloraProactive(userId: string | undefined | null) {
     const initial = setTimeout(() => { if (!cancelled) check(); }, 45_000);
     timer = setInterval(check, CHECK_INTERVAL_MS);
 
+    // ─── Adaptação contínua ─────────────────────────────────────────────
+    // Sempre que algo relevante acontece (sessão de estudo salva, tentativa
+    // de questão, quiz concluído, ajuste de cronograma, volta após ausência),
+    // pedimos pra Flora reanalizar o aluno. Throttle de 5 min evita spam.
+    const triggerAdapt = (reason: string) => {
+      const now = Date.now();
+      if (now - lastAdaptAt.current < ADAPT_THROTTLE_MS) return;
+      lastAdaptAt.current = now;
+      Promise.all([
+        supabase.functions.invoke("flora-engine", { body: { action: "analyze_and_suggest", data: { trigger: reason } } }),
+        supabase.functions.invoke("flora-engine", { body: { action: "risk_scan", data: { trigger: reason } } }),
+      ])
+        .then(() => window.dispatchEvent(new Event("flora-decisions-updated")))
+        .catch(() => { /* silent */ });
+    };
+
+    const onQuiz = () => triggerAdapt("quiz");
+    const onSchedule = () => triggerAdapt("schedule");
+    const onReturn = () => triggerAdapt("presence-return");
+    const onSession = () => triggerAdapt("study-session");
+    window.addEventListener("flora-quiz", onQuiz);
+    window.addEventListener("flora-schedule-updated", onSchedule);
+    window.addEventListener("flora-presence-return", onReturn);
+    window.addEventListener("study-session-saved", onSession);
+
+    // Realtime: novas sessões e tentativas do próprio aluno → adapta
+    const channel = supabase
+      .channel(`flora-adapt-${userId}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "study_sessions", filter: `user_id=eq.${userId}` }, () => triggerAdapt("session-insert"))
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "question_attempts", filter: `user_id=eq.${userId}` }, () => triggerAdapt("attempt-insert"))
+      .subscribe();
+
     return () => {
       cancelled = true;
       clearTimeout(initial);
       if (timer) clearInterval(timer);
+      window.removeEventListener("flora-quiz", onQuiz);
+      window.removeEventListener("flora-schedule-updated", onSchedule);
+      window.removeEventListener("flora-presence-return", onReturn);
+      window.removeEventListener("study-session-saved", onSession);
+      supabase.removeChannel(channel);
     };
   }, [userId]);
 }
