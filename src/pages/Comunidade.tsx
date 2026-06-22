@@ -393,6 +393,32 @@ export default function Comunidade() {
           <h1 className="text-2xl font-heading font-bold tracking-tight">Comunidade</h1>
           <p className="text-sm text-muted-foreground">Compartilhe progresso, dúvidas e dicas.</p>
         </div>
+
+        {/* Tabs de feed */}
+        <div className="flex gap-1 overflow-x-auto bg-muted/50 rounded-xl p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <button
+            onClick={() => setFeedMode("geral")}
+            className={`shrink-0 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${feedMode === "geral" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            <Hash className="w-3.5 h-3.5 inline mr-1" /> Geral
+          </button>
+          <button
+            onClick={() => setFeedMode("trending")}
+            className={`shrink-0 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${feedMode === "trending" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            <TrendingUp className="w-3.5 h-3.5 inline mr-1" /> Em alta
+          </button>
+          {communities.map((c) => (
+            <button
+              key={c.id}
+              onClick={() => setFeedMode(c.id)}
+              className={`shrink-0 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${feedMode === c.id ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              {c.name}
+            </button>
+          ))}
+        </div>
+
         {/* Composer */}
         <div className="rounded-2xl border border-border bg-card p-3 sm:p-4 space-y-3">
           <div className="flex gap-3">
