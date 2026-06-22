@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Send, X, Camera, Loader2, Mic, Square, StopCircle, RefreshCw, Copy, Check, Volume2, VolumeX, Maximize2, Minimize2, MessageSquarePlus, History, Trash2, Pencil, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -211,7 +212,7 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
   const showFollowupChips =
     !isSending && messages.length > 0 && lastMsg?.role === "assistant";
 
-  return (
+  const panel = (
     <div
       className={
         expanded
