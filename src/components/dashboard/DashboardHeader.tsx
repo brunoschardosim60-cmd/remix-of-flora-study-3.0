@@ -26,7 +26,7 @@ export function DashboardHeader({ user, bancoRoute, bancoLabel }: Props) {
 
   return (
     <header className="border-b border-border bg-card sticky top-0 z-10">
-      <div className="container max-w-7xl mx-auto px-3 sm:px-4 py-3 flex items-center gap-2 sm:gap-3">
+      <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-16 py-3 flex items-center gap-2 sm:gap-3">
         <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
           <BookOpen className="w-5 h-5 text-primary-foreground" />
         </div>
@@ -73,7 +73,7 @@ export function DashboardHeader({ user, bancoRoute, bancoLabel }: Props) {
       </div>
       {/* Quick-nav: aparece em telas até lg para não cortar os ícones do header */}
       <div className="lg:hidden border-t border-border/60 bg-card/80">
-        <div className="container max-w-7xl mx-auto px-2 py-2 flex items-center gap-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-16 py-2 flex items-center gap-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           <Button variant="outline" size="sm" className="gap-1.5 shrink-0" onClick={() => navigate("/notebooks")}>
             <NotebookPen className="w-4 h-4" /> Cadernos
           </Button>
