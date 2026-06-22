@@ -174,11 +174,40 @@ export default function Comunidade() {
     void (async () => {
       const { data } = await supabase
         .from("communities")
-        .select("id, name, slug, category")
+        .select("id, name, slug, category, member_count")
         .order("name");
       setCommunities((data ?? []) as Community[]);
     })();
   }, []);
+
+  // Carrega comunidades em que o usuário entrou
+  useEffect(() => {
+    if (!user) { setMyCommunities(new Set()); return; }
+    void (async () => {
+      const { data } = await supabase
+        .from("community_members")
+        .select("community_id")
+        .eq("user_id", user.id);
+      setMyCommunities(new Set((data ?? []).map((r: any) => r.community_id)));
+    })();
+  }, [user]);
+
+  async function toggleJoin(c: Community) {
+    if (!user) { toast.error("Entre na sua conta."); return; }
+    const joined = myCommunities.has(c.id);
+    // Otimista
+    setMyCommunities((prev) => {
+      const next = new Set(prev);
+      if (joined) next.delete(c.id); else next.add(c.id);
+      return next;
+    });
+    setCommunities((prev) => prev.map((x) => x.id === c.id ? { ...x, member_count: Math.max(0, (x.member_count ?? 0) + (joined ? -1 : 1)) } : x));
+    if (joined) {
+      await supabase.from("community_members").delete().eq("community_id", c.id).eq("user_id", user.id);
+    } else {
+      await supabase.from("community_members").insert({ community_id: c.id, user_id: user.id });
+    }
+  }
 
   useEffect(() => {
     void fetchFeed();
