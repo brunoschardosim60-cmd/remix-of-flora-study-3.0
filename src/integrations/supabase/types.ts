@@ -1899,6 +1899,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      infer_disciplina: {
+        Args: { p_alternativas?: Json; p_area: string; p_enunciado: string }
+        Returns: string
+      }
       is_admin_user: { Args: never; Returns: boolean }
       is_moderator: { Args: never; Returns: boolean }
       is_support: { Args: never; Returns: boolean }
