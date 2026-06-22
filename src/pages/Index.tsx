@@ -262,7 +262,7 @@ export default function Index() {
   return (
     <div className={`min-h-dvh bg-background pb-16 md:pb-0 ${studyNightMode ? "study-night" : ""}`}>
       <DashboardHeader user={user} bancoRoute={bancoRoute} bancoLabel={bancoLabel} onSignOut={signOut} />
-      <main className="container max-w-[1800px] mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
+      <main className="w-full mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
         <div className="w-full">
           <DashboardHero
             firstName={firstName}
