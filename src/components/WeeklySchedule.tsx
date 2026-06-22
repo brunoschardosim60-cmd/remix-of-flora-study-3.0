@@ -253,13 +253,16 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
                                 e.dataTransfer.setData("text/plain", slot.id);
                               }}
                               onDragEnd={() => { setDraggingId(null); setDragOverId(null); }}
+                              onDragEnter={(e) => {
+                                if (!draggingId || draggingId === slot.id) return;
+                                e.preventDefault();
+                                if (dragOverId !== slot.id) setDragOverId(slot.id);
+                              }}
                               onDragOver={(e) => {
                                 if (!draggingId || draggingId === slot.id) return;
                                 e.preventDefault();
                                 e.dataTransfer.dropEffect = "move";
-                                if (dragOverId !== slot.id) setDragOverId(slot.id);
                               }}
-                              onDragLeave={() => { if (dragOverId === slot.id) setDragOverId(null); }}
                               onDrop={(e) => {
                                 e.preventDefault();
                                 const sourceId = e.dataTransfer.getData("text/plain") || draggingId;
