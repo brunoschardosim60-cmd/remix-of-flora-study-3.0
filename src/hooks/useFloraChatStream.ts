@@ -390,7 +390,6 @@ export function useFloraChatStream({ isOpen, onClose }: Options) {
 
   const regenerate = useCallback(async () => {
     if (isSending) return;
-    // Find last user message; drop everything after it (incluindo última assistente)
     let lastUserIdx = -1;
     for (let i = messages.length - 1; i >= 0; i--) {
       if (messages[i].role === "user") { lastUserIdx = i; break; }
@@ -398,13 +397,9 @@ export function useFloraChatStream({ isOpen, onClose }: Options) {
     if (lastUserIdx === -1) return;
     const lastUserMsg = messages[lastUserIdx].content;
     setMessages((prev) => prev.slice(0, lastUserIdx));
-    setInput(lastUserMsg);
-    // pequena espera pro state assentar e então dispara
-    setTimeout(() => {
-      // Reusa send lendo input atual — usamos um fluxo simples: dispara via evento
-      window.dispatchEvent(new CustomEvent("flora-chat-regenerate-trigger"));
-    }, 30);
-  }, [isSending, messages]);
+    // pequena espera pro state assentar e então redispara o envio
+    setTimeout(() => { void send(lastUserMsg); }, 30);
+  }, [isSending, messages, send]);
 
   return {
     messages,
