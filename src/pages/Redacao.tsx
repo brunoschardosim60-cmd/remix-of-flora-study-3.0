@@ -259,6 +259,23 @@ export default function Redacao() {
     }
   }
 
+  // Rola o textarea até o parágrafo correspondente e dispara um pulse visual.
+  function jumpToParagraph(paragraph?: string) {
+    if (!paragraph) return;
+    const ta = textareaRef.current;
+    if (!ta) return;
+    const idx = texto.indexOf(paragraph.trim().slice(0, 40));
+    if (idx >= 0) {
+      ta.focus({ preventScroll: true });
+      ta.setSelectionRange(idx, idx + paragraph.length);
+      // Aproxima o scroll do textarea pra parte selecionada
+      const ratio = idx / Math.max(1, texto.length);
+      ta.scrollTop = ratio * (ta.scrollHeight - ta.clientHeight);
+    }
+    ta.scrollIntoView({ behavior: "smooth", block: "center" });
+    setPulseKey((k) => k + 1);
+  }
+
   const selected = useMemo(() => essays.find((e) => e.id === selectedId) ?? null, [essays, selectedId]);
 
   // Salva no localStorage com debounce (sobrevivência offline) para evitar stuttering em textos longos
