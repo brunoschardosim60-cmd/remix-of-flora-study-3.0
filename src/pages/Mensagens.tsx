@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Loader2, Plus } from "lucide-react";
+import { Send, Loader2, Plus, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 
 interface Thread {
@@ -114,7 +114,7 @@ export function MensagensPanel() {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-4">
-        <aside className="space-y-2">
+        <aside className={`space-y-2 ${active ? "hidden md:block" : ""}`}>
           <div className="flex gap-1">
             <Input placeholder="@username" value={newUsername} onChange={(e) => setNewUsername(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && startNew()} />
@@ -130,12 +130,17 @@ export function MensagensPanel() {
               </button>
             ))}
         </aside>
-        <section className="border border-border rounded-lg bg-card min-h-[60dvh] flex flex-col">
+        <section className={`border border-border rounded-lg bg-card min-h-[60dvh] flex flex-col ${active ? "" : "hidden md:flex"}`}>
           {!active ? (
             <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">Selecione uma conversa.</div>
           ) : (
             <>
-              <div className="px-4 py-3 border-b border-border font-medium">{active.other?.display_name || "Conversa"}</div>
+              <div className="px-4 py-3 border-b border-border font-medium flex items-center gap-2">
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setActive(null)} aria-label="Voltar">
+                  <ArrowLeft className="w-4 h-4" />
+                </Button>
+                <span className="truncate">{active.other?.display_name || "Conversa"}</span>
+              </div>
               <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-2 max-h-[60dvh]">
                 {messages.map((m) => (
                   <div key={m.id} className={`max-w-[75%] px-3 py-2 rounded-2xl text-sm ${m.sender_id === user?.id ? "ml-auto bg-primary text-primary-foreground" : "bg-muted"}`}>
