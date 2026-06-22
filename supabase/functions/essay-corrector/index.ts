@@ -688,6 +688,8 @@ Deno.serve(async (req) => {
             auditoria_enem: result._audit,
           },
           _paragrafos: result.analise_paragrafos,
+          _trechos: Array.isArray(result.trechos_destacados) ? result.trechos_destacados : [],
+          _repertorios: Array.isArray(result.repertorios) ? result.repertorios : [],
         };
       } else {
         // Concurso/Faculdade: mapeia nota 0-10 → 0-1000 para compat com coluna nota_total
@@ -711,6 +713,8 @@ Deno.serve(async (req) => {
             auditoria_concurso: result._audit,
           },
           _paragrafos: result.analise_paragrafos,
+          _trechos: Array.isArray(result.trechos_destacados) ? result.trechos_destacados : [],
+          _repertorios: Array.isArray(result.repertorios) ? result.repertorios : [],
         };
       }
 
