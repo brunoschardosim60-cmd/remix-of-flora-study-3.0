@@ -735,6 +735,7 @@ export default function Comunidade() {
             </article>
           ))
         )}
+        </>}
       </main>
 
       <BottomNav />
