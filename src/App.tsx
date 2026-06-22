@@ -169,7 +169,7 @@ function RouteFallback() {
   return (
     <div className="min-h-dvh bg-background">
       <div className="border-b border-border bg-card sticky top-0 z-10">
-        <div className="w-full mx-auto px-3 sm:px-4 py-3 flex items-center gap-3">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-muted animate-pulse" />
           <div className="space-y-1.5 flex-1">
             <div className="h-5 w-28 rounded bg-muted animate-pulse" />
@@ -177,7 +177,7 @@ function RouteFallback() {
           </div>
         </div>
       </div>
-      <div className="w-full mx-auto px-3 sm:px-4 py-6 space-y-4">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-4">
         <div className="h-32 rounded-2xl bg-muted/40 animate-pulse" />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="h-24 rounded-2xl bg-muted/30 animate-pulse" />
