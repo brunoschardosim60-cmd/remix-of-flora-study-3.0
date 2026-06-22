@@ -87,13 +87,31 @@ function nextStepsFor(decision: PendingDecision, bancoRoute: string): NextStep[]
       return [{ label: "Falar com a Flora", route: "/?flora=1", primary: true }];
     }
     case "proactive_suggestion":
-    default:
+    default: {
+      const subtype = (decision.recommendation as any)?.subtype;
+      if (subtype === "errors_pattern") {
+        return [
+          { label: "Quero a aula + 3 exercícios", route: bancoRoute, primary: true },
+          { label: "Mais tarde", route: "/" },
+        ];
+      }
+      if (subtype === "inactivity") {
+        return [
+          { label: "Estudar 10 min agora", route: "/?flora=1", primary: true },
+        ];
+      }
+      if (subtype === "night_quiz") {
+        return [
+          { label: "Fazer 5 questões", route: bancoRoute, primary: true },
+        ];
+      }
       return [
         materia
           ? { label: `Estudar ${materia} agora`, route: bancoRoute, primary: true }
           : { label: "Começar agora", route: "/", primary: true },
         { label: "Falar com a Flora", route: "/?flora=1" },
       ];
+    }
   }
 }
 

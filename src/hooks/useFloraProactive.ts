@@ -57,7 +57,7 @@ export function useFloraProactive(userId: string | undefined | null) {
           .from("flora_decisions")
           .select("id")
           .eq("user_id", userId)
-          .eq("decision_type", "proactive")
+          .eq("decision_type", "proactive_suggestion")
           .is("accepted", null)
           .limit(1);
         if (pending && pending.length > 0) return;
@@ -231,7 +231,7 @@ export function useFloraProactive(userId: string | undefined | null) {
 async function insert(userId: string, subtype: Subtype, reasoning: string, details: Record<string, unknown>) {
   await supabase.from("flora_decisions").insert({
     user_id: userId,
-    decision_type: "proactive",
+    decision_type: "proactive_suggestion",
     reasoning,
     recommendation: { subtype, ...details },
   });
