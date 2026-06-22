@@ -23,6 +23,7 @@ interface Community {
   name: string;
   slug: string;
   category: string | null;
+  member_count?: number;
 }
 
 type FeedMode = "geral" | "trending" | string;
