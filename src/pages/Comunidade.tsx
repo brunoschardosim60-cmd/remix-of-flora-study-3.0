@@ -327,27 +327,32 @@ export default function Comunidade() {
               </Button>
             </div>
           )}
-          {showMediaInput && (
-            <div className="flex items-center gap-2">
-              <ImageIcon className="w-4 h-4 text-muted-foreground shrink-0" />
-              <Input
-                placeholder="Cole o link da imagem (https://...)"
-                value={composerMedia}
-                onChange={(e) => setComposerMedia(e.target.value)}
-                className="h-8 text-xs"
-              />
-            </div>
-          )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) void handleFileSelected(f);
+              if (fileInputRef.current) fileInputRef.current.value = "";
+            }}
+          />
           <div className="flex items-center justify-between gap-2">
             <Button
               type="button"
               variant="ghost"
               size="sm"
-              onClick={() => setShowMediaInput((v) => !v)}
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadingMedia}
               className="text-muted-foreground"
             >
-              <ImageIcon className="w-4 h-4 mr-1" />
-              {showMediaInput ? "Remover imagem" : "Adicionar imagem"}
+              {uploadingMedia ? (
+                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+              ) : (
+                <ImageIcon className="w-4 h-4 mr-1" />
+              )}
+              {uploadingMedia ? "Enviando..." : composerMedia ? "Trocar imagem" : "Adicionar imagem"}
             </Button>
             <Button
               size="sm"
