@@ -161,6 +161,12 @@ ETAPA 3 — IDENTIFICAR os 4 blocos: introdução, desenvolvimento 1, desenvolvi
 Para cada bloco: diagnostico (2-3 frases citando trecho específico do texto) + sugestao_reescrita (reescreva LITERALMENTE 1-2 frases mostrando como ficaria melhor — não dê conselho genérico, dê o texto pronto). Mesmo em redações nota 1000, aponte refinamentos avançados.
 Varie o início das sugestões: "Uma forma mais precisa seria...", "Pode-se reformular para...", "Uma versão mais sofisticada seria...", "Sugere-se...", "Uma alternativa mais autoral seria...".
 
+━━━ TRECHOS DESTACADOS ━━━
+Identifique de 4 a 10 trechos LITERAIS da redação (cópia exata, palavra por palavra, do texto do aluno — sem reescrever) que apresentam problemas. Para cada trecho informe: trecho (cópia literal, 3-15 palavras), competencia (1-5 — qual competência o trecho fere), problema (1 frase explicando o erro), sugestao (opcional, reescrita literal curta). Não invente: o trecho TEM que aparecer exatamente no texto.
+
+━━━ REPERTÓRIOS SUGERIDOS ━━━
+Sugira de 3 a 5 repertórios socioculturais ESPECÍFICOS para o tema da redação. Para cada um: tipo (ex: "Filósofo", "Filme", "Dado estatístico", "Lei", "Obra literária", "Acontecimento histórico"), titulo (nome curto), descricao (1 frase explicando), como_usar (1 frase aplicando ao tema desta redação). Nada genérico — devem caber neste tema específico.
+
 ━━━ PLANO DE ESTUDO PERSONALIZADO ━━━
 Gere "plano_estudo" baseado nas FRAGILIDADES REAIS desta redação (nunca genérico):
 - diagnostico: array 2-4 strings — pontos centrais a melhorar
@@ -170,9 +176,11 @@ Gere "plano_estudo" baseado nas FRAGILIDADES REAIS desta redação (nunca genér
 - dica_estrategica: string — 1 orientação motivadora calibrada ao nível real do aluno
 
 Retorne SOMENTE JSON válido (sem markdown, sem texto fora do JSON):
-{"tipo_textual":"...","fuga_tipo_textual":false,"aderencia_tema":"dentro","aderencia_justificativa":"...","competencia_1":0,"competencia_2":0,"competencia_3":0,"competencia_4":0,"competencia_5":0,"nota_total":0,"feedback_geral":"...","feedback_competencias":{"competencia_1":"...","competencia_2":"...","competencia_3":"...","competencia_4":"...","competencia_5":"..."},"analise_paragrafos":{"introducao":{"diagnostico":"...","sugestao_reescrita":"..."},"desenvolvimento_1":{"diagnostico":"...","sugestao_reescrita":"..."},"desenvolvimento_2":{"diagnostico":"...","sugestao_reescrita":"..."},"conclusao":{"diagnostico":"...","sugestao_reescrita":"..."}},"plano_estudo":{"diagnostico":["..."],"curto_prazo":["..."],"medio_prazo":["..."],"treino_direcionado":"...","dica_estrategica":"..."}}`;
+{"tipo_textual":"...","fuga_tipo_textual":false,"aderencia_tema":"dentro","aderencia_justificativa":"...","competencia_1":0,"competencia_2":0,"competencia_3":0,"competencia_4":0,"competencia_5":0,"nota_total":0,"feedback_geral":"...","feedback_competencias":{"competencia_1":"...","competencia_2":"...","competencia_3":"...","competencia_4":"...","competencia_5":"..."},"analise_paragrafos":{"introducao":{"diagnostico":"...","sugestao_reescrita":"..."},"desenvolvimento_1":{"diagnostico":"...","sugestao_reescrita":"..."},"desenvolvimento_2":{"diagnostico":"...","sugestao_reescrita":"..."},"conclusao":{"diagnostico":"...","sugestao_reescrita":"..."}},"trechos_destacados":[{"trecho":"...","competencia":1,"problema":"...","sugestao":"..."}],"repertorios":[{"tipo":"...","titulo":"...","descricao":"...","como_usar":"..."}],"plano_estudo":{"diagnostico":["..."],"curto_prazo":["..."],"medio_prazo":["..."],"treino_direcionado":"...","dica_estrategica":"..."}}`;
 
-const PLANO_BLOCK = `Inclua também "plano_estudo" personalizado pela redação: diagnostico (array 2-4 fragilidades reais), curto_prazo (array 3-5 ações para 3-7 dias), medio_prazo (array 3-5 ações para 2 semanas), treino_direcionado (1 exercício prático ligado ao maior gap), dica_estrategica (1 orientação motivadora estilo professor). Linguagem clara, direta, motivadora sem exagero.`;
+const PLANO_BLOCK = `Inclua também "plano_estudo" personalizado pela redação: diagnostico (array 2-4 fragilidades reais), curto_prazo (array 3-5 ações para 3-7 dias), medio_prazo (array 3-5 ações para 2 semanas), treino_direcionado (1 exercício prático ligado ao maior gap), dica_estrategica (1 orientação motivadora estilo professor). Linguagem clara, direta, motivadora sem exagero.
+Inclua "trechos_destacados": array de 4 a 8 objetos {trecho (cópia LITERAL do texto, 3-15 palavras), competencia (1-5), problema (1 frase), sugestao (opcional, reescrita curta)}. Os trechos devem aparecer exatamente no texto.
+Inclua "repertorios": array de 3 a 5 objetos {tipo, titulo, descricao, como_usar} — repertórios socioculturais específicos para o tema desta redação.`;
 
 const SYSTEM_CONCURSO = `Você é Flora, corretora de redações para concursos públicos (padrão CESPE/FCC/Vunesp).
 Critérios (0-2.5 cada, total 0-10): clareza_objetividade | argumentacao_fundamentacao | norma_culta | estrutura_textual
