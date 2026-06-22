@@ -636,8 +636,8 @@ export default function Comunidade() {
               {post.content.trim().endsWith("?") && user && post.user_id !== user.id && (
                 <button
                   onClick={() => {
-                    const q = encodeURIComponent(post.content.trim());
-                    navigate(`/?flora=${q}`);
+                    sessionStorage.setItem("flora.suggestedQuestion", post.content.trim());
+                    navigate(`/?flora=1`);
                   }}
                   className="w-full flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors px-3 py-2 text-left"
                 >
