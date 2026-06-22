@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Send, X, Camera, Loader2, Mic, Square, StopCircle, RefreshCw, Copy, Check } from "lucide-react";
+import { Send, X, Camera, Loader2, Mic, Square, StopCircle, RefreshCw, Copy, Check, Volume2, VolumeX, Maximize2, Minimize2, MessageSquarePlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { FloraQuotaIndicator } from "@/components/FloraQuotaIndicator";
@@ -8,6 +8,7 @@ import { FloraIcon } from "@/components/FloraIcon";
 import ReactMarkdown from "react-markdown";
 import { getSuggestionChips } from "@/lib/floraChat";
 import { useFloraChatStream } from "@/hooks/useFloraChatStream";
+import { floraTTS } from "@/lib/floraTTS";
 
 interface FloraChat {
   isOpen: boolean;
@@ -16,7 +17,7 @@ interface FloraChat {
 }
 
 export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
-  const { messages, input, setInput, isSending, objetivo, send, stop, regenerate } = useFloraChatStream({ isOpen, onClose });
+  const { messages, input, setInput, isSending, objetivo, send, stop, regenerate, resetChat } = useFloraChatStream({ isOpen, onClose });
   const scrollRef = useRef<HTMLDivElement>(null);
   const photoRef = useRef<HTMLInputElement>(null);
   const [ocrLoading, setOcrLoading] = useState(false);
@@ -24,6 +25,8 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
   const [transcribing, setTranscribing] = useState(false);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
+  const [speakingIdx, setSpeakingIdx] = useState<number | null>(null);
+  const [expanded, setExpanded] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
 
@@ -151,6 +154,35 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
     }
   };
 
+  const speakMessage = async (content: string, idx: number) => {
+    try {
+      if (speakingIdx === idx) {
+        floraTTS.stopAudio();
+        setSpeakingIdx(null);
+        return;
+      }
+      floraTTS.stopAudio();
+      setSpeakingIdx(idx);
+      // remove markdown bem simples pra ficar mais natural na fala
+      const clean = content.replace(/```[\s\S]*?```/g, "").replace(/[*_#>`~]/g, "").replace(/!\[.*?\]\(.*?\)/g, "").trim();
+      if (!clean) { setSpeakingIdx(null); return; }
+      const blob = await floraTTS.generateAudio({ text: clean.slice(0, 2500) });
+      floraTTS.playAudio(blob, () => setSpeakingIdx((c) => (c === idx ? null : c)));
+    } catch (e: any) {
+      setSpeakingIdx(null);
+      toast.error(e?.message || "Não consegui falar agora");
+    }
+  };
+
+  const handleNewChat = async () => {
+    if (messages.length === 0) return;
+    if (!confirm("Começar uma nova conversa? O histórico atual será apagado.")) return;
+    floraTTS.stopAudio();
+    setSpeakingIdx(null);
+    await resetChat();
+    toast.success("Nova conversa começada.");
+  };
+
   if (!isOpen) return null;
 
   const chips = getSuggestionChips(objetivo);
@@ -159,7 +191,13 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
     !isSending && messages.length > 0 && lastMsg?.role === "assistant";
 
   return (
-    <div className="fixed bottom-0 right-0 w-full h-[80vh] sm:bottom-20 sm:right-4 sm:w-[380px] sm:h-[500px] sm:max-w-[calc(100vw-2rem)] sm:max-h-[calc(100vh-6rem)] z-50 sm:rounded-2xl rounded-t-2xl border border-border bg-card shadow-2xl flex flex-col overflow-hidden">
+    <div
+      className={
+        expanded
+          ? "fixed inset-2 sm:inset-6 z-50 rounded-2xl border border-border bg-card shadow-2xl flex flex-col overflow-hidden"
+          : "fixed bottom-0 right-0 w-full h-[80vh] sm:bottom-20 sm:right-4 sm:w-[380px] sm:h-[500px] sm:max-w-[calc(100vw-2rem)] sm:max-h-[calc(100vh-6rem)] z-50 sm:rounded-2xl rounded-t-2xl border border-border bg-card shadow-2xl flex flex-col overflow-hidden"
+      }
+    >
       {/* Header */}
       <div className="flex items-center gap-2 p-4 border-b border-border bg-primary/5">
         <FloraIcon className="w-6 h-6 text-primary" />
@@ -168,6 +206,12 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
           <p className="text-xs text-muted-foreground">Sua professora parceira</p>
         </div>
         <FloraQuotaIndicator action="chat" />
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleNewChat} aria-label="Nova conversa" title="Nova conversa">
+          <MessageSquarePlus className="w-4 h-4" />
+        </Button>
+        <Button variant="ghost" size="icon" className="h-8 w-8 hidden sm:inline-flex" onClick={() => setExpanded((v) => !v)} aria-label={expanded ? "Reduzir painel" : "Expandir painel"} title={expanded ? "Reduzir" : "Expandir"}>
+          {expanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+        </Button>
         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose} aria-label="Fechar chat da Flora">
           <X className="w-4 h-4" />
         </Button>
@@ -235,6 +279,14 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
                 >
                   {copiedIdx === i ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                   {copiedIdx === i ? "Copiado" : "Copiar"}
+                </button>
+                <button
+                  onClick={() => void speakMessage(msg.content, i)}
+                  className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-muted"
+                  aria-label={speakingIdx === i ? "Parar fala" : "Ouvir mensagem"}
+                >
+                  {speakingIdx === i ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3" />}
+                  {speakingIdx === i ? "Parar" : "Ouvir"}
                 </button>
                 {i === messages.length - 1 && !isSending && (
                   <button
