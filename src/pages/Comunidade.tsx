@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Heart, MessageCircle, Send, Loader2, Image as ImageIcon, X } from "lucide-react";
+import { ArrowLeft, Heart, MessageCircle, Send, Loader2, Image as ImageIcon, X, Flag, MoreHorizontal } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,13 @@ import { toast } from "sonner";
 import { BottomNav } from "@/components/BottomNav";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { useStudentObjetivo } from "@/hooks/useStudentObjetivo";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { validatePostContent, canPostNow, markPosted, containsProfanity } from "@/lib/moderation";
 
 interface ProfileLite {
   id: string;
@@ -162,7 +169,16 @@ export default function Comunidade() {
       return;
     }
     const content = composer.trim();
-    if (!content) return;
+    const v = validatePostContent(content);
+    if (!v.ok) {
+      toast.error(v.error!);
+      return;
+    }
+    const rate = canPostNow();
+    if (!rate.ok) {
+      toast.error(`Espere ${rate.waitSec}s antes de postar de novo.`);
+      return;
+    }
     setPosting(true);
     const { error } = await supabase.from("posts").insert({
       user_id: user.id,
@@ -174,6 +190,7 @@ export default function Comunidade() {
       toast.error("Não consegui publicar.");
       return;
     }
+    markPosted();
     setComposer("");
     setComposerMedia("");
     toast.success("Publicado!");
@@ -268,6 +285,10 @@ export default function Comunidade() {
     }
     const content = (commentDraft[post.id] || "").trim();
     if (!content) return;
+    if (containsProfanity(content)) {
+      toast.error("Evite palavrões no comentário.");
+      return;
+    }
     const { error } = await supabase.from("comments").insert({
       post_id: post.id,
       user_id: user.id,
@@ -282,6 +303,24 @@ export default function Comunidade() {
       prev.map((p) => (p.id === post.id ? { ...p, comments_count: p.comments_count + 1 } : p)),
     );
     void loadComments(post.id);
+  }
+
+  async function reportPost(post: Post) {
+    if (!user) {
+      toast.error("Entre na sua conta para denunciar.");
+      return;
+    }
+    const reason = window.prompt("Por que está denunciando este post?", "Conteúdo inadequado");
+    if (!reason || !reason.trim()) return;
+    const { error } = await supabase
+      .from("post_reports")
+      .insert({ post_id: post.id, reporter_id: user.id, reason: reason.trim() });
+    if (error) {
+      if (error.code === "23505") toast.info("Você já denunciou este post.");
+      else toast.error("Não consegui enviar a denúncia.");
+      return;
+    }
+    toast.success("Denúncia enviada. Obrigado por avisar.");
   }
 
   return (
@@ -425,6 +464,38 @@ export default function Comunidade() {
                     </div>
                   </div>
                 )}
+                <div className="ml-auto">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Mais ações">
+                        <MoreHorizontal className="w-4 h-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      {user && post.user_id !== user.id && (
+                        <DropdownMenuItem onClick={() => reportPost(post)} className="text-destructive">
+                          <Flag className="w-4 h-4 mr-2" /> Denunciar
+                        </DropdownMenuItem>
+                      )}
+                      {user && post.user_id === user.id && (
+                        <DropdownMenuItem
+                          className="text-destructive"
+                          onClick={async () => {
+                            if (!window.confirm("Apagar este post?")) return;
+                            const { error } = await supabase.from("posts").delete().eq("id", post.id);
+                            if (error) toast.error("Não consegui apagar.");
+                            else {
+                              toast.success("Post apagado.");
+                              setPosts((prev) => prev.filter((p) => p.id !== post.id));
+                            }
+                          }}
+                        >
+                          <X className="w-4 h-4 mr-2" /> Apagar
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </div>
               <p className="text-sm whitespace-pre-wrap leading-relaxed">{post.content}</p>
               {post.media_url && (

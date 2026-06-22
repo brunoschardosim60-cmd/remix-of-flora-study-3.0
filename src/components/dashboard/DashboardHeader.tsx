@@ -1,8 +1,9 @@
 import { useNavigate } from "react-router-dom";
-import { BookOpen, NotebookPen, FileText, BarChart3, Sun, Moon, CircleDot, LogOut, Settings, Library } from "lucide-react";
+import { BookOpen, NotebookPen, FileText, BarChart3, Sun, Moon, CircleDot, LogOut, Settings, Library, Users } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { CustomThemeDialog } from "@/components/CustomThemeDialog";
+import { NotificationBell } from "@/components/NotificationBell";
 import { prefetchRoute } from "@/lib/prefetch";
 import type { User } from "@supabase/supabase-js";
 
@@ -53,9 +54,15 @@ export function DashboardHeader({ user, bancoRoute, bancoLabel, onSignOut }: Pro
               <BarChart3 className="w-4 h-4" /> Análise
             </Button>
           )}
+          {user && (
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate("/comunidade")} onMouseEnter={() => prefetchRoute("/comunidade")}>
+              <Users className="w-4 h-4" /> Comunidade
+            </Button>
+          )}
         </div>
         <div className="flex items-center gap-1">
           <CustomThemeDialog />
+          <NotificationBell />
           <Button variant="ghost" size="icon" className="h-9 w-9" onClick={cycleTheme} aria-label="Trocar tema">
             <ThemeIcon className="w-4 h-4" />
           </Button>
@@ -90,6 +97,11 @@ export function DashboardHeader({ user, bancoRoute, bancoLabel, onSignOut }: Pro
           {user && (
             <Button variant="outline" size="sm" className="gap-1.5 shrink-0" onClick={() => navigate("/analise")}>
               <BarChart3 className="w-4 h-4" /> Análise
+            </Button>
+          )}
+          {user && (
+            <Button variant="outline" size="sm" className="gap-1.5 shrink-0" onClick={() => navigate("/comunidade")}>
+              <Users className="w-4 h-4" /> Comunidade
             </Button>
           )}
         </div>
