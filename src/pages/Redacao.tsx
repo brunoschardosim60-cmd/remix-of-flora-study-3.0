@@ -1057,6 +1057,124 @@ export default function Redacao() {
                         </div>
                       );
                     })()}
+
+                    {/* ── Plano personalizado REAL (cruza redações, questões, sessões) ── */}
+                    <div className="space-y-3 rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/10 to-primary/5 p-4">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <Target className="h-5 w-5 text-primary" />
+                          <h3 className="font-heading text-base font-semibold">Plano personalizado da Flora</h3>
+                          <Badge variant="outline" className="text-[10px] uppercase tracking-wide">Análise real</Badge>
+                        </div>
+                        <Button size="sm" onClick={generateRealPlan} disabled={loadingRealPlan}>
+                          {loadingRealPlan ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Analisando seus dados…</>) : (<><Sparkles className="mr-2 h-4 w-4" /> {realPlan ? "Atualizar" : "Gerar análise"}</>)}
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        A Flora analisa suas redações corrigidas, acertos em questões, horas estudadas por matéria e perfil do onboarding para montar um plano específico pra você.
+                      </p>
+
+                      {realPlanMetrics && (
+                        <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+                          <div className="rounded-lg border border-border bg-background/70 p-2 text-center">
+                            <p className="text-[10px] uppercase text-muted-foreground">Nota média</p>
+                            <p className="text-lg font-bold">{realPlanMetrics.nota_media_redacao ?? "—"}</p>
+                          </div>
+                          <div className="rounded-lg border border-border bg-background/70 p-2 text-center">
+                            <p className="text-[10px] uppercase text-muted-foreground">Evolução</p>
+                            <p className={`text-lg font-bold ${realPlanMetrics.evolucao_pontos > 0 ? "text-emerald-600" : realPlanMetrics.evolucao_pontos < 0 ? "text-red-600" : ""}`}>
+                              {realPlanMetrics.evolucao_pontos > 0 ? "+" : ""}{realPlanMetrics.evolucao_pontos}
+                            </p>
+                          </div>
+                          <div className="rounded-lg border border-border bg-background/70 p-2 text-center">
+                            <p className="text-[10px] uppercase text-muted-foreground">Redações</p>
+                            <p className="text-lg font-bold">{realPlanMetrics.total_redacoes}</p>
+                          </div>
+                          <div className="rounded-lg border border-border bg-background/70 p-2 text-center">
+                            <p className="text-[10px] uppercase text-muted-foreground">Questões</p>
+                            <p className="text-lg font-bold">{realPlanMetrics.total_questoes}</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {realPlan && (
+                        <div className="space-y-3">
+                          {realPlan.diagnostico?.length > 0 && (
+                            <div className="rounded-xl border border-border bg-background/70 p-3">
+                              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Diagnóstico</p>
+                              <ul className="space-y-1 text-sm">
+                                {realPlan.diagnostico.map((d: string, i: number) => (
+                                  <li key={i} className="flex gap-2"><span className="text-primary">•</span><span>{d}</span></li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          <div className="grid gap-3 md:grid-cols-2">
+                            {realPlan.pontos_fortes?.length > 0 && (
+                              <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-400 mb-1">Pontos fortes</p>
+                                <ul className="space-y-1 text-sm">
+                                  {realPlan.pontos_fortes.map((p: string, i: number) => (<li key={i}>✓ {p}</li>))}
+                                </ul>
+                              </div>
+                            )}
+                            {realPlan.pontos_criticos?.length > 0 && (
+                              <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400 mb-1">Pontos críticos</p>
+                                <ul className="space-y-1 text-sm">
+                                  {realPlan.pontos_criticos.map((p: string, i: number) => (<li key={i}>! {p}</li>))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+
+                          {realPlan.dicas_redacao?.length > 0 && (
+                            <div className="rounded-xl border border-border bg-background/70 p-3">
+                              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Dicas pra sua redação</p>
+                              <ul className="space-y-1 text-sm">
+                                {realPlan.dicas_redacao.map((d: string, i: number) => (
+                                  <li key={i} className="flex gap-2"><Lightbulb className="h-4 w-4 shrink-0 text-primary" /><span>{d}</span></li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          {realPlan.plano_semanal?.length > 0 && (
+                            <div className="rounded-xl border border-border bg-background/70 p-3">
+                              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Plano da semana</p>
+                              <div className="space-y-2">
+                                {realPlan.plano_semanal.map((d: any, i: number) => (
+                                  <div key={i} className="flex flex-wrap items-center gap-2 rounded-lg border border-border/60 p-2 text-sm">
+                                    <Badge variant="secondary" className="text-[10px]">{d.dia}</Badge>
+                                    <span className="font-medium">{d.foco}</span>
+                                    <span className="text-muted-foreground">— {d.tarefa}</span>
+                                    {d.duracao_min && <span className="ml-auto text-xs text-muted-foreground">{d.duracao_min} min</span>}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {realPlan.metas_curto_prazo?.length > 0 && (
+                            <div className="rounded-xl border border-primary/30 bg-primary/5 p-3">
+                              <p className="text-xs font-semibold uppercase tracking-wide text-primary mb-1">Metas dos próximos 7 dias</p>
+                              <ul className="space-y-1 text-sm">
+                                {realPlan.metas_curto_prazo.map((m: string, i: number) => (
+                                  <li key={i} className="flex gap-2"><span className="text-primary font-bold">{i + 1}.</span>{m}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          {realPlan.indicador_acompanhamento && (
+                            <div className="rounded-xl border border-primary/30 bg-background/60 p-3 text-sm italic">
+                              📊 {realPlan.indicador_acompanhamento}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </>
