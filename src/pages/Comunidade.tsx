@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Heart, MessageCircle, Send, Loader2, Image as ImageIcon, X, Flag, MoreHorizontal } from "lucide-react";
+import { ArrowLeft, Heart, MessageCircle, Send, Loader2, Image as ImageIcon, X, Flag, MoreHorizontal, TrendingUp, Hash, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { validatePostContent, canPostNow, markPosted, containsProfanity } from "@/lib/moderation";
 
+interface Community {
+  id: string;
+  name: string;
+  slug: string;
+  category: string | null;
+}
+
+type FeedMode = "geral" | "trending" | string;
+
 interface ProfileLite {
   id: string;
   display_name: string | null;
@@ -33,6 +42,7 @@ interface Post {
   likes_count: number;
   comments_count: number;
   created_at: string;
+  community_id?: string | null;
   profile?: ProfileLite | null;
   liked_by_me?: boolean;
 }
