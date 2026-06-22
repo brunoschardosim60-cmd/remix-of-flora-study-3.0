@@ -976,7 +976,7 @@ export default function Redacao() {
                                   className="h-full rounded-full transition-all duration-500"
                                   style={{
                                     width: `${pct}%`,
-                                    background: `linear-gradient(90deg, hsl(0 75% 50%), hsl(40 85% 50%), ${gradientBarStyle(pct)})`,
+                                    background: gradientBarStyle(pct),
                                   }}
                                 />
                               </div>
