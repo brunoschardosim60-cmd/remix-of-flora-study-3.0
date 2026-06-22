@@ -116,11 +116,22 @@ export default function Comunidade() {
 
   const fetchFeed = useCallback(async () => {
     setLoading(true);
-    const { data: postRows, error } = await supabase
+    let q = supabase
       .from("posts")
-      .select("id, user_id, content, media_url, likes_count, comments_count, created_at")
-      .order("created_at", { ascending: false })
+      .select("id, user_id, content, media_url, likes_count, comments_count, created_at, community_id")
       .limit(50);
+    if (feedMode === "trending") {
+      const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      q = q
+        .gte("created_at", since)
+        .order("likes_count", { ascending: false })
+        .order("comments_count", { ascending: false });
+    } else if (feedMode !== "geral") {
+      q = q.eq("community_id", feedMode).order("created_at", { ascending: false });
+    } else {
+      q = q.order("created_at", { ascending: false });
+    }
+    const { data: postRows, error } = await q;
     if (error) {
       toast.error("Não consegui carregar o feed.");
       setLoading(false);
@@ -155,7 +166,17 @@ export default function Comunidade() {
       })),
     );
     setLoading(false);
-  }, [user]);
+  }, [user, feedMode]);
+
+  useEffect(() => {
+    void (async () => {
+      const { data } = await supabase
+        .from("communities")
+        .select("id, name, slug, category")
+        .order("name");
+      setCommunities((data ?? []) as Community[]);
+    })();
+  }, []);
 
   useEffect(() => {
     void fetchFeed();
