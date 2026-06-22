@@ -218,6 +218,7 @@ export default function Comunidade() {
       user_id: user.id,
       content,
       media_url: composerMedia.trim() || null,
+      community_id: composerCommunity || null,
     });
     setPosting(false);
     if (error) {
@@ -227,6 +228,7 @@ export default function Comunidade() {
     markPosted();
     setComposer("");
     setComposerMedia("");
+    setComposerCommunity("");
     toast.success("Publicado!");
     void fetchFeed();
   }
