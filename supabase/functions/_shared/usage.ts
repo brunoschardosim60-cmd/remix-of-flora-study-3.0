@@ -42,9 +42,43 @@ export interface QuotaResult {
   used: number;
   remaining: number;
   allowed: boolean;
+  /** True quando o bloqueio veio do rate-limit por minuto/hora (não da quota diária). */
+  rate_limited?: boolean;
+  /** Segundos sugeridos antes do usuário tentar de novo (quando rate_limited). */
+  retry_after?: number;
 }
 
-/** Verifica quota antes de chamar IA. Retorna allowed=false se estourou. */
+/**
+ * Rate-limits por minuto e por hora (proteção anti-loop / anti-abuso).
+ * Calibrado pra ser bem mais largo do que uso humano normal mas barrar bugs
+ * que fariam dezenas de chamadas em segundos.
+ */
+const RATE_LIMITS: Record<string, { perMinute: number; perHour: number }> = {
+  free:     { perMinute: 6,  perHour: 60 },
+  pro:      { perMinute: 20, perHour: 250 },
+  pro_plus: { perMinute: 60, perHour: 800 },
+};
+
+async function checkOneRateWindow(
+  supabase: SupabaseClient,
+  userId: string,
+  windowSeconds: number,
+  max: number,
+): Promise<{ allowed: boolean; used: number; limit: number }> {
+  try {
+    const { data, error } = await supabase.rpc("check_user_rate_limit", {
+      p_user_id: userId,
+      p_window_seconds: windowSeconds,
+      p_max: max,
+    });
+    if (error || !data) return { allowed: true, used: 0, limit: max }; // fail-open p/ rate (não bloqueia se RPC falhar)
+    return data as { allowed: boolean; used: number; limit: number };
+  } catch {
+    return { allowed: true, used: 0, limit: max };
+  }
+}
+
+/** Verifica rate-limit (minuto/hora) + quota diária antes de chamar IA. */
 export async function checkQuota(
   supabase: SupabaseClient,
   userId: string,
@@ -59,7 +93,22 @@ export async function checkQuota(
       console.error("[usage] check_ai_quota FAIL-CLOSED:", error?.message);
       return { tier: "free", limit: 0, used: 0, remaining: 0, allowed: false };
     }
-    return data as QuotaResult;
+    const quota = data as QuotaResult;
+    if (!quota.allowed) return quota;
+
+    // Rate-limit por tier — barra loops antes de queimar a quota diária inteira
+    const limits = RATE_LIMITS[quota.tier] ?? RATE_LIMITS.free;
+    const [minute, hour] = await Promise.all([
+      checkOneRateWindow(supabase, userId, 60, limits.perMinute),
+      checkOneRateWindow(supabase, userId, 3600, limits.perHour),
+    ]);
+    if (!minute.allowed) {
+      return { ...quota, allowed: false, rate_limited: true, retry_after: 60 };
+    }
+    if (!hour.allowed) {
+      return { ...quota, allowed: false, rate_limited: true, retry_after: 3600 };
+    }
+    return quota;
   } catch (e) {
     console.error("[usage] check_ai_quota exception FAIL-CLOSED:", e);
     return { tier: "free", limit: 0, used: 0, remaining: 0, allowed: false };
@@ -104,6 +153,26 @@ export async function logAIUsage(
 
 /** Helper p/ criar resposta JSON 429 quando quota estourou. */
 export function quotaExceededResponse(quota: QuotaResult, corsHeaders: Record<string, string>): Response {
+  if (quota.rate_limited) {
+    const wait = quota.retry_after === 3600
+      ? "uma hora"
+      : `${quota.retry_after ?? 60} segundos`;
+    return new Response(
+      JSON.stringify({
+        error: "rate_limited",
+        message: `Muitas requisições em pouco tempo. Aguarde ${wait} e tente novamente.`,
+        quota,
+      }),
+      {
+        status: 429,
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+          "Retry-After": String(quota.retry_after ?? 60),
+        },
+      },
+    );
+  }
   return new Response(
     JSON.stringify({
       error: "quota_exceeded",
