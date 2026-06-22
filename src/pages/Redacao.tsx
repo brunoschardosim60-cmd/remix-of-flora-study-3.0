@@ -722,10 +722,12 @@ export default function Redacao() {
                       </span>
                     </div>
                     <Textarea
+                      ref={textareaRef}
+                      key={`ta-${pulseKey}`}
                       value={texto}
                       onChange={(e) => setTexto(e.target.value)}
                       placeholder={config.placeholder}
-                      className="min-h-[420px] font-serif text-base leading-relaxed"
+                      className={`min-h-[420px] font-serif text-base leading-relaxed transition-shadow ${pulseKey > 0 ? "animate-[pulse_1.2s_ease-out_1] ring-2 ring-primary/60" : ""}`}
                     />
                     <p className="text-[11px] text-muted-foreground flex items-start gap-1.5">
                       <Lightbulb className="h-3 w-3 mt-0.5 flex-shrink-0 text-amber-500" />
