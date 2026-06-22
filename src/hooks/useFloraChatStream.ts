@@ -470,6 +470,15 @@ export function useFloraChatStream({ isOpen, onClose }: Options) {
     } catch { /* silent */ }
   }, [threadId]);
 
+  const renameThread = useCallback(async (id: string, title: string) => {
+    const t = title.trim().slice(0, 60);
+    if (!t) return;
+    try {
+      await supabase.functions.invoke("flora-engine", { body: { action: "rename_thread", data: { threadId: id, title: t } } });
+      setThreads((prev) => prev.map((x) => (x.id === id ? { ...x, title: t } : x)));
+    } catch { /* silent */ }
+  }, []);
+
   return {
     messages,
     input,
@@ -484,5 +493,6 @@ export function useFloraChatStream({ isOpen, onClose }: Options) {
     threads,
     selectThread,
     deleteThread,
+    renameThread,
   };
 }
