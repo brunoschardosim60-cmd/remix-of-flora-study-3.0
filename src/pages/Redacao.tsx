@@ -36,37 +36,37 @@ import {
   isOnline as isOnlineNow,
 } from "@/lib/essayDraftStore";
 
-// ─── Card que vira (flip) ao clicar — usado para revelar a sugestão da Flora ──
-function RewriteFlipCard({ suggestion }: { suggestion: string }) {
-  const [flipped, setFlipped] = useState(false);
+// ─── Card de reescrita: mostra a sugestão da Flora por padrão.
+// Ao clicar, alterna para o trecho que o usuário escreveu nesse parágrafo,
+// para comparar lado a lado o original com a sugestão.
+function RewriteFlipCard({ suggestion, original }: { suggestion: string; original?: string }) {
+  const [showOriginal, setShowOriginal] = useState(false);
+  const canToggle = !!(original && original.trim());
   return (
-    <button
-      type="button"
-      onClick={() => setFlipped((v) => !v)}
-      className="group relative w-full text-left [perspective:1200px]"
-      aria-label={flipped ? "Ocultar sugestão da Flora" : "Ver sugestão da Flora"}
-    >
-      <div
-        className={`relative w-full min-h-[96px] rounded-lg transition-transform duration-500 [transform-style:preserve-3d] ${flipped ? "[transform:rotateY(180deg)]" : ""}`}
-      >
-        {/* Frente */}
-        <div className="absolute inset-0 flex items-center justify-between gap-2 rounded-lg border border-primary/20 bg-primary/5 p-3 [backface-visibility:hidden]">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-primary" />
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-primary">Sugestão de reescrita</p>
-              <p className="text-xs text-muted-foreground">Toque para ver a versão da Flora</p>
-            </div>
-          </div>
-          <span className="text-[10px] text-primary/70 group-hover:text-primary">Virar →</span>
+    <div className="space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-primary" />
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-primary">
+            {showOriginal ? "Seu texto neste parágrafo" : "Sugestão de reescrita"}
+          </p>
         </div>
-        {/* Verso */}
-        <div className="absolute inset-0 rounded-lg border border-primary/30 bg-primary/10 p-3 [transform:rotateY(180deg)] [backface-visibility:hidden] overflow-auto">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-primary">Versão da Flora</p>
-          <p className="mt-1 text-sm italic">{suggestion}</p>
-        </div>
+        {canToggle && (
+          <button
+            type="button"
+            onClick={() => setShowOriginal((v) => !v)}
+            className="text-[10px] font-medium uppercase tracking-wide text-primary/80 hover:text-primary"
+          >
+            {showOriginal ? "Ver sugestão" : "Ver meu texto"}
+          </button>
+        )}
       </div>
-    </button>
+      <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
+        <p className={`text-sm whitespace-pre-line ${showOriginal ? "" : "italic"}`}>
+          {showOriginal ? original : suggestion}
+        </p>
+      </div>
+    </div>
   );
 }
 
@@ -466,6 +466,26 @@ export default function Redacao() {
 
   const metaObj = feedbackComp?._meta as any;
   const paragrafos = feedbackComp?._paragrafos;
+
+  // Divide o texto do usuário em até 4 parágrafos lógicos (intro, dev1, dev2, conclusão).
+  // Se o usuário escreveu mais que 4 parágrafos, junta o excedente no penúltimo.
+  const userParagraphs: Record<string, string> = (() => {
+    const raw = (selected?.texto || "").trim();
+    if (!raw) return {};
+    const parts = raw.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
+    if (parts.length === 0) return {};
+    const keys = ["introducao", "desenvolvimento_1", "desenvolvimento_2", "conclusao"];
+    const out: Record<string, string> = {};
+    if (parts.length <= 4) {
+      parts.forEach((p, i) => { out[keys[i]] = p; });
+    } else {
+      out.introducao = parts[0];
+      out.desenvolvimento_1 = parts[1];
+      out.conclusao = parts[parts.length - 1];
+      out.desenvolvimento_2 = parts.slice(2, -1).join("\n\n");
+    }
+    return out;
+  })();
 
   return (
     <div className="min-h-dvh bg-background">
@@ -907,7 +927,10 @@ export default function Redacao() {
                                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
                                 <p className="text-sm">{p.diagnostico}</p>
                                 {p.sugestao_reescrita && (
-                                  <RewriteFlipCard suggestion={p.sugestao_reescrita} />
+                                  <RewriteFlipCard
+                                    suggestion={p.sugestao_reescrita}
+                                    original={userParagraphs[key]}
+                                  />
                                 )}
                               </div>
                             );
