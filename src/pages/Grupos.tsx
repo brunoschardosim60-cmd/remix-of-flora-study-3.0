@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -8,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger,
 } from "@/components/ui/dialog";
-import { ArrowLeft, Users, Plus, Send, Hash, LogOut, Copy, Loader2 } from "lucide-react";
+import { Plus, Send, Hash, LogOut, Copy } from "lucide-react";
 import { toast } from "sonner";
 
 interface Group {
@@ -17,9 +16,8 @@ interface Group {
 }
 interface GMsg { id: string; group_id: string; user_id: string; content: string; created_at: string; }
 
-export default function Grupos() {
+export function GruposPanel() {
   const { user } = useAuth();
-  const nav = useNavigate();
   const [groups, setGroups] = useState<Group[]>([]);
   const [active, setActive] = useState<Group | null>(null);
   const [messages, setMessages] = useState<GMsg[]>([]);
@@ -119,12 +117,8 @@ export default function Grupos() {
   }
 
   return (
-    <div className="min-h-dvh bg-background">
-      <header className="border-b border-border bg-card sticky top-0 z-10">
-        <div className="container max-w-5xl mx-auto px-4 py-3 flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => nav(-1)}><ArrowLeft className="w-4 h-4" /></Button>
-          <h1 className="font-heading font-bold text-lg flex items-center gap-2"><Users className="w-5 h-5" /> Grupos de Estudo</h1>
-          <div className="ml-auto flex gap-2">
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 justify-end">
             <Dialog open={openJoin} onOpenChange={setOpenJoin}>
               <DialogTrigger asChild><Button variant="outline" size="sm">Entrar com código</Button></DialogTrigger>
               <DialogContent className="sm:max-w-sm">
@@ -142,10 +136,8 @@ export default function Grupos() {
                 <DialogFooter><Button onClick={createGroup} disabled={!newName.trim()}>Criar</Button></DialogFooter>
               </DialogContent>
             </Dialog>
-          </div>
-        </div>
-      </header>
-      <div className="container max-w-5xl mx-auto p-4 grid grid-cols-1 md:grid-cols-[280px_1fr] gap-4">
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-4">
         <aside className="space-y-2">
           {groups.length === 0 ? (
             <p className="text-xs text-muted-foreground text-center py-4">Você ainda não está em nenhum grupo. Crie ou entre com um código.</p>
@@ -196,4 +188,8 @@ export default function Grupos() {
       </div>
     </div>
   );
+}
+
+export default function Grupos() {
+  return <GruposPanel />;
 }
