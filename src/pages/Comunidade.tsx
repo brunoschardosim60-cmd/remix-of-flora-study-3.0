@@ -428,6 +428,32 @@ export default function Comunidade() {
           <p className="text-sm text-muted-foreground">Compartilhe progresso, dúvidas e dicas.</p>
         </div>
 
+        {/* Tabs de seção: Feed / Grupos / Mensagens */}
+        <div className="flex gap-1 bg-muted/50 rounded-xl p-1">
+          <button
+            onClick={() => setSection("feed")}
+            className={`flex-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1.5 ${section === "feed" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            <Hash className="w-3.5 h-3.5" /> Feed
+          </button>
+          <button
+            onClick={() => setSection("grupos")}
+            className={`flex-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1.5 ${section === "grupos" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            <UsersIcon className="w-3.5 h-3.5" /> Grupos
+          </button>
+          <button
+            onClick={() => setSection("mensagens")}
+            className={`flex-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1.5 ${section === "mensagens" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            <Mail className="w-3.5 h-3.5" /> Mensagens
+          </button>
+        </div>
+
+        {section === "grupos" && <GruposPanel />}
+        {section === "mensagens" && <MensagensPanel />}
+
+        {section === "feed" && <>
         {/* Tabs de feed */}
         <div className="flex gap-1 overflow-x-auto bg-muted/50 rounded-xl p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <button
