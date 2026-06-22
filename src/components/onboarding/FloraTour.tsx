@@ -24,7 +24,7 @@ type Step = {
 
 const STEPS: Step[] = [
   {
-    title: "Oi! Eu sou a Flora ✨",
+    title: "Oi! Eu sou a Flora",
     caption: "Sua professora particular com IA",
     body: (
       <p className="text-sm text-muted-foreground leading-relaxed">

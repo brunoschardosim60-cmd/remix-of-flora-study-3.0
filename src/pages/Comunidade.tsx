@@ -69,13 +69,23 @@ function Avatar({ profile, size = 40 }: { profile?: ProfileLite | null; size?: n
 }
 
 export default function Comunidade() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [composer, setComposer] = useState("");
   const [composerMedia, setComposerMedia] = useState("");
+  const [showMediaInput, setShowMediaInput] = useState(false);
   const [posting, setPosting] = useState(false);
+  const meAsProfile: ProfileLite | null = user
+    ? {
+        id: user.id,
+        display_name: profile?.display_name ?? null,
+        username: (profile as any)?.username ?? null,
+        avatar_url: profile?.avatar_url ?? null,
+      }
+    : null;
+
   const [openComments, setOpenComments] = useState<Record<string, boolean>>({});
   const [comments, setComments] = useState<Record<string, Comment[]>>({});
   const [commentDraft, setCommentDraft] = useState<Record<string, string>>({});
@@ -264,7 +274,7 @@ export default function Comunidade() {
         {/* Composer */}
         <div className="rounded-2xl border border-border bg-card p-3 sm:p-4 space-y-3">
           <div className="flex gap-3">
-            <Avatar profile={null} size={40} />
+            <Avatar profile={meAsProfile} size={40} />
             <Textarea
               placeholder="O que está estudando hoje? Compartilhe uma dúvida ou conquista..."
               value={composer}
@@ -287,16 +297,28 @@ export default function Comunidade() {
               </Button>
             </div>
           )}
-          <div className="flex items-center gap-2">
-            <div className="flex-1 flex items-center gap-2">
+          {showMediaInput && (
+            <div className="flex items-center gap-2">
               <ImageIcon className="w-4 h-4 text-muted-foreground shrink-0" />
               <Input
-                placeholder="URL de imagem (opcional)"
+                placeholder="Cole o link da imagem (https://...)"
                 value={composerMedia}
                 onChange={(e) => setComposerMedia(e.target.value)}
                 className="h-8 text-xs"
               />
             </div>
+          )}
+          <div className="flex items-center justify-between gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowMediaInput((v) => !v)}
+              className="text-muted-foreground"
+            >
+              <ImageIcon className="w-4 h-4 mr-1" />
+              {showMediaInput ? "Remover imagem" : "Adicionar imagem"}
+            </Button>
             <Button
               size="sm"
               onClick={submitPost}
@@ -314,8 +336,17 @@ export default function Comunidade() {
             <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
           </div>
         ) : posts.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border p-8 text-center">
-            <p className="text-sm text-muted-foreground">Ainda sem posts. Seja o primeiro!</p>
+          <div className="rounded-2xl border border-dashed border-border p-10 text-center space-y-3">
+            <div className="w-12 h-12 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
+              <MessageCircle className="w-6 h-6 text-primary" />
+            </div>
+            <div>
+              <p className="text-sm font-medium">Nenhum post ainda</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Conte uma conquista, tire uma dúvida ou compartilhe um macete.
+                Quem começa primeiro também ajuda a galera.
+              </p>
+            </div>
           </div>
         ) : (
           posts.map((post) => (
