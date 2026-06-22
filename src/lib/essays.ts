@@ -8,6 +8,20 @@ export interface ParagrafoAnalise {
   sugestao_reescrita: string;
 }
 
+export interface TrechoDestacado {
+  trecho: string;
+  competencia: 1 | 2 | 3 | 4 | 5;
+  problema: string;
+  sugestao?: string;
+}
+
+export interface RepertorioSugerido {
+  tipo: string;
+  titulo: string;
+  descricao: string;
+  como_usar: string;
+}
+
 export interface CompetenciaFeedback {
   competencia_1?: string;
   competencia_2?: string;
@@ -19,6 +33,7 @@ export interface CompetenciaFeedback {
     fuga_tipo_textual?: boolean;
     aderencia_tema?: "dentro" | "tangencia" | "fuga_total";
     aderencia_justificativa?: string;
+    [k: string]: any;
   };
   _paragrafos?: {
     introducao?: ParagrafoAnalise;
@@ -26,6 +41,8 @@ export interface CompetenciaFeedback {
     desenvolvimento_2?: ParagrafoAnalise;
     conclusao?: ParagrafoAnalise;
   };
+  _trechos?: TrechoDestacado[];
+  _repertorios?: RepertorioSugerido[];
 }
 
 export const COMPETENCIAS = [
