@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -70,6 +71,65 @@ function RewriteFlipCard({
       </div>
     </div>
   );
+}
+
+// ─── Cor por competência (1-5) para destacar trechos ───────────────────────
+const COMP_COLOR: Record<number, { bg: string; ring: string; text: string; label: string }> = {
+  1: { bg: "bg-rose-500/15",    ring: "ring-rose-500/40",    text: "text-rose-700 dark:text-rose-300",       label: "C1" },
+  2: { bg: "bg-amber-500/15",   ring: "ring-amber-500/40",   text: "text-amber-700 dark:text-amber-300",     label: "C2" },
+  3: { bg: "bg-violet-500/15",  ring: "ring-violet-500/40",  text: "text-violet-700 dark:text-violet-300",   label: "C3" },
+  4: { bg: "bg-sky-500/15",     ring: "ring-sky-500/40",     text: "text-sky-700 dark:text-sky-300",         label: "C4" },
+  5: { bg: "bg-emerald-500/15", ring: "ring-emerald-500/40", text: "text-emerald-700 dark:text-emerald-300", label: "C5" },
+};
+
+// Interpola gradiente vermelho → âmbar → verde conforme percentual 0-100
+function gradientBarStyle(pct: number): string {
+  // hue: 0 (vermelho) -> 120 (verde)
+  const hue = Math.max(0, Math.min(120, (pct / 100) * 120));
+  return `hsl(${hue} 75% 45%)`;
+}
+
+// Renderiza um texto cru com destaques (trechos da Flora). Faz match case-insensitive.
+function HighlightedEssay({ text, trechos }: { text: string; trechos: Array<{ trecho: string; competencia: number; problema: string; sugestao?: string }> }) {
+  if (!text) return null;
+  // Ordena trechos por posição no texto, descarta os que não bateram exatamente
+  type Hit = { start: number; end: number; comp: number; problema: string; sugestao?: string };
+  const hits: Hit[] = [];
+  const lower = text.toLowerCase();
+  for (const t of trechos || []) {
+    const needle = (t.trecho || "").trim().toLowerCase();
+    if (!needle || needle.length < 4) continue;
+    const idx = lower.indexOf(needle);
+    if (idx < 0) continue;
+    hits.push({ start: idx, end: idx + needle.length, comp: t.competencia, problema: t.problema, sugestao: t.sugestao });
+  }
+  hits.sort((a, b) => a.start - b.start);
+  // Resolve sobreposições: mantém o primeiro
+  const clean: Hit[] = [];
+  let lastEnd = -1;
+  for (const h of hits) {
+    if (h.start < lastEnd) continue;
+    clean.push(h);
+    lastEnd = h.end;
+  }
+  const parts: React.ReactNode[] = [];
+  let cursor = 0;
+  clean.forEach((h, i) => {
+    if (cursor < h.start) parts.push(<span key={`t-${i}`}>{text.slice(cursor, h.start)}</span>);
+    const c = COMP_COLOR[h.comp] || COMP_COLOR[3];
+    parts.push(
+      <mark
+        key={`m-${i}`}
+        title={`${c.label} — ${h.problema}${h.sugestao ? `\n→ ${h.sugestao}` : ""}`}
+        className={`rounded px-0.5 ${c.bg} ${c.text} ring-1 ${c.ring} cursor-help`}
+      >
+        {text.slice(h.start, h.end)}
+      </mark>
+    );
+    cursor = h.end;
+  });
+  if (cursor < text.length) parts.push(<span key="tail">{text.slice(cursor)}</span>);
+  return <p className="whitespace-pre-wrap text-sm leading-relaxed font-serif">{parts}</p>;
 }
 
 // ─── Configuração por objetivo ────────────────────────────────────────────────
@@ -820,7 +880,7 @@ export default function Redacao() {
                               toast.success("PDF gerado");
                             } catch (err) {
                               toast.error("Falha ao gerar PDF");
-                              reportError(err, { tag: "essay-pdf" });
+                              reportError("essay-pdf", err, { devOnly: true });
                             }
                           }}
                         >
@@ -898,7 +958,6 @@ export default function Redacao() {
                           const fbRaw = feedbackComp?.[comp.key as keyof CompetenciaFeedback];
                           const fb = typeof fbRaw === "string" ? fbRaw : "";
                           const pct = (score / 200) * 100;
-                          const barColor = pct >= 80 ? "bg-green-500" : pct >= 60 ? "bg-yellow-500" : pct >= 40 ? "bg-orange-500" : "bg-red-400";
                           return (
                             <div key={comp.key} className="space-y-2 rounded-xl border border-border bg-background/60 p-3">
                               <div className="flex items-center justify-between">
@@ -913,7 +972,13 @@ export default function Redacao() {
                                 </span>
                               </div>
                               <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-                                <div className={`h-full rounded-full transition-all duration-500 ${barColor}`} style={{ width: `${pct}%` }} />
+                                <div
+                                  className="h-full rounded-full transition-all duration-500"
+                                  style={{
+                                    width: `${pct}%`,
+                                    background: `linear-gradient(90deg, hsl(0 75% 50%), hsl(40 85% 50%), ${gradientBarStyle(pct)})`,
+                                  }}
+                                />
                               </div>
                               <p className="text-xs text-muted-foreground">{comp.description}</p>
                               {fb && <p className="text-sm whitespace-pre-line">{fb}</p>}
@@ -960,7 +1025,7 @@ export default function Redacao() {
                     {paragrafos && (
                       <div className="space-y-3">
                         <h3 className="font-heading text-base font-semibold">Análise por parágrafo</h3>
-                        <div className="grid gap-3 md:grid-cols-2">
+                        <div className="grid gap-3 sm:grid-cols-1 lg:grid-cols-2">
                           {([
                             ["introducao", "Introdução"],
                             ["desenvolvimento_1", "Desenvolvimento 1"],
@@ -986,6 +1051,57 @@ export default function Redacao() {
                         </div>
                       </div>
                     )}
+
+                    {/* Texto com marcações inline */}
+                    {(() => {
+                      const trechos = (feedbackComp as any)?._trechos as Array<{ trecho: string; competencia: number; problema: string; sugestao?: string }> | undefined;
+                      if (!trechos || trechos.length === 0) return null;
+                      return (
+                        <div className="space-y-2 rounded-2xl border border-border bg-background/60 p-4">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <h3 className="font-heading text-base font-semibold">Sua redação com marcações</h3>
+                            <div className="flex flex-wrap items-center gap-1.5 text-[10px]">
+                              {[1, 2, 3, 4, 5].map((n) => (
+                                <span key={n} className={`rounded px-1.5 py-0.5 ring-1 ${COMP_COLOR[n].bg} ${COMP_COLOR[n].text} ${COMP_COLOR[n].ring}`}>
+                                  C{n}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                          <p className="text-[11px] text-muted-foreground">Passe o mouse sobre um trecho destacado para ver o problema apontado pela Flora.</p>
+                          <div className="rounded-lg border border-border bg-background p-3 max-h-[420px] overflow-y-auto">
+                            <HighlightedEssay text={selected?.texto || ""} trechos={trechos} />
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Repertórios sugeridos */}
+                    {(() => {
+                      const reps = (feedbackComp as any)?._repertorios as Array<{ tipo: string; titulo: string; descricao: string; como_usar: string }> | undefined;
+                      if (!reps || reps.length === 0) return null;
+                      return (
+                        <div className="space-y-3 rounded-2xl border border-border bg-background/60 p-4">
+                          <div className="flex items-center gap-2">
+                            <Lightbulb className="h-5 w-5 text-primary" />
+                            <h3 className="font-heading text-base font-semibold">Repertórios para esse tema</h3>
+                            <Badge variant="outline" className="text-[10px] uppercase tracking-wide">Flora</Badge>
+                          </div>
+                          <div className="grid gap-3 sm:grid-cols-1 lg:grid-cols-2">
+                            {reps.map((r, i) => (
+                              <div key={i} className="space-y-1.5 rounded-xl border border-border bg-background/70 p-3">
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="secondary" className="text-[10px]">{r.tipo}</Badge>
+                                  <p className="text-sm font-semibold">{r.titulo}</p>
+                                </div>
+                                <p className="text-xs text-muted-foreground">{r.descricao}</p>
+                                <p className="text-sm"><span className="text-[10px] font-semibold uppercase tracking-wide text-primary">Como usar: </span>{r.como_usar}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
 
                     {/* ── Plano de estudo personalizado ── */}
                     {(() => {
@@ -1124,81 +1240,93 @@ export default function Redacao() {
                       )}
 
                       {realPlan && (
-                        <div className="space-y-3">
+                        <Accordion type="multiple" defaultValue={["diag"]} className="space-y-2">
                           {realPlan.diagnostico?.length > 0 && (
-                            <div className="rounded-xl border border-border bg-background/70 p-3">
-                              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Diagnóstico</p>
-                              <ul className="space-y-1 text-sm">
-                                {realPlan.diagnostico.map((d: string, i: number) => (
-                                  <li key={i} className="flex gap-2"><span className="text-primary">•</span><span>{d}</span></li>
-                                ))}
-                              </ul>
-                            </div>
+                            <AccordionItem value="diag" className="rounded-xl border border-border bg-background/70 px-3">
+                              <AccordionTrigger className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Diagnóstico</AccordionTrigger>
+                              <AccordionContent>
+                                <ul className="space-y-1 text-sm">
+                                  {realPlan.diagnostico.map((d: string, i: number) => (
+                                    <li key={i} className="flex gap-2"><span className="text-primary">•</span><span>{d}</span></li>
+                                  ))}
+                                </ul>
+                              </AccordionContent>
+                            </AccordionItem>
                           )}
 
-                          <div className="grid gap-3 md:grid-cols-2">
-                            {realPlan.pontos_fortes?.length > 0 && (
-                              <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3">
-                                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-400 mb-1">Pontos fortes</p>
-                                <ul className="space-y-1 text-sm">
-                                  {realPlan.pontos_fortes.map((p: string, i: number) => (<li key={i}>✓ {p}</li>))}
-                                </ul>
-                              </div>
-                            )}
-                            {realPlan.pontos_criticos?.length > 0 && (
-                              <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3">
-                                <p className="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400 mb-1">Pontos críticos</p>
-                                <ul className="space-y-1 text-sm">
-                                  {realPlan.pontos_criticos.map((p: string, i: number) => (<li key={i}>! {p}</li>))}
-                                </ul>
-                              </div>
-                            )}
-                          </div>
+                          {(realPlan.pontos_fortes?.length > 0 || realPlan.pontos_criticos?.length > 0) && (
+                            <AccordionItem value="pontos" className="rounded-xl border border-border bg-background/70 px-3">
+                              <AccordionTrigger className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Pontos fortes e críticos</AccordionTrigger>
+                              <AccordionContent>
+                                <div className="grid gap-3 sm:grid-cols-1 lg:grid-cols-2">
+                                  {realPlan.pontos_fortes?.length > 0 && (
+                                    <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3">
+                                      <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-400 mb-1">Pontos fortes</p>
+                                      <ul className="space-y-1 text-sm">
+                                        {realPlan.pontos_fortes.map((p: string, i: number) => (<li key={i}>✓ {p}</li>))}
+                                      </ul>
+                                    </div>
+                                  )}
+                                  {realPlan.pontos_criticos?.length > 0 && (
+                                    <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
+                                      <p className="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400 mb-1">Pontos críticos</p>
+                                      <ul className="space-y-1 text-sm">
+                                        {realPlan.pontos_criticos.map((p: string, i: number) => (<li key={i}>! {p}</li>))}
+                                      </ul>
+                                    </div>
+                                  )}
+                                </div>
+                              </AccordionContent>
+                            </AccordionItem>
+                          )}
 
                           {realPlan.dicas_redacao?.length > 0 && (
-                            <div className="rounded-xl border border-border bg-background/70 p-3">
-                              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Dicas pra sua redação</p>
-                              <ul className="space-y-1 text-sm">
-                                {realPlan.dicas_redacao.map((d: string, i: number) => (
-                                  <li key={i} className="flex gap-2"><Lightbulb className="h-4 w-4 shrink-0 text-primary" /><span>{d}</span></li>
-                                ))}
-                              </ul>
-                            </div>
+                            <AccordionItem value="dicas" className="rounded-xl border border-border bg-background/70 px-3">
+                              <AccordionTrigger className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Dicas pra sua redação</AccordionTrigger>
+                              <AccordionContent>
+                                <ul className="space-y-1 text-sm">
+                                  {realPlan.dicas_redacao.map((d: string, i: number) => (
+                                    <li key={i} className="flex gap-2"><Lightbulb className="h-4 w-4 shrink-0 text-primary" /><span>{d}</span></li>
+                                  ))}
+                                </ul>
+                              </AccordionContent>
+                            </AccordionItem>
                           )}
 
                           {realPlan.plano_semanal?.length > 0 && (
-                            <div className="rounded-xl border border-border bg-background/70 p-3">
-                              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Plano da semana</p>
-                              <div className="space-y-2">
-                                {realPlan.plano_semanal.map((d: any, i: number) => (
-                                  <div key={i} className="flex flex-wrap items-center gap-2 rounded-lg border border-border/60 p-2 text-sm">
-                                    <Badge variant="secondary" className="text-[10px]">{d.dia}</Badge>
-                                    <span className="font-medium">{d.foco}</span>
-                                    <span className="text-muted-foreground">— {d.tarefa}</span>
-                                    {d.duracao_min && <span className="ml-auto text-xs text-muted-foreground">{d.duracao_min} min</span>}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
+                            <AccordionItem value="semana" className="rounded-xl border border-border bg-background/70 px-3">
+                              <AccordionTrigger className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Plano da semana</AccordionTrigger>
+                              <AccordionContent>
+                                <div className="space-y-2">
+                                  {realPlan.plano_semanal.map((d: any, i: number) => (
+                                    <div key={i} className="flex flex-wrap items-center gap-2 rounded-lg border border-border/60 p-2 text-sm">
+                                      <Badge variant="secondary" className="text-[10px]">{d.dia}</Badge>
+                                      <span className="font-medium">{d.foco}</span>
+                                      <span className="text-muted-foreground">— {d.tarefa}</span>
+                                      {d.duracao_min && <span className="ml-auto text-xs text-muted-foreground">{d.duracao_min} min</span>}
+                                    </div>
+                                  ))}
+                                </div>
+                              </AccordionContent>
+                            </AccordionItem>
                           )}
 
                           {realPlan.metas_curto_prazo?.length > 0 && (
-                            <div className="rounded-xl border border-primary/30 bg-primary/5 p-3">
-                              <p className="text-xs font-semibold uppercase tracking-wide text-primary mb-1">Metas dos próximos 7 dias</p>
-                              <ul className="space-y-1 text-sm">
-                                {realPlan.metas_curto_prazo.map((m: string, i: number) => (
-                                  <li key={i} className="flex gap-2"><span className="text-primary font-bold">{i + 1}.</span>{m}</li>
-                                ))}
-                              </ul>
-                            </div>
+                            <AccordionItem value="metas" className="rounded-xl border border-primary/30 bg-primary/5 px-3">
+                              <AccordionTrigger className="text-xs font-semibold uppercase tracking-wide text-primary">Metas dos próximos 7 dias</AccordionTrigger>
+                              <AccordionContent>
+                                <ul className="space-y-1 text-sm">
+                                  {realPlan.metas_curto_prazo.map((m: string, i: number) => (
+                                    <li key={i} className="flex gap-2"><span className="text-primary font-bold">{i + 1}.</span>{m}</li>
+                                  ))}
+                                </ul>
+                                {realPlan.indicador_acompanhamento && (
+                                  <p className="mt-3 rounded-lg border border-primary/30 bg-background/60 p-2 text-sm italic">📊 {realPlan.indicador_acompanhamento}</p>
+                                )}
+                              </AccordionContent>
+                            </AccordionItem>
                           )}
-
-                          {realPlan.indicador_acompanhamento && (
-                            <div className="rounded-xl border border-primary/30 bg-background/60 p-3 text-sm italic">
-                              📊 {realPlan.indicador_acompanhamento}
-                            </div>
-                          )}
-                        </div>
+                        </Accordion>
                       )}
                     </div>
                   </div>
