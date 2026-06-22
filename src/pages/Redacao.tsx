@@ -73,6 +73,65 @@ function RewriteFlipCard({
   );
 }
 
+// ─── Cor por competência (1-5) para destacar trechos ───────────────────────
+const COMP_COLOR: Record<number, { bg: string; ring: string; text: string; label: string }> = {
+  1: { bg: "bg-rose-500/15",    ring: "ring-rose-500/40",    text: "text-rose-700 dark:text-rose-300",       label: "C1" },
+  2: { bg: "bg-amber-500/15",   ring: "ring-amber-500/40",   text: "text-amber-700 dark:text-amber-300",     label: "C2" },
+  3: { bg: "bg-violet-500/15",  ring: "ring-violet-500/40",  text: "text-violet-700 dark:text-violet-300",   label: "C3" },
+  4: { bg: "bg-sky-500/15",     ring: "ring-sky-500/40",     text: "text-sky-700 dark:text-sky-300",         label: "C4" },
+  5: { bg: "bg-emerald-500/15", ring: "ring-emerald-500/40", text: "text-emerald-700 dark:text-emerald-300", label: "C5" },
+};
+
+// Interpola gradiente vermelho → âmbar → verde conforme percentual 0-100
+function gradientBarStyle(pct: number): string {
+  // hue: 0 (vermelho) -> 120 (verde)
+  const hue = Math.max(0, Math.min(120, (pct / 100) * 120));
+  return `hsl(${hue} 75% 45%)`;
+}
+
+// Renderiza um texto cru com destaques (trechos da Flora). Faz match case-insensitive.
+function HighlightedEssay({ text, trechos }: { text: string; trechos: Array<{ trecho: string; competencia: number; problema: string; sugestao?: string }> }) {
+  if (!text) return null;
+  // Ordena trechos por posição no texto, descarta os que não bateram exatamente
+  type Hit = { start: number; end: number; comp: number; problema: string; sugestao?: string };
+  const hits: Hit[] = [];
+  const lower = text.toLowerCase();
+  for (const t of trechos || []) {
+    const needle = (t.trecho || "").trim().toLowerCase();
+    if (!needle || needle.length < 4) continue;
+    const idx = lower.indexOf(needle);
+    if (idx < 0) continue;
+    hits.push({ start: idx, end: idx + needle.length, comp: t.competencia, problema: t.problema, sugestao: t.sugestao });
+  }
+  hits.sort((a, b) => a.start - b.start);
+  // Resolve sobreposições: mantém o primeiro
+  const clean: Hit[] = [];
+  let lastEnd = -1;
+  for (const h of hits) {
+    if (h.start < lastEnd) continue;
+    clean.push(h);
+    lastEnd = h.end;
+  }
+  const parts: React.ReactNode[] = [];
+  let cursor = 0;
+  clean.forEach((h, i) => {
+    if (cursor < h.start) parts.push(<span key={`t-${i}`}>{text.slice(cursor, h.start)}</span>);
+    const c = COMP_COLOR[h.comp] || COMP_COLOR[3];
+    parts.push(
+      <mark
+        key={`m-${i}`}
+        title={`${c.label} — ${h.problema}${h.sugestao ? `\n→ ${h.sugestao}` : ""}`}
+        className={`rounded px-0.5 ${c.bg} ${c.text} ring-1 ${c.ring} cursor-help`}
+      >
+        {text.slice(h.start, h.end)}
+      </mark>
+    );
+    cursor = h.end;
+  });
+  if (cursor < text.length) parts.push(<span key="tail">{text.slice(cursor)}</span>);
+  return <p className="whitespace-pre-wrap text-sm leading-relaxed font-serif">{parts}</p>;
+}
+
 // ─── Configuração por objetivo ────────────────────────────────────────────────
 
 type Objetivo = "enem" | "vestibular" | "concurso" | "faculdade" | "aprender" | string;
