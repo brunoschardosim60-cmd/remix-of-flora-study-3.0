@@ -55,8 +55,8 @@ export function DashboardHeader({ user, bancoRoute, bancoLabel, onSignOut }: Pro
             </Button>
           )}
           {user && (
-            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate("/comunidade")} onMouseEnter={() => prefetchRoute("/comunidade")}>
-              <Users className="w-4 h-4" /> Comunidade
+            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => navigate("/comunidade")} onMouseEnter={() => prefetchRoute("/comunidade")} aria-label="Comunidade">
+              <Users className="w-4 h-4" />
             </Button>
           )}
         </div>
@@ -100,8 +100,8 @@ export function DashboardHeader({ user, bancoRoute, bancoLabel, onSignOut }: Pro
             </Button>
           )}
           {user && (
-            <Button variant="outline" size="sm" className="gap-1.5 shrink-0" onClick={() => navigate("/comunidade")}>
-              <Users className="w-4 h-4" /> Comunidade
+            <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" onClick={() => navigate("/comunidade")} aria-label="Comunidade">
+              <Users className="w-4 h-4" />
             </Button>
           )}
         </div>
