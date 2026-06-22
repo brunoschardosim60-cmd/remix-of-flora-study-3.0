@@ -89,9 +89,12 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 }
 
 function AdminRoute({ children }: { children: React.ReactNode }) {
-  const { user, isAdmin, loading } = useAuth();
+  const { user, profile, isAdmin, loading } = useAuth();
 
-  if (loading) {
+  // Espera tanto a sessão quanto o profile carregarem.
+  // Sem isso, `isAdmin` arranca como `false` enquanto o profile ainda está
+  // sendo buscado e o guard redireciona pra "/" (parece que "fecha o admin").
+  if (loading || (user && !profile)) {
     return (
       <div className="min-h-dvh bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
