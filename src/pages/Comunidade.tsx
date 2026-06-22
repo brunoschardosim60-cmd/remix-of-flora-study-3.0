@@ -104,6 +104,7 @@ export default function Comunidade() {
   const [communities, setCommunities] = useState<Community[]>([]);
   const [feedMode, setFeedMode] = useState<FeedMode>("geral");
   const [myCommunities, setMyCommunities] = useState<Set<string>>(new Set());
+  const [section, setSection] = useState<"feed" | "grupos" | "mensagens">("feed");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const meAsProfile: ProfileLite | null = user
     ? {
