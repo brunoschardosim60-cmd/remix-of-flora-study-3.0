@@ -143,6 +143,10 @@ export default function Redacao() {
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [online, setOnline] = useState<boolean>(isOnlineNow());
   const [hasLocalPending, setHasLocalPending] = useState<boolean>(false);
+  // Plano personalizado real (cruza dados reais do aluno)
+  const [realPlan, setRealPlan] = useState<any | null>(null);
+  const [realPlanMetrics, setRealPlanMetrics] = useState<any | null>(null);
+  const [loadingRealPlan, setLoadingRealPlan] = useState(false);
   function hashText(s: string): string {
     let h = 5381;
     for (let i = 0; i < s.length; i++) h = ((h << 5) + h) ^ s.charCodeAt(i);
