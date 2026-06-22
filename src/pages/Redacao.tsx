@@ -595,7 +595,7 @@ export default function Redacao() {
 
   return (
     <div className="min-h-dvh bg-background">
-      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+      <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-16 py-4 sm:py-6">
         {/* Header */}
         <div className="mb-4 flex flex-wrap items-center gap-3">
           <Button variant="outline" size="icon" aria-label="Voltar para o início" onClick={() => navigate("/")}>

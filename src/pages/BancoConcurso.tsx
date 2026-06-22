@@ -1078,7 +1078,7 @@ export default function BancoConcurso() {
     <div className="min-h-dvh bg-background pb-20 md:pb-6">
       {/* Header */}
       <div className="border-b border-border bg-card sticky top-0 z-10 shadow-sm">
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center gap-3">
+        <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-16 py-3 flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)} aria-label="Voltar">
             <ArrowLeft className="w-5 h-5" />
           </Button>
@@ -1094,7 +1094,7 @@ export default function BancoConcurso() {
         </div>
       </div>
 
-      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-4 space-y-4">
+      <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-16 py-4 space-y-4">
         {/* Stats */}
         {stats.total > 0 ? (
           <Card className="p-4 flex flex-wrap items-center gap-4">
