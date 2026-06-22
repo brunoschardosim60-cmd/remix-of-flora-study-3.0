@@ -539,6 +539,12 @@ export default function Comunidade() {
                   </div>
                 )}
                 <div className="ml-auto">
+                  {post.community_id && (
+                    <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary mr-2">
+                      <Hash className="w-3 h-3" />
+                      {communities.find((c) => c.id === post.community_id)?.name || "comunidade"}
+                    </span>
+                  )}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Mais ações">
