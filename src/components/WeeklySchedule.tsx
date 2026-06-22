@@ -31,6 +31,8 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
   const [hoveredSlot, setHoveredSlot] = useState<string | null>(null);
   const [showAddRow, setShowAddRow] = useState(false);
   const [newHorario, setNewHorario] = useState("");
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
 
   const horarios = [...new Set(slots.map((s) => s.horario))].sort();
 
@@ -49,6 +51,21 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
     const slot = slots.find((s) => s.id === id);
     if (!slot) return;
     onChange(slots.map((s) => (s.id === id ? { ...s, concluido: !s.concluido } : s)));
+  };
+
+  // Drag & drop: troca o conteúdo (materia/descricao/concluido) entre dois slots
+  const swapSlots = (sourceId: string, targetId: string) => {
+    if (sourceId === targetId) return;
+    const src = slots.find((s) => s.id === sourceId);
+    const tgt = slots.find((s) => s.id === targetId);
+    if (!src || !tgt) return;
+    onChange(
+      slots.map((s) => {
+        if (s.id === sourceId) return { ...s, materia: tgt.materia, descricao: tgt.descricao, concluido: tgt.concluido };
+        if (s.id === targetId) return { ...s, materia: src.materia, descricao: src.descricao, concluido: src.concluido };
+        return s;
+      })
+    );
   };
 
   const addHorario = () => {
