@@ -2,9 +2,12 @@ import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BookOpen, Brain, CheckCircle2, PlayCircle, Sparkles, X } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
-const DISMISSED_KEY = "quickstart-dismissed";
-const FLORA_TALKED_KEY = "quickstart-flora-talked";
+const DISMISSED_KEY_BASE = "quickstart-dismissed";
+const FLORA_TALKED_KEY_BASE = "quickstart-flora-talked";
+const keyFor = (base: string, userId?: string | null) =>
+  userId ? `${base}:${userId}` : base;
 
 interface QuickStartChecklistProps {
   isLoggedIn: boolean;
@@ -23,21 +26,33 @@ export function QuickStartChecklist({
   onCreateTopic,
   onStartStudy,
 }: QuickStartChecklistProps) {
-  const [dismissed, setDismissed] = useState(() => {
-    try { return localStorage.getItem(DISMISSED_KEY) === "true"; } catch { return false; }
-  });
-  const [talkedToFlora, setTalkedToFlora] = useState(() => {
-    try { return localStorage.getItem(FLORA_TALKED_KEY) === "true"; } catch { return false; }
-  });
+  const { user } = useAuth();
+  const dismissedKey = keyFor(DISMISSED_KEY_BASE, user?.id);
+  const floraTalkedKey = keyFor(FLORA_TALKED_KEY_BASE, user?.id);
+  const [dismissed, setDismissed] = useState(false);
+  const [talkedToFlora, setTalkedToFlora] = useState(false);
+
+  // Re-hidrata o estado quando o usuário muda (login/logout), respeitando
+  // também a chave global antiga pra não reaparecer pra quem já tinha visto.
+  useEffect(() => {
+    try {
+      const d = localStorage.getItem(dismissedKey) === "true"
+        || localStorage.getItem(DISMISSED_KEY_BASE) === "true";
+      const f = localStorage.getItem(floraTalkedKey) === "true"
+        || localStorage.getItem(FLORA_TALKED_KEY_BASE) === "true";
+      setDismissed(d);
+      setTalkedToFlora(f);
+    } catch { /* ignore */ }
+  }, [dismissedKey, floraTalkedKey]);
 
   useEffect(() => {
     const onOpen = () => {
-      try { localStorage.setItem(FLORA_TALKED_KEY, "true"); } catch {}
+      try { localStorage.setItem(floraTalkedKey, "true"); } catch {}
       setTalkedToFlora(true);
     };
     window.addEventListener("open-flora-chat", onOpen);
     return () => window.removeEventListener("open-flora-chat", onOpen);
-  }, []);
+  }, [floraTalkedKey]);
 
   const steps = [
     {
@@ -64,7 +79,7 @@ export function QuickStartChecklist({
       done: talkedToFlora,
       icon: Sparkles,
       action: () => {
-        try { localStorage.setItem(FLORA_TALKED_KEY, "true"); } catch {}
+        try { localStorage.setItem(floraTalkedKey, "true"); } catch {}
         setTalkedToFlora(true);
         window.dispatchEvent(new CustomEvent("open-flora-chat"));
       },
@@ -87,7 +102,7 @@ export function QuickStartChecklist({
 
   function handleDismiss() {
     setDismissed(true);
-    try { localStorage.setItem(DISMISSED_KEY, "true"); } catch {}
+    try { localStorage.setItem(dismissedKey, "true"); } catch {}
   }
 
   return (
