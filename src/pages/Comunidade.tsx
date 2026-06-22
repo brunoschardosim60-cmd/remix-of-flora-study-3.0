@@ -472,14 +472,26 @@ export default function Comunidade() {
               )}
               {uploadingMedia ? "Enviando..." : composerMedia ? "Trocar imagem" : "Adicionar imagem"}
             </Button>
-            <Button
+            <div className="flex items-center gap-2">
+              <select
+                value={composerCommunity}
+                onChange={(e) => setComposerCommunity(e.target.value)}
+                className="text-xs bg-muted border border-border rounded-md px-2 py-1.5 max-w-[140px]"
+              >
+                <option value="">Sem comunidade</option>
+                {communities.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+              <Button
               size="sm"
               onClick={submitPost}
               disabled={posting || !composer.trim()}
-            >
+              >
               {posting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 mr-1" />}
               Publicar
-            </Button>
+              </Button>
+            </div>
           </div>
         </div>
 
