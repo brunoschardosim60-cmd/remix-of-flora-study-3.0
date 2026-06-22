@@ -401,6 +401,20 @@ export function useFloraChatStream({ isOpen, onClose }: Options) {
     setTimeout(() => { void send(lastUserMsg); }, 30);
   }, [isSending, messages, send]);
 
+  const resetChat = useCallback(async () => {
+    sendAbortRef.current?.abort();
+    sendAbortRef.current = null;
+    pendingAssistantTextRef.current = "";
+    setMessages([]);
+    setInput("");
+    setIsSending(false);
+    try {
+      await supabase.functions.invoke("flora-engine", {
+        body: { action: "save_chat", data: { messages: [] } },
+      });
+    } catch { /* silent */ }
+  }, []);
+
   return {
     messages,
     input,
@@ -410,5 +424,6 @@ export function useFloraChatStream({ isOpen, onClose }: Options) {
     send,
     stop,
     regenerate,
+    resetChat,
   };
 }
