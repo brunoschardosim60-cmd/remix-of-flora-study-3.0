@@ -44,6 +44,8 @@ export function FocusModeOverlay({
       setShowMinimalControls(true);
       return;
     }
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
 
     const onKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
@@ -62,7 +64,10 @@ export function FocusModeOverlay({
     };
 
     window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = prevOverflow;
+    };
   }, [isOpen, onClose, onPause, onResume, running]);
 
   useEffect(() => {
