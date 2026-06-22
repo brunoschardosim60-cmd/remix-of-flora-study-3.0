@@ -3,6 +3,7 @@ import { WeeklySlot, Subject, ALL_SUBJECTS, SUBJECT_COLORS } from "@/lib/studyDa
 import { Check, Trash2, Plus, Clock, ChevronDown, ChevronUp, BookOpen, ArrowLeftRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { toast } from "sonner";
 
 const DIAS = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
 const DIAS_SHORT = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
@@ -61,6 +62,7 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
     const src = slots.find((s) => s.id === sourceId);
     const tgt = slots.find((s) => s.id === targetId);
     if (!src || !tgt) return;
+    const prevSlots = slots;
     onChange(
       slots.map((s) => {
         if (s.id === sourceId) return { ...s, materia: tgt.materia, descricao: tgt.descricao, concluido: tgt.concluido };
@@ -72,6 +74,12 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
     setFlashIds([sourceId, targetId]);
     if (flashTimer.current) clearTimeout(flashTimer.current);
     flashTimer.current = setTimeout(() => setFlashIds([]), 480);
+    // Undo
+    const wasMove = !tgt.materia; // destino estava vazio → foi um "mover"
+    toast(wasMove ? "Atividade movida" : "Atividades trocadas", {
+      action: { label: "Desfazer", onClick: () => onChange(prevSlots) },
+      duration: 5000,
+    });
   };
 
   const addHorario = () => {
