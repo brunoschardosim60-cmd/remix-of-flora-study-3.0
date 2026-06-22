@@ -927,7 +927,10 @@ export default function Redacao() {
                                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
                                 <p className="text-sm">{p.diagnostico}</p>
                                 {p.sugestao_reescrita && (
-                                  <RewriteFlipCard suggestion={p.sugestao_reescrita} />
+                                  <RewriteFlipCard
+                                    suggestion={p.sugestao_reescrita}
+                                    original={userParagraphs[key]}
+                                  />
                                 )}
                               </div>
                             );
