@@ -44,6 +44,9 @@ const Aulas = lazy(() => import("./pages/Aulas"));
 const Comunidade = lazy(() => import("./pages/Comunidade"));
 const Mensagens = lazy(() => import("./pages/Mensagens"));
 const Grupos = lazy(() => import("./pages/Grupos"));
+const QuizBattleHost = lazy(() => import("./pages/QuizBattleHost"));
+const QuizBattleJoin = lazy(() => import("./pages/QuizBattleJoin"));
+const QuizBattlePlay = lazy(() => import("./pages/QuizBattlePlay"));
 
 
 
@@ -242,6 +245,9 @@ const App = () => (
                 <Route path="/comunidade" element={<ProtectedRoute><Comunidade /></ProtectedRoute>} />
                 <Route path="/mensagens" element={<ProtectedRoute><Mensagens /></ProtectedRoute>} />
                 <Route path="/grupos" element={<ProtectedRoute><Grupos /></ProtectedRoute>} />
+                <Route path="/quiz-battle/criar" element={<ProtectedRoute><QuizBattleHost /></ProtectedRoute>} />
+                <Route path="/quiz-battle/entrar" element={<ProtectedRoute><QuizBattleJoin /></ProtectedRoute>} />
+                <Route path="/quiz-battle/jogar/:battleId" element={<ProtectedRoute><QuizBattlePlay /></ProtectedRoute>} />
                 {/* Aliases: cronograma vive na Home (Index), evita 404 em links externos/legados */}
                 <Route path="/cronograma" element={<Navigate to="/" replace />} />
                 <Route path="/cronograma/semanal" element={<Navigate to="/" replace />} />

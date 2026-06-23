@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -7,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Send, Hash, LogOut, Copy, ArrowLeft } from "lucide-react";
+import { Plus, Send, Hash, LogOut, Copy, ArrowLeft, Trophy } from "lucide-react";
 import { toast } from "sonner";
 
 interface Group {
@@ -18,6 +19,7 @@ interface GMsg { id: string; group_id: string; user_id: string; content: string;
 
 export function GruposPanel() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [groups, setGroups] = useState<Group[]>([]);
   const [active, setActive] = useState<Group | null>(null);
   const [messages, setMessages] = useState<GMsg[]>([]);
@@ -164,6 +166,15 @@ export function GruposPanel() {
                 </div>
                 <Button variant="outline" size="sm" className="gap-1" onClick={() => copyCode(active.invite_code)}>
                   <Copy className="w-3 h-3" /> {active.invite_code}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1"
+                  onClick={() => navigate(`/quiz-battle/criar?group=${active.id}`)}
+                  title="Criar Quiz Battle no grupo"
+                >
+                  <Trophy className="w-3 h-3" /> Quiz Battle
                 </Button>
                 <Button variant="ghost" size="icon" onClick={() => leaveGroup(active)} title="Sair"><LogOut className="w-4 h-4" /></Button>
               </div>
