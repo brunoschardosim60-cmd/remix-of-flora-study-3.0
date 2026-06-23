@@ -261,6 +261,7 @@ serve(async (req) => {
         status: "running",
         current_question: 0,
         question_started_at: new Date().toISOString(),
+        revealing_at: null,
       }).eq("id", battleId);
       return json({ ok: true });
     }
@@ -275,12 +276,14 @@ serve(async (req) => {
         await admin.from("quiz_battles").update({
           status: "finished",
           finished_at: new Date().toISOString(),
+          revealing_at: null,
         }).eq("id", battleId);
         return json({ ok: true, finished: true });
       }
       await admin.from("quiz_battles").update({
         current_question: nextIdx,
         question_started_at: new Date().toISOString(),
+        revealing_at: null,
       }).eq("id", battleId);
       return json({ ok: true, current_question: nextIdx });
     }
