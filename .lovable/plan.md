@@ -1,99 +1,78 @@
-# Roadmap StudyFlow — 4 frentes paralelas
+# Quiz Battle — estilo Kahoot
 
-Quatro melhorias em ordem de impacto x esforço. Cada fase é independente e pode ser implementada/parada em qualquer ponto. Tudo respeita o design atual (sem mudanças visuais fora do escopo de cada feature).
+Quiz ao vivo onde o host cria a sala, gera um **código de 6 caracteres**, e os amigos entram pelo código. Todos respondem cada pergunta ao mesmo tempo, com cronômetro, e o ranking atualiza em tempo real ao fim de cada rodada.
 
----
+## Escopo desta entrega
 
-## Fase 1 — API ENEM + Brasil API *(menor esforço, ganho imediato)*
+- **Modo**: tempo real (lobby + código).
+- **Origem das perguntas**: as 3 — Banco de Questões, criadas pelo host, ou geradas pela Flora (IA).
+- **Pontos de entrada**: aba "Quiz Battle" em `/comunidade` **e** botão dentro de cada grupo em `/grupos/:id`.
+- **Limites**: até 30 jogadores por sala, 5–20 perguntas, 20s por pergunta (default).
 
-**Objetivo:** trazer questões oficiais do ENEM direto da API pública `enem.dev` para o Banco de Questões e Simulado, e usar Brasil API para feriados/CEP.
+## Fluxos
 
-- Nova edge function `import-enem-questions` que chama `https://api.enem.dev/v1/exams/{ano}/questions` e popula a tabela `questions` existente (categoriza por disciplina via `classify_question_tema` que já existe).
-- Painel admin para disparar import por ano (2009-2023).
-- No `SimuladoEnem.tsx`: botão "Modo oficial" que filtra apenas questões com `source='enem_oficial'`.
-- Brasil API: hook `useFeriados()` → bloqueia agendamento de revisão em feriado nacional no `WeeklySchedule`/`spaced_reviews`.
-- Brasil API CEP no onboarding para preencher escola/cidade automaticamente.
+```text
+HOST                                    JOGADOR
+─────                                   ────────
+1. "Criar Quiz Battle"
+2. Escolhe origem das perguntas
+   ├─ Banco: filtra matéria/tema
+   ├─ Manual: escreve N perguntas
+   └─ Flora: tema → gera 10
+3. Vê código (ex.: 7K3MQ2) + QR        1. "Entrar em quiz" → digita código
+4. Espera lobby encher                  2. Aparece na lista do lobby
+5. "Começar"                            3. Tela conta 3..2..1
+6. Pergunta 1 (20s) ── todos respondem ──
+7. Mostra resposta certa + ranking parcial
+   ... repete ...
+8. Tela final: pódio top 3 + ranking completo
+```
 
-**Sem chave de API, sem custo.**
+## Modelo de dados (novas tabelas)
 
----
+- **quiz_battles**: estado da sala — host, código, status (`lobby` | `running` | `finished`), origem, pergunta atual, momento da próxima virada, vínculo opcional a `study_groups.id`.
+- **quiz_battle_questions**: perguntas da sala (enunciado, alternativas, índice correto, ordem).
+- **quiz_battle_players**: jogadores no lobby (nome, score acumulado, joined_at).
+- **quiz_battle_answers**: resposta de cada jogador em cada pergunta (escolha, tempo de resposta, pontos).
 
-## Fase 2 — Notificações push + resumo semanal por email
+RLS:
+- Qualquer um autenticado pode ler uma sala pelo código (para entrar no lobby).
+- Só o host edita a sala e dispara perguntas.
+- Jogador só insere/lê suas próprias respostas; ranking é uma view agregada.
 
-**Objetivo:** trazer o aluno de volta sem depender de ele abrir o app.
+Realtime habilitado em `quiz_battles`, `quiz_battle_players`, `quiz_battle_answers` para sincronizar lobby, virada de pergunta e ranking.
 
-### Push (Web Push API nativo, sem Firebase)
-- Tabela `push_subscriptions` já existe ✓.
-- Service worker dedicado `public/sw-push.js` (separado do PWA, não interfere no preview).
-- Página Settings → toggle "Receber lembretes" gera VAPID subscription e salva.
-- Edge function `send-push-notification` + cron pg_cron a cada 1h:
-  - Revisão atrasada hoje
-  - Streak prestes a quebrar (último estudo > 20h)
-  - Meta do dia ainda 0% às 19h
-- Secrets necessários: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` (gero e adiciono via add_secret).
+## Edge function `quiz-battle`
 
-### Email semanal
-- Usa Lovable Emails (infra nativa, sem provedor externo).
-- Template React Email `weekly-summary.tsx`: horas estudadas, top matérias, pontos fracos, plano da próxima semana.
-- Edge function `send-weekly-summary` agendada domingo 18h via pg_cron.
-- Conteúdo gerado pela Flora (já tem `flora-engine`).
-- Pré-requisito: domínio de email (mostro botão de setup se ainda não tem).
+Centraliza ações sensíveis em um único endpoint com validação:
+- `create` — gera código único, cria sala + perguntas (chama `generate-questions` quando origem = Flora).
+- `join` — adiciona jogador no lobby.
+- `start` — host marca `running`, cronômetro começa.
+- `next` — host avança pergunta, calcula pontos (base + bônus por velocidade).
+- `answer` — jogador registra resposta (servidor valida tempo).
+- `finish` — fecha sala e congela ranking.
 
----
+## UI (mantém o design system atual)
 
-## Fase 3 — Flora proativa + diagnóstico inicial
+Rotas/componentes novos:
+- `src/pages/QuizBattleHost.tsx` — criação + tela do host (lobby, "Começar", controle de virada).
+- `src/pages/QuizBattlePlay.tsx` — tela do jogador (4 botões grandes coloridos estilo Kahoot, contador, score).
+- `src/pages/QuizBattleJoin.tsx` — entrada por código.
+- `src/components/community/QuizBattleTab.tsx` — aba "Quiz Battle" em `/comunidade` listando salas abertas + botão criar/entrar.
+- Botão "Criar Quiz Battle" no header de cada `/grupos/:id` que já vincula o `group_id`.
 
-**Objetivo:** Flora deixa de esperar o aluno e passa a agir.
+Sem mudanças de paleta/tipografia — só usa tokens existentes.
 
-### Onboarding diagnóstico
-- Nova etapa em `pages/Onboarding.tsx`: 10 questões adaptativas (2 por área ENEM).
-- Resultado vira `student_performance` inicial + Flora gera plano de 30 dias.
-- Tela final: "Aqui está seu mapa de pontos fortes/fracos".
+## Itens explicitamente fora desta entrega
 
-### Flora proativa
-- Hook `useFloraProactive()` no shell do app:
-  - Por horário (manhã: revisões; tarde: novo conteúdo; noite: 5 questões rápidas).
-  - Por desempenho: se 3 erros seguidos no mesmo tópico → sugere pausa/troca.
-  - Por inatividade: > 2 dias sem estudar → mensagem motivacional.
-- Mensagens entram como `flora_decisions` com `decision_type='proactive'` e aparecem no chat como cards de ação.
-- Limite: máx 1 sugestão proativa não-lida por vez (evita spam).
+- Modo assíncrono (desafio por link). Pode entrar depois.
+- Power-ups, temas visuais customizados, vídeos de fundo.
+- Salas privadas com senha extra (o código já é a barreira).
 
----
+## Ordem de implementação
 
-## Fase 4 — Páginas públicas SEO *(maior alcance, maior esforço)*
-
-**Objetivo:** transformar conteúdo gerado pela Flora em tráfego orgânico.
-
-- Nova rota pública `/conteudo/:slug` (sem login).
-- Tabela `public_content` (slug, título, h1, meta_description, body_markdown, materia, tema, views).
-- Edge function `generate-public-content` (admin) gera lote: "Resumo de [tema]" para todos os temas do `classify_question_tema`.
-- Template visual reaproveita design do notebook (sem alterar UI dos cadernos).
-- SEO: title <60c, meta <160c, H1 único, JSON-LD Article, canonical, OG tags.
-- `public/sitemap.xml` gerado dinamicamente via edge function que lê `public_content`.
-- CTA discreto no fim de cada página: "Estude com a Flora →" → leva ao signup.
-- Redações modelo nota 1000 (lote inicial de 20) como primeira leva.
-
----
-
-## Ordem sugerida e estimativa
-
-| Ordem | Fase | Esforço | Impacto |
-|------|------|---------|---------|
-| 1ª | API ENEM + Brasil API | Pequeno | Alto (qualidade do banco) |
-| 2ª | Flora proativa + diagnóstico | Médio | Alto (retenção) |
-| 3ª | Push + email semanal | Médio | Alto (retorno) |
-| 4ª | SEO público | Grande | Alto (aquisição) |
-
----
-
-## Detalhes técnicos
-
-- **Sem mudança de design** em telas existentes — apenas novas telas/cards seguem o sistema atual (Space Grotesk + Inter, tokens semânticos).
-- **Backend:** tudo em Lovable Cloud (edge functions + pg_cron + pgmq para email).
-- **IA:** continua usando o fallback existente em `_shared/providers.ts` (Gemini → Groq → Mistral...).
-- **Sem novos secrets pagos**: Brasil API e ENEM API são abertas; Web Push usa VAPID auto-gerado; email via Lovable Emails.
-- **Migrations necessárias:** `questions` ganha coluna `source`, nova `public_content`, índices em `flora_decisions(decision_type, read_at)`.
-
----
-
-Posso começar pela **Fase 1 (ENEM + Brasil API)** que é a mais rápida e já entrega valor visível, ou prefere outra ordem?
+1. Migration: tabelas + RLS + realtime.
+2. Edge function `quiz-battle`.
+3. Páginas Host / Join / Play.
+4. Aba em `/comunidade` e botão em `/grupos/:id`.
+5. Teste manual rápido com 2 abas (host + jogador).

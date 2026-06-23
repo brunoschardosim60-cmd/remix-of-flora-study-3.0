@@ -1579,6 +1579,198 @@ export type Database = {
         }
         Relationships: []
       }
+      quiz_battle_answers: {
+        Row: {
+          battle_id: string
+          choice_index: number
+          created_at: string
+          id: string
+          is_correct: boolean
+          points: number
+          question_id: string
+          time_ms: number
+          user_id: string
+        }
+        Insert: {
+          battle_id: string
+          choice_index: number
+          created_at?: string
+          id?: string
+          is_correct?: boolean
+          points?: number
+          question_id: string
+          time_ms?: number
+          user_id: string
+        }
+        Update: {
+          battle_id?: string
+          choice_index?: number
+          created_at?: string
+          id?: string
+          is_correct?: boolean
+          points?: number
+          question_id?: string
+          time_ms?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_battle_answers_battle_id_fkey"
+            columns: ["battle_id"]
+            isOneToOne: false
+            referencedRelation: "quiz_battles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quiz_battle_answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "quiz_battle_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quiz_battle_players: {
+        Row: {
+          avatar_url: string | null
+          battle_id: string
+          display_name: string
+          id: string
+          joined_at: string
+          score: number
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          battle_id: string
+          display_name: string
+          id?: string
+          joined_at?: string
+          score?: number
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          battle_id?: string
+          display_name?: string
+          id?: string
+          joined_at?: string
+          score?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_battle_players_battle_id_fkey"
+            columns: ["battle_id"]
+            isOneToOne: false
+            referencedRelation: "quiz_battles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quiz_battle_questions: {
+        Row: {
+          alternativas: Json
+          battle_id: string
+          correct_index: number
+          created_at: string
+          enunciado: string
+          explicacao: string | null
+          id: string
+          position: number
+        }
+        Insert: {
+          alternativas?: Json
+          battle_id: string
+          correct_index: number
+          created_at?: string
+          enunciado: string
+          explicacao?: string | null
+          id?: string
+          position: number
+        }
+        Update: {
+          alternativas?: Json
+          battle_id?: string
+          correct_index?: number
+          created_at?: string
+          enunciado?: string
+          explicacao?: string | null
+          id?: string
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_battle_questions_battle_id_fkey"
+            columns: ["battle_id"]
+            isOneToOne: false
+            referencedRelation: "quiz_battles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quiz_battles: {
+        Row: {
+          code: string
+          created_at: string
+          current_question: number
+          finished_at: string | null
+          group_id: string | null
+          host_id: string
+          id: string
+          materia: string | null
+          question_count: number
+          question_started_at: string | null
+          seconds_per_question: number
+          source: string
+          status: string
+          topic: string | null
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          current_question?: number
+          finished_at?: string | null
+          group_id?: string | null
+          host_id: string
+          id?: string
+          materia?: string | null
+          question_count?: number
+          question_started_at?: string | null
+          seconds_per_question?: number
+          source: string
+          status?: string
+          topic?: string | null
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          current_question?: number
+          finished_at?: string | null
+          group_id?: string | null
+          host_id?: string
+          id?: string
+          materia?: string | null
+          question_count?: number
+          question_started_at?: string | null
+          seconds_per_question?: number
+          source?: string
+          status?: string
+          topic?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_battles_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "study_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       spaced_reviews: {
         Row: {
           completed: boolean
