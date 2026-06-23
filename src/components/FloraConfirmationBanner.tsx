@@ -139,15 +139,34 @@ export function FloraConfirmationBanner() {
 
   const loadPending = useCallback(async () => {
     if (!user) return;
-    const { data } = await supabase
-      .from("flora_decisions")
-      .select("*")
-      .eq("user_id", user.id)
-      .is("accepted", null)
-      .in("decision_type", ["increase_difficulty", "reduce_load", "adjust_plan", "proactive_suggestion", "risk_alert"])
-      .order("created_at", { ascending: false })
-      .limit(3);
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const [{ data }, { data: todaySession }] = await Promise.all([
+      supabase
+        .from("flora_decisions")
+        .select("*")
+        .eq("user_id", user.id)
+        .is("accepted", null)
+        .in("decision_type", ["increase_difficulty", "reduce_load", "adjust_plan", "proactive_suggestion", "risk_alert"])
+        .order("created_at", { ascending: false })
+        .limit(3),
+      supabase
+        .from("study_sessions")
+        .select("id")
+        .eq("user_id", user.id)
+        .gte("start_at", startOfToday.toISOString())
+        .limit(1),
+    ]);
     let rows = (data as PendingDecision[] | null) ?? [];
+    // Se o aluno estudou hoje (cronômetro/sessão), o alerta de "abandono"
+    // está desatualizado — descarta para não confundir.
+    const studiedToday = (todaySession?.length ?? 0) > 0;
+    if (studiedToday) {
+      rows = rows.filter((d) => {
+        const subtype = (d.recommendation as { subtype?: string } | null)?.subtype;
+        return !(d.decision_type === "risk_alert" && subtype === "abandono");
+      });
+    }
     // Se o aluno é ENEM, descarta sugestões com matérias de concurso
     if (!isConcurso) {
       const concursoOnly = /\b(Direito (Constitucional|Administrativo|Penal|Civil)|Raciocínio Lógico|Informática para concursos?|Contabilidade|Administração Pública)\b/i;
