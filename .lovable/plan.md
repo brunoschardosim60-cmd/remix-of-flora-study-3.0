@@ -1,78 +1,70 @@
-# Quiz Battle — estilo Kahoot
+## Quiz Battle — Revisão Geral
 
-Quiz ao vivo onde o host cria a sala, gera um **código de 6 caracteres**, e os amigos entram pelo código. Todos respondem cada pergunta ao mesmo tempo, com cronômetro, e o ranking atualiza em tempo real ao fim de cada rodada.
+Proposta de melhorias em **3 frentes**: experiência, funções e layout. Tudo mantendo a paleta/tipografia atual (Space Grotesk + Inter, tokens semânticos).
 
-## Escopo desta entrega
+### 1) Layout e visual (toda a feature)
 
-- **Modo**: tempo real (lobby + código).
-- **Origem das perguntas**: as 3 — Banco de Questões, criadas pelo host, ou geradas pela Flora (IA).
-- **Pontos de entrada**: aba "Quiz Battle" em `/comunidade` **e** botão dentro de cada grupo em `/grupos/:id`.
-- **Limites**: até 30 jogadores por sala, 5–20 perguntas, 20s por pergunta (default).
+**Tela de criação (Host - config)**
+- Cards visuais grandes para escolher a fonte das perguntas (Flora / Banco / Manual) com ícone, título e descrição curta — em vez dos 3 botões pequenos atuais.
+- Presets rápidos: "Aquecimento (5q · 15s)", "Padrão (10q · 20s)", "Maratona (20q · 30s)".
+- Sliders visuais para nº de perguntas e tempo, em vez de inputs numéricos.
+- Editor manual com numeração colorida das alternativas (A vermelho / B azul / C amarelo / D verde — mesma cor da tela de jogo) para o host já visualizar como vai aparecer.
 
-## Fluxos
+**Lobby**
+- Código exibido em "boxes" individuais por letra (visual estilo Kahoot).
+- QR code do link de entrada (`/quiz-battle/entrar?code=XXXXX`) ao lado do código — amigo aponta a câmera e entra.
+- Avatares dos jogadores em cards animados (pulse ao entrar).
+- Contador "X de 30 jogadores".
 
-```text
-HOST                                    JOGADOR
-─────                                   ────────
-1. "Criar Quiz Battle"
-2. Escolhe origem das perguntas
-   ├─ Banco: filtra matéria/tema
-   ├─ Manual: escreve N perguntas
-   └─ Flora: tema → gera 10
-3. Vê código (ex.: 7K3MQ2) + QR        1. "Entrar em quiz" → digita código
-4. Espera lobby encher                  2. Aparece na lista do lobby
-5. "Começar"                            3. Tela conta 3..2..1
-6. Pergunta 1 (20s) ── todos respondem ──
-7. Mostra resposta certa + ranking parcial
-   ... repete ...
-8. Tela final: pódio top 3 + ranking completo
-```
+**Tela de jogo (jogador)**
+- Barra de progresso visual do tempo (degradê verde → amarelo → vermelho) no lugar só do número.
+- Cores de alternativa com ícone (triângulo / losango / círculo / quadrado) — referência Kahoot, ajuda daltonismo.
+- Animação ao escolher (pulso) e ao revelar correta/errada (check/x grandes).
+- "Streak" visível ("3 acertos seguidos! 🔥").
 
-## Modelo de dados (novas tabelas)
+**Tela do host durante o jogo**
+- Mostra contagem ao vivo de quantos já responderam ("12 / 15 responderam").
+- Gráfico de barras das respostas escolhidas (revela após o tempo acabar).
+- Botão "Pular pergunta" além de "Próxima".
 
-- **quiz_battles**: estado da sala — host, código, status (`lobby` | `running` | `finished`), origem, pergunta atual, momento da próxima virada, vínculo opcional a `study_groups.id`.
-- **quiz_battle_questions**: perguntas da sala (enunciado, alternativas, índice correto, ordem).
-- **quiz_battle_players**: jogadores no lobby (nome, score acumulado, joined_at).
-- **quiz_battle_answers**: resposta de cada jogador em cada pergunta (escolha, tempo de resposta, pontos).
+**Tela final**
+- Pódio top 3 com medalhas e animação.
+- Estatísticas pessoais: acertos, melhor streak, tempo médio.
+- Botões "Jogar de novo" (mesma config) e "Compartilhar resultado".
 
-RLS:
-- Qualquer um autenticado pode ler uma sala pelo código (para entrar no lobby).
-- Só o host edita a sala e dispara perguntas.
-- Jogador só insere/lê suas próprias respostas; ranking é uma view agregada.
+### 2) Funções novas
 
-Realtime habilitado em `quiz_battles`, `quiz_battle_players`, `quiz_battle_answers` para sincronizar lobby, virada de pergunta e ranking.
+- **Auto-avançar opcional**: host marca "avançar automaticamente quando todos responderem ou o tempo acabar" — partida flui sem clique.
+- **Revelação automática** ao fim do tempo: jogadores veem qual era a correta + explicação (quando vier do banco/Flora) por 4s antes da próxima.
+- **Streak bonus**: +100 pts a cada 3 acertos seguidos.
+- **Reentrada após queda**: se o jogador cair, ao voltar com o mesmo código entra de novo (mesmo após start) mantendo o score.
+- **Cancelar sala**: botão claro no host para cancelar e liberar todos.
+- **Compartilhar lobby**: botão "Compartilhar" com Web Share API (link com `?code=`).
+- **Validação melhor no manual**: avisa quantas perguntas faltam e quais estão incompletas.
 
-## Edge function `quiz-battle`
+### 3) Backend (mudanças mínimas)
 
-Centraliza ações sensíveis em um único endpoint com validação:
-- `create` — gera código único, cria sala + perguntas (chama `generate-questions` quando origem = Flora).
-- `join` — adiciona jogador no lobby.
-- `start` — host marca `running`, cronômetro começa.
-- `next` — host avança pergunta, calcula pontos (base + bônus por velocidade).
-- `answer` — jogador registra resposta (servidor valida tempo).
-- `finish` — fecha sala e congela ranking.
+- Coluna nova `quiz_battles.auto_advance boolean default false` e `reveal_seconds int default 4`.
+- Edge function ganha:
+  - `action: "reveal"` — host (ou auto) marca status de "revelando"; envia explicação.
+  - `action: "rejoin"` — permite reentrar em battle `running` se o jogador já existia.
+  - Bônus de streak no cálculo de pontos.
+- Permitir join em estado `running` apenas quando o jogador já estava na sala (rejoin).
 
-## UI (mantém o design system atual)
+### Fora do escopo
 
-Rotas/componentes novos:
-- `src/pages/QuizBattleHost.tsx` — criação + tela do host (lobby, "Começar", controle de virada).
-- `src/pages/QuizBattlePlay.tsx` — tela do jogador (4 botões grandes coloridos estilo Kahoot, contador, score).
-- `src/pages/QuizBattleJoin.tsx` — entrada por código.
-- `src/components/community/QuizBattleTab.tsx` — aba "Quiz Battle" em `/comunidade` listando salas abertas + botão criar/entrar.
-- Botão "Criar Quiz Battle" no header de cada `/grupos/:id` que já vincula o `group_id`.
+- Modo assíncrono / desafio por link.
+- Power-ups (50/50, dobrar pontos).
+- Salas privadas com senha.
+- Chat dentro do quiz.
 
-Sem mudanças de paleta/tipografia — só usa tokens existentes.
+### Ordem de implementação
 
-## Itens explicitamente fora desta entrega
+1. Migration: `auto_advance`, `reveal_seconds`, índices.
+2. Edge function: streak, rejoin, reveal, ajustes.
+3. `QuizBattleHost.tsx` — config redesenhada + lobby + tela de jogo do host com stats.
+4. `QuizBattleJoin.tsx` — visual refinado + QR-friendly.
+5. `QuizBattlePlay.tsx` — barra de tempo, animações, revelação, streak.
+6. Tela final com pódio + stats pessoais.
 
-- Modo assíncrono (desafio por link). Pode entrar depois.
-- Power-ups, temas visuais customizados, vídeos de fundo.
-- Salas privadas com senha extra (o código já é a barreira).
-
-## Ordem de implementação
-
-1. Migration: tabelas + RLS + realtime.
-2. Edge function `quiz-battle`.
-3. Páginas Host / Join / Play.
-4. Aba em `/comunidade` e botão em `/grupos/:id`.
-5. Teste manual rápido com 2 abas (host + jogador).
+Quer que eu siga com tudo, ou prefere que eu corte algum item (ex.: pular QR code, pular auto-avançar)?

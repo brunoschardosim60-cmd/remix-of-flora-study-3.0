@@ -161,6 +161,8 @@ serve(async (req) => {
       if (!["banco", "manual", "flora"].includes(source)) return json({ error: "invalid_source" }, 400);
       const count = Math.max(5, Math.min(20, Number(body.question_count) || 10));
       const seconds = Math.max(10, Math.min(60, Number(body.seconds_per_question) || 20));
+      const autoAdvance = !!body.auto_advance;
+      const revealSeconds = Math.max(2, Math.min(10, Number(body.reveal_seconds) || 4));
       const topic = body.topic ? String(body.topic) : null;
       const materia = body.materia ? String(body.materia) : null;
       const groupId = body.group_id ? String(body.group_id) : null;
@@ -198,6 +200,7 @@ serve(async (req) => {
         .insert({
           code, host_id: user.id, group_id: groupId, source,
           topic, materia, question_count: questions.length, seconds_per_question: seconds,
+          auto_advance: autoAdvance, reveal_seconds: revealSeconds,
         })
         .select()
         .single();
@@ -225,10 +228,22 @@ serve(async (req) => {
 
       const { data: battle } = await admin.from("quiz_battles").select("*").eq("code", code).maybeSingle();
       if (!battle) return json({ error: "battle_not_found" }, 404);
-      if (battle.status !== "lobby") return json({ error: "battle_already_started" }, 400);
 
-      const { count } = await admin.from("quiz_battle_players").select("id", { count: "exact", head: true }).eq("battle_id", battle.id);
-      if ((count ?? 0) >= 30) return json({ error: "lobby_full" }, 400);
+      // Rejoin se já existir
+      const { data: existing } = await admin.from("quiz_battle_players")
+        .select("id").eq("battle_id", battle.id).eq("user_id", user.id).maybeSingle();
+
+      if (battle.status === "finished" || battle.status === "cancelled") {
+        return json({ error: "battle_ended" }, 400);
+      }
+      if (battle.status !== "lobby" && !existing) {
+        return json({ error: "battle_already_started" }, 400);
+      }
+
+      if (!existing) {
+        const { count } = await admin.from("quiz_battle_players").select("id", { count: "exact", head: true }).eq("battle_id", battle.id);
+        if ((count ?? 0) >= 30) return json({ error: "lobby_full" }, 400);
+      }
 
       await admin.from("quiz_battle_players").upsert(
         { battle_id: battle.id, user_id: user.id, display_name: displayName, avatar_url: avatarUrl },
@@ -246,6 +261,7 @@ serve(async (req) => {
         status: "running",
         current_question: 0,
         question_started_at: new Date().toISOString(),
+        revealing_at: null,
       }).eq("id", battleId);
       return json({ ok: true });
     }
@@ -260,12 +276,14 @@ serve(async (req) => {
         await admin.from("quiz_battles").update({
           status: "finished",
           finished_at: new Date().toISOString(),
+          revealing_at: null,
         }).eq("id", battleId);
         return json({ ok: true, finished: true });
       }
       await admin.from("quiz_battles").update({
         current_question: nextIdx,
         question_started_at: new Date().toISOString(),
+        revealing_at: null,
       }).eq("id", battleId);
       return json({ ok: true, current_question: nextIdx });
     }
@@ -291,11 +309,20 @@ serve(async (req) => {
       if (elapsedMs > limitMs + 1500) return json({ error: "time_up" }, 400);
 
       const isCorrect = choiceIndex === question.correct_index;
-      // Pontuação: 1000 base + bônus por velocidade (até +500), zero se errou
+      const { data: player } = await admin.from("quiz_battle_players")
+        .select("score, streak, best_streak, correct_count")
+        .eq("battle_id", battle.id).eq("user_id", user.id).maybeSingle();
+      const prevStreak = player?.streak ?? 0;
+      const newStreak = isCorrect ? prevStreak + 1 : 0;
+
+      // 700 base + bônus de velocidade (até 500) + bônus de streak a cada 3 acertos seguidos
       let points = 0;
+      let streakBonus = 0;
       if (isCorrect) {
         const speedRatio = Math.max(0, 1 - elapsedMs / limitMs);
         points = Math.round(700 + 500 * speedRatio);
+        if (newStreak > 0 && newStreak % 3 === 0) streakBonus = 100;
+        points += streakBonus;
       }
 
       // Inserção é idempotente (UNIQUE question_id,user_id)
@@ -313,13 +340,23 @@ serve(async (req) => {
         return json({ ok: false, already_answered: true });
       }
 
-      // Atualiza score acumulado do jogador
-      if (points > 0) {
-        const { data: player } = await admin.from("quiz_battle_players").select("score").eq("battle_id", battle.id).eq("user_id", user.id).maybeSingle();
-        const newScore = (player?.score ?? 0) + points;
-        await admin.from("quiz_battle_players").update({ score: newScore }).eq("battle_id", battle.id).eq("user_id", user.id);
-      }
-      return json({ ok: true, correct: isCorrect, points });
+      const newScore = (player?.score ?? 0) + points;
+      const newBest = Math.max(player?.best_streak ?? 0, newStreak);
+      const newCorrect = (player?.correct_count ?? 0) + (isCorrect ? 1 : 0);
+      await admin.from("quiz_battle_players").update({
+        score: newScore, streak: newStreak, best_streak: newBest, correct_count: newCorrect,
+      }).eq("battle_id", battle.id).eq("user_id", user.id);
+
+      return json({ ok: true, correct: isCorrect, points, streak: newStreak, streak_bonus: streakBonus, correct_index: question.correct_index });
+    }
+
+    if (action === "reveal") {
+      const battleId = String(body.battle_id || "");
+      const { data: battle } = await admin.from("quiz_battles").select("*").eq("id", battleId).maybeSingle();
+      if (!battle) return json({ error: "battle_not_found" }, 404);
+      if (battle.host_id !== user.id) return json({ error: "not_host" }, 403);
+      await admin.from("quiz_battles").update({ revealing_at: new Date().toISOString() }).eq("id", battleId);
+      return json({ ok: true });
     }
 
     if (action === "cancel") {
