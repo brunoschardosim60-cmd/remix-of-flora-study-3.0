@@ -166,7 +166,6 @@ export default function QuizBattlePlay() {
           </div>
         )}
 
-        <Leaderboard players={players} />
       </div>
     </div>
   );

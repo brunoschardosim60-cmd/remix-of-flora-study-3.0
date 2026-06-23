@@ -50,10 +50,32 @@ async function buildQuestionsFromBanco(
   const rows = (data ?? []) as Array<{ enunciado: string; alternativas: unknown; correta: number | string; explicacao?: string | null }>;
   const shaped: Question[] = [];
   for (const r of shuffle(rows)) {
-    const alts = Array.isArray(r.alternativas) ? (r.alternativas as string[]).map(String) : [];
+    const raw = Array.isArray(r.alternativas) ? (r.alternativas as unknown[]) : [];
+    const letters: string[] = [];
+    const alts: string[] = raw.map((a, i) => {
+      if (a && typeof a === "object") {
+        const obj = a as { letra?: string; texto?: string };
+        letters.push(String(obj.letra ?? String.fromCharCode(65 + i)).toUpperCase());
+        return String(obj.texto ?? "");
+      }
+      letters.push(String.fromCharCode(65 + i));
+      return String(a ?? "");
+    }).filter((t) => t.trim().length > 0);
     if (alts.length < 2) continue;
-    let correct = typeof r.correta === "number" ? r.correta : parseInt(String(r.correta), 10);
-    if (isNaN(correct) || correct < 0 || correct >= alts.length) correct = 0;
+    let correct = 0;
+    const c = r.correta;
+    if (typeof c === "string" && c.trim()) {
+      const upper = c.trim().toUpperCase();
+      const byLetter = letters.indexOf(upper);
+      if (byLetter >= 0) correct = byLetter;
+      else {
+        const n = parseInt(upper, 10);
+        if (!isNaN(n)) correct = n;
+      }
+    } else if (typeof c === "number") {
+      correct = c;
+    }
+    if (correct < 0 || correct >= alts.length) correct = 0;
     shaped.push({ enunciado: String(r.enunciado || ""), alternativas: alts, correct_index: correct, explicacao: r.explicacao ?? null });
     if (shaped.length >= opts.count) break;
   }
