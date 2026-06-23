@@ -1634,28 +1634,37 @@ export type Database = {
         Row: {
           avatar_url: string | null
           battle_id: string
+          best_streak: number
+          correct_count: number
           display_name: string
           id: string
           joined_at: string
           score: number
+          streak: number
           user_id: string
         }
         Insert: {
           avatar_url?: string | null
           battle_id: string
+          best_streak?: number
+          correct_count?: number
           display_name: string
           id?: string
           joined_at?: string
           score?: number
+          streak?: number
           user_id: string
         }
         Update: {
           avatar_url?: string | null
           battle_id?: string
+          best_streak?: number
+          correct_count?: number
           display_name?: string
           id?: string
           joined_at?: string
           score?: number
+          streak?: number
           user_id?: string
         }
         Relationships: [
@@ -1711,6 +1720,7 @@ export type Database = {
       }
       quiz_battles: {
         Row: {
+          auto_advance: boolean
           code: string
           created_at: string
           current_question: number
@@ -1721,6 +1731,8 @@ export type Database = {
           materia: string | null
           question_count: number
           question_started_at: string | null
+          reveal_seconds: number
+          revealing_at: string | null
           seconds_per_question: number
           source: string
           status: string
@@ -1728,6 +1740,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          auto_advance?: boolean
           code: string
           created_at?: string
           current_question?: number
@@ -1738,6 +1751,8 @@ export type Database = {
           materia?: string | null
           question_count?: number
           question_started_at?: string | null
+          reveal_seconds?: number
+          revealing_at?: string | null
           seconds_per_question?: number
           source: string
           status?: string
@@ -1745,6 +1760,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          auto_advance?: boolean
           code?: string
           created_at?: string
           current_question?: number
@@ -1755,6 +1771,8 @@ export type Database = {
           materia?: string | null
           question_count?: number
           question_started_at?: string | null
+          reveal_seconds?: number
+          revealing_at?: string | null
           seconds_per_question?: number
           source?: string
           status?: string
