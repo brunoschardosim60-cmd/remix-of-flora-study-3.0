@@ -89,7 +89,10 @@ export function QuickStartChecklist({
   ];
 
   const completedSteps = steps.filter((s) => s.done).length;
-  const allDone = completedSteps === steps.length;
+  // Considera "pronto" quando o aluno já criou tema e fez sessão.
+  // Conversar com a Flora é opcional — o botão dela é sempre visível no app,
+  // então o checklist não precisa ficar reaparecendo só por causa desse passo.
+  const allDone = completedSteps >= steps.length - 1 && steps[0].done && steps[1].done;
 
   // Auto-dismiss assim que todos os passos forem concluídos (sem ruído visual permanente)
   useEffect(() => {
