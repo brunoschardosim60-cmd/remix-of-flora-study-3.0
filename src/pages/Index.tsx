@@ -10,7 +10,6 @@ import { FocusMiniPlayer } from "@/components/FocusMiniPlayer";
 import { QuickStartChecklist } from "@/components/QuickStartChecklist";
 import { DashboardCustomizer, useDashboardWidgets } from "@/components/DashboardCustomizer";
 import { BottomNav } from "@/components/BottomNav";
-import { FloraTour } from "@/components/onboarding/FloraTour";
 import { useStudyDashboard } from "@/hooks/useStudyDashboard";
 import { useStudyTimer } from "@/hooks/useStudyTimer";
 import { useOnboardingGuard } from "@/hooks/useOnboardingGuard";
@@ -39,9 +38,11 @@ import { StudyNowDialog } from "@/components/dashboard/StudyNowDialog";
 import { StudyChoiceDialog } from "@/components/dashboard/StudyChoiceDialog";
 import { FloraButton } from "@/components/dashboard/FloraButton";
 import { Button } from "@/components/ui/button";
-import { QuizDialog } from "@/components/QuizDialog";
-import { FlashcardSessionDialog } from "@/components/FlashcardSessionDialog";
-import { WeeklySummaryCard } from "@/components/WeeklySummaryCard";
+// Lazy: diálogos pesados que só aparecem após interação
+const QuizDialog = lazy(() => import("@/components/QuizDialog").then(m => ({ default: m.QuizDialog })));
+const FlashcardSessionDialog = lazy(() => import("@/components/FlashcardSessionDialog").then(m => ({ default: m.FlashcardSessionDialog })));
+const WeeklySummaryCard = lazy(() => import("@/components/WeeklySummaryCard").then(m => ({ default: m.WeeklySummaryCard })));
+const FloraTour = lazy(() => import("@/components/onboarding/FloraTour").then(m => ({ default: m.FloraTour })));
 
 // Lazy: heavy components that DON'T appear on first render
 const FocusModeOverlay = lazy(() => import("@/components/FocusModeOverlay").then(m => ({ default: m.FocusModeOverlay })));
