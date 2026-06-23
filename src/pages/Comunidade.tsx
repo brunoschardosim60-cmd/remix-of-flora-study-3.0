@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Heart, MessageCircle, Send, Loader2, Image as ImageIcon, X, Flag, MoreHorizontal, TrendingUp, Hash, Sparkles, Users as UsersIcon, Mail } from "lucide-react";
+import { ArrowLeft, Heart, MessageCircle, Send, Loader2, Image as ImageIcon, X, Flag, MoreHorizontal, TrendingUp, Hash, Sparkles, Users as UsersIcon, Mail, Trophy, PlayCircle, LogIn } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -104,7 +104,7 @@ export default function Comunidade() {
   const [communities, setCommunities] = useState<Community[]>([]);
   const [feedMode, setFeedMode] = useState<FeedMode>("geral");
   const [myCommunities, setMyCommunities] = useState<Set<string>>(new Set());
-  const [section, setSection] = useState<"feed" | "grupos" | "mensagens">("feed");
+  const [section, setSection] = useState<"feed" | "grupos" | "mensagens" | "quiz">("feed");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const meAsProfile: ProfileLite | null = user
     ? {
@@ -459,10 +459,37 @@ export default function Comunidade() {
           >
             <Mail className="w-3.5 h-3.5" /> Mensagens
           </button>
+          <button
+            onClick={() => setSection("quiz")}
+            className={`flex-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1.5 ${section === "quiz" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            <Trophy className="w-3.5 h-3.5" /> Quiz Battle
+          </button>
         </div>
 
         {section === "grupos" && <GruposPanel />}
         {section === "mensagens" && <MensagensPanel />}
+        {section === "quiz" && (
+          <div className="space-y-3">
+            <div className="rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-card to-accent/10 p-5 sm:p-6">
+              <div className="flex items-center gap-2 mb-2">
+                <Trophy className="w-5 h-5 text-primary" />
+                <h2 className="font-heading text-lg font-semibold">Quiz Battle ao vivo</h2>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Crie uma sala estilo Kahoot, compartilhe o código de 6 letras e jogue com os amigos em tempo real. Pontos por acerto e velocidade.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+                <Button onClick={() => navigate("/quiz-battle/criar")} className="gap-2 w-full">
+                  <PlayCircle className="w-4 h-4" /> Criar sala
+                </Button>
+                <Button onClick={() => navigate("/quiz-battle/entrar")} variant="outline" className="gap-2 w-full">
+                  <LogIn className="w-4 h-4" /> Entrar com código
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {section === "feed" && <>
         {/* Tabs de feed */}
