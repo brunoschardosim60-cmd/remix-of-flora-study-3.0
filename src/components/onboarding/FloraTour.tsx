@@ -103,6 +103,10 @@ export function FloraTour({ forceOpen = false, onClose }: { forceOpen?: boolean;
         localStorage.setItem(key, "1");
         return;
       }
+      // Marca como visto IMEDIATAMENTE ao abrir, para não reaparecer
+      // se o usuário fechar a aba, recarregar ou navegar antes de concluir o tour.
+      localStorage.setItem(key, "1");
+      localStorage.setItem(SEEN_KEY_BASE, "1");
       setOpen(true);
     } catch { /* ignore */ }
   }, [forceOpen, loading, user]);
