@@ -459,7 +459,23 @@ export default function QuizBattleHost() {
           <div className="space-y-4">
             <Podium players={players} />
             <Leaderboard players={players} />
-            <Button variant="outline" className="w-full" onClick={() => navigate("/comunidade")}>Voltar para Comunidade</Button>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button
+                className="flex-1 gap-2"
+                onClick={() => {
+                  setBattle(null);
+                  setPlayers([]);
+                  setQuestions([]);
+                  setAnsweredCount(0);
+                  setPhase("config");
+                }}
+              >
+                <PlayCircle className="w-4 h-4" /> Jogar de novo
+              </Button>
+              <Button variant="outline" className="flex-1" onClick={() => navigate("/comunidade")}>
+                Voltar para Comunidade
+              </Button>
+            </div>
           </div>
         )}
       </div>
