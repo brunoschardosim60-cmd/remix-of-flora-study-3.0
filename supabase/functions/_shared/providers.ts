@@ -30,6 +30,20 @@ export interface CallOptions {
   jsonMode?: boolean;
 }
 
+// ─── Sanitiza mensagens antes de enviar aos provedores ───────────────────────
+// Muitos provedores (Groq, Mistral, Cerebras, OpenAI) recusam campos extras
+// como `metadata`, `seq`, `created_at`. Isso vem do banco (flora_chat_messages).
+// Mantemos apenas role/content e normalizamos role.
+function sanitizeMessages(messages: Msg[]): Msg[] {
+  return (messages || [])
+    .filter((m) => m && typeof m.content === "string" && m.content.trim().length > 0)
+    .map((m) => {
+      let role = String((m as any).role || "user").toLowerCase();
+      if (role !== "system" && role !== "user" && role !== "assistant") role = "user";
+      return { role, content: String(m.content) };
+    });
+}
+
 // ─── Token limits por tarefa ──────────────────────────────────────────────────
 export const TOKEN_LIMITS: Record<string, number> = {
   quiz:       1600,  // 8 questões × ~200 tokens
@@ -88,8 +102,9 @@ export function isTransientError(e: unknown): boolean {
 // ─── Gemini ───────────────────────────────────────────────────────────────────
 export async function callGemini(opts: CallOptions, apiKey: string, model = "gemini-2.0-flash"): Promise<string> {
   if (!apiKey) throw Object.assign(new Error("GEMINI_API_KEY ausente"), { status: 0 });
-  const sys = opts.messages.filter(m => m.role === "system").map(m => m.content).join("\n\n");
-  const userMsgs = opts.messages.filter(m => m.role !== "system");
+  const cleanMsgs = sanitizeMessages(opts.messages);
+  const sys = cleanMsgs.filter(m => m.role === "system").map(m => m.content).join("\n\n");
+  const userMsgs = cleanMsgs.filter(m => m.role !== "system");
   const contents = userMsgs.length
     ? userMsgs.map(m => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] }))
     : [{ role: "user", parts: [{ text: "Olá" }] }];
@@ -113,7 +128,7 @@ export async function callGroq(opts: CallOptions): Promise<string> {
   if (!key) throw Object.assign(new Error("GROQ_API_KEY ausente"), { status: 0 });
   const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST", headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model: "meta-llama/llama-4-scout-17b-16e-instruct", messages: opts.messages, max_tokens: opts.maxTokens ?? TOKEN_LIMITS.default, temperature: opts.temperature ?? 0.55, ...(opts.jsonMode ? { response_format: { type: "json_object" } } : {}) }),
+    body: JSON.stringify({ model: "meta-llama/llama-4-scout-17b-16e-instruct", messages: sanitizeMessages(opts.messages), max_tokens: opts.maxTokens ?? TOKEN_LIMITS.default, temperature: opts.temperature ?? 0.55, ...(opts.jsonMode ? { response_format: { type: "json_object" } } : {}) }),
     signal: AbortSignal.timeout(18000),
   });
   if (!r.ok) { const txt = await r.text().catch(() => ""); throw Object.assign(new Error(`Groq ${r.status}: ${txt.slice(0, 200)}`), { status: r.status }); }
@@ -127,7 +142,7 @@ export async function callMistral(opts: CallOptions): Promise<string> {
   if (!key) throw Object.assign(new Error("MISTRAL_API_KEY ausente"), { status: 0 });
   const r = await fetch("https://api.mistral.ai/v1/chat/completions", {
     method: "POST", headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model: "open-mistral-nemo", messages: opts.messages, max_tokens: opts.maxTokens ?? TOKEN_LIMITS.default, temperature: opts.temperature ?? 0.55, ...(opts.jsonMode ? { response_format: { type: "json_object" } } : {}) }),
+    body: JSON.stringify({ model: "open-mistral-nemo", messages: sanitizeMessages(opts.messages), max_tokens: opts.maxTokens ?? TOKEN_LIMITS.default, temperature: opts.temperature ?? 0.55, ...(opts.jsonMode ? { response_format: { type: "json_object" } } : {}) }),
     signal: AbortSignal.timeout(18000),
   });
   if (!r.ok) { const txt = await r.text().catch(() => ""); throw Object.assign(new Error(`Mistral ${r.status}: ${txt.slice(0, 200)}`), { status: r.status }); }
@@ -141,7 +156,7 @@ export async function callCerebras(opts: CallOptions): Promise<string> {
   if (!key) throw Object.assign(new Error("CEREBRAS_API_KEY ausente"), { status: 0 });
   const r = await fetch("https://api.cerebras.ai/v1/chat/completions", {
     method: "POST", headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model: "llama-4-scout-17b-16e-instruct", messages: opts.messages, max_tokens: opts.maxTokens ?? TOKEN_LIMITS.default, temperature: opts.temperature ?? 0.55 }),
+    body: JSON.stringify({ model: "llama-4-scout-17b-16e-instruct", messages: sanitizeMessages(opts.messages), max_tokens: opts.maxTokens ?? TOKEN_LIMITS.default, temperature: opts.temperature ?? 0.55 }),
     signal: AbortSignal.timeout(15000),
   });
   if (!r.ok) { const txt = await r.text().catch(() => ""); throw Object.assign(new Error(`Cerebras ${r.status}: ${txt.slice(0, 200)}`), { status: r.status }); }
@@ -155,7 +170,7 @@ export async function callDeepSeek(opts: CallOptions): Promise<string> {
   if (!key) throw Object.assign(new Error("DEEPSEEK_API_KEY ausente"), { status: 0 });
   const r = await fetch("https://api.deepseek.com/chat/completions", {
     method: "POST", headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model: "deepseek-chat", messages: opts.messages, max_tokens: opts.maxTokens ?? TOKEN_LIMITS.default, temperature: opts.temperature ?? 0.55, ...(opts.jsonMode ? { response_format: { type: "json_object" } } : {}) }),
+    body: JSON.stringify({ model: "deepseek-chat", messages: sanitizeMessages(opts.messages), max_tokens: opts.maxTokens ?? TOKEN_LIMITS.default, temperature: opts.temperature ?? 0.55, ...(opts.jsonMode ? { response_format: { type: "json_object" } } : {}) }),
     signal: AbortSignal.timeout(22000),
   });
   if (!r.ok) { const txt = await r.text().catch(() => ""); throw Object.assign(new Error(`DeepSeek ${r.status}: ${txt.slice(0, 200)}`), { status: r.status }); }
@@ -169,7 +184,7 @@ export async function callOpenAI(opts: CallOptions): Promise<string> {
   if (!key) throw Object.assign(new Error("OPENAI_API_KEY ausente"), { status: 0 });
   const r = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST", headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model: "gpt-4o-mini", messages: opts.messages, max_tokens: opts.maxTokens ?? TOKEN_LIMITS.default, temperature: opts.temperature ?? 0.55, ...(opts.jsonMode ? { response_format: { type: "json_object" } } : {}) }),
+    body: JSON.stringify({ model: "gpt-4o-mini", messages: sanitizeMessages(opts.messages), max_tokens: opts.maxTokens ?? TOKEN_LIMITS.default, temperature: opts.temperature ?? 0.55, ...(opts.jsonMode ? { response_format: { type: "json_object" } } : {}) }),
     signal: AbortSignal.timeout(22000),
   });
   if (!r.ok) { const txt = await r.text().catch(() => ""); throw Object.assign(new Error(`OpenAI ${r.status}: ${txt.slice(0, 200)}`), { status: r.status }); }
@@ -183,7 +198,7 @@ export async function callLovable(opts: CallOptions, model = "google/gemini-2.5-
   if (!key) throw Object.assign(new Error("LOVABLE_API_KEY ausente"), { status: 0 });
   const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST", headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model, messages: opts.messages, max_tokens: opts.maxTokens ?? TOKEN_LIMITS.default, temperature: opts.temperature ?? 0.55, ...(opts.jsonMode ? { response_format: { type: "json_object" } } : {}) }),
+    body: JSON.stringify({ model, messages: sanitizeMessages(opts.messages), max_tokens: opts.maxTokens ?? TOKEN_LIMITS.default, temperature: opts.temperature ?? 0.55, ...(opts.jsonMode ? { response_format: { type: "json_object" } } : {}) }),
     signal: AbortSignal.timeout(22000),
   });
   if (!r.ok) { const txt = await r.text().catch(() => ""); throw Object.assign(new Error(`Lovable ${r.status}: ${txt.slice(0, 200)}`), { status: r.status }); }
