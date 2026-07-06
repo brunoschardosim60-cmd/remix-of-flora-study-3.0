@@ -2343,6 +2343,19 @@ dia: 0=seg..6=dom. Max ${Math.floor(onb.tempo_disponivel_min / 30)} slots/dia.\n
     return jsonResponse({ error: "Unknown action" }, 400);
   } catch (e) {
     console.error("Flora error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const rawStatus = (e as any)?.status;
+    const msg = e instanceof Error ? e.message : "Unknown error";
+    let status = typeof rawStatus === "number" && rawStatus >= 400 && rawStatus < 600 ? rawStatus : 500;
+    let friendly = msg;
+    if (status === 429 || /quota|rate.?limit|too many/i.test(msg)) {
+      status = 429;
+      friendly = "Flora está sobrecarregada agora. Tenta de novo em alguns segundos.";
+    } else if (status === 402 || /insufficient|payment|credit/i.test(msg)) {
+      status = 402;
+      friendly = "Créditos de IA esgotados. Adicione créditos na aba Backend.";
+    } else if (status >= 500) {
+      friendly = "Tive um problema momentâneo pra responder. Tenta de novo.";
+    }
+    return new Response(JSON.stringify({ error: friendly, detail: msg }), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
