@@ -30,6 +30,20 @@ export interface CallOptions {
   jsonMode?: boolean;
 }
 
+// ─── Sanitiza mensagens antes de enviar aos provedores ───────────────────────
+// Muitos provedores (Groq, Mistral, Cerebras, OpenAI) recusam campos extras
+// como `metadata`, `seq`, `created_at`. Isso vem do banco (flora_chat_messages).
+// Mantemos apenas role/content e normalizamos role.
+function sanitizeMessages(messages: Msg[]): Msg[] {
+  return (messages || [])
+    .filter((m) => m && typeof m.content === "string" && m.content.trim().length > 0)
+    .map((m) => {
+      let role = String((m as any).role || "user").toLowerCase();
+      if (role !== "system" && role !== "user" && role !== "assistant") role = "user";
+      return { role, content: String(m.content) };
+    });
+}
+
 // ─── Token limits por tarefa ──────────────────────────────────────────────────
 export const TOKEN_LIMITS: Record<string, number> = {
   quiz:       1600,  // 8 questões × ~200 tokens
