@@ -213,13 +213,21 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
     !isSending && messages.length > 0 && lastMsg?.role === "assistant";
 
   const panel = (
-    <div
-      className={
-        expanded
-          ? "fixed inset-2 sm:inset-6 z-50 rounded-2xl border border-border bg-card shadow-2xl flex flex-col overflow-hidden"
-          : "fixed bottom-0 right-0 w-full h-[80vh] sm:bottom-20 sm:right-4 sm:w-[380px] sm:h-[500px] sm:max-w-[calc(100vw-2rem)] sm:max-h-[calc(100vh-6rem)] z-50 sm:rounded-2xl rounded-t-2xl border border-border bg-card shadow-2xl flex flex-col overflow-hidden"
-      }
-    >
+    <>
+      {/* Backdrop: clique fora fecha o chat */}
+      <div
+        className="fixed inset-0 z-40 bg-black/10 sm:bg-transparent"
+        onClick={onClose}
+        aria-hidden
+      />
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className={
+          expanded
+            ? "fixed inset-4 sm:inset-x-1/2 sm:top-10 sm:bottom-10 sm:-translate-x-1/2 sm:w-[min(720px,calc(100vw-4rem))] sm:inset-x-auto sm:left-1/2 z-50 rounded-2xl border border-border bg-card shadow-2xl flex flex-col overflow-hidden"
+            : "fixed bottom-0 right-0 w-full h-[72vh] sm:bottom-20 sm:right-4 sm:w-[340px] sm:h-[460px] sm:max-w-[calc(100vw-2rem)] sm:max-h-[calc(100vh-6rem)] z-50 sm:rounded-2xl rounded-t-2xl border border-border bg-card shadow-2xl flex flex-col overflow-hidden"
+        }
+      >
       {/* Header */}
       <div className="flex items-center gap-2 p-4 border-b border-border bg-primary/5">
         <FloraIcon className="w-6 h-6 text-primary" />
@@ -506,7 +514,8 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
           )}
         </form>
       </div>
-    </div>
+      </div>
+    </>
   );
 
   return typeof document !== "undefined" ? createPortal(panel, document.body) : panel;
