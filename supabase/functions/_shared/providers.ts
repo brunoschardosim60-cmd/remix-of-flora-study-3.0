@@ -236,14 +236,14 @@ export function buildDefaultChain(opts: CallOptions): Array<[string, () => Promi
   const key1 = Deno.env.get("GEMINI_API_KEY") ?? "";
   const key2 = Deno.env.get("GEMINI_API_KEY_2") ?? "";
   return [
-    ["gemini",    () => callGemini(opts, key1, "gemini-2.0-flash")],
-    ["gemini_2",  () => callGemini(opts, key2, "gemini-2.0-flash")],
     ["groq",      () => callGroq(opts)],
     ["mistral",   () => callMistral(opts)],
     ["cerebras",  () => callCerebras(opts)],
+    ["lovable",   () => callLovable(opts)],
+    ["gemini",    () => callGemini(opts, key1, "gemini-2.0-flash")],
+    ["gemini_2",  () => callGemini(opts, key2, "gemini-2.0-flash")],
     ["deepseek",  () => callDeepSeek(opts)],
     ["openai",    () => callOpenAI(opts)],
-    ["lovable",   () => callLovable(opts)],
   ];
 }
 
