@@ -53,10 +53,10 @@ export function FloraButton() {
           setMounted(true);
           setOpen(true);
         }}
-        className="fixed bottom-[calc(env(safe-area-inset-bottom,0px)+5rem)] md:bottom-6 right-4 z-40 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-xl flex items-center justify-center hover:scale-105 transition-transform"
+        className="fixed bottom-[calc(env(safe-area-inset-bottom,0px)+5rem)] md:bottom-6 right-4 z-40 w-11 h-11 rounded-full bg-primary text-primary-foreground shadow-xl flex items-center justify-center hover:scale-105 transition-transform"
         aria-label="Falar com Flora"
       >
-        <FloraIcon className="w-7 h-7" />
+        <FloraIcon className="w-5 h-5" />
       </button>
       {mounted && (
         <Suspense fallback={null}>
