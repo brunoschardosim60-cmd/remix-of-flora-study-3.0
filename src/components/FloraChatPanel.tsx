@@ -224,7 +224,7 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
         onClick={(e) => e.stopPropagation()}
         className={
           expanded
-            ? "fixed inset-4 sm:inset-x-1/2 sm:top-10 sm:bottom-10 sm:-translate-x-1/2 sm:w-[min(720px,calc(100vw-4rem))] sm:inset-x-auto sm:left-1/2 z-50 rounded-2xl border border-border bg-card shadow-2xl flex flex-col overflow-hidden"
+            ? "fixed inset-4 sm:top-8 sm:bottom-8 sm:left-1/2 sm:-translate-x-1/2 sm:right-auto sm:w-[min(760px,calc(100vw-4rem))] sm:h-auto z-50 rounded-2xl border border-border bg-card shadow-2xl flex flex-col overflow-hidden"
             : "fixed bottom-0 right-0 w-full h-[72vh] sm:bottom-20 sm:right-4 sm:w-[340px] sm:h-[460px] sm:max-w-[calc(100vw-2rem)] sm:max-h-[calc(100vh-6rem)] z-50 sm:rounded-2xl rounded-t-2xl border border-border bg-card shadow-2xl flex flex-col overflow-hidden"
         }
       >
