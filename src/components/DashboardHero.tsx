@@ -77,8 +77,8 @@ export function DashboardHero({
   }, [statusKey, showBadge, user?.id]);
 
   return (
-    <section className="relative overflow-hidden rounded-[28px] border border-border/60 bg-gradient-to-br from-primary/12 via-card to-accent/10 p-5 sm:p-7">
-      <div className="absolute inset-y-0 right-0 w-1/2 bg-[radial-gradient(circle_at_top_right,hsl(var(--primary)/0.10),transparent_55%)]" />
+    <section className="relative overflow-hidden rounded-[28px] border border-border/60 bg-gradient-to-br from-primary/10 via-card to-secondary/10 p-5 sm:p-7">
+      <div className="absolute inset-y-0 right-0 w-1/2 bg-[radial-gradient(circle_at_top_right,hsl(var(--primary)/0.12),transparent_60%)]" />
       <div className="relative space-y-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="space-y-3 max-w-2xl">

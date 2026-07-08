@@ -223,7 +223,7 @@ export function FloraFirstAction({ onStartStudy }: FloraFirstActionProps) {
   const content = renderContent();
 
   return (
-    <div className="rounded-2xl border border-primary/20 bg-gradient-to-r from-primary/5 via-card to-accent/5 p-4 sm:p-5 animate-fade-in">
+    <div className="rounded-2xl border border-primary/20 bg-gradient-to-r from-primary/5 via-card to-secondary/5 p-4 sm:p-5 animate-fade-in">
       <div className="flex items-start gap-3">
         <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
           <FloraIcon className="w-5 h-5 text-primary" />
