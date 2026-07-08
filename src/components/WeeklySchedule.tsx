@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { WeeklySlot, Subject, ALL_SUBJECTS, SUBJECT_COLORS } from "@/lib/studyData";
-import { Check, Trash2, Plus, BookOpen, ArrowLeftRight } from "lucide-react";
+import { Check, Trash2, Plus, Clock, ChevronDown, ChevronUp, BookOpen, ArrowLeftRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
@@ -106,20 +106,44 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
   const completedSlots = filledSlots.filter((s) => s.concluido);
   const completionPct = filledSlots.length > 0 ? Math.round((completedSlots.length / filledSlots.length) * 100) : 0;
 
+  // Subject distribution
+  const subjectCounts: Partial<Record<Subject, number>> = {};
+  for (const s of filledSlots) {
+    if (s.materia) subjectCounts[s.materia] = (subjectCounts[s.materia] || 0) + 1;
+  }
+  const topSubjects = Object.entries(subjectCounts)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 4);
+
   // Available horarios to add
   const availableHorarios = DEFAULT_HORARIOS.filter((h) => !horarios.includes(h));
 
   return (
     <div className="space-y-4">
-      {/* Stats header — enxuto */}
-      <div className="glass-card rounded-xl px-4 py-3 flex items-center gap-3">
-        <BookOpen className="w-4 h-4 text-primary shrink-0" />
-        <div className="flex-1 min-w-0">
-          <Progress value={completionPct} className="h-1.5" />
+      {/* Stats header */}
+      <div className="glass-card rounded-xl p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <BookOpen className="w-4 h-4 text-primary" />
+            <span className="font-heading font-semibold text-sm">Progresso da semana</span>
+          </div>
+          <span className="text-xs font-medium text-muted-foreground">
+            {completedSlots.length}/{filledSlots.length} atividades
+          </span>
         </div>
-        <span className="text-xs font-medium text-muted-foreground tabular-nums shrink-0">
-          {completedSlots.length}/{filledSlots.length}
-        </span>
+        <Progress value={completionPct} className="h-2" />
+        {topSubjects.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {topSubjects.map(([subject, count]) => (
+              <span
+                key={subject}
+                className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${SUBJECT_COLORS[subject as Subject]} text-primary-foreground`}
+              >
+                {subject}: {count}h
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Schedule table */}
@@ -127,30 +151,44 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
         <div className="overflow-x-auto px-1 sm:px-0">
           <table className="w-full min-w-[760px] text-sm">
             <thead>
-              <tr className="border-b border-border/60">
-                <th className="p-2.5 font-heading font-medium text-left w-[80px] text-xs text-muted-foreground uppercase tracking-wide">
-                  Hora
+              <tr className="border-b border-border bg-muted/30">
+                <th className="p-3 font-heading font-semibold text-left w-[100px]">
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                    Horário
+                  </div>
                 </th>
                 {DIAS.map((dia, i) => (
                   <th
                     key={dia}
-                    className={`p-2.5 font-heading font-medium text-center text-xs uppercase tracking-wide ${
-                      i === TODAY_IDX ? "text-primary" : "text-muted-foreground"
+                    className={`p-3 font-heading font-semibold text-center ${
+                      i === TODAY_IDX ? "bg-muted/40" : ""
                     }`}
                   >
-                    <span className="hidden sm:inline">{DIAS_SHORT[i]}</span>
+                    <span className="hidden sm:inline">{dia}</span>
                     <span className="sm:hidden">{DIAS_SHORT[i]}</span>
                   </th>
                 ))}
-                <th className="p-2 w-[32px]" />
+                <th className="p-2 w-[40px]" />
               </tr>
             </thead>
             <tbody>
               {horarios.map((horario) => {
+                const rowSlots = DIAS.map((_, dia) => getSlot(horario, dia)).filter(Boolean);
+                const rowFilled = rowSlots.filter((s) => s?.materia);
+                const rowDone = rowFilled.filter((s) => s?.concluido);
+
                 return (
-                  <tr key={horario} className="border-b border-border/30 last:border-0 group/row">
-                    <td className="p-2.5 align-middle">
-                      <span className="text-xs font-medium text-muted-foreground tabular-nums">{horario}</span>
+                  <tr key={horario} className="border-b border-border/50 group/row">
+                    <td className="p-3">
+                      <div className="flex flex-col">
+                        <span className="font-medium text-foreground">{horario}</span>
+                        {rowFilled.length > 0 && (
+                          <span className="text-[10px] text-muted-foreground">
+                            {rowDone.length}/{rowFilled.length} ✓
+                          </span>
+                        )}
+                      </div>
                     </td>
                     {DIAS.map((_, dia) => {
                       const slot = getSlot(horario, dia);
@@ -164,7 +202,7 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
                       const isFlashing = flashIds.includes(slot.id);
 
                       return (
-                        <td key={dia} className="p-1">
+                        <td key={dia} className={`p-1.5 ${dia === TODAY_IDX ? "bg-muted/20" : ""}`}>
                           {isEditing ? (
                             <div className="space-y-1.5 p-1">
                               <select
@@ -240,13 +278,12 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
                                 setDragOverId(null);
                               }}
                               onClick={() => setEditingSlot(slot.id)}
-                              className={`px-2 py-1.5 rounded-md cursor-pointer min-h-[44px] flex flex-col justify-center gap-0.5 relative group outline-none focus-visible:ring-2 focus-visible:ring-primary
+                              className={`p-2 rounded-lg cursor-pointer min-h-[52px] flex flex-col gap-1 relative group outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-background
                                 ${displaySlot.materia
-                                  ? `${SUBJECT_COLORS[displaySlot.materia]} bg-opacity-90 cursor-grab active:cursor-grabbing ${displaySlot.concluido ? "opacity-60" : ""}`
-                                  : "hover:bg-muted/40"
+                                  ? `${SUBJECT_COLORS[displaySlot.materia]} bg-opacity-15 cursor-grab active:cursor-grabbing ${displaySlot.concluido ? "ring-2 ring-secondary/40" : ""}`
+                                  : "bg-muted/20 border border-dashed border-border/50"
                                 }
-                                ${dia === TODAY_IDX && !displaySlot.materia ? "bg-muted/20" : ""}
-                                ${isDragSource ? "opacity-40" : ""}
+                                ${isDragSource ? "opacity-60" : ""}
                                 ${isDragTarget ? "ring-2 ring-primary" : ""}
                                 ${isFlashing ? "animate-swap-pop" : ""}`}
                             >
@@ -281,18 +318,22 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
 
                               {displaySlot.materia ? (
                                 <>
-                                  <span className="text-[11px] font-semibold text-primary-foreground truncate leading-tight">
-                                    {displaySlot.materia}
-                                    {displaySlot.concluido && <Check className="w-3 h-3 inline ml-1 -mt-0.5" />}
-                                  </span>
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-primary-foreground">
+                                      {displaySlot.materia}
+                                    </span>
+                                    {displaySlot.concluido && (
+                                      <Check className="w-3 h-3 text-secondary flex-shrink-0" />
+                                    )}
+                                  </div>
                                   {displaySlot.descricao && (
-                                    <span className="text-[10px] text-primary-foreground/75 truncate leading-tight">
+                                    <span className="text-[10px] text-primary-foreground/80 truncate leading-tight">
                                       {displaySlot.descricao}
                                     </span>
                                   )}
                                 </>
                               ) : (
-                                <span className="text-xs text-muted-foreground/30 text-center opacity-0 group-hover:opacity-100 transition-opacity">+</span>
+                                <span className="text-[10px] text-muted-foreground/50 text-center m-auto">+</span>
                               )}
                             </div>
                           )}
@@ -302,7 +343,7 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
                     <td className="p-1">
                       <button
                         onClick={() => removeHorario(horario)}
-                        className="p-1 rounded-md text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-all opacity-0 group-hover/row:opacity-100"
+                        className="p-1 rounded-md text-muted-foreground/30 hover:text-destructive hover:bg-destructive/10 transition-all opacity-0 group-hover/row:opacity-100"
                         title="Remover horário"
                         aria-label={`Remover linha do horário ${horario}`}
                       >
