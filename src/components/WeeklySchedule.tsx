@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { WeeklySlot, Subject, ALL_SUBJECTS, SUBJECT_COLORS } from "@/lib/studyData";
-import { Check, Trash2, Plus, Clock, ChevronDown, ChevronUp, BookOpen, ArrowLeftRight } from "lucide-react";
+import { Check, Trash2, Plus, BookOpen, ArrowLeftRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
@@ -105,15 +105,6 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
   const filledSlots = slots.filter((s) => s.materia);
   const completedSlots = filledSlots.filter((s) => s.concluido);
   const completionPct = filledSlots.length > 0 ? Math.round((completedSlots.length / filledSlots.length) * 100) : 0;
-
-  // Subject distribution
-  const subjectCounts: Partial<Record<Subject, number>> = {};
-  for (const s of filledSlots) {
-    if (s.materia) subjectCounts[s.materia] = (subjectCounts[s.materia] || 0) + 1;
-  }
-  const topSubjects = Object.entries(subjectCounts)
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 4);
 
   // Available horarios to add
   const availableHorarios = DEFAULT_HORARIOS.filter((h) => !horarios.includes(h));
