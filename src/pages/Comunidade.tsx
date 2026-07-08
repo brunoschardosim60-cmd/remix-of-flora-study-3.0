@@ -471,7 +471,7 @@ export default function Comunidade() {
         {section === "mensagens" && <MensagensPanel />}
         {section === "quiz" && (
           <div className="space-y-3">
-            <div className="rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-card to-accent/10 p-5 sm:p-6">
+            <div className="rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-card to-secondary/10 p-5 sm:p-6">
               <div className="flex items-center gap-2 mb-2">
                 <Trophy className="w-5 h-5 text-primary" />
                 <h2 className="font-heading text-lg font-semibold">Quiz Battle ao vivo</h2>
