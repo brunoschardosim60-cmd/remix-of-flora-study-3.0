@@ -235,8 +235,33 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
                       i === TODAY_IDX ? "bg-muted/40" : ""
                     }`}
                   >
-                    <span className="hidden sm:inline">{dia}</span>
-                    <span className="sm:hidden">{DIAS_SHORT[i]}</span>
+                    <div className="flex items-center justify-center gap-1">
+                      <span className="hidden sm:inline">{dia}</span>
+                      <span className="sm:hidden">{DIAS_SHORT[i]}</span>
+                      <button
+                        onClick={() => {
+                          if (copyFromDay === null) setCopyFromDay(i);
+                          else copyDay(copyFromDay, i);
+                        }}
+                        className={`p-0.5 rounded transition-colors ${
+                          copyFromDay === i
+                            ? "bg-primary/20 text-primary"
+                            : copyFromDay !== null
+                              ? "text-primary hover:bg-primary/10 animate-pulse"
+                              : "text-muted-foreground/50 hover:text-primary hover:bg-muted"
+                        }`}
+                        title={
+                          copyFromDay === null
+                            ? `Copiar atividades de ${dia}`
+                            : copyFromDay === i
+                              ? "Clique em outro dia para colar"
+                              : `Colar em ${dia}`
+                        }
+                        aria-label={`Copiar dia ${dia}`}
+                      >
+                        <Copy className="w-3 h-3" />
+                      </button>
+                    </div>
                   </th>
                 ))}
                 <th className="p-2 w-[40px]" />
