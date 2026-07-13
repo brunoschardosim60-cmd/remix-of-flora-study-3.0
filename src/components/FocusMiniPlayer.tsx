@@ -22,7 +22,17 @@ export function FocusMiniPlayer({
   const pointerIdRef = useRef<number | null>(null);
   const pointerStartRef = useRef({ x: 0, y: 0 });
   const dragStartRef = useRef({ x: 16, y: 16 });
-  const [position, setPosition] = useState({ x: 16, y: 16 });
+  const [position, setPosition] = useState(() => {
+    if (typeof window === "undefined") return { x: 16, y: 16 };
+    try {
+      const raw = localStorage.getItem("studyflow.mini-player.pos");
+      if (raw) {
+        const p = JSON.parse(raw);
+        if (typeof p?.x === "number" && typeof p?.y === "number") return p;
+      }
+    } catch {}
+    return { x: 16, y: 16 };
+  });
   const [isDragging, setIsDragging] = useState(false);
 
   const clampPosition = (nextX: number, nextY: number) => {
@@ -39,14 +49,21 @@ export function FocusMiniPlayer({
 
   useEffect(() => {
     if (!visible || initializedRef.current) return;
-
-    const width = buttonRef.current?.offsetWidth ?? 240;
-    const height = buttonRef.current?.offsetHeight ?? 56;
-    setPosition({
-      x: Math.max(16, window.innerWidth - width - 16),
-      y: Math.max(16, window.innerHeight - height - 16),
-    });
     initializedRef.current = true;
+
+    // Se não há posição salva, ancora no canto inferior direito
+    try {
+      if (!localStorage.getItem("studyflow.mini-player.pos")) {
+        const width = buttonRef.current?.offsetWidth ?? 240;
+        const height = buttonRef.current?.offsetHeight ?? 56;
+        setPosition({
+          x: Math.max(16, window.innerWidth - width - 16),
+          y: Math.max(16, window.innerHeight - height - 16),
+        });
+      } else {
+        setPosition((prev) => clampPosition(prev.x, prev.y));
+      }
+    } catch {}
   }, [visible]);
 
   useEffect(() => {
@@ -95,6 +112,12 @@ export function FocusMiniPlayer({
 
     if (buttonRef.current?.hasPointerCapture(event.pointerId)) {
       buttonRef.current.releasePointerCapture(event.pointerId);
+    }
+
+    if (wasDragging) {
+      try {
+        localStorage.setItem("studyflow.mini-player.pos", JSON.stringify(position));
+      } catch {}
     }
 
     if (!wasDragging) {
