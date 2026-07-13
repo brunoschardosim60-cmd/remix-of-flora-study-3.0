@@ -656,6 +656,11 @@ ${goals.slice(0, 5).map((g: any) => {
       }).join("\n")}
 REGRA: quando o aluno pedir plano/estudo, priorize temas alinhados à meta mais próxima do prazo.` : "";
 
+      const alignedRv = (context as any).goalAlignedReviews || [];
+      const alignedRvInfo = alignedRv.length > 0 ? `
+REVISÕES ALINHADAS ÀS METAS (priorize essas quando montar plano/quiz):
+${alignedRv.slice(0, 5).map((r: any) => `- ${r.materia}${r.topic_id ? ` › ${r.topic_id}` : ""} (agendada ${r.scheduled_date})`).join("\n")}` : "";
+
       const allChat = context.recentChat;
       const olderMsgs = allChat.slice(0, Math.max(0, allChat.length - 12));
       const recentMsgs = allChat.slice(-12);
@@ -729,6 +734,7 @@ ${recentMsgs.map((m: any) => `${m.role === "user" ? "Aluno" : "Flora"}: ${m.cont
 OBJETIVO DO ALUNO: ${objCtx.label} | ESTILO DE QUIZ: ${objCtx.quizStyle}
 ${insightsInfo}
 ${goalsInfo}
+${alignedRvInfo}
 REGRAS ABSOLUTAS: 1) NUNCA exiba JSON ou dados técnicos. 2) NUNCA diga que salvou algo se a ação não foi executada. 3) Chat curto (máx. 3 linhas) — conteúdo longo SEMPRE vai pra ação ([AÇÃO:CADERNO] ou [AÇÃO:QUIZ]), nunca inline. 4) Sem emoji. 5) Os blocos [AÇÃO:...] ficam escondidos no final. 6) NUNCA invente histórico, tempo sem estudar ou progresso quando não houver dados reais.
 
 COMO FALAR: Direta, prática, linguagem natural tipo "Boa. Vamos focar em X." Nunca "analisando dados" ou "com base nos seus dados". Sempre termine com pergunta curta ou próxima ação.
