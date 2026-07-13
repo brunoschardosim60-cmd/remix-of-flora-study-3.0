@@ -2016,6 +2016,39 @@ SEMPRE em português brasileiro.` },
         accepted: null,
       });
 
+      // Memória acadêmica: registra hipótese vinculada à decisão (dedup por descrição).
+      // Usa `hypothesis` sempre — só vira `weakness`/`strength` após confirmação do aluno.
+      try {
+        const memDesc = String(result.details || safeReasoning || "").slice(0, 240);
+        if (memDesc) {
+          const { data: existing } = await supabase
+            .from("flora_academic_memory")
+            .select("id, confidence, evidence")
+            .eq("user_id", userId)
+            .eq("kind", "hypothesis")
+            .eq("description", memDesc)
+            .maybeSingle();
+          if (existing) {
+            const nextConfidence = Math.min(0.95, Number(existing.confidence || 0.5) + 0.1);
+            const evidence = Array.isArray(existing.evidence) ? existing.evidence : [];
+            await supabase.from("flora_academic_memory").update({
+              confidence: nextConfidence,
+              last_seen_at: new Date().toISOString(),
+              evidence: [...evidence, { type: result.type, at: new Date().toISOString() }].slice(-10),
+              active: true,
+            }).eq("id", existing.id);
+          } else {
+            await supabase.from("flora_academic_memory").insert({
+              user_id: userId,
+              kind: "hypothesis",
+              description: memDesc,
+              confidence: 0.5,
+              evidence: [{ type: result.type, at: new Date().toISOString() }],
+            });
+          }
+        }
+      } catch (_err) { /* memória é best-effort */ }
+
       return jsonResponse({ ok: true, suggestions: 1, type: result.type });
     }
 
