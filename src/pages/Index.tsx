@@ -31,6 +31,7 @@ import { FloraConfirmationBanner } from "@/components/FloraConfirmationBanner";
 import { FloraFirstAction } from "@/components/FloraFirstAction";
 import { FloraCheckpointCard } from "@/components/FloraCheckpointCard";
 import { FloraMemoryCard } from "@/components/FloraMemoryCard";
+import { StudentGoalsCard } from "@/components/StudentGoalsCard";
 import { FloraIcon } from "@/components/FloraIcon";
 import { toLocalDateStr } from "@/lib/dateUtils";
 import { countDueFlashcards } from "@/lib/flashcardScheduler";
@@ -299,6 +300,9 @@ export default function Index() {
 
         {/* Flora: memória acadêmica (o que ela tem observado) */}
         {user && <FloraMemoryCard user={user} />}
+
+        {/* Metas de longo prazo */}
+        {user && <StudentGoalsCard user={user} />}
 
         {/* Sync agora é automático e silencioso em segundo plano */}
 
