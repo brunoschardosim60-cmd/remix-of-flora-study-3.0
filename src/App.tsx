@@ -47,6 +47,7 @@ const Grupos = lazy(() => import("./pages/Grupos"));
 const QuizBattleHost = lazy(() => import("./pages/QuizBattleHost"));
 const QuizBattleJoin = lazy(() => import("./pages/QuizBattleJoin"));
 const QuizBattlePlay = lazy(() => import("./pages/QuizBattlePlay"));
+const Metas = lazy(() => import("./pages/Metas"));
 
 
 
