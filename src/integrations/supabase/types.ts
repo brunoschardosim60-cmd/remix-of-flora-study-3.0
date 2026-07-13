@@ -724,6 +724,48 @@ export type Database = {
         }
         Relationships: []
       }
+      flora_academic_memory: {
+        Row: {
+          active: boolean
+          confidence: number
+          created_at: string
+          description: string
+          evidence: Json
+          id: string
+          kind: Database["public"]["Enums"]["flora_memory_kind"]
+          last_seen_at: string
+          subject: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          confidence?: number
+          created_at?: string
+          description: string
+          evidence?: Json
+          id?: string
+          kind: Database["public"]["Enums"]["flora_memory_kind"]
+          last_seen_at?: string
+          subject?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          confidence?: number
+          created_at?: string
+          description?: string
+          evidence?: Json
+          id?: string
+          kind?: Database["public"]["Enums"]["flora_memory_kind"]
+          last_seen_at?: string
+          subject?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       flora_chat_messages: {
         Row: {
           content: string
@@ -778,6 +820,48 @@ export type Database = {
           title?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      flora_checkpoints: {
+        Row: {
+          created_at: string
+          difficulties: string | null
+          energy: number | null
+          id: string
+          mood: number | null
+          notes: string | null
+          raw_conversation: Json | null
+          updated_at: string
+          user_id: string
+          week_of: string
+          wins: string | null
+        }
+        Insert: {
+          created_at?: string
+          difficulties?: string | null
+          energy?: number | null
+          id?: string
+          mood?: number | null
+          notes?: string | null
+          raw_conversation?: Json | null
+          updated_at?: string
+          user_id: string
+          week_of: string
+          wins?: string | null
+        }
+        Update: {
+          created_at?: string
+          difficulties?: string | null
+          energy?: number | null
+          id?: string
+          mood?: number | null
+          notes?: string | null
+          raw_conversation?: Json | null
+          updated_at?: string
+          user_id?: string
+          week_of?: string
+          wins?: string | null
         }
         Relationships: []
       }
@@ -2418,6 +2502,12 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "support" | "user"
+      flora_memory_kind:
+        | "strength"
+        | "weakness"
+        | "pattern"
+        | "hypothesis"
+        | "preference"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2546,6 +2636,13 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "support", "user"],
+      flora_memory_kind: [
+        "strength",
+        "weakness",
+        "pattern",
+        "hypothesis",
+        "preference",
+      ],
     },
   },
 } as const
