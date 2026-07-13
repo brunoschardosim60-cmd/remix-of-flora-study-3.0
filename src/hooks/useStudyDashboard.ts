@@ -466,8 +466,8 @@ export function useStudyDashboard() {
     );
   }, []);
 
-  const handleAdd = useCallback((tema: string, materia: Subject, data: string, skipWeekends: boolean) => {
-    setTopics((prev) => [...prev, createTopic(tema, materia, data, skipWeekends)]);
+  const handleAdd = useCallback((tema: string, materia: Subject, data: string, skipWeekends: boolean, intervals?: readonly number[]) => {
+    setTopics((prev) => [...prev, createTopic(tema, materia, data, skipWeekends, intervals)]);
   }, []);
 
   const handleUpdateNotes = useCallback((topicId: string, notas: string) => {
