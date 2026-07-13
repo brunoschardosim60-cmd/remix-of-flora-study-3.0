@@ -6,6 +6,7 @@ import type { User } from "@supabase/supabase-js";
 
 interface Props {
   user: User | null;
+  onSubmitted?: () => void;
 }
 
 const MOODS = [
@@ -20,7 +21,7 @@ const MOODS = [
  * Card de check-in semanal da Flora. Colapsa após salvar.
  * Mostrado apenas pra usuários logados; some depois de preenchido na semana.
  */
-export function FloraCheckpointCard({ user }: Props) {
+export function FloraCheckpointCard({ user, onSubmitted }: Props) {
   const { current, save, weekOf } = useFloraCheckpoint(user);
   const [expanded, setExpanded] = useState(false);
   const [mood, setMood] = useState<number | null>(null);
@@ -48,6 +49,7 @@ export function FloraCheckpointCard({ user }: Props) {
     setMood(null);
     setWins("");
     setDifficulties("");
+    onSubmitted?.();
   };
 
   return (
