@@ -974,6 +974,41 @@ ${olderSummary}${recentChatSummary}`;
       return jsonResponse({ memories: rows ?? [] });
     }
 
+    // ─── SUGGEST_GOALS: Flora propõe 2-3 metas baseadas no perfil do aluno ───
+    // Não persiste nada; o front decide quais criar via student_goals_v2.
+    if (action === "suggest_goals") {
+      const context = await getStudentContext(userId);
+      const onb = context.onboarding;
+      const existing = ((context as any).studentGoals || []).map((g: any) => g.title);
+      const objetivo: Objetivo = onb?.objetivo || "enem";
+      const objCtx = getObjetivoContext(objetivo, (onb?.banca ?? "") as string);
+
+      const opts: CallOptions = {
+        messages: [
+          { role: "system", content: `Você é Flora. Proponha de 2 a 3 metas de longo prazo específicas pro aluno, com base no objetivo e nas dificuldades declaradas. Evite repetir metas já existentes.
+
+OBJETIVO: ${objCtx.label}
+ONBOARDING: ${JSON.stringify(onb ?? {})}
+METAS EXISTENTES: ${JSON.stringify(existing)}
+
+Responda SOMENTE JSON no formato:
+{"goals":[{"title":"texto curto e concreto (máx 70 chars)","target_date":"YYYY-MM-DD ou null","priority":1|2|3,"kind":"exam|habit|score|topic"}]}
+SEMPRE em português brasileiro. NUNCA repita metas existentes.` },
+          { role: "user", content: "Sugira metas realistas pro meu perfil." },
+        ],
+        maxTokens: 400, temperature: 0.6, jsonMode: true,
+      };
+      const content = await runTaskChain(opts, "lite", "flora:suggest_goals", { supabase, userId, actionType: "decide_next_topic" });
+      const parsed = parseAIJSON(content as string) as any;
+      const goals = Array.isArray(parsed?.goals) ? parsed.goals.slice(0, 3).map((g: any) => ({
+        title: String(g?.title || "").slice(0, 70),
+        target_date: /^\d{4}-\d{2}-\d{2}$/.test(String(g?.target_date || "")) ? g.target_date : null,
+        priority: [1, 2, 3].includes(Number(g?.priority)) ? Number(g.priority) : 2,
+        kind: ["exam", "habit", "score", "topic"].includes(String(g?.kind)) ? String(g.kind) : "topic",
+      })).filter((g: any) => g.title.length >= 4) : [];
+      return jsonResponse({ goals });
+    }
+
     if (action === "list_threads") {
       const { data: threads } = await supabase.from("flora_chat_threads").select("id, title, updated_at, created_at").eq("user_id", userId).order("updated_at", { ascending: false }).limit(50);
       return jsonResponse({ threads: threads ?? [] });
