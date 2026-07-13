@@ -309,6 +309,7 @@ serve(async (req) => {
         { data: recentDecisions }, { data: pendingReviews }, { data: profile },
         { data: studyState }, { data: weeklySlots }, { data: recentSessions }, { data: recentChat },
         { data: recentEssays }, { data: studyTopics }, { data: recentAttempts },
+        { data: studentGoals },
       ] = await Promise.all([
         supabase.from("student_onboarding").select("*").eq("user_id", uid).maybeSingle(),
         supabase.from("student_performance").select("*").eq("user_id", uid).order("prioridade", { ascending: false }).limit(20),
@@ -323,6 +324,7 @@ serve(async (req) => {
         supabase.from("essays").select("id,tema,tipo_prova,status,nota_total,competencia_1,competencia_2,competencia_3,competencia_4,competencia_5,corrected_at,created_at").eq("user_id", uid).order("created_at", { ascending: false }).limit(5),
         supabase.from("study_topics").select("id,materia,tema,rating,quiz_last_score,quiz_attempts,quiz_errors,updated_at,study_date").eq("user_id", uid).order("updated_at", { ascending: false }).limit(40),
         supabase.from("question_attempts").select("acertou,modo,created_at,question:questions(disciplina,area,tema,ano)").eq("user_id", uid).order("created_at", { ascending: false }).limit(100),
+        supabase.from("student_goals_v2").select("id,kind,title,description,target_date,priority,progress,status").eq("user_id", uid).in("status", ["active", "paused"]).order("priority", { ascending: false }).limit(10),
       ]);
 
       // Para alunos de concurso: carrega trilhas padrão + tentativas no banco de concurso.
@@ -395,6 +397,7 @@ serve(async (req) => {
         questionBankTotal: attempts.length,
         concursoTrilhas,
         concursoBankStats,
+        studentGoals: studentGoals ?? [],
       };
       studentCtxSet(uid, result);
       return result;
