@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Target, Plus, Check, X } from "lucide-react";
+import { Target, Plus, Check, X, Sparkles } from "lucide-react";
 import { useStudentGoalsV2 } from "@/hooks/useStudentGoalsV2";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { User } from "@supabase/supabase-js";
 
@@ -13,6 +14,8 @@ export function StudentGoalsCard({ user }: { user: User | null }) {
   const [adding, setAdding] = useState(false);
   const [title, setTitle] = useState("");
   const [targetDate, setTargetDate] = useState("");
+  const [suggesting, setSuggesting] = useState(false);
+  const [suggestions, setSuggestions] = useState<Array<{ title: string; target_date: string | null; priority: number; kind: string }>>([]);
 
   if (!user) return null;
 
@@ -29,6 +32,35 @@ export function StudentGoalsCard({ user }: { user: User | null }) {
     setAdding(false);
   };
 
+  const handleSuggest = async () => {
+    setSuggesting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("flora-engine", {
+        body: { action: "suggest_goals" },
+      });
+      if (error) throw error;
+      const list = Array.isArray(data?.goals) ? data.goals : [];
+      if (list.length === 0) toast.info("A Flora não achou sugestões novas.");
+      setSuggestions(list);
+    } catch (_e) {
+      toast.error("Não foi possível pedir sugestões agora.");
+    } finally {
+      setSuggesting(false);
+    }
+  };
+
+  const acceptSuggestion = async (idx: number) => {
+    const s = suggestions[idx];
+    if (!s) return;
+    const row = await create({ title: s.title, target_date: s.target_date, priority: (s.priority as 1 | 2 | 3), kind: s.kind });
+    if (!row) {
+      toast.error("Não foi possível criar a meta.");
+      return;
+    }
+    toast.success("Meta adicionada.");
+    setSuggestions((prev) => prev.filter((_, i) => i !== idx));
+  };
+
   return (
     <div className="glass-card rounded-2xl p-4 space-y-3">
       <div className="flex items-center gap-2">
@@ -42,15 +74,58 @@ export function StudentGoalsCard({ user }: { user: User | null }) {
           </div>
         </div>
         {!adding && (
-          <button
-            onClick={() => setAdding(true)}
-            className="p-1.5 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-            aria-label="Adicionar meta"
-          >
-            <Plus className="w-4 h-4" />
-          </button>
+          <>
+            <button
+              onClick={handleSuggest}
+              disabled={suggesting}
+              className="p-1.5 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40"
+              aria-label="Sugerir metas com a Flora"
+              title="Flora sugere metas pra você"
+            >
+              <Sparkles className={`w-4 h-4 ${suggesting ? "animate-pulse" : ""}`} />
+            </button>
+            <button
+              onClick={() => setAdding(true)}
+              className="p-1.5 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+              aria-label="Adicionar meta"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          </>
         )}
       </div>
+
+      {suggestions.length > 0 && (
+        <div className="space-y-1.5 pt-1">
+          <div className="text-[11px] font-medium text-muted-foreground flex items-center gap-1">
+            <Sparkles className="w-3 h-3" /> Sugestões da Flora
+          </div>
+          {suggestions.map((s, i) => (
+            <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-primary/5 border border-primary/10">
+              <div className="flex-1 min-w-0">
+                <div className="text-sm truncate">{s.title}</div>
+                {s.target_date && (
+                  <div className="text-[10px] text-muted-foreground">Até {s.target_date}</div>
+                )}
+              </div>
+              <button
+                onClick={() => acceptSuggestion(i)}
+                className="p-1 rounded-md text-emerald-500 hover:bg-emerald-500/10"
+                title="Aceitar sugestão"
+              >
+                <Check className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => setSuggestions((prev) => prev.filter((_, j) => j !== i))}
+                className="p-1 rounded-md text-muted-foreground hover:bg-muted"
+                title="Descartar"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
       {adding && (
         <div className="space-y-2 pt-1">
