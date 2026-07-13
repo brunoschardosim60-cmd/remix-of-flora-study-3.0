@@ -1009,6 +1009,50 @@ SEMPRE em português brasileiro. NUNCA repita metas existentes.` },
       return jsonResponse({ goals });
     }
 
+    // ─── RECOMPUTE_GOAL_PROGRESS: recalcula progresso das metas a partir de user_actions ───
+    // metadata esperado nas metas: { target: number, action?: string, subject?: string }
+    if (action === "recompute_goal_progress") {
+      const { data: rawGoals } = await supabase
+        .from("student_goals_v2")
+        .select("id, created_at, progress, status, metadata")
+        .eq("user_id", userId)
+        .in("status", ["active", "paused"]);
+      const gRows = rawGoals ?? [];
+      if (gRows.length === 0) return jsonResponse({ ok: true, updated: 0 });
+      const { data: acts } = await supabase
+        .from("user_actions")
+        .select("action, materia, created_at")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(500);
+      const actions = acts ?? [];
+      let updated = 0;
+      for (const g of gRows) {
+        const meta = ((g as any).metadata) || {};
+        const target = Number(meta?.target || 0);
+        if (target <= 0) continue;
+        const actionFilter = meta?.action ? String(meta.action) : "";
+        const subject = meta?.subject ? String(meta.subject).toLowerCase() : "";
+        const since = new Date(g.created_at).getTime();
+        const matched = actions.filter((a: any) => {
+          const t = new Date(a.created_at).getTime();
+          if (t < since) return false;
+          if (actionFilter && a.action !== actionFilter) return false;
+          if (subject && String(a.materia || "").toLowerCase() !== subject) return false;
+          return true;
+        }).length;
+        const newProgress = Math.min(100, Math.round((matched / target) * 100));
+        if (newProgress !== g.progress) {
+          await supabase.from("student_goals_v2").update({
+            progress: newProgress,
+            ...(newProgress >= 100 ? { status: "done" } : {}),
+          }).eq("id", g.id);
+          updated++;
+        }
+      }
+      return jsonResponse({ ok: true, updated });
+    }
+
     if (action === "list_threads") {
       const { data: threads } = await supabase.from("flora_chat_threads").select("id, title, updated_at, created_at").eq("user_id", userId).order("updated_at", { ascending: false }).limit(50);
       return jsonResponse({ threads: threads ?? [] });
