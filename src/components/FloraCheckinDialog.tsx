@@ -46,7 +46,13 @@ export function FloraCheckinDialog({ user }: { user: User | null }) {
           <DialogTitle>Check-in da semana</DialogTitle>
           <DialogDescription>Registre como foi sua sessão de estudo</DialogDescription>
         </VisuallyHidden>
-        <FloraCheckpointCard user={user} />
+        <FloraCheckpointCard
+          user={user}
+          onSubmitted={() => {
+            try { localStorage.setItem(COOLDOWN_KEY, String(Date.now() + 6 * 24 * 60 * 60 * 1000)); } catch {}
+            setOpen(false);
+          }}
+        />
       </DialogContent>
     </Dialog>
   );
