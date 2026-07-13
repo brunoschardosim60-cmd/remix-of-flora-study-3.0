@@ -1936,6 +1936,51 @@ export type Database = {
         }
         Relationships: []
       }
+      student_goals_v2: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          kind: string
+          metadata: Json
+          priority: number
+          progress: number
+          status: Database["public"]["Enums"]["student_goal_status"]
+          target_date: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          kind?: string
+          metadata?: Json
+          priority?: number
+          progress?: number
+          status?: Database["public"]["Enums"]["student_goal_status"]
+          target_date?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          kind?: string
+          metadata?: Json
+          priority?: number
+          progress?: number
+          status?: Database["public"]["Enums"]["student_goal_status"]
+          target_date?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       student_onboarding: {
         Row: {
           banca: string
@@ -2508,6 +2553,7 @@ export type Database = {
         | "pattern"
         | "hypothesis"
         | "preference"
+      student_goal_status: "active" | "paused" | "done" | "archived"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2643,6 +2689,7 @@ export const Constants = {
         "hypothesis",
         "preference",
       ],
+      student_goal_status: ["active", "paused", "done", "archived"],
     },
   },
 } as const
