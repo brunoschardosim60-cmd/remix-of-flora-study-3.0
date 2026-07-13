@@ -2064,6 +2064,19 @@ Foque no que está acontecendo AGORA no texto. Português brasileiro.` },
         .limit(1);
       if (todayDecisions && todayDecisions.length > 0) return jsonResponse({ ok: true, suggestions: 0, reason: "already_today" });
 
+      // Atalho: aluno sem metas ativas → sugere criar metas antes de gastar tokens.
+      const stGoals = (context as any).studentGoals || [];
+      if (stGoals.length === 0) {
+        await supabase.from("flora_decisions").insert({
+          user_id: userId,
+          decision_type: "proactive_suggestion",
+          reasoning: "Você ainda não tem metas de longo prazo. Que tal definirmos 1 ou 2 pra dar direção aos estudos?",
+          recommendation: { type: "create_goals", cta: "Criar metas" },
+          accepted: null,
+        });
+        return jsonResponse({ ok: true, suggestions: 1, type: "proactive_suggestion", reason: "no_goals" });
+      }
+
       const opts: CallOptions = {
         messages: [
           { role: "system", content: `Você é Flora, o motor de decisão do StudyFlow. Analise os dados do aluno e decida se alguma mudança significativa é necessária.
