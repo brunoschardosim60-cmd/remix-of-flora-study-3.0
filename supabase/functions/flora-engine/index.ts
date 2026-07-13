@@ -399,6 +399,16 @@ serve(async (req) => {
         concursoBankStats,
         studentGoals: studentGoals ?? [],
       };
+      // Revisões alinhadas às metas: cruzamento simples por matéria/título.
+      const goalTitles = (studentGoals ?? []).map((g: any) => String(g?.title || "").toLowerCase()).filter(Boolean);
+      const alignedReviews = goalTitles.length > 0
+        ? (pendingReviews ?? []).filter((r: any) => {
+            const mat = String(r?.materia || "").toLowerCase();
+            if (!mat) return false;
+            return goalTitles.some((t: string) => t.includes(mat) || mat.includes((t.split(" ")[0] || "")));
+          }).slice(0, 6)
+        : [];
+      (result as any).goalAlignedReviews = alignedReviews;
       studentCtxSet(uid, result);
       return result;
     }
