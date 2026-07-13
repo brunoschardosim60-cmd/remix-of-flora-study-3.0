@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { WeeklySlot, Subject, ALL_SUBJECTS, SUBJECT_COLORS } from "@/lib/studyData";
-import { Check, Trash2, Plus, Clock, ChevronDown, BookOpen, ArrowLeftRight } from "lucide-react";
+import { Check, Trash2, Plus, Clock, BookOpen, ArrowLeftRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
@@ -35,7 +35,7 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
   const [dragOverId, setDragOverId] = useState<string | null>(null);
   const [flashIds, setFlashIds] = useState<string[]>([]);
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [openDayMobile, setOpenDayMobile] = useState<number>(TODAY_IDX);
+  // (mobile accordion removido — painel inteiro é rolável horizontalmente, como no desktop)
 
   const horarios = [...new Set(slots.map((s) => s.horario))].sort();
 
@@ -150,9 +150,9 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
         )}
       </div>
 
-      {/* Schedule table (desktop/tablet) */}
-      <div className="glass-card rounded-xl overflow-hidden hidden md:block">
-        <div className="overflow-x-auto px-1 sm:px-0">
+      {/* Schedule table — painel inteiro rolável em qualquer viewport */}
+      <div className="glass-card rounded-xl overflow-hidden">
+        <div className="overflow-x-auto overscroll-x-contain px-1 sm:px-0 -mx-1 sm:mx-0">
           <table className="w-full min-w-[760px] text-sm">
             <thead>
               <tr className="border-b border-border bg-muted/30">
@@ -305,11 +305,11 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
                                 <div className="absolute top-0.5 right-0.5 flex gap-0.5 transition-all z-10">
                                   <button
                                     onClick={(e) => { e.stopPropagation(); toggleConcluido(slot.id); }}
-                                    className={`p-1.5 rounded-md transition-all ring-1 ${slot.concluido ? "bg-secondary text-secondary-foreground ring-secondary" : "bg-background/80 text-foreground ring-border hover:bg-primary hover:text-primary-foreground hover:ring-primary"}`}
+                                    className={`h-4 w-4 rounded-full inline-flex items-center justify-center transition-colors ${slot.concluido ? "bg-secondary text-secondary-foreground" : "bg-background/70 text-muted-foreground border border-border hover:text-foreground hover:border-foreground/60"}`}
                                     title={slot.concluido ? "Desmarcar" : "Concluir"}
                                     aria-label={slot.concluido ? "Desmarcar como concluído" : "Marcar como concluído"}
                                   >
-                                    <Check className="w-3.5 h-3.5" strokeWidth={3} />
+                                    <Check className="w-2.5 h-2.5" strokeWidth={2.5} />
                                   </button>
                                   <button
                                     onClick={(e) => { e.stopPropagation(); clearSlot(slot.id); }}
@@ -329,7 +329,7 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
                                       {displaySlot.materia}
                                     </span>
                                     {displaySlot.concluido && (
-                                      <Check className="w-3 h-3 text-secondary flex-shrink-0" />
+                                      <Check className="w-2.5 h-2.5 text-secondary flex-shrink-0" strokeWidth={2.5} />
                                     )}
                                   </div>
                                   {displaySlot.descricao && (
