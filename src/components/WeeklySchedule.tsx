@@ -302,18 +302,18 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
 
                               {/* Action buttons */}
                               {slot.materia && !isPreview && (
-                                <div className="absolute top-0.5 right-0.5 flex gap-0.5 transition-all z-10 opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100 group-focus-within:opacity-100 group-focus-within:scale-100">
+                                <div className="absolute top-0.5 right-0.5 flex gap-0.5 transition-all z-10">
                                   <button
                                     onClick={(e) => { e.stopPropagation(); toggleConcluido(slot.id); }}
-                                    className={`p-1 rounded-md transition-all ${slot.concluido ? "bg-secondary/20 text-secondary" : "hover:bg-muted text-muted-foreground"}`}
+                                    className={`p-1.5 rounded-md transition-all ring-1 ${slot.concluido ? "bg-secondary text-secondary-foreground ring-secondary" : "bg-background/80 text-foreground ring-border hover:bg-primary hover:text-primary-foreground hover:ring-primary"}`}
                                     title={slot.concluido ? "Desmarcar" : "Concluir"}
                                     aria-label={slot.concluido ? "Desmarcar como concluído" : "Marcar como concluído"}
                                   >
-                                    <Check className="w-3 h-3" />
+                                    <Check className="w-3.5 h-3.5" strokeWidth={3} />
                                   </button>
                                   <button
                                     onClick={(e) => { e.stopPropagation(); clearSlot(slot.id); }}
-                                    className="p-1 rounded-md hover:bg-muted text-muted-foreground transition-all"
+                                    className="p-1 rounded-md hover:bg-muted text-muted-foreground transition-all opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
                                     title="Limpar"
                                     aria-label="Limpar esta atividade"
                                   >
