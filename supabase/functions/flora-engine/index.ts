@@ -945,6 +945,20 @@ ${olderSummary}${recentChatSummary}`;
       return jsonResponse({ messages: messages ?? [] });
     }
 
+    // Lista memórias acadêmicas ativas do aluno, ordenadas por confiança.
+    if (action === "get_academic_memory") {
+      const limit = Math.min(Number(data?.limit) || 20, 50);
+      const { data: rows } = await supabase
+        .from("flora_academic_memory")
+        .select("id, kind, subject, description, confidence, last_seen_at, evidence")
+        .eq("user_id", userId)
+        .eq("active", true)
+        .order("confidence", { ascending: false })
+        .order("last_seen_at", { ascending: false })
+        .limit(limit);
+      return jsonResponse({ memories: rows ?? [] });
+    }
+
     if (action === "list_threads") {
       const { data: threads } = await supabase.from("flora_chat_threads").select("id, title, updated_at, created_at").eq("user_id", userId).order("updated_at", { ascending: false }).limit(50);
       return jsonResponse({ threads: threads ?? [] });
