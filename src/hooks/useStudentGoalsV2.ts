@@ -1,9 +1,33 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
+import { toast } from "sonner";
 
 const RECOMPUTE_KEY = "flora:goals:lastRecompute";
 const RECOMPUTE_TTL_MS = 30 * 60 * 1000; // 30 min
+const MILESTONE_KEY = "flora:goals:milestones";
+const MILESTONES = [25, 50, 75, 100] as const;
+
+function loadMilestones(): Record<string, number[]> {
+  try { return JSON.parse(localStorage.getItem(MILESTONE_KEY) || "{}"); } catch { return {}; }
+}
+function saveMilestones(m: Record<string, number[]>) {
+  try { localStorage.setItem(MILESTONE_KEY, JSON.stringify(m)); } catch { /* ignore */ }
+}
+function notifyMilestones(goal: { id: string; title: string; progress: number }) {
+  const store = loadMilestones();
+  const seen = new Set(store[goal.id] || []);
+  const pct = Math.round(goal.progress * 100);
+  for (const m of MILESTONES) {
+    if (pct >= m && !seen.has(m)) {
+      seen.add(m);
+      if (m === 100) toast.success(`🎯 Meta concluída: ${goal.title}`);
+      else toast(`✨ ${m}% em "${goal.title}"`);
+    }
+  }
+  store[goal.id] = Array.from(seen);
+  saveMilestones(store);
+}
 
 export type GoalStatus = "active" | "paused" | "done" | "archived";
 
@@ -70,6 +94,7 @@ export function useStudentGoalsV2(user: User | null) {
           const row = payload.new as StudentGoal;
           const isActive = row.status === "active" || row.status === "paused";
           const exists = prev.some((g) => g.id === row.id);
+          if (isActive) notifyMilestones({ id: row.id, title: row.title, progress: row.progress });
           if (!isActive) return prev.filter((g) => g.id !== row.id);
           if (exists) return prev.map((g) => (g.id === row.id ? row : g));
           return [row, ...prev];
