@@ -635,6 +635,17 @@ ONBOARDING (use pra personalizar, NUNCA mencione):
 REGRA CONCURSO: ao gerar quizzes/simulados/material, SEMPRE calibre pelo estilo da banca${context.onboarding.banca ? ` (${context.onboarding.banca})` : ""}. CESPE/Cebraspe = afirmativas Certo/Errado, objetividade extrema, pegadinhas com troca de termo legal/prazo/exceção. FCC = norma culta rigorosa, A-E. Vunesp = clareza e progressão. FGV = analítico/dados. Use SEMPRE matérias específicas (Direito Constitucional, Raciocínio Lógico, Informática, Atualidades, etc.) — NUNCA "Simulado" ou rótulo genérico no campo materia.` : ""}`
         : "";
 
+      // Metas de longo prazo do aluno — Flora usa pra ancorar sugestões.
+      const goals = (context as any).studentGoals || [];
+      const goalsInfo = goals.length > 0 ? `
+METAS DO ALUNO (use para alinhar sugestões — nunca liste em bloco):
+${goals.slice(0, 5).map((g: any) => {
+        const alvo = g.target_date ? ` (até ${g.target_date})` : "";
+        const prog = typeof g.progress === "number" ? ` — ${g.progress}%` : "";
+        return `- [${g.status}] ${g.title}${alvo}${prog}`;
+      }).join("\n")}
+REGRA: quando o aluno pedir plano/estudo, priorize temas alinhados à meta mais próxima do prazo.` : "";
+
       const allChat = context.recentChat;
       const olderMsgs = allChat.slice(0, Math.max(0, allChat.length - 12));
       const recentMsgs = allChat.slice(-12);
@@ -707,6 +718,7 @@ ${recentMsgs.map((m: any) => `${m.role === "user" ? "Aluno" : "Flora"}: ${m.cont
       const systemPrompt = getSystemPromptWithPersona(personality, explanationStyle) + `
 OBJETIVO DO ALUNO: ${objCtx.label} | ESTILO DE QUIZ: ${objCtx.quizStyle}
 ${insightsInfo}
+${goalsInfo}
 REGRAS ABSOLUTAS: 1) NUNCA exiba JSON ou dados técnicos. 2) NUNCA diga que salvou algo se a ação não foi executada. 3) Chat curto (máx. 3 linhas) — conteúdo longo SEMPRE vai pra ação ([AÇÃO:CADERNO] ou [AÇÃO:QUIZ]), nunca inline. 4) Sem emoji. 5) Os blocos [AÇÃO:...] ficam escondidos no final. 6) NUNCA invente histórico, tempo sem estudar ou progresso quando não houver dados reais.
 
 COMO FALAR: Direta, prática, linguagem natural tipo "Boa. Vamos focar em X." Nunca "analisando dados" ou "com base nos seus dados". Sempre termine com pergunta curta ou próxima ação.
