@@ -105,6 +105,14 @@ export function useStudentGoalsV2(user: User | null) {
         action: "goal_completed",
         metadata: { goal_id: id, title: (data as StudentGoal).title },
       }).then(() => {}, () => {});
+      // Registra achievement com XP proporcional à prioridade (1/2/3 → 25/50/100).
+      const xp = (data as StudentGoal).priority === 3 ? 100 : (data as StudentGoal).priority === 2 ? 50 : 25;
+      supabase.from("student_achievements").insert({
+        user_id: user.id,
+        type: "goal_completed",
+        value: xp,
+        last_earned_at: new Date().toISOString(),
+      }).then(() => {}, () => {});
     }
     return data as StudentGoal | null;
   }, [user]);
