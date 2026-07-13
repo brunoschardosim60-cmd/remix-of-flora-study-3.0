@@ -30,6 +30,7 @@ import { toast } from "sonner";
 import { FloraConfirmationBanner } from "@/components/FloraConfirmationBanner";
 import { FloraFirstAction } from "@/components/FloraFirstAction";
 import { FloraCheckpointCard } from "@/components/FloraCheckpointCard";
+import { FloraMemoryCard } from "@/components/FloraMemoryCard";
 import { FloraIcon } from "@/components/FloraIcon";
 import { toLocalDateStr } from "@/lib/dateUtils";
 import { countDueFlashcards } from "@/lib/flashcardScheduler";
@@ -295,6 +296,9 @@ export default function Index() {
 
         {/* Flora: check-in semanal (colapsa após preenchido) */}
         {user && <FloraCheckpointCard user={user} />}
+
+        {/* Flora: memória acadêmica (o que ela tem observado) */}
+        {user && <FloraMemoryCard user={user} />}
 
         {/* Sync agora é automático e silencioso em segundo plano */}
 
