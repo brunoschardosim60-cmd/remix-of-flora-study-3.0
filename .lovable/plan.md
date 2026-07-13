@@ -1,70 +1,71 @@
-## Quiz Battle — Revisão Geral
+## O que muda
 
-Proposta de melhorias em **3 frentes**: experiência, funções e layout. Tudo mantendo a paleta/tipografia atual (Space Grotesk + Inter, tokens semânticos).
+### 1. Check-in da semana sai do dashboard
 
-### 1) Layout e visual (toda a feature)
+- Remover `FloraCheckpointCard` do topo da tela inicial (`src/pages/Index.tsx`).
+- Disparar o check-in **apenas** quando o aluno fecha o cronômetro de foco e volta pra Home:
+  - `StudyTimer` / `FocusModeOverlay` já emite evento ao encerrar sessão. No `Index`, ouvir esse evento e, se faz ≥ 3 dias que não fez check-in (`localStorage`), abrir o card como **modal leve** (Dialog) em vez de card fixo.
+  - Se o aluno fechar sem responder, adiar por 24 h.
+- Card continua salvando em `flora_checkpoints` — só muda o gatilho.
 
-**Tela de criação (Host - config)**
-- Cards visuais grandes para escolher a fonte das perguntas (Flora / Banco / Manual) com ícone, título e descrição curta — em vez dos 3 botões pequenos atuais.
-- Presets rápidos: "Aquecimento (5q · 15s)", "Padrão (10q · 20s)", "Maratona (20q · 30s)".
-- Sliders visuais para nº de perguntas e tempo, em vez de inputs numéricos.
-- Editor manual com numeração colorida das alternativas (A vermelho / B azul / C amarelo / D verde — mesma cor da tela de jogo) para o host já visualizar como vai aparecer.
+### 2. Minhas metas migra para Configurações
 
-**Lobby**
-- Código exibido em "boxes" individuais por letra (visual estilo Kahoot).
-- QR code do link de entrada (`/quiz-battle/entrar?code=XXXXX`) ao lado do código — amigo aponta a câmera e entra.
-- Avatares dos jogadores em cards animados (pulse ao entrar).
-- Contador "X de 30 jogadores".
+- Tirar `StudentGoalsCard` do dashboard.
+- Em `/settings`, criar seção "Minhas metas" (accordion) reusando o card melhorado.
+- Melhorias no card:
+  - Ordenar por prioridade + prazo mais próximo.
+  - Barra de progresso mais fina, sem números redundantes.
+  - Filtro rápido: "ativas | pausadas | concluídas".
+  - Botão "Sugerir com Flora" chama `flora-engine action: suggest_goals` e mostra sugestões inline pra aceitar/rejeitar em batch.
+- Rota `/metas` continua acessível (deep-link do banner Flora), mas some do menu.
 
-**Tela de jogo (jogador)**
-- Barra de progresso visual do tempo (degradê verde → amarelo → vermelho) no lugar só do número.
-- Cores de alternativa com ícone (triângulo / losango / círculo / quadrado) — referência Kahoot, ajuda daltonismo.
-- Animação ao escolher (pulso) e ao revelar correta/errada (check/x grandes).
-- "Streak" visível ("3 acertos seguidos! 🔥").
+### 3. Flora entende metas
 
-**Tela do host durante o jogo**
-- Mostra contagem ao vivo de quantos já responderam ("12 / 15 responderam").
-- Gráfico de barras das respostas escolhidas (revela após o tempo acabar).
-- Botão "Pular pergunta" além de "Próxima".
+- Em `supabase/functions/flora-engine/index.ts`:
+  - No `analyze_and_suggest`, carregar `student_goals_v2` ativas e incluir no contexto do prompt (título, prazo, progresso).
+  - Sistema-prompt do chat (`flora-chat`) recebe bloco `METAS_ATUAIS` para citá-las naturalmente quando o aluno perguntar "o que estudar".
+  - Ao detectar objetivo novo no chat (ex.: "quero passar em X"), Flora propõe `create_goals` via decisão (já existe o handler no banner).
 
-**Tela final**
-- Pódio top 3 com medalhas e animação.
-- Estatísticas pessoais: acertos, melhor streak, tempo médio.
-- Botões "Jogar de novo" (mesma config) e "Compartilhar resultado".
+### 4. Cronograma semanal — reverter mobile
 
-### 2) Funções novas
+- Em `WeeklySchedule.tsx`:
+  - Voltar o painel inteiro arrastável (horizontal scroll com gesto, como estava antes), remover a versão com abas/dias colapsados.
+  - Ícone de check concluído: trocar `CheckCircle2 w-6 h-6` cheio por um traço fino (`Check w-3.5 h-3.5` dentro de um dot 16×16), estilo minimalista.
+  - Manter drag entre slots no desktop.
 
-- **Auto-avançar opcional**: host marca "avançar automaticamente quando todos responderem ou o tempo acabar" — partida flui sem clique.
-- **Revelação automática** ao fim do tempo: jogadores veem qual era a correta + explicação (quando vier do banco/Flora) por 4s antes da próxima.
-- **Streak bonus**: +100 pts a cada 3 acertos seguidos.
-- **Reentrada após queda**: se o jogador cair, ao voltar com o mesmo código entra de novo (mesmo após start) mantendo o score.
-- **Cancelar sala**: botão claro no host para cancelar e liberar todos.
-- **Compartilhar lobby**: botão "Compartilhar" com Web Share API (link com `?code=`).
-- **Validação melhor no manual**: avisa quantas perguntas faltam e quais estão incompletas.
+### 5. Limpeza geral do projeto
 
-### 3) Backend (mudanças mínimas)
+Candidatos a remover / consolidar:
 
-- Coluna nova `quiz_battles.auto_advance boolean default false` e `reveal_seconds int default 4`.
-- Edge function ganha:
-  - `action: "reveal"` — host (ou auto) marca status de "revelando"; envia explicação.
-  - `action: "rejoin"` — permite reentrar em battle `running` se o jogador já existia.
-  - Bônus de streak no cálculo de pontos.
-- Permitir join em estado `running` apenas quando o jogador já estava na sala (rejoin).
+- **`QuickStartChecklist`** — só aparece em onboarding, hoje duplicado com `FloraFirstAction`. Manter só um.
+- **`MotivationalQuote`** — ruído visual, não gera ação. Remover do dashboard.
+- **`SyncStatusCard`** — status técnico de dev, esconder atrás de config avançada.
+- **`RewardsPanel`** vs **`GamificationCard`** — sobreposição. Fundir num só card.
+- **`DashboardCustomizer`** — poucos usam; mover pra `/settings` como "Layout da tela inicial".
+- **`AdminCachePanel`**, **`OfflineManager`** no dashboard normal — só para admin/PWA settings.
+- Rotas duplicadas em `App.tsx`: `/metas` (some do menu mas fica), `/flora` fica.
+- Consolidar `StudentGoalsCard` (novo) e `StudyGoalsCard` (antigo, horas semanais) — o antigo vira uma stat em Análise.
+- `WeeklySummaryCard` + `WeeklyRevisionSummary` + `DetailedProgressReport` → só um "Resumo da semana" no dashboard.
 
-### Fora do escopo
+## Detalhes técnicos
 
-- Modo assíncrono / desafio por link.
-- Power-ups (50/50, dobrar pontos).
-- Salas privadas com senha.
-- Chat dentro do quiz.
+- Evento do timer: usar `window.dispatchEvent(new CustomEvent("focus-session-ended"))` já emitido; no `Index`, `useEffect` escuta e abre `<Dialog>` com o `FloraCheckpointCard`.
+- Cooldown check-in: chave `flora:checkin:lastPrompt` (localStorage), 24 h após dismiss, 7 dias após submit.
+- `suggest_goals` já existe na edge function — só ligar o botão do card.
+- Realtime + debounce das metas já estão prontos — nenhuma nova migração.
 
-### Ordem de implementação
+## Fora de escopo
 
-1. Migration: `auto_advance`, `reveal_seconds`, índices.
-2. Edge function: streak, rejoin, reveal, ajustes.
-3. `QuizBattleHost.tsx` — config redesenhada + lobby + tela de jogo do host com stats.
-4. `QuizBattleJoin.tsx` — visual refinado + QR-friendly.
-5. `QuizBattlePlay.tsx` — barra de tempo, animações, revelação, streak.
-6. Tela final com pódio + stats pessoais.
+- Push notifications de milestone (só toast por ora).
+- Nova página `/flora` — mantida como está.
+- Alteração de cores, fontes ou identidade visual.
 
-Quer que eu siga com tudo, ou prefere que eu corte algum item (ex.: pular QR code, pular auto-avançar)?
+## Ordem de execução
+
+1. Cronograma mobile (revert + ícone) — visual, isolado.
+2. Remover check-in do dashboard + gatilho no fim do timer.
+3. Mover metas pra Settings + melhorias no card.
+4. Flora ler metas no chat + analyze_and_suggest.
+5. Enxugue: remover/mover MotivationalQuote, SyncStatusCard, DashboardCustomizer, fundir Rewards/Gamification.
+
+Confirma pra eu tocar? Se quiser tirar ou trocar qualquer item da lista de limpeza (item 5), me diz antes.

@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { CustomThemeDialog } from "@/components/CustomThemeDialog";
 import { DashboardCustomizer } from "@/components/DashboardCustomizer";
 import { TwoFactorPanel } from "@/components/TwoFactorPanel";
+import { StudentGoalsCard } from "@/components/StudentGoalsCard";
 import { Sun, Moon, CircleDot, LogOut, ArrowLeft, Shield, User, Target, Sparkles, Bell, BellOff, Loader2, Save, LayoutDashboard, Calendar, Download, FileDown, Trash2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Globe, Copy } from "lucide-react";
@@ -453,6 +454,9 @@ export default function Settings() {
             Salvar objetivo
           </Button>
         </section>
+
+          {/* Minhas metas — migrado do dashboard pra reduzir ruído da tela inicial */}
+          {user && <StudentGoalsCard user={user} />}
 
           {/* Integração com Calendário */}
           {user && (
