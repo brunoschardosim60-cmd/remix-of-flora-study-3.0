@@ -363,46 +363,6 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
           </table>
         </div>
 
-        {/* Add horario row */}
-        <div className="border-t border-border/50 p-3">
-          {showAddRow ? (
-            <div className="flex items-center gap-2 flex-wrap">
-              {availableHorarios.length > 0 ? (
-                <select
-                  value={newHorario}
-                  onChange={(e) => setNewHorario(e.target.value)}
-                  className="text-xs px-3 py-1.5 rounded-lg bg-muted border border-border focus:ring-2 focus:ring-primary/30 outline-none"
-                >
-                  <option value="">Escolher horário</option>
-                  {availableHorarios.map((h) => (
-                    <option key={h} value={h}>{h}</option>
-                  ))}
-                </select>
-              ) : (
-                <input
-                  type="time"
-                  value={newHorario}
-                  onChange={(e) => setNewHorario(e.target.value)}
-                  className="text-xs px-3 py-1.5 rounded-lg bg-muted border border-border"
-                />
-              )}
-              <Button size="sm" variant="default" onClick={addHorario} disabled={!newHorario} className="text-xs h-7 gap-1">
-                <Plus className="w-3 h-3" /> Adicionar
-              </Button>
-              <Button size="sm" variant="ghost" onClick={() => { setShowAddRow(false); setNewHorario(""); }} className="text-xs h-7">
-                Cancelar
-              </Button>
-            </div>
-          ) : (
-            <button
-              onClick={() => setShowAddRow(true)}
-              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors font-medium"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Adicionar horário
-            </button>
-          )}
-        </div>
       </div>
 
       {/* Mobile accordion view */}
@@ -446,7 +406,7 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
                 <div className="border-t border-border/50 divide-y divide-border/40">
                   {daySlots.length === 0 && (
                     <div className="p-4 text-xs text-muted-foreground text-center">
-                      Nenhum horário. Adicione horários acima.
+                      Nenhum horário. Adicione horários abaixo.
                     </div>
                   )}
                   {daySlots.map((slot) => {
@@ -535,6 +495,47 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
             </div>
           );
         })}
+      </div>
+
+      {/* Add horario row — shared desktop/mobile */}
+      <div className="glass-card rounded-xl p-3">
+          {showAddRow ? (
+            <div className="flex items-center gap-2 flex-wrap">
+              {availableHorarios.length > 0 ? (
+                <select
+                  value={newHorario}
+                  onChange={(e) => setNewHorario(e.target.value)}
+                  className="text-xs px-3 py-1.5 rounded-lg bg-muted border border-border focus:ring-2 focus:ring-primary/30 outline-none"
+                >
+                  <option value="">Escolher horário</option>
+                  {availableHorarios.map((h) => (
+                    <option key={h} value={h}>{h}</option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type="time"
+                  value={newHorario}
+                  onChange={(e) => setNewHorario(e.target.value)}
+                  className="text-xs px-3 py-1.5 rounded-lg bg-muted border border-border"
+                />
+              )}
+              <Button size="sm" variant="default" onClick={addHorario} disabled={!newHorario} className="text-xs h-7 gap-1">
+                <Plus className="w-3 h-3" /> Adicionar
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => { setShowAddRow(false); setNewHorario(""); }} className="text-xs h-7">
+                Cancelar
+              </Button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowAddRow(true)}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors font-medium"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Adicionar horário
+            </button>
+          )}
       </div>
     </div>
   );
