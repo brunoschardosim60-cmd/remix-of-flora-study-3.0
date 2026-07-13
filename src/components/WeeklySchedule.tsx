@@ -404,6 +404,138 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
           )}
         </div>
       </div>
+
+      {/* Mobile accordion view */}
+      <div className="md:hidden space-y-2">
+        {DIAS.map((dia, i) => {
+          const daySlots = horarios
+            .map((h) => getSlot(h, i))
+            .filter((s): s is WeeklySlot => !!s);
+          const dayFilled = daySlots.filter((s) => s.materia);
+          const dayDone = dayFilled.filter((s) => s.concluido);
+          const isOpen = openDayMobile === i;
+          const isToday = i === TODAY_IDX;
+          return (
+            <div
+              key={dia}
+              className={`glass-card rounded-xl overflow-hidden ${isToday ? "ring-1 ring-primary/40" : ""}`}
+            >
+              <button
+                onClick={() => setOpenDayMobile(isOpen ? -1 : i)}
+                className="w-full flex items-center justify-between p-3 text-left"
+                aria-expanded={isOpen}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="font-heading font-semibold text-sm">{dia}</span>
+                  {isToday && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground font-medium">
+                      Hoje
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-muted-foreground">
+                    {dayFilled.length === 0 ? "livre" : `${dayDone.length}/${dayFilled.length}`}
+                  </span>
+                  <ChevronDown
+                    className={`w-4 h-4 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`}
+                  />
+                </div>
+              </button>
+              {isOpen && (
+                <div className="border-t border-border/50 divide-y divide-border/40">
+                  {daySlots.length === 0 && (
+                    <div className="p-4 text-xs text-muted-foreground text-center">
+                      Nenhum horário. Adicione horários acima.
+                    </div>
+                  )}
+                  {daySlots.map((slot) => {
+                    const isEditing = editingSlot === slot.id;
+                    return (
+                      <div key={slot.id} className="p-3 flex items-center gap-2">
+                        <span className="text-xs font-medium text-muted-foreground w-12 flex-shrink-0">
+                          {slot.horario}
+                        </span>
+                        {isEditing ? (
+                          <div className="flex-1 space-y-1.5">
+                            <select
+                              value={slot.materia || ""}
+                              onChange={(e) => updateSlot(slot.id, { materia: (e.target.value || null) as Subject | null })}
+                              className="w-full text-xs px-2 py-1.5 rounded-lg bg-muted border border-border outline-none"
+                            >
+                              <option value="">— Matéria —</option>
+                              {subjectOptions.map((s) => (
+                                <option key={s} value={s}>{s}</option>
+                              ))}
+                            </select>
+                            <input
+                              type="text"
+                              value={slot.descricao}
+                              onChange={(e) => updateSlot(slot.id, { descricao: e.target.value })}
+                              placeholder="Descrição..."
+                              className="w-full text-xs px-2 py-1.5 rounded-lg bg-muted border border-border outline-none"
+                            />
+                            <div className="flex gap-1">
+                              <button
+                                onClick={() => setEditingSlot(null)}
+                                className="text-xs text-primary font-semibold px-2 py-1 rounded-md hover:bg-primary/10"
+                              >
+                                OK
+                              </button>
+                              <button
+                                onClick={() => { clearSlot(slot.id); setEditingSlot(null); }}
+                                className="text-xs text-muted-foreground px-2 py-1 rounded-md hover:bg-muted"
+                              >
+                                Limpar
+                              </button>
+                            </div>
+                          </div>
+                        ) : slot.materia ? (
+                          <button
+                            onClick={() => setEditingSlot(slot.id)}
+                            className={`flex-1 flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-left ${SUBJECT_COLORS[slot.materia]} bg-opacity-20`}
+                          >
+                            <div className="min-w-0 flex-1">
+                              <div className="text-[11px] font-bold uppercase tracking-wider text-primary-foreground">
+                                {slot.materia}
+                              </div>
+                              {slot.descricao && (
+                                <div className="text-[11px] text-primary-foreground/80 truncate">
+                                  {slot.descricao}
+                                </div>
+                              )}
+                            </div>
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => setEditingSlot(slot.id)}
+                            className="flex-1 text-xs text-muted-foreground text-left px-3 py-2 rounded-lg border border-dashed border-border/60 hover:border-primary/40 hover:text-primary transition-colors"
+                          >
+                            + adicionar
+                          </button>
+                        )}
+                        {slot.materia && !isEditing && (
+                          <button
+                            onClick={() => toggleConcluido(slot.id)}
+                            className={`p-2 rounded-lg flex-shrink-0 transition-all ${
+                              slot.concluido
+                                ? "bg-secondary text-secondary-foreground"
+                                : "bg-muted text-muted-foreground hover:bg-primary hover:text-primary-foreground"
+                            }`}
+                            aria-label={slot.concluido ? "Desmarcar" : "Concluir"}
+                          >
+                            <Check className="w-4 h-4" strokeWidth={3} />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
