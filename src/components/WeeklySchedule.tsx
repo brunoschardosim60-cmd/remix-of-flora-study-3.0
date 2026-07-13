@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { WeeklySlot, Subject, ALL_SUBJECTS, SUBJECT_COLORS } from "@/lib/studyData";
-import { Check, Trash2, Plus, Clock, ChevronDown, ChevronUp, BookOpen, ArrowLeftRight, Copy, RotateCcw, Eraser } from "lucide-react";
+import { Check, Trash2, Plus, Clock, ChevronDown, BookOpen, ArrowLeftRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
@@ -35,7 +35,7 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
   const [dragOverId, setDragOverId] = useState<string | null>(null);
   const [flashIds, setFlashIds] = useState<string[]>([]);
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [copyFromDay, setCopyFromDay] = useState<number | null>(null);
+  const [openDayMobile, setOpenDayMobile] = useState<number>(TODAY_IDX);
 
   const horarios = [...new Set(slots.map((s) => s.horario))].sort();
 
@@ -119,45 +119,6 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
   // Estimativa de horas: assume 1h por slot preenchido
   const totalHoras = filledSlots.length;
 
-  const clearAllCompletions = () => {
-    if (!completedSlots.length) { toast.info("Nenhuma atividade concluída."); return; }
-    const prev = slots;
-    onChange(slots.map((s) => (s.concluido ? { ...s, concluido: false } : s)));
-    toast("Marcações limpas", {
-      action: { label: "Desfazer", onClick: () => onChange(prev) },
-      duration: 5000,
-    });
-  };
-
-  const resetWeek = () => {
-    if (!filledSlots.length) { toast.info("Cronograma já está vazio."); return; }
-    if (!confirm("Apagar TODAS as atividades da semana? Isso não pode ser desfeito facilmente.")) return;
-    const prev = slots;
-    onChange(slots.map((s) => ({ ...s, materia: null, descricao: "", concluido: false })));
-    toast("Semana resetada", {
-      action: { label: "Desfazer", onClick: () => onChange(prev) },
-      duration: 6000,
-    });
-  };
-
-  const copyDay = (fromDia: number, toDia: number) => {
-    if (fromDia === toDia) return;
-    const prev = slots;
-    onChange(
-      slots.map((s) => {
-        if (s.dia !== toDia) return s;
-        const src = slots.find((x) => x.dia === fromDia && x.horario === s.horario);
-        if (!src) return s;
-        return { ...s, materia: src.materia, descricao: src.descricao, concluido: false };
-      })
-    );
-    toast(`${DIAS[fromDia]} copiado para ${DIAS[toDia]}`, {
-      action: { label: "Desfazer", onClick: () => onChange(prev) },
-      duration: 5000,
-    });
-    setCopyFromDay(null);
-  };
-
   // Available horarios to add
   const availableHorarios = DEFAULT_HORARIOS.filter((h) => !horarios.includes(h));
 
@@ -187,37 +148,10 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
             ))}
           </div>
         )}
-        <div className="flex flex-wrap gap-1.5 pt-1">
-          <button
-            onClick={clearAllCompletions}
-            className="text-[11px] px-2 py-1 rounded-md bg-muted/60 hover:bg-muted transition-colors flex items-center gap-1"
-            title="Desmarcar todas as atividades concluídas"
-          >
-            <Eraser className="w-3 h-3" /> Limpar marcações
-          </button>
-          <button
-            onClick={resetWeek}
-            className="text-[11px] px-2 py-1 rounded-md bg-muted/60 hover:bg-destructive/10 hover:text-destructive transition-colors flex items-center gap-1"
-            title="Apagar todas as atividades"
-          >
-            <RotateCcw className="w-3 h-3" /> Resetar semana
-          </button>
-          {copyFromDay !== null && (
-            <span className="text-[11px] px-2 py-1 rounded-md bg-primary/10 text-primary flex items-center gap-1">
-              <Copy className="w-3 h-3" /> Copiando {DIAS_SHORT[copyFromDay]} → escolha o dia destino
-              <button
-                onClick={() => setCopyFromDay(null)}
-                className="ml-1 text-muted-foreground hover:text-foreground"
-              >
-                ✕
-              </button>
-            </span>
-          )}
-        </div>
       </div>
 
-      {/* Schedule table */}
-      <div className="glass-card rounded-xl overflow-hidden">
+      {/* Schedule table (desktop/tablet) */}
+      <div className="glass-card rounded-xl overflow-hidden hidden md:block">
         <div className="overflow-x-auto px-1 sm:px-0">
           <table className="w-full min-w-[760px] text-sm">
             <thead>
@@ -238,29 +172,6 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
                     <div className="flex items-center justify-center gap-1">
                       <span className="hidden sm:inline">{dia}</span>
                       <span className="sm:hidden">{DIAS_SHORT[i]}</span>
-                      <button
-                        onClick={() => {
-                          if (copyFromDay === null) setCopyFromDay(i);
-                          else copyDay(copyFromDay, i);
-                        }}
-                        className={`p-0.5 rounded transition-colors ${
-                          copyFromDay === i
-                            ? "bg-primary/20 text-primary"
-                            : copyFromDay !== null
-                              ? "text-primary hover:bg-primary/10 animate-pulse"
-                              : "text-muted-foreground/50 hover:text-primary hover:bg-muted"
-                        }`}
-                        title={
-                          copyFromDay === null
-                            ? `Copiar atividades de ${dia}`
-                            : copyFromDay === i
-                              ? "Clique em outro dia para colar"
-                              : `Colar em ${dia}`
-                        }
-                        aria-label={`Copiar dia ${dia}`}
-                      >
-                        <Copy className="w-3 h-3" />
-                      </button>
                     </div>
                   </th>
                 ))}
@@ -391,18 +302,18 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
 
                               {/* Action buttons */}
                               {slot.materia && !isPreview && (
-                                <div className="absolute top-0.5 right-0.5 flex gap-0.5 transition-all z-10 opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100 group-focus-within:opacity-100 group-focus-within:scale-100">
+                                <div className="absolute top-0.5 right-0.5 flex gap-0.5 transition-all z-10">
                                   <button
                                     onClick={(e) => { e.stopPropagation(); toggleConcluido(slot.id); }}
-                                    className={`p-1 rounded-md transition-all ${slot.concluido ? "bg-secondary/20 text-secondary" : "hover:bg-muted text-muted-foreground"}`}
+                                    className={`p-1.5 rounded-md transition-all ring-1 ${slot.concluido ? "bg-secondary text-secondary-foreground ring-secondary" : "bg-background/80 text-foreground ring-border hover:bg-primary hover:text-primary-foreground hover:ring-primary"}`}
                                     title={slot.concluido ? "Desmarcar" : "Concluir"}
                                     aria-label={slot.concluido ? "Desmarcar como concluído" : "Marcar como concluído"}
                                   >
-                                    <Check className="w-3 h-3" />
+                                    <Check className="w-3.5 h-3.5" strokeWidth={3} />
                                   </button>
                                   <button
                                     onClick={(e) => { e.stopPropagation(); clearSlot(slot.id); }}
-                                    className="p-1 rounded-md hover:bg-muted text-muted-foreground transition-all"
+                                    className="p-1 rounded-md hover:bg-muted text-muted-foreground transition-all opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
                                     title="Limpar"
                                     aria-label="Limpar esta atividade"
                                   >
@@ -492,6 +403,138 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
             </button>
           )}
         </div>
+      </div>
+
+      {/* Mobile accordion view */}
+      <div className="md:hidden space-y-2">
+        {DIAS.map((dia, i) => {
+          const daySlots = horarios
+            .map((h) => getSlot(h, i))
+            .filter((s): s is WeeklySlot => !!s);
+          const dayFilled = daySlots.filter((s) => s.materia);
+          const dayDone = dayFilled.filter((s) => s.concluido);
+          const isOpen = openDayMobile === i;
+          const isToday = i === TODAY_IDX;
+          return (
+            <div
+              key={dia}
+              className={`glass-card rounded-xl overflow-hidden ${isToday ? "ring-1 ring-primary/40" : ""}`}
+            >
+              <button
+                onClick={() => setOpenDayMobile(isOpen ? -1 : i)}
+                className="w-full flex items-center justify-between p-3 text-left"
+                aria-expanded={isOpen}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="font-heading font-semibold text-sm">{dia}</span>
+                  {isToday && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground font-medium">
+                      Hoje
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-muted-foreground">
+                    {dayFilled.length === 0 ? "livre" : `${dayDone.length}/${dayFilled.length}`}
+                  </span>
+                  <ChevronDown
+                    className={`w-4 h-4 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`}
+                  />
+                </div>
+              </button>
+              {isOpen && (
+                <div className="border-t border-border/50 divide-y divide-border/40">
+                  {daySlots.length === 0 && (
+                    <div className="p-4 text-xs text-muted-foreground text-center">
+                      Nenhum horário. Adicione horários acima.
+                    </div>
+                  )}
+                  {daySlots.map((slot) => {
+                    const isEditing = editingSlot === slot.id;
+                    return (
+                      <div key={slot.id} className="p-3 flex items-center gap-2">
+                        <span className="text-xs font-medium text-muted-foreground w-12 flex-shrink-0">
+                          {slot.horario}
+                        </span>
+                        {isEditing ? (
+                          <div className="flex-1 space-y-1.5">
+                            <select
+                              value={slot.materia || ""}
+                              onChange={(e) => updateSlot(slot.id, { materia: (e.target.value || null) as Subject | null })}
+                              className="w-full text-xs px-2 py-1.5 rounded-lg bg-muted border border-border outline-none"
+                            >
+                              <option value="">— Matéria —</option>
+                              {subjectOptions.map((s) => (
+                                <option key={s} value={s}>{s}</option>
+                              ))}
+                            </select>
+                            <input
+                              type="text"
+                              value={slot.descricao}
+                              onChange={(e) => updateSlot(slot.id, { descricao: e.target.value })}
+                              placeholder="Descrição..."
+                              className="w-full text-xs px-2 py-1.5 rounded-lg bg-muted border border-border outline-none"
+                            />
+                            <div className="flex gap-1">
+                              <button
+                                onClick={() => setEditingSlot(null)}
+                                className="text-xs text-primary font-semibold px-2 py-1 rounded-md hover:bg-primary/10"
+                              >
+                                OK
+                              </button>
+                              <button
+                                onClick={() => { clearSlot(slot.id); setEditingSlot(null); }}
+                                className="text-xs text-muted-foreground px-2 py-1 rounded-md hover:bg-muted"
+                              >
+                                Limpar
+                              </button>
+                            </div>
+                          </div>
+                        ) : slot.materia ? (
+                          <button
+                            onClick={() => setEditingSlot(slot.id)}
+                            className={`flex-1 flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-left ${SUBJECT_COLORS[slot.materia]} bg-opacity-20`}
+                          >
+                            <div className="min-w-0 flex-1">
+                              <div className="text-[11px] font-bold uppercase tracking-wider text-primary-foreground">
+                                {slot.materia}
+                              </div>
+                              {slot.descricao && (
+                                <div className="text-[11px] text-primary-foreground/80 truncate">
+                                  {slot.descricao}
+                                </div>
+                              )}
+                            </div>
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => setEditingSlot(slot.id)}
+                            className="flex-1 text-xs text-muted-foreground text-left px-3 py-2 rounded-lg border border-dashed border-border/60 hover:border-primary/40 hover:text-primary transition-colors"
+                          >
+                            + adicionar
+                          </button>
+                        )}
+                        {slot.materia && !isEditing && (
+                          <button
+                            onClick={() => toggleConcluido(slot.id)}
+                            className={`p-2 rounded-lg flex-shrink-0 transition-all ${
+                              slot.concluido
+                                ? "bg-secondary text-secondary-foreground"
+                                : "bg-muted text-muted-foreground hover:bg-primary hover:text-primary-foreground"
+                            }`}
+                            aria-label={slot.concluido ? "Desmarcar" : "Concluir"}
+                          >
+                            <Check className="w-4 h-4" strokeWidth={3} />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
