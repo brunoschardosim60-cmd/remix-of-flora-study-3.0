@@ -48,6 +48,7 @@ const QuizBattleHost = lazy(() => import("./pages/QuizBattleHost"));
 const QuizBattleJoin = lazy(() => import("./pages/QuizBattleJoin"));
 const QuizBattlePlay = lazy(() => import("./pages/QuizBattlePlay"));
 const Metas = lazy(() => import("./pages/Metas"));
+const Flora = lazy(() => import("./pages/Flora"));
 
 
 
@@ -236,6 +237,7 @@ const App = () => (
                 <Route path="/analise" element={<ProtectedRoute><Analise /></ProtectedRoute>} />
                 <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                 <Route path="/metas" element={<ProtectedRoute><Metas /></ProtectedRoute>} />
+                <Route path="/flora" element={<ProtectedRoute><Flora /></ProtectedRoute>} />
                 <Route path="/shared/notebook/:token" element={<Suspense fallback={<RouteFallback />}><SharedNotebook /></Suspense>} />
                 <Route path="/aulao" element={<ProtectedRoute><Aulao /></ProtectedRoute>} />
                 <Route path="/cursos" element={<ProtectedRoute><Cursos /></ProtectedRoute>} />
