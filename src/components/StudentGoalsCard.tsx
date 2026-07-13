@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Target, Plus, Check, X, Sparkles } from "lucide-react";
+import { Target, Plus, Check, X, Sparkles, Pencil, ChevronDown } from "lucide-react";
 import { useStudentGoalsV2 } from "@/hooks/useStudentGoalsV2";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -16,22 +16,59 @@ export function StudentGoalsCard({ user }: { user: User | null }) {
   const [adding, setAdding] = useState(false);
   const [title, setTitle] = useState("");
   const [targetDate, setTargetDate] = useState("");
+  const [priority, setPriority] = useState<1 | 2 | 3>(2);
+  const [description, setDescription] = useState("");
+  const [target, setTarget] = useState("");
+  const [actionFilter, setActionFilter] = useState("");
+  const [subject, setSubject] = useState("");
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDate, setEditDate] = useState("");
   const [suggesting, setSuggesting] = useState(false);
   const [suggestions, setSuggestions] = useState<Array<{ title: string; target_date: string | null; priority: number; kind: string }>>([]);
 
   if (!user) return null;
 
+  const resetForm = () => {
+    setTitle(""); setTargetDate(""); setPriority(2); setDescription("");
+    setTarget(""); setActionFilter(""); setSubject(""); setShowAdvanced(false);
+    setAdding(false);
+  };
+
   const handleAdd = async () => {
     if (!title.trim()) return;
-    const row = await create({ title: title.trim(), target_date: targetDate || null });
+    const metadata: Record<string, unknown> = {};
+    const t = Number(target);
+    if (Number.isFinite(t) && t > 0) metadata.target = t;
+    if (actionFilter.trim()) metadata.action = actionFilter.trim();
+    if (subject.trim()) metadata.subject = subject.trim();
+    const row = await create({
+      title: title.trim(),
+      target_date: targetDate || null,
+      priority,
+      description: description.trim() || null,
+      ...(Object.keys(metadata).length ? { metadata } : {}),
+    } as any);
     if (!row) {
       toast.error("Não foi possível criar a meta.");
       return;
     }
     toast.success("Meta criada.");
-    setTitle("");
-    setTargetDate("");
-    setAdding(false);
+    resetForm();
+  };
+
+  const startEdit = (id: string, curTitle: string, curDate: string | null) => {
+    setEditingId(id);
+    setEditTitle(curTitle);
+    setEditDate(curDate || "");
+  };
+
+  const saveEdit = async () => {
+    if (!editingId || !editTitle.trim()) return;
+    await update(editingId, { title: editTitle.trim(), target_date: editDate || null });
+    toast.success("Meta atualizada.");
+    setEditingId(null);
   };
 
   const handleSuggest = async () => {
@@ -152,6 +189,23 @@ export function StudentGoalsCard({ user }: { user: User | null }) {
               onChange={(e) => setTargetDate(e.target.value)}
               className="text-xs px-2 py-1.5 rounded-md bg-muted/60 border border-transparent focus:outline-none focus:border-primary/40"
             />
+            <select
+              value={priority}
+              onChange={(e) => setPriority(Number(e.target.value) as 1 | 2 | 3)}
+              className="text-xs px-2 py-1.5 rounded-md bg-muted/60 border border-transparent focus:outline-none focus:border-primary/40"
+              title="Prioridade"
+            >
+              <option value={1}>Baixa</option>
+              <option value={2}>Média</option>
+              <option value={3}>Alta</option>
+            </select>
+            <button
+              type="button"
+              onClick={() => setShowAdvanced((v) => !v)}
+              className="text-[11px] px-2 py-1.5 rounded-md text-muted-foreground hover:bg-muted flex items-center gap-1"
+            >
+              Avançado <ChevronDown className={`w-3 h-3 transition-transform ${showAdvanced ? "rotate-180" : ""}`} />
+            </button>
             <button
               onClick={handleAdd}
               disabled={!title.trim()}
@@ -160,41 +214,111 @@ export function StudentGoalsCard({ user }: { user: User | null }) {
               Salvar
             </button>
             <button
-              onClick={() => { setAdding(false); setTitle(""); setTargetDate(""); }}
+              onClick={resetForm}
               className="p-1.5 rounded-md text-muted-foreground hover:bg-muted"
               aria-label="Cancelar"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
+          {showAdvanced && (
+            <div className="space-y-2 pt-1 border-t border-border/30">
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Descrição (opcional)"
+                rows={2}
+                className="w-full text-xs px-2 py-1.5 rounded-md bg-muted/40 border border-border/40 focus:outline-none focus:border-primary/40 resize-none"
+              />
+              <div className="grid grid-cols-3 gap-2">
+                <input
+                  type="number"
+                  min={1}
+                  value={target}
+                  onChange={(e) => setTarget(e.target.value)}
+                  placeholder="Alvo (nº)"
+                  className="text-xs px-2 py-1.5 rounded-md bg-muted/40 border border-border/40 focus:outline-none focus:border-primary/40"
+                  title="Quantidade alvo (ex.: 100 questões)"
+                />
+                <input
+                  type="text"
+                  value={actionFilter}
+                  onChange={(e) => setActionFilter(e.target.value)}
+                  placeholder="Ação"
+                  className="text-xs px-2 py-1.5 rounded-md bg-muted/40 border border-border/40 focus:outline-none focus:border-primary/40"
+                  title="Filtro (ex.: generate_quiz)"
+                />
+                <input
+                  type="text"
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                  placeholder="Matéria"
+                  className="text-xs px-2 py-1.5 rounded-md bg-muted/40 border border-border/40 focus:outline-none focus:border-primary/40"
+                  title="Matéria (opcional)"
+                />
+              </div>
+              <p className="text-[10px] text-muted-foreground">Se preencher alvo, a Flora atualiza o progresso conforme suas ações.</p>
+            </div>
+          )}
         </div>
       )}
 
       <div className="space-y-2">
         {goals.map((g) => (
           <div key={g.id} className="p-2.5 rounded-lg bg-muted/30 space-y-1.5">
-            <div className="flex items-start gap-2">
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium truncate">{g.title}</div>
-                {g.target_date && (
-                  <div className="text-[10px] text-muted-foreground">Até {g.target_date}</div>
-                )}
+            {editingId === g.id ? (
+              <div className="flex items-center gap-2">
+                <input
+                  autoFocus
+                  type="text"
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="flex-1 text-sm px-2 py-1 rounded-md bg-muted/60 border border-primary/40 focus:outline-none"
+                />
+                <input
+                  type="date"
+                  value={editDate}
+                  onChange={(e) => setEditDate(e.target.value)}
+                  className="text-[11px] px-1.5 py-1 rounded-md bg-muted/60 focus:outline-none"
+                />
+                <button onClick={saveEdit} className="p-1 rounded-md text-emerald-500 hover:bg-emerald-500/10" title="Salvar">
+                  <Check className="w-3.5 h-3.5" />
+                </button>
+                <button onClick={() => setEditingId(null)} className="p-1 rounded-md text-muted-foreground hover:bg-muted" title="Cancelar">
+                  <X className="w-3.5 h-3.5" />
+                </button>
               </div>
-              <button
-                onClick={() => update(g.id, { status: g.progress >= 100 ? "done" : "archived" })}
-                className="p-1 rounded-md text-muted-foreground hover:text-emerald-500 hover:bg-emerald-500/10"
-                title={g.progress >= 100 ? "Marcar como concluída" : "Arquivar"}
-              >
-                <Check className="w-3.5 h-3.5" />
-              </button>
-              <button
-                onClick={() => remove(g.id)}
-                className="p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                title="Remover"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
+            ) : (
+              <div className="flex items-start gap-2">
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium truncate">{g.title}</div>
+                  {g.target_date && (
+                    <div className="text-[10px] text-muted-foreground">Até {g.target_date}</div>
+                  )}
+                </div>
+                <button
+                  onClick={() => startEdit(g.id, g.title, g.target_date)}
+                  className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
+                  title="Editar"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => update(g.id, { status: g.progress >= 100 ? "done" : "archived" })}
+                  className="p-1 rounded-md text-muted-foreground hover:text-emerald-500 hover:bg-emerald-500/10"
+                  title={g.progress >= 100 ? "Marcar como concluída" : "Arquivar"}
+                >
+                  <Check className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => remove(g.id)}
+                  className="p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                  title="Remover"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
             <div className="flex items-center gap-2">
               <input
                 type="range"
