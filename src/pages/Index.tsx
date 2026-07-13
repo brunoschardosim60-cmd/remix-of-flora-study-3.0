@@ -29,6 +29,7 @@ import { loadAIActivities } from "@/lib/aiActivityStore";
 import { toast } from "sonner";
 import { FloraConfirmationBanner } from "@/components/FloraConfirmationBanner";
 import { FloraFirstAction } from "@/components/FloraFirstAction";
+import { FloraCheckpointCard } from "@/components/FloraCheckpointCard";
 import { FloraIcon } from "@/components/FloraIcon";
 import { toLocalDateStr } from "@/lib/dateUtils";
 import { countDueFlashcards } from "@/lib/flashcardScheduler";
@@ -291,6 +292,9 @@ export default function Index() {
 
         {/* Flora: primeira ação recomendada (pós-onboarding) */}
         {user && <FloraFirstAction onStartStudy={handlePrimaryAction} />}
+
+        {/* Flora: check-in semanal (colapsa após preenchido) */}
+        {user && <FloraCheckpointCard user={user} />}
 
         {/* Sync agora é automático e silencioso em segundo plano */}
 
