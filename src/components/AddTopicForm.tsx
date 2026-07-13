@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Subject, ALL_SUBJECTS } from "@/lib/studyData";
-import { Plus, CalendarDays } from "lucide-react";
+import { Plus } from "lucide-react";
 
 interface AddTopicFormProps {
   onAdd: (tema: string, materia: Subject, data: string, skipWeekends: boolean) => void;
@@ -36,19 +36,6 @@ export function AddTopicForm({ onAdd, openSignal = 0, subjects }: AddTopicFormPr
     setOpen(false);
   };
 
-  const todayIso = new Date().toISOString().split("T")[0];
-  const shiftDate = (days: number) => {
-    const d = new Date();
-    d.setDate(d.getDate() + days);
-    return d.toISOString().split("T")[0];
-  };
-  const datePresets: { label: string; value: string }[] = [
-    { label: "Hoje", value: todayIso },
-    { label: "Amanhã", value: shiftDate(1) },
-    { label: "+3 dias", value: shiftDate(3) },
-    { label: "+1 semana", value: shiftDate(7) },
-  ];
-
   if (!open) {
     return (
       <button
@@ -56,8 +43,7 @@ export function AddTopicForm({ onAdd, openSignal = 0, subjects }: AddTopicFormPr
         className="w-full flex items-center gap-2 rounded-xl border border-dashed border-border/60 bg-muted/20 px-4 py-3 text-sm text-muted-foreground hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-all"
       >
         <Plus className="w-4 h-4" />
-        <span>Adicionar tópico de revisão</span>
-        <kbd className="ml-auto hidden sm:inline text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted/60 border border-border/60 text-muted-foreground/70">N</kbd>
+        <span>Adicionar tópico</span>
       </button>
     );
   }
@@ -70,33 +56,10 @@ export function AddTopicForm({ onAdd, openSignal = 0, subjects }: AddTopicFormPr
         type="text"
         value={tema}
         onChange={(e) => setTema(e.target.value)}
-        onKeyDown={(e) => { if (e.key === "Escape") setOpen(false); }}
         placeholder="Sobre o que é o tópico?"
         autoFocus
         className="w-full px-0 py-1 bg-transparent border-0 border-b border-border/50 text-base font-medium placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary transition-colors"
       />
-
-      {/* Presets de data */}
-      <div className="flex flex-wrap items-center gap-1.5">
-        <CalendarDays className="w-3.5 h-3.5 text-muted-foreground" />
-        {datePresets.map((p) => {
-          const active = data === p.value;
-          return (
-            <button
-              key={p.label}
-              type="button"
-              onClick={() => setData(p.value)}
-              className={`px-2 py-0.5 rounded-full text-[11px] font-medium border transition-colors ${
-                active
-                  ? "bg-primary/15 border-primary/40 text-primary"
-                  : "bg-muted/40 border-transparent text-muted-foreground hover:text-foreground hover:border-border"
-              }`}
-            >
-              {p.label}
-            </button>
-          );
-        })}
-      </div>
 
       {/* Campos secundários compactos */}
       <div className="flex flex-wrap items-center gap-2 text-xs">
