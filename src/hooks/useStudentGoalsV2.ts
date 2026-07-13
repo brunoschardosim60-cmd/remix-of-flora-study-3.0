@@ -2,6 +2,9 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
+const RECOMPUTE_KEY = "flora:goals:lastRecompute";
+const RECOMPUTE_TTL_MS = 30 * 60 * 1000; // 30 min
+
 export type GoalStatus = "active" | "paused" | "done" | "archived";
 
 export interface StudentGoal {
@@ -35,9 +38,13 @@ export function useStudentGoalsV2(user: User | null) {
       return;
     }
     setLoading(true);
-    // Best-effort: recalcula progresso a partir de user_actions antes de ler.
+    // Best-effort: recalcula progresso, com debounce de 30 min via localStorage.
     try {
-      await supabase.functions.invoke("flora-engine", { body: { action: "recompute_goal_progress" } });
+      const last = Number(localStorage.getItem(RECOMPUTE_KEY) || 0);
+      if (Date.now() - last > RECOMPUTE_TTL_MS) {
+        localStorage.setItem(RECOMPUTE_KEY, String(Date.now()));
+        await supabase.functions.invoke("flora-engine", { body: { action: "recompute_goal_progress" } });
+      }
     } catch { /* ignora falha do recompute */ }
     const { data } = await supabase
       .from("student_goals_v2")
@@ -51,6 +58,26 @@ export function useStudentGoalsV2(user: User | null) {
   }, [user]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Realtime: escuta mudanças nas metas do próprio usuário.
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel(`student_goals_v2:${user.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "student_goals_v2", filter: `user_id=eq.${user.id}` }, (payload: any) => {
+        setGoals((prev) => {
+          if (payload.eventType === "DELETE") return prev.filter((g) => g.id !== payload.old.id);
+          const row = payload.new as StudentGoal;
+          const isActive = row.status === "active" || row.status === "paused";
+          const exists = prev.some((g) => g.id === row.id);
+          if (!isActive) return prev.filter((g) => g.id !== row.id);
+          if (exists) return prev.map((g) => (g.id === row.id ? row : g));
+          return [row, ...prev];
+        });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user?.id]);
 
   const create = useCallback(async (draft: GoalDraft) => {
     if (!user) return null;
@@ -71,8 +98,16 @@ export function useStudentGoalsV2(user: User | null) {
       .select("*")
       .single();
     if (data) setGoals((prev) => prev.map((g) => (g.id === id ? (data as StudentGoal) : g)));
+    // Loop com gamificação: registra conclusão como user_action pra a Flora ver e XP subir.
+    if (data && patch.status === "done" && user) {
+      supabase.from("user_actions").insert({
+        user_id: user.id,
+        action: "goal_completed",
+        metadata: { goal_id: id, title: (data as StudentGoal).title },
+      }).then(() => {}, () => {});
+    }
     return data as StudentGoal | null;
-  }, []);
+  }, [user]);
 
   const remove = useCallback(async (id: string) => {
     await supabase.from("student_goals_v2").delete().eq("id", id);
