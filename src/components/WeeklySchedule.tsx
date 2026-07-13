@@ -286,7 +286,7 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
                               onClick={() => setEditingSlot(slot.id)}
                               className={`p-2 rounded-lg cursor-pointer min-h-[52px] flex flex-col gap-1 relative group outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-background
                                 ${displaySlot.materia
-                                  ? `${SUBJECT_COLORS[displaySlot.materia]} bg-opacity-15 cursor-grab active:cursor-grabbing ${displaySlot.concluido ? "ring-2 ring-secondary/40" : ""}`
+                                  ? `${SUBJECT_COLORS[displaySlot.materia]} bg-opacity-15 cursor-grab active:cursor-grabbing ${displaySlot.concluido ? "ring-1 ring-secondary/25 opacity-70" : ""}`
                                   : "bg-muted/20 border border-dashed border-border/50"
                                 }
                                 ${isDragSource ? "opacity-60" : ""}
@@ -305,7 +305,7 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
                                 <div className="absolute top-0.5 right-0.5 flex gap-0.5 transition-all z-10">
                                   <button
                                     onClick={(e) => { e.stopPropagation(); toggleConcluido(slot.id); }}
-                                    className={`h-4 w-4 rounded-full inline-flex items-center justify-center transition-colors ${slot.concluido ? "bg-secondary text-secondary-foreground" : "bg-background/70 text-muted-foreground border border-border hover:text-foreground hover:border-foreground/60"}`}
+                                    className={`h-4 w-4 rounded-full inline-flex items-center justify-center transition-colors ${slot.concluido ? "bg-secondary/40 text-secondary-foreground/90" : "bg-background/70 text-muted-foreground border border-border hover:text-foreground hover:border-foreground/60"}`}
                                     title={slot.concluido ? "Desmarcar" : "Concluir"}
                                     aria-label={slot.concluido ? "Desmarcar como concluído" : "Marcar como concluído"}
                                   >
@@ -329,7 +329,7 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
                                       {displaySlot.materia}
                                     </span>
                                     {displaySlot.concluido && (
-                                      <Check className="w-2.5 h-2.5 text-secondary flex-shrink-0" strokeWidth={2.5} />
+                                      <Check className="w-2.5 h-2.5 text-secondary/60 flex-shrink-0" strokeWidth={2.5} />
                                     )}
                                   </div>
                                   {displaySlot.descricao && (
