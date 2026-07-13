@@ -30,6 +30,7 @@ import { toast } from "sonner";
 import { FloraConfirmationBanner } from "@/components/FloraConfirmationBanner";
 import { FloraFirstAction } from "@/components/FloraFirstAction";
 import { FloraCheckpointCard } from "@/components/FloraCheckpointCard";
+import { FloraCheckinDialog } from "@/components/FloraCheckinDialog";
 import { FloraMemoryCard } from "@/components/FloraMemoryCard";
 import { StudentGoalsCard } from "@/components/StudentGoalsCard";
 import { FloraIcon } from "@/components/FloraIcon";
@@ -163,7 +164,11 @@ export default function Index() {
     []
   );
   const timer = useStudyTimer({
-    onSessionEnd: handleSessionEnd,
+    onSessionEnd: (session) => {
+      handleSessionEnd(session);
+      // Dispara prompt do check-in leve (o dialog decide se abre baseado em cooldown/estado).
+      try { window.dispatchEvent(new CustomEvent("flora-checkin-prompt")); } catch {}
+    },
     activeTopicId: activeTopic?.id ?? null,
     activeSubject: activeTopic?.materia ?? null,
   });
@@ -295,14 +300,13 @@ export default function Index() {
         {/* Flora: primeira ação recomendada (pós-onboarding) */}
         {user && <FloraFirstAction onStartStudy={handlePrimaryAction} />}
 
-        {/* Flora: check-in semanal (colapsa após preenchido) */}
-        {user && <FloraCheckpointCard user={user} />}
+        {/* Check-in semanal migrou pra modal disparado ao encerrar o cronômetro. */}
+        {user && <FloraCheckinDialog user={user} />}
 
         {/* Flora: memória acadêmica (o que ela tem observado) */}
         {user && <FloraMemoryCard user={user} />}
 
-        {/* Metas de longo prazo */}
-        {user && <StudentGoalsCard user={user} />}
+        {/* Metas migradas pra Configurações → aba Estudo. */}
 
         {/* Sync agora é automático e silencioso em segundo plano */}
 
