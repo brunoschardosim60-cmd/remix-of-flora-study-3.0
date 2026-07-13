@@ -571,6 +571,18 @@ export default function Settings() {
           </section>
         )}
 
+        {/* Atalhos */}
+        {user && (
+          <section className="rounded-2xl border border-border bg-card p-4 sm:p-5 space-y-2">
+            <Button variant="outline" className="w-full gap-2" onClick={() => navigate("/metas")}>
+              <Target className="w-4 h-4" /> Minhas metas
+            </Button>
+            <Button variant="outline" className="w-full gap-2" onClick={() => navigate("/flora")}>
+              <Sparkles className="w-4 h-4" /> Painel da Flora
+            </Button>
+          </section>
+        )}
+
         {/* Logout */}
         {user && (
           <section className="rounded-2xl border border-border bg-card p-4 sm:p-5">
