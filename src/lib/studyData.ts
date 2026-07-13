@@ -79,6 +79,20 @@ export const ENEM_SUBJECTS: Subject[] = [
 
 export const REVISION_INTERVALS = [1, 3, 7, 14, 30, 60];
 
+/**
+ * Presets de repetição espaçada baseados em Ebbinghaus.
+ * - `curto`: reforço rápido, ideal para tópicos leves ou próximos da prova.
+ * - `padrao`: cadeia padrão do app.
+ * - `longo`: fixação de longo prazo, útil para bases fundamentais.
+ */
+export const REVISION_PRESETS = {
+  curto: [1, 3, 7],
+  padrao: REVISION_INTERVALS,
+  longo: [1, 3, 7, 14, 30, 60, 120, 240],
+} as const;
+
+export type RevisionPreset = keyof typeof REVISION_PRESETS;
+
 export interface Flashcard {
   id: string;
   frente: string;
@@ -200,11 +214,15 @@ function normalizeTopic(input: unknown): StudyTopic {
   });
 }
 
-export function generateRevisionDates(studyDate: string, skipWeekends = false): string[] {
+export function generateRevisionDates(
+  studyDate: string,
+  skipWeekends = false,
+  intervals: readonly number[] = REVISION_INTERVALS,
+): string[] {
   const base = parseLocalDate(studyDate);
 
   if (!skipWeekends) {
-    return REVISION_INTERVALS.map((days) => {
+    return intervals.map((days) => {
       const d = new Date(base);
       d.setDate(d.getDate() + days);
       return toLocalDateStr(d);
@@ -214,7 +232,7 @@ export function generateRevisionDates(studyDate: string, skipWeekends = false): 
   const result: string[] = [];
   let cursor = new Date(base);
 
-  for (const days of REVISION_INTERVALS) {
+  for (const days of intervals) {
     cursor.setDate(cursor.getDate() + days);
     cursor = moveToNextBusinessDay(cursor);
     result.push(toLocalDateStr(cursor));
@@ -223,8 +241,14 @@ export function generateRevisionDates(studyDate: string, skipWeekends = false): 
   return result;
 }
 
-export function createTopic(tema: string, materia: Subject, dataEstudo: string, skipWeekends = false): StudyTopic {
-  const revisoes = generateRevisionDates(dataEstudo, skipWeekends);
+export function createTopic(
+  tema: string,
+  materia: Subject,
+  dataEstudo: string,
+  skipWeekends = false,
+  intervals: readonly number[] = REVISION_INTERVALS,
+): StudyTopic {
+  const revisoes = generateRevisionDates(dataEstudo, skipWeekends, intervals);
   return syncLegacyFields({
     id: crypto.randomUUID(),
     tema,

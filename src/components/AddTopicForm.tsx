@@ -1,12 +1,18 @@
 import { useEffect, useRef, useState } from "react";
-import { Subject, ALL_SUBJECTS } from "@/lib/studyData";
+import { Subject, ALL_SUBJECTS, REVISION_PRESETS, RevisionPreset } from "@/lib/studyData";
 import { Plus } from "lucide-react";
 
 interface AddTopicFormProps {
-  onAdd: (tema: string, materia: Subject, data: string, skipWeekends: boolean) => void;
+  onAdd: (tema: string, materia: Subject, data: string, skipWeekends: boolean, intervals?: readonly number[]) => void;
   openSignal?: number;
   subjects?: Subject[];
 }
+
+const PRESET_LABELS: Record<RevisionPreset, string> = {
+  curto: "Curto (3x)",
+  padrao: "Padrão (6x)",
+  longo: "Longo (8x)",
+};
 
 export function AddTopicForm({ onAdd, openSignal = 0, subjects }: AddTopicFormProps) {
   const subjectOptions = subjects && subjects.length ? subjects : ALL_SUBJECTS;
@@ -14,6 +20,7 @@ export function AddTopicForm({ onAdd, openSignal = 0, subjects }: AddTopicFormPr
   const [materia, setMateria] = useState<Subject>(subjectOptions[0] ?? "Matemática");
   const [data, setData] = useState(new Date().toISOString().split("T")[0]);
   const [skipWeekends, setSkipWeekends] = useState(false);
+  const [preset, setPreset] = useState<RevisionPreset>("padrao");
   const [open, setOpen] = useState(false);
   const topicInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -30,9 +37,10 @@ export function AddTopicForm({ onAdd, openSignal = 0, subjects }: AddTopicFormPr
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!tema.trim()) return;
-    onAdd(tema.trim(), materia, data, skipWeekends);
+    onAdd(tema.trim(), materia, data, skipWeekends, REVISION_PRESETS[preset]);
     setTema("");
     setSkipWeekends(false);
+    setPreset("padrao");
     setOpen(false);
   };
 
@@ -78,6 +86,16 @@ export function AddTopicForm({ onAdd, openSignal = 0, subjects }: AddTopicFormPr
           onChange={(e) => setData(e.target.value)}
           className="px-2 py-1 rounded-md bg-muted/60 border border-transparent hover:border-border text-xs focus:outline-none focus:border-primary/40"
         />
+        <select
+          value={preset}
+          onChange={(e) => setPreset(e.target.value as RevisionPreset)}
+          title="Padrão de repetição espaçada (Ebbinghaus)"
+          className="px-2 py-1 rounded-md bg-muted/60 border border-transparent hover:border-border text-xs focus:outline-none focus:border-primary/40"
+        >
+          {(Object.keys(PRESET_LABELS) as RevisionPreset[]).map((p) => (
+            <option key={p} value={p}>{PRESET_LABELS[p]}</option>
+          ))}
+        </select>
         <label className="flex items-center gap-1.5 text-muted-foreground select-none cursor-pointer ml-auto">
           <input
             type="checkbox"
