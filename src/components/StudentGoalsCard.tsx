@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Target, Plus, Check, X, Sparkles } from "lucide-react";
 import { useStudentGoalsV2 } from "@/hooks/useStudentGoalsV2";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +12,7 @@ import type { User } from "@supabase/supabase-js";
  */
 export function StudentGoalsCard({ user }: { user: User | null }) {
   const { goals, create, update, remove } = useStudentGoalsV2(user);
+  const navigate = useNavigate();
   const [adding, setAdding] = useState(false);
   const [title, setTitle] = useState("");
   const [targetDate, setTargetDate] = useState("");
@@ -68,7 +70,13 @@ export function StudentGoalsCard({ user }: { user: User | null }) {
           <Target className="w-4 h-4" />
         </div>
         <div className="flex-1">
-          <div className="font-heading font-semibold text-sm">Minhas metas</div>
+          <button
+            onClick={() => navigate("/metas")}
+            className="font-heading font-semibold text-sm text-left hover:underline"
+            title="Ver todas as metas"
+          >
+            Minhas metas
+          </button>
           <div className="text-[11px] text-muted-foreground">
             {goals.length === 0 ? "Nenhuma meta ativa" : `${goals.length} meta${goals.length > 1 ? "s" : ""} ativa${goals.length > 1 ? "s" : ""}`}
           </div>
