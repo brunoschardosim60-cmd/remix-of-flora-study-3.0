@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { WeeklySlot, Subject, ALL_SUBJECTS, SUBJECT_COLORS } from "@/lib/studyData";
-import { Check, Trash2, Plus, Clock, ChevronDown, ChevronUp, BookOpen, ArrowLeftRight, Copy, RotateCcw, Eraser } from "lucide-react";
+import { Check, Trash2, Plus, Clock, ChevronDown, BookOpen, ArrowLeftRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
@@ -35,7 +35,7 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
   const [dragOverId, setDragOverId] = useState<string | null>(null);
   const [flashIds, setFlashIds] = useState<string[]>([]);
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [copyFromDay, setCopyFromDay] = useState<number | null>(null);
+  const [openDayMobile, setOpenDayMobile] = useState<number>(TODAY_IDX);
 
   const horarios = [...new Set(slots.map((s) => s.horario))].sort();
 
@@ -118,45 +118,6 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
 
   // Estimativa de horas: assume 1h por slot preenchido
   const totalHoras = filledSlots.length;
-
-  const clearAllCompletions = () => {
-    if (!completedSlots.length) { toast.info("Nenhuma atividade concluída."); return; }
-    const prev = slots;
-    onChange(slots.map((s) => (s.concluido ? { ...s, concluido: false } : s)));
-    toast("Marcações limpas", {
-      action: { label: "Desfazer", onClick: () => onChange(prev) },
-      duration: 5000,
-    });
-  };
-
-  const resetWeek = () => {
-    if (!filledSlots.length) { toast.info("Cronograma já está vazio."); return; }
-    if (!confirm("Apagar TODAS as atividades da semana? Isso não pode ser desfeito facilmente.")) return;
-    const prev = slots;
-    onChange(slots.map((s) => ({ ...s, materia: null, descricao: "", concluido: false })));
-    toast("Semana resetada", {
-      action: { label: "Desfazer", onClick: () => onChange(prev) },
-      duration: 6000,
-    });
-  };
-
-  const copyDay = (fromDia: number, toDia: number) => {
-    if (fromDia === toDia) return;
-    const prev = slots;
-    onChange(
-      slots.map((s) => {
-        if (s.dia !== toDia) return s;
-        const src = slots.find((x) => x.dia === fromDia && x.horario === s.horario);
-        if (!src) return s;
-        return { ...s, materia: src.materia, descricao: src.descricao, concluido: false };
-      })
-    );
-    toast(`${DIAS[fromDia]} copiado para ${DIAS[toDia]}`, {
-      action: { label: "Desfazer", onClick: () => onChange(prev) },
-      duration: 5000,
-    });
-    setCopyFromDay(null);
-  };
 
   // Available horarios to add
   const availableHorarios = DEFAULT_HORARIOS.filter((h) => !horarios.includes(h));
