@@ -89,6 +89,13 @@ function nextStepsFor(decision: PendingDecision, bancoRoute: string): NextStep[]
     case "proactive_suggestion":
     default: {
       const subtype = (decision.recommendation as any)?.subtype;
+      const recType = (decision.recommendation as any)?.type;
+      if (recType === "create_goals") {
+        return [
+          { label: "Criar metas agora", route: "/metas", primary: true },
+          { label: "Mais tarde", route: "/" },
+        ];
+      }
       if (subtype === "errors_pattern") {
         return [
           { label: "Quero a aula + 3 exercícios", route: bancoRoute, primary: true },
