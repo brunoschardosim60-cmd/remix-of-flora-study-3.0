@@ -148,37 +148,10 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
             ))}
           </div>
         )}
-        <div className="flex flex-wrap gap-1.5 pt-1">
-          <button
-            onClick={clearAllCompletions}
-            className="text-[11px] px-2 py-1 rounded-md bg-muted/60 hover:bg-muted transition-colors flex items-center gap-1"
-            title="Desmarcar todas as atividades concluídas"
-          >
-            <Eraser className="w-3 h-3" /> Limpar marcações
-          </button>
-          <button
-            onClick={resetWeek}
-            className="text-[11px] px-2 py-1 rounded-md bg-muted/60 hover:bg-destructive/10 hover:text-destructive transition-colors flex items-center gap-1"
-            title="Apagar todas as atividades"
-          >
-            <RotateCcw className="w-3 h-3" /> Resetar semana
-          </button>
-          {copyFromDay !== null && (
-            <span className="text-[11px] px-2 py-1 rounded-md bg-primary/10 text-primary flex items-center gap-1">
-              <Copy className="w-3 h-3" /> Copiando {DIAS_SHORT[copyFromDay]} → escolha o dia destino
-              <button
-                onClick={() => setCopyFromDay(null)}
-                className="ml-1 text-muted-foreground hover:text-foreground"
-              >
-                ✕
-              </button>
-            </span>
-          )}
-        </div>
       </div>
 
-      {/* Schedule table */}
-      <div className="glass-card rounded-xl overflow-hidden">
+      {/* Schedule table (desktop/tablet) */}
+      <div className="glass-card rounded-xl overflow-hidden hidden md:block">
         <div className="overflow-x-auto px-1 sm:px-0">
           <table className="w-full min-w-[760px] text-sm">
             <thead>
@@ -199,29 +172,6 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
                     <div className="flex items-center justify-center gap-1">
                       <span className="hidden sm:inline">{dia}</span>
                       <span className="sm:hidden">{DIAS_SHORT[i]}</span>
-                      <button
-                        onClick={() => {
-                          if (copyFromDay === null) setCopyFromDay(i);
-                          else copyDay(copyFromDay, i);
-                        }}
-                        className={`p-0.5 rounded transition-colors ${
-                          copyFromDay === i
-                            ? "bg-primary/20 text-primary"
-                            : copyFromDay !== null
-                              ? "text-primary hover:bg-primary/10 animate-pulse"
-                              : "text-muted-foreground/50 hover:text-primary hover:bg-muted"
-                        }`}
-                        title={
-                          copyFromDay === null
-                            ? `Copiar atividades de ${dia}`
-                            : copyFromDay === i
-                              ? "Clique em outro dia para colar"
-                              : `Colar em ${dia}`
-                        }
-                        aria-label={`Copiar dia ${dia}`}
-                      >
-                        <Copy className="w-3 h-3" />
-                      </button>
                     </div>
                   </th>
                 ))}
