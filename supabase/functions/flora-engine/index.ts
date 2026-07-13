@@ -399,6 +399,16 @@ serve(async (req) => {
         concursoBankStats,
         studentGoals: studentGoals ?? [],
       };
+      // Revisões alinhadas às metas: cruzamento simples por matéria/título.
+      const goalTitles = (studentGoals ?? []).map((g: any) => String(g?.title || "").toLowerCase()).filter(Boolean);
+      const alignedReviews = goalTitles.length > 0
+        ? (pendingReviews ?? []).filter((r: any) => {
+            const mat = String(r?.materia || "").toLowerCase();
+            if (!mat) return false;
+            return goalTitles.some((t: string) => t.includes(mat) || mat.includes((t.split(" ")[0] || "")));
+          }).slice(0, 6)
+        : [];
+      (result as any).goalAlignedReviews = alignedReviews;
       studentCtxSet(uid, result);
       return result;
     }
@@ -646,6 +656,11 @@ ${goals.slice(0, 5).map((g: any) => {
       }).join("\n")}
 REGRA: quando o aluno pedir plano/estudo, priorize temas alinhados à meta mais próxima do prazo.` : "";
 
+      const alignedRv = (context as any).goalAlignedReviews || [];
+      const alignedRvInfo = alignedRv.length > 0 ? `
+REVISÕES ALINHADAS ÀS METAS (priorize essas quando montar plano/quiz):
+${alignedRv.slice(0, 5).map((r: any) => `- ${r.materia}${r.topic_id ? ` › ${r.topic_id}` : ""} (agendada ${r.scheduled_date})`).join("\n")}` : "";
+
       const allChat = context.recentChat;
       const olderMsgs = allChat.slice(0, Math.max(0, allChat.length - 12));
       const recentMsgs = allChat.slice(-12);
@@ -719,6 +734,7 @@ ${recentMsgs.map((m: any) => `${m.role === "user" ? "Aluno" : "Flora"}: ${m.cont
 OBJETIVO DO ALUNO: ${objCtx.label} | ESTILO DE QUIZ: ${objCtx.quizStyle}
 ${insightsInfo}
 ${goalsInfo}
+${alignedRvInfo}
 REGRAS ABSOLUTAS: 1) NUNCA exiba JSON ou dados técnicos. 2) NUNCA diga que salvou algo se a ação não foi executada. 3) Chat curto (máx. 3 linhas) — conteúdo longo SEMPRE vai pra ação ([AÇÃO:CADERNO] ou [AÇÃO:QUIZ]), nunca inline. 4) Sem emoji. 5) Os blocos [AÇÃO:...] ficam escondidos no final. 6) NUNCA invente histórico, tempo sem estudar ou progresso quando não houver dados reais.
 
 COMO FALAR: Direta, prática, linguagem natural tipo "Boa. Vamos focar em X." Nunca "analisando dados" ou "com base nos seus dados". Sempre termine com pergunta curta ou próxima ação.
@@ -1007,6 +1023,50 @@ SEMPRE em português brasileiro. NUNCA repita metas existentes.` },
         kind: ["exam", "habit", "score", "topic"].includes(String(g?.kind)) ? String(g.kind) : "topic",
       })).filter((g: any) => g.title.length >= 4) : [];
       return jsonResponse({ goals });
+    }
+
+    // ─── RECOMPUTE_GOAL_PROGRESS: recalcula progresso das metas a partir de user_actions ───
+    // metadata esperado nas metas: { target: number, action?: string, subject?: string }
+    if (action === "recompute_goal_progress") {
+      const { data: rawGoals } = await supabase
+        .from("student_goals_v2")
+        .select("id, created_at, progress, status, metadata")
+        .eq("user_id", userId)
+        .in("status", ["active", "paused"]);
+      const gRows = rawGoals ?? [];
+      if (gRows.length === 0) return jsonResponse({ ok: true, updated: 0 });
+      const { data: acts } = await supabase
+        .from("user_actions")
+        .select("action, materia, created_at")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(500);
+      const actions = acts ?? [];
+      let updated = 0;
+      for (const g of gRows) {
+        const meta = ((g as any).metadata) || {};
+        const target = Number(meta?.target || 0);
+        if (target <= 0) continue;
+        const actionFilter = meta?.action ? String(meta.action) : "";
+        const subject = meta?.subject ? String(meta.subject).toLowerCase() : "";
+        const since = new Date(g.created_at).getTime();
+        const matched = actions.filter((a: any) => {
+          const t = new Date(a.created_at).getTime();
+          if (t < since) return false;
+          if (actionFilter && a.action !== actionFilter) return false;
+          if (subject && String(a.materia || "").toLowerCase() !== subject) return false;
+          return true;
+        }).length;
+        const newProgress = Math.min(100, Math.round((matched / target) * 100));
+        if (newProgress !== g.progress) {
+          await supabase.from("student_goals_v2").update({
+            progress: newProgress,
+            ...(newProgress >= 100 ? { status: "done" } : {}),
+          }).eq("id", g.id);
+          updated++;
+        }
+      }
+      return jsonResponse({ ok: true, updated });
     }
 
     if (action === "list_threads") {
@@ -2019,6 +2079,19 @@ Foque no que está acontecendo AGORA no texto. Português brasileiro.` },
         .in("decision_type", ["increase_difficulty", "reduce_load", "adjust_plan", "proactive_suggestion"])
         .limit(1);
       if (todayDecisions && todayDecisions.length > 0) return jsonResponse({ ok: true, suggestions: 0, reason: "already_today" });
+
+      // Atalho: aluno sem metas ativas → sugere criar metas antes de gastar tokens.
+      const stGoals = (context as any).studentGoals || [];
+      if (stGoals.length === 0) {
+        await supabase.from("flora_decisions").insert({
+          user_id: userId,
+          decision_type: "proactive_suggestion",
+          reasoning: "Você ainda não tem metas de longo prazo. Que tal definirmos 1 ou 2 pra dar direção aos estudos?",
+          recommendation: { type: "create_goals", cta: "Criar metas" },
+          accepted: null,
+        });
+        return jsonResponse({ ok: true, suggestions: 1, type: "proactive_suggestion", reason: "no_goals" });
+      }
 
       const opts: CallOptions = {
         messages: [

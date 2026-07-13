@@ -35,6 +35,10 @@ export function useStudentGoalsV2(user: User | null) {
       return;
     }
     setLoading(true);
+    // Best-effort: recalcula progresso a partir de user_actions antes de ler.
+    try {
+      await supabase.functions.invoke("flora-engine", { body: { action: "recompute_goal_progress" } });
+    } catch { /* ignora falha do recompute */ }
     const { data } = await supabase
       .from("student_goals_v2")
       .select("*")
