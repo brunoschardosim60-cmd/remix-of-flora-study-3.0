@@ -235,6 +235,7 @@ const App = () => (
                 <Route path="/banco-concurso" element={<ProtectedRoute><BancoConcurso /></ProtectedRoute>} />
                 <Route path="/analise" element={<ProtectedRoute><Analise /></ProtectedRoute>} />
                 <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+                <Route path="/metas" element={<ProtectedRoute><Metas /></ProtectedRoute>} />
                 <Route path="/shared/notebook/:token" element={<Suspense fallback={<RouteFallback />}><SharedNotebook /></Suspense>} />
                 <Route path="/aulao" element={<ProtectedRoute><Aulao /></ProtectedRoute>} />
                 <Route path="/cursos" element={<ProtectedRoute><Cursos /></ProtectedRoute>} />
