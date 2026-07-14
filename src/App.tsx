@@ -49,6 +49,7 @@ const QuizBattleJoin = lazy(() => import("./pages/QuizBattleJoin"));
 const QuizBattlePlay = lazy(() => import("./pages/QuizBattlePlay"));
 const Metas = lazy(() => import("./pages/Metas"));
 const Flora = lazy(() => import("./pages/Flora"));
+const PainelMigracao = lazy(() => import("./pages/PainelMigracao"));
 
 
 
@@ -256,6 +257,7 @@ const App = () => (
                 <Route path="/cronograma" element={<Navigate to="/" replace />} />
                 <Route path="/cronograma/semanal" element={<Navigate to="/" replace />} />
                 <Route path="/pricing" element={<Suspense fallback={<RouteFallback />}><Pricing /></Suspense>} />
+                <Route path="/painel-migracao" element={<Suspense fallback={<RouteFallback />}><PainelMigracao /></Suspense>} />
                 <Route path="/u/:username" element={<Suspense fallback={<RouteFallback />}><PublicProfile /></Suspense>} />
                 
                 <Route path="*" element={<NotFound />} />

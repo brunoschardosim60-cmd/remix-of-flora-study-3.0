@@ -2518,6 +2518,7 @@ export type Database = {
         }
         Returns: Json
       }
+      exec_sql: { Args: { sql_query: string }; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
