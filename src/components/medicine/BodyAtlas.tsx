@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Box, ChevronLeft, ChevronRight, ExternalLink, Maximize2, RotateCcw, Search, Volume2, X, ZoomIn, ZoomOut } from "lucide-react";
+import { Box, ChevronLeft, ChevronRight, ExternalLink, Maximize2, Move, RotateCcw, Search, Volume2, X, ZoomIn, ZoomOut } from "lucide-react";
 import {
   anatomyPositionFor,
   anatomyStructures,
@@ -30,6 +30,9 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState<{ structure: AnatomyStructure; view: AtlasView } | null>(null);
   const [detailZoom, setDetailZoom] = useState(3);
+  const [detailPan, setDetailPan] = useState({ x: 0, y: 0 });
+  const [isDetailPanning, setIsDetailPanning] = useState(false);
+  const detailDragRef = useRef<{ pointerId: number; x: number; y: number } | null>(null);
   const structuresInLayer = useMemo(() => anatomyStructures.filter((item) => item.layer === activeLayer), [activeLayer]);
   const visibleStructures = useMemo(
     () => structuresInLayer.filter((item) => anatomyPositionFor(item, view)),
@@ -85,6 +88,7 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
     const detailView = anatomyPositionFor(structure, requestedView) ? requestedView : preferredAnatomyView(structure);
     onSelect(structure);
     setDetailZoom(3);
+    setDetailPan({ x: 0, y: 0 });
     setFocused({ structure, view: detailView });
   };
 
@@ -96,6 +100,7 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
     const nextStructure = structures[nextIndex];
     onSelect(nextStructure);
     setDetailZoom(3);
+    setDetailPan({ x: 0, y: 0 });
     setFocused({ structure: nextStructure, view: focused.view });
   };
 
@@ -104,7 +109,13 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
     const nextView: AtlasView = focused.view === "anterior" ? "posterior" : "anterior";
     if (!anatomyPositionFor(focused.structure, nextView)) return;
     setDetailZoom(3);
+    setDetailPan({ x: 0, y: 0 });
     setFocused({ ...focused, view: nextView });
+  };
+
+  const resetDetailViewport = () => {
+    setDetailZoom(3);
+    setDetailPan({ x: 0, y: 0 });
   };
 
   const focusedPosition = focused ? anatomyPositionFor(focused.structure, focused.view) : null;
@@ -221,14 +232,67 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
                 <button onClick={() => setDetailZoom((value) => Math.max(2.2, value - 0.4))} aria-label="Diminuir ampliação"><ZoomOut /></button>
                 <strong>{Math.round(detailZoom * 100)}%</strong>
                 <button onClick={() => setDetailZoom((value) => Math.min(5.4, value + 0.4))} aria-label="Aumentar ampliação"><ZoomIn /></button>
-                <button className="wide" onClick={() => setDetailZoom(3)}><RotateCcw /> Centralizar</button>
+                <button className="wide" onClick={resetDetailViewport}><RotateCcw /> Centralizar</button>
                 <button className="wide" onClick={changeDetailView} disabled={!canChangeDetailView}><Maximize2 /> {otherDetailView === "anterior" ? "Ver anterior" : "Ver posterior"}</button>
               </div>
 
               <div
-                className="med-anatomy-focus-canvas"
+                className={`med-anatomy-focus-canvas ${isDetailPanning ? "is-panning" : ""}`}
                 onWheel={(event) => setDetailZoom((value) => Math.min(5.4, Math.max(2.2, value + (event.deltaY < 0 ? 0.25 : -0.25))))}
+                onPointerDown={(event) => {
+                  if (event.button !== 0) return;
+                  event.preventDefault();
+                  event.currentTarget.setPointerCapture(event.pointerId);
+                  detailDragRef.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY };
+                  setIsDetailPanning(true);
+                }}
+                onPointerMove={(event) => {
+                  const drag = detailDragRef.current;
+                  if (!drag || drag.pointerId !== event.pointerId) return;
+                  const deltaX = event.clientX - drag.x;
+                  const deltaY = event.clientY - drag.y;
+                  drag.x = event.clientX;
+                  drag.y = event.clientY;
+                  const maxX = Math.max(100, event.currentTarget.clientWidth * (detailZoom - 1) * .25);
+                  const maxY = Math.max(140, event.currentTarget.clientHeight * (detailZoom - 1) * .5);
+                  setDetailPan((current) => ({
+                    x: Math.min(maxX, Math.max(-maxX, current.x + deltaX)),
+                    y: Math.min(maxY, Math.max(-maxY, current.y + deltaY)),
+                  }));
+                }}
+                onPointerUp={(event) => {
+                  if (detailDragRef.current?.pointerId !== event.pointerId) return;
+                  detailDragRef.current = null;
+                  setIsDetailPanning(false);
+                  if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+                }}
+                onPointerCancel={() => {
+                  detailDragRef.current = null;
+                  setIsDetailPanning(false);
+                }}
+                onLostPointerCapture={() => {
+                  detailDragRef.current = null;
+                  setIsDetailPanning(false);
+                }}
+                onDoubleClick={resetDetailViewport}
+                onKeyDown={(event) => {
+                  const directions: Record<string, { x: number; y: number }> = {
+                    ArrowLeft: { x: 40, y: 0 }, ArrowRight: { x: -40, y: 0 },
+                    ArrowUp: { x: 0, y: 40 }, ArrowDown: { x: 0, y: -40 },
+                  };
+                  if (event.key === "Home") {
+                    event.preventDefault();
+                    resetDetailViewport();
+                    return;
+                  }
+                  const direction = directions[event.key];
+                  if (!direction) return;
+                  event.preventDefault();
+                  setDetailPan((current) => ({ x: current.x + direction.x, y: current.y + direction.y }));
+                }}
+                tabIndex={0}
                 aria-label={`Ampliação de ${focused.structure.name} na vista ${focused.view}`}
+                aria-describedby="med-anatomy-drag-help"
               >
                 <div className="med-anatomy-focus-grid" />
                 <img
@@ -237,19 +301,20 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
                   alt={`Ampliação anatômica educacional de ${focused.structure.name}`}
                   style={{
                     height: `${detailZoom * 100}%`,
-                    left: "50%",
-                    top: "50%",
+                    left: `calc(50% + ${detailPan.x}px)`,
+                    top: `calc(50% + ${detailPan.y}px)`,
                     transform: `translate(-${focusedPosition.x}%, -${focusedPosition.y}%)`,
                   }}
                   draggable={false}
                 />
                 <div className="med-anatomy-focus-reticle"><span /><i /></div>
+                <div id="med-anatomy-drag-help" className="med-anatomy-focus-drag-help"><Move /> Arraste para explorar</div>
                 <div className="med-anatomy-focus-caption"><strong>{focused.structure.name}</strong><span>{focused.structure.region}</span></div>
               </div>
 
               <footer>
                 <button onClick={() => navigateDetail(-1)}><ChevronLeft /> Estrutura anterior</button>
-                <span>Use a roda do mouse ou os controles para ampliar</span>
+                <span>Arraste a imagem para navegar · roda do mouse para ampliar</span>
                 <button onClick={() => navigateDetail(1)}>Próxima estrutura <ChevronRight /></button>
               </footer>
             </div>

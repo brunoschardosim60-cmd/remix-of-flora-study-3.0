@@ -236,9 +236,44 @@
   border: 1px solid rgba(51, 88, 77, .14);
   border-radius: 20px;
   background: radial-gradient(circle at 50% 50%, #fff 0, #edf4f0 64%, #dfeae5 100%);
-  cursor: zoom-in;
+  cursor: grab;
   isolation: isolate;
+  touch-action: none;
+  overscroll-behavior: contain;
+  user-select: none;
 }
+
+.med-anatomy-focus-canvas.is-panning { cursor: grabbing; }
+
+.med-anatomy-focus-canvas:focus-visible {
+  outline: 3px solid rgba(65, 111, 98, .24);
+  outline-offset: -3px;
+}
+
+.med-anatomy-focus-drag-help {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  z-index: 4;
+  display: flex;
+  min-height: 30px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  transform: translateX(-50%);
+  border: 1px solid rgba(73, 117, 104, .16);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .86);
+  box-shadow: 0 7px 20px rgba(32, 67, 57, .08);
+  color: #52766c;
+  font-size: 8px;
+  font-weight: 850;
+  letter-spacing: .03em;
+  pointer-events: none;
+  backdrop-filter: blur(10px);
+}
+
+.med-anatomy-focus-drag-help svg { width: 12px; height: 12px; }
 
 .med-anatomy-focus-canvas > img {
   position: absolute;
