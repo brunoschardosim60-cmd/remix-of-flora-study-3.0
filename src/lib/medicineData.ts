@@ -352,6 +352,22 @@ export const medicalSources: Record<string, MedicalSource> = {
     reviewedAt: "2026-08-24",
     attribution: "Licença e atribuição variam por atlas; consulte a página de cada conjunto antes de reutilizar imagens.",
   },
+  zAnatomy3D: {
+    title: "Z-Anatomy / BodyParts3D — modelo musculoesquelético 3D",
+    organization: "Z-Anatomy, BodyParts3D e hpfrei",
+    url: "https://github.com/hpfrei/body-anatomy-3d-viewer",
+    reviewedAt: "2026-08-24",
+    license: "CC BY-SA 4.0",
+    attribution: "Modelo derivado de Z-Anatomy/BodyParts3D, otimizado por hpfrei. Alterações de integração e materiais indicadas no arquivo de atribuição do projeto.",
+  },
+  bodyParts3D: {
+    title: "BodyParts3D 3.0 — superfície corporal e órgãos",
+    organization: "Database Center for Life Science (DBCLS)",
+    url: "https://dbarchive.biosciencedbc.jp/en/bodyparts3d/desc.html",
+    reviewedAt: "2026-08-24",
+    license: "CC BY-SA 2.1 Japan",
+    attribution: "BodyParts3D © Database Center for Life Science. Conversão web derivada do espelho de Kevin-Mattheus-Moerman e do projeto human-body-simulator.",
+  },
   openstaxAssessment: {
     title: "Performing a General Survey — Instruments Used for Assessment",
     organization: "OpenStax, Rice University",

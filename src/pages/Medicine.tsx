@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Activity, ArrowLeft, ArrowRight, Baby, BookOpen, Brain, Check, ChevronRight, ClipboardCheck,
   AlertTriangle, CircleDot, ExternalLink, Eye, EyeOff, FileHeart, HeartPulse, Layers, ListChecks, MapPin, Menu, NotebookPen,
-  PanelLeftClose, Play, Search, ShieldCheck, Sparkles, Stethoscope, Target, Timer, Wrench, X, ZoomIn,
+  PanelLeftClose, Play, Rotate3D, Search, ShieldCheck, Sparkles, Stethoscope, Target, Timer, Wrench, X, ZoomIn,
 } from "lucide-react";
 import { toast } from "sonner";
 import { BodyAtlas } from "@/components/medicine/BodyAtlas";
@@ -19,12 +19,16 @@ import { medicalNotebookTemplates, type MedicalNotebookTemplate } from "@/lib/me
 import "@/components/medicine/medicine.css";
 import "@/components/medicine/medicine-enhancements.css";
 import "@/components/medicine/instruments.css";
+import "@/components/medicine/anatomy-3d.css";
 
-type MedicineSection = "home" | "atlas" | "instruments" | "systems" | "development" | "practice" | "questions" | "clinic" | "plan" | "notebook" | "sources";
+const Anatomy3DStudio = lazy(() => import("@/components/medicine/Anatomy3DStudio").then((module) => ({ default: module.Anatomy3DStudio })));
+
+type MedicineSection = "home" | "atlas" | "atlas3d" | "instruments" | "systems" | "development" | "practice" | "questions" | "clinic" | "plan" | "notebook" | "sources";
 
 const NAV: Array<{ id: MedicineSection; label: string; Icon: typeof Activity }> = [
   { id: "home", label: "Visão geral", Icon: Activity },
   { id: "atlas", label: "Atlas", Icon: Search },
+  { id: "atlas3d", label: "Corpo 3D", Icon: Rotate3D },
   { id: "instruments", label: "Instrumentos", Icon: Wrench },
   { id: "systems", label: "Sistemas", Icon: HeartPulse },
   { id: "development", label: "Desenvolvimento", Icon: Baby },
@@ -214,15 +218,16 @@ export default function Medicine() {
       <div className="med-shell">
         <aside className={`med-sidebar ${mobileNav ? "open" : ""}`}>
           <div className="med-sidebar-label">ESTUDAR</div>
-          {NAV.slice(0, 9).map(({ id, label, Icon }) => <button key={id} onClick={() => go(id)} className={section === id ? "active" : ""}><Icon /><span>{label}</span>{id === "questions" && wrongIds.length > 0 && <b>{wrongIds.length}</b>}</button>)}
+          {NAV.slice(0, 10).map(({ id, label, Icon }) => <button key={id} onClick={() => go(id)} className={section === id ? "active" : ""}><Icon /><span>{label}</span>{id === "questions" && wrongIds.length > 0 && <b>{wrongIds.length}</b>}</button>)}
           <div className="med-sidebar-label">FERRAMENTAS</div>
-          {NAV.slice(9).map(({ id, label, Icon }) => <button key={id} onClick={() => go(id)} className={section === id ? "active" : ""}><Icon /><span>{label}</span></button>)}
+          {NAV.slice(10).map(({ id, label, Icon }) => <button key={id} onClick={() => go(id)} className={section === id ? "active" : ""}><Icon /><span>{label}</span></button>)}
           <div className="med-safety-mini"><ShieldCheck /><div><strong>Uso educacional</strong><span>Não substitui supervisão, avaliação ou atendimento profissional.</span></div></div>
         </aside>
 
         <main className="med-main">
           {section === "home" && <MedicineHome level={level} progress={progress} wrongCount={wrongIds.length} onGo={go} />}
           {section === "atlas" && <div className="med-section-wrap"><BodyAtlas level={level} activeLayer={activeLayer} onLayerChange={setActiveLayer} selected={selectedStructure} onSelect={setSelectedStructure} />{selectedStructure && <div className="med-atlas-actions"><button onClick={() => toggleFavorite(selectedStructure.id)}>{favoriteIds.includes(selectedStructure.id) ? <Check /> : <BookOpen />}{favoriteIds.includes(selectedStructure.id) ? "Salva para revisão" : "Salvar para revisão"}</button><button onClick={() => toast.info("A Flora deve explicar apenas com base nas fontes exibidas nesta estrutura.")}><Sparkles /> Explicar com a Flora</button></div>}</div>}
+          {section === "atlas3d" && <Suspense fallback={<div className="med-3d-route-loading"><Rotate3D /><strong>Carregando o ambiente tridimensional…</strong><span>Preparando iluminação, câmera e estruturas.</span></div>}><Anatomy3DStudio level={level} /></Suspense>}
           {section === "instruments" && <InstrumentsStudio level={level} />}
           {section === "systems" && <SystemsSection level={level} onOpenAtlas={(layer, structure) => { setActiveLayer(layer); if (structure) setSelectedStructure(structure); go("atlas"); }} />}
           {section === "development" && <DevelopmentSection />}
