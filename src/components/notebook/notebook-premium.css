@@ -147,7 +147,7 @@
 
 /* ── Page Sidebar (left) ── */
 .nb-page-sidebar {
-  width: 88px;
+  width: 112px;
   background: hsl(var(--background) / 0.96);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -156,7 +156,7 @@
   flex-direction: column;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 16px 0;
+  padding: 0 0 16px;
   scrollbar-width: thin;
   scrollbar-color: hsl(var(--muted-foreground) / 0.2) transparent;
   flex-shrink: 0;
@@ -167,6 +167,46 @@
   width: 3px;
 }
 
+.nb-pages-heading {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 46px;
+  padding: 0 12px;
+  border-bottom: 1px solid hsl(var(--border) / 0.55);
+  background: hsl(var(--background) / 0.96);
+}
+
+.nb-pages-heading > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: hsl(var(--muted-foreground));
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.nb-pages-heading > button {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 8px;
+  color: hsl(var(--muted-foreground));
+  transition: 150ms ease;
+}
+
+.nb-pages-heading > button:hover {
+  background: hsl(var(--primary) / 0.1);
+  color: hsl(var(--primary));
+}
+
 .nb-page-sidebar::-webkit-scrollbar-thumb {
   background: hsl(var(--muted-foreground) / 0.2);
   border-radius: 3px;
@@ -174,10 +214,10 @@
 
 .nb-page-thumb {
   position: relative;
-  width: 58px;
-  height: 78px;
-  margin: 5px auto;
-  border-radius: 8px;
+  width: 68px;
+  height: 90px;
+  margin: 10px auto 4px;
+  border-radius: 7px;
   background: var(--nb-paper-bg);
   border: 2px solid transparent;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
@@ -194,7 +234,7 @@
 
 .nb-page-thumb.active {
   border-color: var(--nb-accent);
-  box-shadow: 0 0 0 2px var(--nb-accent-glow), 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 0 0 3px var(--nb-accent-glow), 0 6px 18px rgba(15, 23, 42, 0.12);
 }
 
 .nb-page-thumb-num {
@@ -258,7 +298,7 @@
 .nb-paper-area {
   flex: 1;
   overflow: auto;
-  padding: 0 12px 72px;
+  padding: 0 24px 72px;
   display: flex;
   justify-content: center;
   align-items: flex-start;
@@ -508,8 +548,10 @@
   background: hsl(var(--background) / 0.94);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
-  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.02);
+  box-shadow: 0 3px 18px rgba(15, 23, 42, 0.035);
 }
+
+.nb-title-block { line-height: 1.15; }
 
 .notebook-paper-realistic {
   border: 1px solid rgba(15, 23, 42, 0.07);

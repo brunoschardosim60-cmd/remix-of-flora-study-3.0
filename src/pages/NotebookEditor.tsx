@@ -5,7 +5,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -67,7 +66,7 @@ import "@/components/notebook/notebook-premium.css";
 import { ShareNotebookDialog } from "@/components/notebook/ShareNotebookDialog";
 import { StickyNote, type StickyNoteData } from "@/components/notebook/StickyNote";
 import { FocusMode } from "@/components/notebook/FocusMode";
-import { ALL_SUBJECTS, createTopic, loadTopics, type Flashcard, type Subject } from "@/lib/studyData";
+import { createTopic, loadTopics, type Flashcard, type Subject } from "@/lib/studyData";
 import { saveTopicsForUser } from "@/lib/studyStateStore";
 import { toLocalDateStr } from "@/lib/dateUtils";
 import { loadJsonStorage, loadStringStorage } from "@/lib/storage";
@@ -317,15 +316,6 @@ export default function NotebookEditor() {
   const [mathStatus, setMathStatus] = useState<"idle" | "processing" | "resolved">("idle");
   const [lastMathSuggestion, setLastMathSuggestion] = useState<MathSuggestion | null>(null);
   const [selectedSubject, setSelectedSubject] = useState<Subject>("Matemática");
-  // Matérias que o aluno realmente usa (derivadas dos study_topics dele).
-  // Sem isso o select mostra TODAS (Direito, Contabilidade, etc.) — poluído.
-  const [userSubjects, setUserSubjects] = useState<Subject[]>([]);
-  useEffect(() => {
-    const topics = loadTopics();
-    const set = new Set<string>();
-    topics.forEach((t) => { if (t.materia) set.add(t.materia); });
-    setUserSubjects(Array.from(set) as Subject[]);
-  }, [user?.id]);
   const [pageLinks, setPageLinks] = useState<Record<string, NotebookStudyLink>>({});
   const [pageMeta, setPageMeta] = useState<Record<string, NotebookPageMeta>>({});
   const [searchQuery, setSearchQuery] = useState("");
@@ -583,6 +573,7 @@ export default function NotebookEditor() {
 
         if (notebookError) throw notebookError;
         setNotebook(notebookData);
+        if (notebookData.subject) setSelectedSubject(notebookData.subject as Subject);
 
         const { data: pagesData, error: pagesError } = await supabase
           .from("notebook_pages")
@@ -1888,7 +1879,10 @@ export default function NotebookEditor() {
           <Button variant="ghost" size="icon" aria-label="Voltar para cadernos" onClick={() => navigate("/notebooks")} className="h-11 w-11 sm:h-10 sm:w-10">
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <h1 className="font-heading font-bold text-base sm:text-lg truncate min-w-0 flex-1">{notebook?.title}</h1>
+          <div className="nb-title-block min-w-0 flex-1">
+            <h1 className="truncate font-heading text-base font-semibold tracking-tight sm:text-lg">{notebook?.title}</h1>
+            <span className="hidden text-[11px] text-muted-foreground sm:block">{notebook?.subject || selectedSubject} · Caderno</span>
+          </div>
           {/* Save status indicator */}
           <div className="flex items-center gap-1 text-xs shrink-0">
             {saveStatus === "saving" && (
@@ -1924,23 +1918,6 @@ export default function NotebookEditor() {
               <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
               <Input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Buscar no caderno" className="h-9 pl-8 pr-2 text-xs" aria-label="Buscar texto ou etiqueta no caderno" />
             </form>
-            <Select
-              value={selectedSubject}
-              onValueChange={(v) => setSelectedSubject(v as Subject)}
-            >
-              <SelectTrigger className="h-9 w-full sm:w-auto min-w-0 sm:min-w-[150px]">
-                <SelectValue placeholder="Matéria" />
-              </SelectTrigger>
-              <SelectContent>
-                {Array.from(new Set([selectedSubject, ...(notebook?.subject
-                  ? ALL_SUBJECTS.filter((s) => s === notebook.subject)
-                  : (userSubjects.length > 0 ? userSubjects : ALL_SUBJECTS)
-                )])).map((subject) => (
-                  <SelectItem key={subject} value={subject}>{subject}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
             {/* AI toggle icon - works for both text and draw */}
             <button
               type="button"

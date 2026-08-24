@@ -1,4 +1,4 @@
-import { Plus, Trash2, Pin, Sparkles, Pencil } from "lucide-react";
+import { Plus, Trash2, Pin, Sparkles, Pencil, Files } from "lucide-react";
 import { useState } from "react";
 import "./notebook-premium.css";
 
@@ -85,6 +85,10 @@ export function PageSidebarGrid({
 
   return (
     <aside className="nb-page-sidebar">
+      <div className="nb-pages-heading">
+        <span><Files className="h-3.5 w-3.5" /> Páginas</span>
+        <button type="button" onClick={onAddPage} aria-label="Adicionar nova página" title="Nova página"><Plus className="h-4 w-4" /></button>
+      </div>
       {pages.map((page, idx) => {
         const key = notebookId ? `${notebookId}:${page.id}` : "";
         const meta = key ? pageMeta[key] : undefined;
@@ -144,17 +148,6 @@ export function PageSidebarGrid({
         );
       })}
 
-      <div style={{ padding: "0 10px" }}>
-        <button
-          type="button"
-          onClick={onAddPage}
-          className="nb-page-add"
-          title="Nova página"
-          aria-label="Adicionar nova página"
-        >
-          <Plus className="w-5 h-5" />
-        </button>
-      </div>
     </aside>
   );
 }
