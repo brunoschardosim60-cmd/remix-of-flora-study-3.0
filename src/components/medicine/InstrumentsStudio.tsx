@@ -46,9 +46,9 @@ function normalized(value: string) {
 function InstrumentGlyph({ instrument, concealed = false }: { instrument: MedicalInstrument; concealed?: boolean }) {
   const Icon = iconMap[instrument.icon];
   const category = medicalInstrumentCategories.find((item) => item.id === instrument.category)!;
-  return <div className={`med-instrument-glyph ${concealed ? "concealed" : ""}`} style={{ "--instrument": category.color } as CSSProperties}>
-    <div className="med-instrument-grid" />
-    <i /><Icon /><span>{concealed ? "?" : instrument.name.charAt(0)}</span>
+  return <div className={`med-instrument-glyph ${instrument.image ? "photographic" : ""} ${concealed ? "concealed" : ""}`} style={{ "--instrument": category.color } as CSSProperties}>
+    {instrument.image ? <img src={instrument.image} alt={concealed ? "Instrumento oculto para o desafio" : `Render educacional de ${instrument.name}`} loading="lazy" /> : <><div className="med-instrument-grid" /><i /><Icon /></>}
+    <span>{concealed ? "?" : instrument.image ? "HD" : instrument.name.charAt(0)}</span>
   </div>;
 }
 
@@ -126,7 +126,7 @@ export function InstrumentsStudio({ level }: { level: MedicineLevel }) {
         }) : <div className="med-instrument-empty"><Search/><strong>Nenhum instrumento encontrado</strong><button onClick={() => { setQuery(""); setCategory("Todos"); }}>Limpar filtros</button></div>}</section>
 
         <article className="med-instrument-detail" style={{ "--instrument": selectedCategory.color } as CSSProperties}>
-          <div className="med-instrument-detail-visual"><InstrumentGlyph instrument={selected}/><span>REPRESENTAÇÃO VETORIAL PARA RECONHECIMENTO</span></div>
+          <div className="med-instrument-detail-visual"><InstrumentGlyph instrument={selected}/><span>{selected.image ? "RENDER EDUCACIONAL EM ALTA DEFINIÇÃO · CONFIRA VARIAÇÕES NA FONTE" : "REPRESENTAÇÃO VETORIAL · IMAGEM DETALHADA EM PREPARAÇÃO"}</span></div>
           <div className="med-instrument-detail-copy"><span className="med-eyebrow">{selected.category} · {selected.level}</span><h2>{selected.name}</h2><p>{selected.function}</p>
             <section><h3>Como reconhecer</h3>{selected.recognition.map((clue) => <div key={clue}><CircleDot/><span>{clue}</span></div>)}</section>
             <aside><ShieldCheck/><div><strong>Cuidado essencial</strong><p>{selected.safety}</p></div></aside>
@@ -137,7 +137,7 @@ export function InstrumentsStudio({ level }: { level: MedicineLevel }) {
     </> : <section className="med-instrument-quiz">
       <header><div><span className="med-eyebrow">DESAFIO {String(quizIndex + 1).padStart(2, "0")}</span><h2>Que instrumento é este?</h2></div><div><span><strong>{quizScore}</strong> acertos</span><span><strong>{quizStreak}</strong> sequência</span><span><strong>{reviewIds.length}</strong> revisar</span></div></header>
       <div className="med-instrument-quiz-body">
-        <div className="med-instrument-mystery"><InstrumentGlyph instrument={quizInstrument} concealed={!quizAnswer}/><span>{quizInstrument.category}</span><strong>{promptKind === "function" ? "Descubra pela função" : "Descubra pelo formato"}</strong></div>
+        <div className="med-instrument-mystery"><InstrumentGlyph instrument={quizInstrument} concealed={promptKind === "function" && !quizAnswer}/><span>{quizInstrument.category}</span><strong>{promptKind === "function" ? "Descubra pela função" : quizInstrument.image ? "Observe a imagem e reconheça" : "Descubra pelo formato"}</strong></div>
         <article><span className="med-eyebrow">PISTA PRINCIPAL</span><h3>{promptKind === "function" ? quizInstrument.function : quizInstrument.recognition.join(" · ")}</h3><div className="med-instrument-quiz-options">{quizOptions.map((option, index) => {
           const state = !quizAnswer ? "" : option.id === quizInstrument.id ? "correct" : option.id === quizAnswer ? "wrong" : "muted";
           return <button key={option.id} className={state} onClick={() => answerQuiz(option.id)}><b>{String.fromCharCode(65 + index)}</b><span>{option.name}</span>{state === "correct" && <Check/>}{state === "wrong" && <X/>}</button>;

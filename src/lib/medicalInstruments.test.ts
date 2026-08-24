@@ -30,4 +30,14 @@ describe("medical instruments catalog", () => {
       expect(options.some((item) => item.id === current.id), `quiz ${index} correct option`).toBe(true);
     }
   });
+
+  it("keeps the reviewed high-definition instrument renders unique and addressable", () => {
+    const rendered = medicalInstruments.filter((instrument) => instrument.image);
+    expect(rendered).toHaveLength(12);
+    expect(new Set(rendered.map((instrument) => instrument.image)).size).toBe(rendered.length);
+
+    for (const instrument of rendered) {
+      expect(instrument.image, instrument.id).toMatch(/^\/medicine\/instruments\/[a-z0-9-]+-v\d+\.png$/);
+    }
+  });
 });

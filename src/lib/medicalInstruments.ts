@@ -10,6 +10,7 @@ export interface MedicalInstrument {
   category: MedicalInstrumentCategory;
   level: MedicineLevel;
   icon: MedicalInstrumentIcon;
+  image?: string;
   summary: string;
   function: string;
   recognition: string[];
@@ -26,28 +27,28 @@ export const medicalInstrumentCategories: Array<{ id: MedicalInstrumentCategory;
 
 export const medicalInstruments: MedicalInstrument[] = [
   {
-    id: "stethoscope", name: "Estetoscópio", aliases: ["stetho"], category: "Avaliação", level: "Iniciante", icon: "stethoscope",
+    id: "stethoscope", name: "Estetoscópio", aliases: ["stetho"], category: "Avaliação", level: "Iniciante", icon: "stethoscope", image: "/medicine/instruments/stethoscope-v1.png",
     summary: "Amplifica sons internos produzidos pelo coração, pulmões, vasos e intestino.",
     function: "É usado na ausculta e também participa da medida manual da pressão arterial. Diafragma e campânula favorecem faixas de frequência diferentes.",
     recognition: ["Duas olivas auriculares ligadas por tubos flexíveis", "Peça torácica circular com diafragma e, em alguns modelos, campânula"],
     safety: "Higienize a peça de contato entre pessoas e evite pressão excessiva sobre pele lesionada.", sourceId: "openstaxAssessment",
   },
   {
-    id: "sphygmomanometer", name: "Esfigmomanômetro", aliases: ["aparelho de pressão", "manguito"], category: "Avaliação", level: "Iniciante", icon: "gauge",
+    id: "sphygmomanometer", name: "Esfigmomanômetro", aliases: ["aparelho de pressão", "manguito"], category: "Avaliação", level: "Iniciante", icon: "gauge", image: "/medicine/instruments/sphygmomanometer-v1.png",
     summary: "Mede a pressão arterial por meio de um manguito inflável.",
     function: "No modelo manual, a insuflação oclui temporariamente a artéria e a desinsuflação controlada permite estimar pressão sistólica e diastólica com ausculta.",
     recognition: ["Manguito de tecido com bolsa inflável", "Manômetro graduado e pera de insuflação no modelo manual"],
     safety: "Escolha o tamanho correto do manguito e confirme valores inesperados, pois posicionamento e tamanho inadequados alteram a medida.", sourceId: "openstaxVitalSigns",
   },
   {
-    id: "thermometer", name: "Termômetro clínico", aliases: ["termômetro digital"], category: "Avaliação", level: "Iniciante", icon: "thermometer",
+    id: "thermometer", name: "Termômetro clínico", aliases: ["termômetro digital"], category: "Avaliação", level: "Iniciante", icon: "thermometer", image: "/medicine/instruments/thermometer-v1.png",
     summary: "Mede a temperatura corporal em uma rota apropriada ao dispositivo e à pessoa.",
     function: "Converte uma propriedade física detectada pelo sensor em estimativa de temperatura; modelos digitais, timpânicos e temporais usam tecnologias distintas.",
     recognition: ["Corpo estreito com visor numérico no modelo digital", "Sensor localizado na extremidade ou em uma ponteira específica"],
     safety: "Use a rota correta, capa quando indicada e desinfecção compatível; compare leituras incoerentes com outro método.", sourceId: "openstaxVitalSigns",
   },
   {
-    id: "pulse-oximeter", name: "Oxímetro de pulso", aliases: ["oxímetro", "saturômetro"], category: "Avaliação", level: "Iniciante", icon: "activity",
+    id: "pulse-oximeter", name: "Oxímetro de pulso", aliases: ["oxímetro", "saturômetro"], category: "Avaliação", level: "Iniciante", icon: "activity", image: "/medicine/instruments/pulse-oximeter-v1.png",
     summary: "Estima saturação periférica de oxigênio e frequência de pulso por luz.",
     function: "Emite comprimentos de onda através do tecido e analisa a absorção pulsátil. É uma medida não invasiva útil para tendências, mas sujeita a artefatos.",
     recognition: ["Clipe pequeno colocado geralmente no dedo", "Visor com SpO₂, pulso e às vezes uma onda pletismográfica"],
@@ -61,28 +62,28 @@ export const medicalInstruments: MedicalInstrument[] = [
     safety: "Não mantenha luz intensa diretamente nos olhos e higienize o corpo quando houver contato com superfícies clínicas.", sourceId: "openstaxAssessment",
   },
   {
-    id: "reflex-hammer", name: "Martelo de reflexos", aliases: ["martelo neurológico"], category: "Avaliação", level: "Ciclo básico", icon: "hammer",
+    id: "reflex-hammer", name: "Martelo de reflexos", aliases: ["martelo neurológico"], category: "Avaliação", level: "Ciclo básico", icon: "hammer", image: "/medicine/instruments/reflex-hammer-v1.png",
     summary: "Percute tendões para provocar e comparar reflexos osteotendíneos.",
     function: "Um golpe curto e controlado alonga rapidamente o tendão e desencadeia resposta reflexa, ajudando a examinar a integridade de vias neuromusculares.",
     recognition: ["Cabo fino com cabeça de borracha", "Cabeça triangular, circular ou tipo tomahawk conforme o modelo"],
     safety: "Use movimento controlado, posição adequada e compare lados; não golpeie osso exposto, pele lesionada ou áreas dolorosas.", sourceId: "openstaxNeuroAssessment",
   },
   {
-    id: "tuning-fork", name: "Diapasão", aliases: ["garfo de afinação"], category: "Avaliação", level: "Ciclo básico", icon: "radio",
+    id: "tuning-fork", name: "Diapasão", aliases: ["garfo de afinação"], category: "Avaliação", level: "Ciclo básico", icon: "radio", image: "/medicine/instruments/tuning-fork-v1.png",
     summary: "Produz vibração padronizada para testes auditivos e de sensibilidade vibratória.",
     function: "É aplicado nos testes de Weber e Rinne e pode avaliar percepção de vibração em proeminências ósseas durante exame neurológico.",
     recognition: ["Instrumento metálico em forma de U", "Duas hastes paralelas ligadas a um cabo central"],
     safety: "Ative com impacto leve em superfície apropriada e não golpeie diretamente a pessoa ou uma superfície que danifique o instrumento.", sourceId: "openstaxEarAssessment",
   },
   {
-    id: "otoscope", name: "Otoscópio", aliases: ["otoscópio clínico"], category: "Avaliação", level: "Ciclo básico", icon: "ear",
+    id: "otoscope", name: "Otoscópio", aliases: ["otoscópio clínico"], category: "Avaliação", level: "Ciclo básico", icon: "ear", image: "/medicine/instruments/otoscope-v1.png",
     summary: "Ilumina e amplia o conduto auditivo externo e a membrana timpânica.",
     function: "Combina fonte de luz, lente e espéculo para observar cerúmen, inflamação, secreção, corpos estranhos e marcos da membrana timpânica.",
     recognition: ["Cabeça com lente e luz montada sobre um cabo", "Espéculo cônico removível na extremidade"],
     safety: "Escolha espéculo adequado, descarte ou processe-o corretamente e evite inserir profundamente ou causar dor.", sourceId: "openstaxEarAssessment",
   },
   {
-    id: "ophthalmoscope", name: "Oftalmoscópio", aliases: ["fundoscópio"], category: "Avaliação", level: "Ciclo clínico", icon: "eye",
+    id: "ophthalmoscope", name: "Oftalmoscópio", aliases: ["fundoscópio"], category: "Avaliação", level: "Ciclo clínico", icon: "eye", image: "/medicine/instruments/ophthalmoscope-v1.png",
     summary: "Permite examinar estruturas internas do olho por iluminação e lentes.",
     function: "Projeta luz através da pupila e oferece seleção de lentes para observar reflexo vermelho, retina, vasos e disco óptico em exame treinado.",
     recognition: ["Cabeça achatada com abertura de visualização", "Disco de lentes e seletores montados em um cabo"],
@@ -110,7 +111,7 @@ export const medicalInstruments: MedicalInstrument[] = [
     safety: "Alinhe pelos marcos corretos e interrompa se o movimento provocar dor inesperada, resistência ou risco de lesão.", sourceId: "whoMedicalDevices",
   },
   {
-    id: "syringe", name: "Seringa", aliases: ["seringa descartável"], category: "Procedimentos", level: "Iniciante", icon: "syringe",
+    id: "syringe", name: "Seringa", aliases: ["seringa descartável"], category: "Procedimentos", level: "Iniciante", icon: "syringe", image: "/medicine/instruments/syringe-v1.png",
     summary: "Aspira, mede e administra líquidos por deslocamento de um êmbolo.",
     function: "O êmbolo move líquido dentro de um cilindro graduado. Pode conectar-se a agulhas, cateteres e outros dispositivos conforme o procedimento.",
     recognition: ["Cilindro transparente graduado", "Êmbolo móvel e conexão cônica na extremidade"],
@@ -124,7 +125,7 @@ export const medicalInstruments: MedicalInstrument[] = [
     safety: "É de uso único: não recape manualmente após o uso e descarte imediatamente em coletor para perfurocortantes.", sourceId: "cdcInjectionSafety",
   },
   {
-    id: "scalpel", name: "Bisturi", aliases: ["escalpelo"], category: "Procedimentos", level: "Ciclo clínico", icon: "tool",
+    id: "scalpel", name: "Bisturi", aliases: ["escalpelo"], category: "Procedimentos", level: "Ciclo clínico", icon: "tool", image: "/medicine/instruments/scalpel-v1.png",
     summary: "Realiza incisões precisas em tecidos durante procedimentos treinados.",
     function: "Combina cabo e lâmina muito afiada; formatos de lâmina favorecem incisões, punções ou dissecação em contextos diferentes.",
     recognition: ["Cabo metálico plano e estreito", "Lâmina pequena, removível ou integrada, com fio extremamente afiado"],
@@ -180,7 +181,7 @@ export const medicalInstruments: MedicalInstrument[] = [
     safety: "Só deve ser usado com indicação, técnica asséptica e sistema fechado; permanência desnecessária aumenta risco de infecção e trauma.", sourceId: "whoMedicalDevices",
   },
   {
-    id: "bag-valve-mask", name: "Bolsa-válvula-máscara", aliases: ["BVM", "Ambu"], category: "Emergência", level: "Ciclo clínico", icon: "wind",
+    id: "bag-valve-mask", name: "Bolsa-válvula-máscara", aliases: ["BVM", "Ambu"], category: "Emergência", level: "Ciclo clínico", icon: "wind", image: "/medicine/instruments/bag-valve-mask-v1.png",
     summary: "Fornece ventilação manual com pressão positiva a uma pessoa que não ventila adequadamente.",
     function: "A compressão da bolsa envia gás através de válvula unidirecional e máscara ou via aérea avançada, permitindo ventilações controladas.",
     recognition: ["Bolsa autoinsuflável ligada a uma válvula", "Máscara facial transparente e conexão para oxigênio/reservatório"],
@@ -257,7 +258,7 @@ export const medicalInstruments: MedicalInstrument[] = [
     safety: "Escolha o transdutor e preset corretos, processe conforme o uso e interprete imagens apenas com treinamento adequado.", sourceId: "whoMedicalDevices",
   },
   {
-    id: "microscope", name: "Microscópio óptico", aliases: ["microscópio"], category: "Diagnóstico", level: "Ciclo básico", icon: "microscope",
+    id: "microscope", name: "Microscópio óptico", aliases: ["microscópio"], category: "Diagnóstico", level: "Ciclo básico", icon: "microscope", image: "/medicine/instruments/microscope-v1.png",
     summary: "Amplia amostras pequenas por um sistema de lentes e iluminação.",
     function: "Objetivas de diferentes aumentos formam uma imagem ampliada da lâmina, permitindo examinar células, tecidos e microrganismos preparados.",
     recognition: ["Oculares, revólver com objetivas e platina", "Fonte de luz sob a amostra e controles de foco"],
