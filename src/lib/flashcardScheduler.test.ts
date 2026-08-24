@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { applySM2, fuzzInterval, getDueFlashcards } from "@/lib/flashcardScheduler";
 import type { Flashcard, StudyTopic } from "@/lib/studyData";
+import { toLocalDateStr } from "@/lib/dateUtils";
 
 function makeCard(overrides: Partial<Flashcard> = {}): Flashcard {
   return {
@@ -94,8 +95,8 @@ describe("applySM2", () => {
 });
 
 describe("getDueFlashcards", () => {
-  const today = new Date().toISOString().slice(0, 10);
-  const future = (() => { const d = new Date(); d.setDate(d.getDate() + 5); return d.toISOString().slice(0, 10); })();
+  const today = toLocalDateStr(new Date());
+  const future = (() => { const d = new Date(); d.setDate(d.getDate() + 5); return toLocalDateStr(d); })();
 
   it("retorna cards sem nextReview (novos)", () => {
     const topics: StudyTopic[] = [

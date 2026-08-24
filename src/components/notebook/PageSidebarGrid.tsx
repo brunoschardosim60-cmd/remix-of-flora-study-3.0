@@ -6,7 +6,7 @@ interface Page {
   id: string;
   page_number: number;
   content: string;
-  drawing_data?: any;
+  drawing_data?: { strokes?: unknown[]; backgroundImage?: string; backgroundSource?: "pdf" | "image" } | null;
 }
 
 interface PageMeta {
@@ -101,6 +101,8 @@ export function PageSidebarGrid({
             <button
               type="button"
               onClick={() => onSelectPage(idx)}
+              aria-label={`Abrir página ${idx + 1}${idx === currentPage ? ", página atual" : ""}`}
+              aria-current={idx === currentPage ? "page" : undefined}
               className={`nb-page-thumb ${idx === currentPage ? "active" : ""} ${
                 dragOverIdx === idx ? (draggedIdx !== null && draggedIdx < idx ? "border-b-2 border-b-primary" : "border-t-2 border-t-primary") : ""
               }`}
@@ -111,7 +113,9 @@ export function PageSidebarGrid({
               onDrop={(e) => handleDrop(e, idx)}
             >
               <div className="nb-page-thumb-content">
-                {typeof document !== "undefined" ? htmlToText(page.content) : "..."}
+                {page.drawing_data?.backgroundImage ? (
+                  <img src={page.drawing_data.backgroundImage} alt={`Miniatura da página ${idx + 1} do PDF`} className="h-full w-full object-contain object-top" loading="lazy" />
+                ) : typeof document !== "undefined" ? htmlToText(page.content) : "..."}
               </div>
               
               <div className="nb-page-thumb-indicators">
@@ -129,8 +133,9 @@ export function PageSidebarGrid({
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onDeletePage(idx); }}
-                className="absolute top-0 right-1 w-5 h-5 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center shadow-md z-10"
+                className="absolute top-0 right-1 w-6 h-6 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity flex items-center justify-center shadow-md z-10"
                 title="Deletar página"
+                aria-label={`Excluir página ${idx + 1}`}
               >
                 <Trash2 className="w-3 h-3" />
               </button>
@@ -145,6 +150,7 @@ export function PageSidebarGrid({
           onClick={onAddPage}
           className="nb-page-add"
           title="Nova página"
+          aria-label="Adicionar nova página"
         >
           <Plus className="w-5 h-5" />
         </button>

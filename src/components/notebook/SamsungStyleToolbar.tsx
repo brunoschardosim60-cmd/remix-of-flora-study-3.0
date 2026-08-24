@@ -1,6 +1,6 @@
 import {
   Pen, Highlighter, Eraser, BoxSelect, Minus, Square, Circle,
-  Type, Pencil, Sparkles, Undo2, Trash2, StickyNote, PenTool, Feather, Paintbrush,
+  Type, Pencil, Sparkles, Undo2, Redo2, Trash2, PenTool, Feather, Paintbrush, Copy,
 } from "lucide-react";
 import "./notebook-premium.css";
 
@@ -37,6 +37,9 @@ interface SamsungStyleToolbarProps {
   onWidthChange: (width: number) => void;
   onClear: () => void;
   onUndo: () => void;
+  onRedo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
   onAddSticky: (color: string) => void;
   onToggleFlora: () => void;
   floraOpen: boolean;
@@ -46,6 +49,8 @@ interface SamsungStyleToolbarProps {
   solvingMath: boolean;
   onSolveSelection?: () => void;
   hasSelection?: boolean;
+  onDuplicateSelection?: () => void;
+  onDeleteSelection?: () => void;
 }
 
 function ToolBtn({
@@ -70,9 +75,9 @@ export function SamsungStyleToolbar({
   mode, onModeChange, drawTool, onDrawToolChange,
   drawBrush, onDrawBrushChange,
   penColor, onColorChange, penWidth, onWidthChange,
-  onClear, onUndo, onAddSticky, onToggleFlora, floraOpen,
+  onClear, onUndo, onRedo, canUndo, canRedo, onAddSticky, onToggleFlora, floraOpen,
   mathStatus, autoSolveEnabled, onToggleAutoSolve,
-  solvingMath, onSolveSelection, hasSelection,
+  solvingMath, onSolveSelection, hasSelection, onDuplicateSelection, onDeleteSelection,
 }: SamsungStyleToolbarProps) {
   const statusDot: Record<string, string> = {
     idle: "",
@@ -255,10 +260,23 @@ export function SamsungStyleToolbar({
               <span className="text-xs ml-1">Resolver</span>
             </button>
           )}
+          {drawTool === "select" && hasSelection && (
+            <div className="nb-toolbar-group" aria-label="Ações da seleção">
+              <ToolBtn onClick={() => onDuplicateSelection?.()} title="Duplicar seleção">
+                <Copy className="h-4 w-4" />
+              </ToolBtn>
+              <ToolBtn onClick={() => onDeleteSelection?.()} title="Apagar seleção">
+                <Trash2 className="h-4 w-4 text-destructive" />
+              </ToolBtn>
+            </div>
+          )}
 
-          <ToolBtn onClick={onUndo} title="Desfazer">
+          <button type="button" onClick={onUndo} disabled={!canUndo} title="Desfazer" className="nb-toolbar-btn disabled:opacity-35 disabled:cursor-not-allowed">
             <Undo2 className="w-4 h-4" />
-          </ToolBtn>
+          </button>
+          <button type="button" onClick={onRedo} disabled={!canRedo} title="Refazer" className="nb-toolbar-btn disabled:opacity-35 disabled:cursor-not-allowed">
+            <Redo2 className="w-4 h-4" />
+          </button>
           <ToolBtn onClick={onClear} title="Limpar">
             <Trash2 className="w-4 h-4" style={{ color: "hsl(var(--destructive))" }} />
           </ToolBtn>

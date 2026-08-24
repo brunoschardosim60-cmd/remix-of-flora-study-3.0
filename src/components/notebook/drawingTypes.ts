@@ -7,7 +7,7 @@ export type BrushKind =
   | "highlighter";
 
 export interface Stroke {
-  points: { x: number; y: number }[];
+  points: { x: number; y: number; pressure?: number; width?: number }[];
   color: string;
   width: number;
   tool: "pen" | "marker" | "eraser";
@@ -31,6 +31,14 @@ export interface DrawingCanvasRef {
   getSelectionBounds?: () => StrokeBounds | null;
   /** Limpa a seleção ativa. */
   clearSelection?: () => void;
+  /** Move todos os traços incluídos na seleção ativa. */
+  moveSelection?: (dx: number, dy: number) => void;
+  /** Duplica os traços selecionados com um pequeno deslocamento. */
+  duplicateSelection?: () => void;
+  /** Remove os traços selecionados. */
+  deleteSelection?: () => void;
+  /** Quantidade de traços incluídos na seleção. */
+  getSelectedStrokeCount?: () => number;
 }
 
 export const getStrokeBounds = (stroke: Stroke): StrokeBounds | null => {

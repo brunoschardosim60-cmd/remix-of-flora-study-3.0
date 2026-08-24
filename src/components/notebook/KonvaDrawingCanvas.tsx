@@ -200,6 +200,21 @@ function drawRichStroke(ctx: CanvasRenderingContext2D, stroke: Stroke) {
   ctx.restore();
 }
 
+/** Renderização compartilhada para exportar páginas sem precisar trocar a página visível. */
+export function renderStrokesToDataUrl(strokes: Stroke[], width = 794, height = 1123): string {
+  const canvas = document.createElement("canvas");
+  const dpr = 2;
+  canvas.width = width * dpr;
+  canvas.height = height * dpr;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return "";
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  strokes.forEach((stroke) => drawRichStroke(ctx, stroke));
+  return canvas.toDataURL("image/png");
+}
+
 export const KonvaDrawingCanvas = forwardRef<DrawingCanvasRef, KonvaDrawingCanvasProps>(
   ({ strokes, onStrokesChange, active, penColor, penWidth, tool, brush = "ballpoint", zoom = 1, onSelectionChange }, ref) => {
     const containerRef = useRef<HTMLDivElement>(null);
@@ -210,6 +225,7 @@ export const KonvaDrawingCanvas = forwardRef<DrawingCanvasRef, KonvaDrawingCanva
     const lastPointRef = useRef<{ x: number; y: number; t: number } | null>(null);
     const [selection, setSelection] = useState<StrokeBounds | null>(null);
     const selectionStartRef = useRef<{ x: number; y: number } | null>(null);
+    const selectionDragRef = useRef<{ x: number; y: number; original: Stroke[]; indexes: Set<number> } | null>(null);
     // Para shapes (linha, rect, circle)
     const shapeStartRef = useRef<{ x: number; y: number } | null>(null);
 
@@ -224,6 +240,24 @@ export const KonvaDrawingCanvas = forwardRef<DrawingCanvasRef, KonvaDrawingCanva
       for (const s of strokes) drawRichStroke(ctx, s);
       if (currentStrokeRef.current) drawRichStroke(ctx, currentStrokeRef.current);
     };
+
+    const selectedIndexes = () => {
+      if (!selection) return [];
+      return strokes.flatMap((stroke, index) => {
+        const bounds = getStrokesBounds([stroke]);
+        if (!bounds) return [];
+        const intersects = bounds.x <= selection.x + selection.width
+          && bounds.x + bounds.width >= selection.x
+          && bounds.y <= selection.y + selection.height
+          && bounds.y + bounds.height >= selection.y;
+        return intersects ? [index] : [];
+      });
+    };
+
+    const translateStroke = (stroke: Stroke, dx: number, dy: number): Stroke => ({
+      ...stroke,
+      points: stroke.points.map((point) => ({ ...point, x: point.x + dx, y: point.y + dy })),
+    });
 
     useImperativeHandle(ref, () => ({
       getImageData: (bounds?: StrokeBounds | null) => {
@@ -251,6 +285,31 @@ export const KonvaDrawingCanvas = forwardRef<DrawingCanvasRef, KonvaDrawingCanva
       getCanvasSize: () => size,
       getSelectionBounds: () => selection,
       clearSelection: () => { setSelection(null); onSelectionChange?.(null); },
+      moveSelection: (dx, dy) => {
+        const indexes = new Set(selectedIndexes());
+        if (!indexes.size || !selection) return;
+        onStrokesChange(strokes.map((stroke, index) => indexes.has(index) ? translateStroke(stroke, dx, dy) : stroke));
+        const next = { ...selection, x: selection.x + dx, y: selection.y + dy };
+        setSelection(next);
+        onSelectionChange?.(next);
+      },
+      duplicateSelection: () => {
+        const indexes = new Set(selectedIndexes());
+        if (!indexes.size || !selection) return;
+        const copies = strokes.filter((_, index) => indexes.has(index)).map((stroke) => translateStroke(stroke, 24, 24));
+        onStrokesChange([...strokes, ...copies]);
+        const next = { ...selection, x: selection.x + 24, y: selection.y + 24 };
+        setSelection(next);
+        onSelectionChange?.(next);
+      },
+      deleteSelection: () => {
+        const indexes = new Set(selectedIndexes());
+        if (!indexes.size) return;
+        onStrokesChange(strokes.filter((_, index) => !indexes.has(index)));
+        setSelection(null);
+        onSelectionChange?.(null);
+      },
+      getSelectedStrokeCount: () => selectedIndexes().length,
     }));
 
     useEffect(() => {
@@ -289,12 +348,12 @@ export const KonvaDrawingCanvas = forwardRef<DrawingCanvasRef, KonvaDrawingCanva
     };
 
     // Calcula largura do ponto baseado em pressão + velocidade
-    const calcPointWidth = (e: React.PointerEvent, baseWidth: number): number => {
+    const calcPointWidth = (e: React.PointerEvent<HTMLCanvasElement>, baseWidth: number): number => {
       const pressure = e.pressure > 0 ? e.pressure : 0.5; // fallback 0.5 para mouse
       const now = Date.now();
       let speedFactor = 1;
       if (lastPointRef.current) {
-        const pos = getPos(e as any);
+        const pos = getPos(e);
         const dx = pos.x - lastPointRef.current.x;
         const dy = pos.y - lastPointRef.current.y;
         const dt = Math.max(1, now - lastPointRef.current.t);
@@ -308,13 +367,18 @@ export const KonvaDrawingCanvas = forwardRef<DrawingCanvasRef, KonvaDrawingCanva
     const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
       if (!active) return;
       // Palm rejection: toque com área grande é palma da mão
-      if (e.pointerType === "touch" && (e as any).width > 40) return;
+      if (e.pointerType === "touch" && e.width > 40) return;
       e.preventDefault();
       (e.target as HTMLCanvasElement).setPointerCapture(e.pointerId);
 
       const pos = getPos(e);
 
       if (tool === "select") {
+        if (selection && pos.x >= selection.x && pos.x <= selection.x + selection.width && pos.y >= selection.y && pos.y <= selection.y + selection.height) {
+          selectionDragRef.current = { x: pos.x, y: pos.y, original: strokes, indexes: new Set(selectedIndexes()) };
+          isDrawingRef.current = true;
+          return;
+        }
         selectionStartRef.current = pos;
         setSelection({ x: pos.x, y: pos.y, width: 0, height: 0 });
         isDrawingRef.current = true;
@@ -330,7 +394,7 @@ export const KonvaDrawingCanvas = forwardRef<DrawingCanvasRef, KonvaDrawingCanva
       const w = calcPointWidth(e, penWidth);
       lastPointRef.current = { x: pos.x, y: pos.y, t: Date.now() };
       currentStrokeRef.current = {
-        points: [{ x: pos.x, y: pos.y, pressure: e.pressure || 0.5, width: w } as any],
+        points: [{ x: pos.x, y: pos.y, pressure: e.pressure || 0.5, width: w }],
         color: penColor,
         width: penWidth,
         tool: tool as "pen" | "marker" | "eraser",
@@ -341,13 +405,26 @@ export const KonvaDrawingCanvas = forwardRef<DrawingCanvasRef, KonvaDrawingCanva
 
     const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
       if (!active || !isDrawingRef.current) return;
-      if (e.pointerType === "touch" && (e as any).width > 40) return;
+      if (e.pointerType === "touch" && e.width > 40) return;
       e.preventDefault();
       const pos = getPos(e);
 
       if (tool === "select" && selectionStartRef.current) {
         const start = selectionStartRef.current;
         const next = { x: Math.min(start.x, pos.x), y: Math.min(start.y, pos.y), width: Math.abs(pos.x - start.x), height: Math.abs(pos.y - start.y) };
+        setSelection(next);
+        onSelectionChange?.(next);
+        return;
+      }
+      if (tool === "select" && selectionDragRef.current && selection) {
+        const dx = pos.x - selectionDragRef.current.x;
+        const dy = pos.y - selectionDragRef.current.y;
+        const indexes = selectionDragRef.current.indexes;
+        onStrokesChange(selectionDragRef.current.original.map((stroke, index) => indexes.has(index) ? translateStroke(stroke, dx, dy) : stroke));
+        const next = { ...selection, x: selection.x + dx, y: selection.y + dy };
+        selectionDragRef.current.x = pos.x;
+        selectionDragRef.current.y = pos.y;
+        selectionDragRef.current.original = selectionDragRef.current.original.map((stroke, index) => indexes.has(index) ? translateStroke(stroke, dx, dy) : stroke);
         setSelection(next);
         onSelectionChange?.(next);
         return;
@@ -377,7 +454,7 @@ export const KonvaDrawingCanvas = forwardRef<DrawingCanvasRef, KonvaDrawingCanva
 
       if (!currentStrokeRef.current) return;
       const w = calcPointWidth(e, penWidth);
-      (currentStrokeRef.current.points as any[]).push({ x: pos.x, y: pos.y, pressure: e.pressure || 0.5, width: w });
+      currentStrokeRef.current.points.push({ x: pos.x, y: pos.y, pressure: e.pressure || 0.5, width: w });
       lastPointRef.current = { x: pos.x, y: pos.y, t: Date.now() };
       redraw();
     };
@@ -389,6 +466,7 @@ export const KonvaDrawingCanvas = forwardRef<DrawingCanvasRef, KonvaDrawingCanva
       const pos = getPos(e);
 
       if (tool === "select") {
+        selectionDragRef.current = null;
         selectionStartRef.current = null;
         if (selection && (selection.width < 8 || selection.height < 8)) { setSelection(null); onSelectionChange?.(null); }
         return;
@@ -398,7 +476,7 @@ export const KonvaDrawingCanvas = forwardRef<DrawingCanvasRef, KonvaDrawingCanva
         const s = shapeStartRef.current;
         shapeStartRef.current = null;
         // Converte shape para pontos
-        let shapePts: any[] = [];
+        let shapePts: Stroke["points"] = [];
         if (tool === "line") {
           shapePts = [{ x: s.x, y: s.y, pressure: 0.5, width: penWidth }, { x: pos.x, y: pos.y, pressure: 0.5, width: penWidth }];
         } else if (tool === "rect") {
@@ -412,7 +490,7 @@ export const KonvaDrawingCanvas = forwardRef<DrawingCanvasRef, KonvaDrawingCanva
             return { x: cx + Math.cos(a) * rx, y: cy + Math.sin(a) * ry, pressure: 0.5, width: penWidth };
           });
         }
-        onStrokesChange([...strokes, { points: shapePts as any, color: penColor, width: penWidth, tool: "pen" }]);
+        onStrokesChange([...strokes, { points: shapePts, color: penColor, width: penWidth, tool: "pen" }]);
         return;
       }
 
@@ -442,9 +520,13 @@ export const KonvaDrawingCanvas = forwardRef<DrawingCanvasRef, KonvaDrawingCanva
         />
         {selection && tool === "select" && (
           <div
-            className="absolute border-2 border-primary bg-primary/10 pointer-events-none rounded-sm"
+            className="absolute border-2 border-primary bg-primary/10 pointer-events-none rounded-sm shadow-[0_0_0_1px_white]"
             style={{ left: selection.x * zoom, top: selection.y * zoom, width: selection.width * zoom, height: selection.height * zoom }}
-          />
+          >
+            {[[0,0],[100,0],[0,100],[100,100]].map(([x,y]) => (
+              <span key={`${x}-${y}`} className="absolute h-3 w-3 rounded-full border-2 border-white bg-primary shadow" style={{ left: `${x}%`, top: `${y}%`, transform: "translate(-50%, -50%)" }} />
+            ))}
+          </div>
         )}
       </div>
     );

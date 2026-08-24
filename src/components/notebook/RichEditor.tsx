@@ -33,6 +33,8 @@ interface RichEditorProps {
   handwriting?: boolean;
   /** Margem vermelha clássica de caderno. */
   showMargin?: boolean;
+  /** Imagem persistente usada como fundo, por exemplo uma página importada de PDF. */
+  backgroundImage?: string;
 }
 
 const TEMPLATE_CLASS: Record<string, string> = {
@@ -45,7 +47,7 @@ const TEMPLATE_CLASS: Record<string, string> = {
   essay: "notebook-essay",
 };
 
-export function RichEditor({ content, onChange, userId, notebookId, darkMode, onToggleDarkMode, template = "blank", zoom = 1, paperOverlay, wide = false, handwriting = false, showMargin = true }: RichEditorProps) {
+export function RichEditor({ content, onChange, userId, notebookId, darkMode, onToggleDarkMode, template = "blank", zoom = 1, paperOverlay, wide = false, handwriting = false, showMargin = true, backgroundImage }: RichEditorProps) {
   const isExternalUpdate = useRef(false);
   const [floraBusy, setFloraBusy] = useState<null | string>(null);
 
@@ -209,7 +211,10 @@ export function RichEditor({ content, onChange, userId, notebookId, darkMode, on
             transformOrigin: "top center",
           }}
         >
-          <EditorContent editor={editor} className="min-h-dvh" />
+          {backgroundImage && (
+            <img src={backgroundImage} alt="Página importada do PDF" draggable={false} className="pointer-events-none absolute inset-0 h-full w-full select-none object-contain object-top opacity-100" />
+          )}
+          <EditorContent editor={editor} className="relative z-[1] min-h-dvh" />
           {paperOverlay}
         </div>
       </div>

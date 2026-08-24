@@ -18,6 +18,7 @@ import { ShareExamResult } from "@/components/ShareExamResult";
 import { getCachedExplanation, setCachedExplanation } from "@/lib/explainCache";
 import { GenerateEnemQuestionsDialog } from "@/components/GenerateEnemQuestionsDialog";
 import { QuestionRenderer } from "@/components/QuestionRenderer";
+import { QuestionStudyLauncher } from "@/components/questions/QuestionStudyLauncher";
 import { exportExamGabaritoPdf } from "@/lib/examPdfExport";
 import { Download } from "lucide-react";
 
@@ -650,6 +651,44 @@ export default function BancoQuestoes() {
     setExplanation("");
   }
 
+  function goToNextQuestion() {
+    if (!opened) return;
+    const currentIndex = filtered.findIndex((q) => q.id === opened.id);
+    const next = currentIndex >= 0 ? filtered[currentIndex + 1] : filtered[0];
+    if (next) {
+      openQuestion(next);
+      document.getElementById("question-modal-content")?.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    closeModal();
+    toast.success(onlyErrors ? "Revisão concluída! Você corrigiu todos os erros desta sessão." : "Sessão concluída!");
+  }
+
+  function openQuestion(q: Question) {
+    setOpened(q);
+    setExplanation("");
+    try { localStorage.setItem("banco.lastQuestionId", q.id); } catch { /* armazenamento opcional */ }
+  }
+
+  function continueQuestions() {
+    if (filtered.length === 0) return;
+    let lastId = "";
+    try { lastId = localStorage.getItem("banco.lastQuestionId") || ""; } catch { /* ignore */ }
+    const lastIndex = filtered.findIndex((q) => q.id === lastId);
+    const unanswered = filtered.find((q, idx) => idx > lastIndex && !attempts[q.id])
+      ?? filtered.find((q) => !attempts[q.id])
+      ?? filtered[Math.min(Math.max(lastIndex + 1, 0), filtered.length - 1)];
+    openQuestion(unanswered);
+  }
+
+  function reviewErrors() {
+    const firstError = filtered.find((q) => attempts[q.id]?.acertou === false && !q.incomplete)
+      ?? questions.find((q) => attempts[q.id]?.acertou === false && !q.incomplete);
+    if (!firstError) return;
+    setOnlyErrors(true);
+    openQuestion(firstError);
+  }
+
   // Atalhos de teclado do modal: ESC fecha, ←/→ navega.
   useEffect(() => {
     if (!opened || examMode) return;
@@ -962,17 +1001,18 @@ export default function BancoQuestoes() {
 
       <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-16 py-4 space-y-4">
 
-        {/* Simular prova */}
-        <Button
-          size="sm"
-          onClick={() => setShowExamPicker(true)}
-          className="h-9 px-4 text-xs"
-        >
-          <Timer className="w-3.5 h-3.5 mr-1.5" /> Simular prova
-        </Button>
+        <QuestionStudyLauncher
+          totalQuestions={filtered.length}
+          answeredCount={filtered.filter((q) => !!attempts[q.id]).length}
+          errorCount={stats.erros}
+          onContinue={continueQuestions}
+          onReviewErrors={reviewErrors}
+          onCustomize={() => document.getElementById("question-filters")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+          onSimulate={() => setShowExamPicker(true)}
+        />
 
         {/* Filtros */}
-        <Card className="p-3 sm:p-4 space-y-3">
+        <Card id="question-filters" className="scroll-mt-24 p-3 sm:p-4 space-y-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
             <Input placeholder="Buscar por tema classificado…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
@@ -1068,7 +1108,7 @@ export default function BancoQuestoes() {
               return (
                 <button
                   key={q.id}
-                  onClick={() => { setOpened(q); setExplanation(""); }}
+                  onClick={() => openQuestion(q)}
                   className="text-left group focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl"
                   aria-label={ariaLabel}
                 >
@@ -1155,6 +1195,7 @@ export default function BancoQuestoes() {
           aria-labelledby="question-modal-title"
         >
           <div
+            id="question-modal-content"
             className={
               readingMode
                 ? "w-full min-h-full bg-background"
@@ -1304,14 +1345,14 @@ export default function BancoQuestoes() {
                 </header>
                 <AlternativasPanel
                   q={opened}
-                  chosen={revealed[opened.id] || attempts[opened.id]?.alternativa_marcada}
+                  chosen={revealed[opened.id] || (!onlyErrors ? attempts[opened.id]?.alternativa_marcada : undefined)}
                   onAnswer={(letter) => handleAnswer(opened, letter)}
                 />
               </section>
 
               {/* 4. Resultado */}
-              {(opened && (revealed[opened.id] || attempts[opened.id])) && (() => {
-                const chosen = revealed[opened.id] || attempts[opened.id]?.alternativa_marcada;
+              {(opened && (revealed[opened.id] || (!onlyErrors && attempts[opened.id]))) && (() => {
+                const chosen = revealed[opened.id] || (!onlyErrors ? attempts[opened.id]?.alternativa_marcada : "");
                 const acertou = chosen === opened.correta;
                 return (
                   <div className={`mx-auto w-full ${readingMode ? "max-w-3xl" : "max-w-[680px]"} rounded-xl px-4 py-3 flex items-center gap-3 ${acertou ? "bg-emerald-500/10 border border-emerald-500/30" : "bg-destructive/10 border border-destructive/30"}`}>
@@ -1345,6 +1386,29 @@ export default function BancoQuestoes() {
                   </p>
                 </div>
               )}
+
+              <div className={`sticky bottom-3 z-10 mx-auto flex w-full items-center gap-2 rounded-2xl border border-border/80 bg-card/95 p-2 shadow-xl backdrop-blur ${readingMode ? "max-w-3xl" : "max-w-[680px]"}`}>
+                <Button
+                  variant={favorites.has(opened.id) ? "secondary" : "ghost"}
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() => toggleFavorite(opened.id)}
+                >
+                  <Star className={`h-4 w-4 ${favorites.has(opened.id) ? "fill-current text-amber-500" : ""}`} />
+                  <span className="hidden sm:inline">{favorites.has(opened.id) ? "Salva para revisar" : "Revisar depois"}</span>
+                </Button>
+                <div className="ml-auto text-xs text-muted-foreground">
+                  {onlyErrors ? `${stats.erros} erro${stats.erros === 1 ? "" : "s"} restante${stats.erros === 1 ? "" : "s"}` : `${openedIndex + 1} de ${filtered.length}`}
+                </div>
+                <Button
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={goToNextQuestion}
+                  disabled={onlyErrors ? !revealed[opened.id] : !revealed[opened.id] && !attempts[opened.id]}
+                >
+                  Próxima <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
         </div>

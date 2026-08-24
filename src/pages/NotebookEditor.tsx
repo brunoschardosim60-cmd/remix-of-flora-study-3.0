@@ -3,6 +3,7 @@ import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -14,9 +15,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  ArrowLeft, Plus, Trash2, ChevronLeft, ChevronRight, Loader2, Pencil, Type, Maximize2, Minimize2, Share2,
+  ArrowLeft, Plus, Trash2, ChevronLeft, ChevronRight, Loader2, Maximize2, Minimize2, Share2,
   Brain, Sparkles, BookPlus, CheckCircle2, XCircle, ZoomIn, ZoomOut, FileText, Cloud, CloudOff, RefreshCw, Eye, Camera, Wand2,
-  LayoutTemplate, Tag as TagIcon,
+  LayoutTemplate, Tag as TagIcon, MoreHorizontal, Search, Download, History, FileUp,
 } from "lucide-react";
 
 import { toast } from "sonner";
@@ -120,6 +121,14 @@ interface DrawingState {
   strokes: Stroke[];
   stickyNotes: StickyNoteData[];
   mathSuggestions: MathSuggestion[];
+  backgroundImage?: string;
+  backgroundSource?: "pdf" | "image";
+}
+
+interface NotebookVersion {
+  savedAt: number;
+  content: string;
+  drawing: DrawingState;
 }
 
 interface NotebookStudyLink {
@@ -181,6 +190,8 @@ const NOTEBOOK_LINKS_STORAGE_KEY = "studyflow.notebook.page-links";
 const NOTEBOOK_AUTOSOLVE_STORAGE_KEY = "studyflow.notebook.auto-solver";
 const NOTEBOOK_META_STORAGE_KEY = "studyflow.notebook.page-meta";
 const NOTEBOOK_SUMMARIES_STORAGE_KEY = "studyflow.notebook.page-summaries";
+const NOTEBOOK_TEMPLATE_STORAGE_KEY = "studyflow.notebook.page-templates";
+const NOTEBOOK_HISTORY_STORAGE_KEY = "studyflow.notebook.history";
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
@@ -278,7 +289,8 @@ export default function NotebookEditor() {
   const [darkMode, setDarkMode] = useState(false);
   const [mode, setMode] = useState<"text" | "draw">("text");
   const [pageTemplate, setPageTemplate] = useState<PageTemplate>("blank");
-  const [expandedEditor, setExpandedEditor] = useState(true);
+  // O layout normal começa com as páginas visíveis; tela cheia vira uma escolha.
+  const [expandedEditor, setExpandedEditor] = useState(false);
   const [focusModeActive, setFocusModeActive] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [zoom, setZoom] = useState(1);
@@ -294,11 +306,11 @@ export default function NotebookEditor() {
   const [selectionBounds, setSelectionBounds] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
   const [penColor, setPenColor] = useState("#000000");
   const [penWidth, setPenWidth] = useState(2);
+  const [redoStrokes, setRedoStrokes] = useState<Stroke[]>([]);
   const [autoSolveEnabled, setAutoSolveEnabled] = useState(() => {
     const stored = loadStringStorage(NOTEBOOK_AUTOSOLVE_STORAGE_KEY);
     return stored == null ? true : stored === "1";
   });
-  const [headerPinned, setHeaderPinned] = useState(false);
   const prevDrawToolRef = useRef<"pen" | "marker" | "eraser" | "select" | "line" | "rect" | "circle">("pen");
   const prevModeRef = useRef<"text" | "draw">("text");
   const [solvingMath, setSolvingMath] = useState(false);
@@ -332,6 +344,8 @@ export default function NotebookEditor() {
   const [quizResultSaved, setQuizResultSaved] = useState(false);
   const [ocrLoading, setOcrLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pdfInputRef = useRef<HTMLInputElement>(null);
+  const [pdfImporting, setPdfImporting] = useState(false);
 
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const solveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -404,6 +418,19 @@ export default function NotebookEditor() {
   const currentMeta = pageKey ? pageMeta[pageKey] : undefined;
   const currentSummary = pageKey ? pageSummaries[pageKey] : "";
 
+  useEffect(() => {
+    if (!pageKey) return;
+    const saved = loadJsonStorage<Record<string, PageTemplate>>(NOTEBOOK_TEMPLATE_STORAGE_KEY, {});
+    setPageTemplate(saved[pageKey] ?? "blank");
+  }, [pageKey]);
+
+  const changePageTemplate = useCallback((template: PageTemplate) => {
+    setPageTemplate(template);
+    if (!pageKey) return;
+    const saved = loadJsonStorage<Record<string, PageTemplate>>(NOTEBOOK_TEMPLATE_STORAGE_KEY, {});
+    window.localStorage.setItem(NOTEBOOK_TEMPLATE_STORAGE_KEY, JSON.stringify({ ...saved, [pageKey]: template }));
+  }, [pageKey]);
+
   const updateDrawingState = useCallback((next: DrawingState) => {
     drawingStateRef.current = next;
     if (!pageKey) return;
@@ -415,8 +442,13 @@ export default function NotebookEditor() {
   }, [currentPage, pageKey]);
 
   const handleStrokesChange = useCallback((strokes: Stroke[]) => {
+    setRedoStrokes([]);
     updateDrawingState({ ...drawingStateRef.current, strokes });
   }, [updateDrawingState]);
+
+  useEffect(() => {
+    setRedoStrokes([]);
+  }, [currentPage]);
 
   const handleStickyNotesChange = useCallback((stickyNotes: StickyNoteData[]) => {
     updateDrawingState({ ...drawingStateRef.current, stickyNotes });
@@ -427,6 +459,30 @@ export default function NotebookEditor() {
   }, [updateDrawingState]);
 
   const drawingState = currentPageData?.drawing_data ?? emptyDrawing;
+
+  const recordPageVersion = useCallback((item: NotebookPage) => {
+    try {
+      const all = loadJsonStorage<Record<string, NotebookVersion[]>>(NOTEBOOK_HISTORY_STORAGE_KEY, {});
+      const versions = all[item.id] ?? [];
+      const snapshot: NotebookVersion = { savedAt: Date.now(), content: item.content, drawing: item.drawing_data ?? emptyDrawing };
+      const signature = JSON.stringify({ content: snapshot.content, drawing: snapshot.drawing });
+      const last = versions[versions.length - 1];
+      if (last && JSON.stringify({ content: last.content, drawing: last.drawing }) === signature) return;
+      window.localStorage.setItem(NOTEBOOK_HISTORY_STORAGE_KEY, JSON.stringify({ ...all, [item.id]: [...versions, snapshot].slice(-20) }));
+    } catch { /* histórico local é complementar ao salvamento principal */ }
+  }, []);
+
+  const restorePreviousVersion = useCallback(() => {
+    if (!currentPageData) return;
+    const all = loadJsonStorage<Record<string, NotebookVersion[]>>(NOTEBOOK_HISTORY_STORAGE_KEY, {});
+    const versions = all[currentPageData.id] ?? [];
+    if (versions.length < 2) { toast.info("Ainda não há uma versão anterior desta página."); return; }
+    const previous = versions[versions.length - 2];
+    setPages((items) => items.map((item, index) => index === currentPage ? { ...item, content: previous.content, drawing_data: previous.drawing } : item));
+    drawingStateRef.current = previous.drawing;
+    window.localStorage.setItem(NOTEBOOK_HISTORY_STORAGE_KEY, JSON.stringify({ ...all, [currentPageData.id]: versions.slice(0, -1) }));
+    toast.success(`Versão de ${new Date(previous.savedAt).toLocaleString("pt-BR")} restaurada.`);
+  }, [currentPage, currentPageData]);
 
   const handleContentChange = useCallback((content: string) => {
     if (!pageKey) return;
@@ -453,6 +509,7 @@ export default function NotebookEditor() {
         drawing_data: drawingToJson(currentPageData.drawing_data ?? emptyDrawing),
         tags: currentMeta?.tags ?? [],
       };
+      recordPageVersion(currentPageData);
 
       // Offline: queue and report
       if (typeof navigator !== "undefined" && navigator.onLine === false) {
@@ -482,7 +539,7 @@ export default function NotebookEditor() {
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     };
-  }, [currentPageData, id, currentMeta?.tags]);
+  }, [currentPageData, id, currentMeta?.tags, recordPageVersion]);
 
   // Offline-first: tenta dar flush ao carregar e quando a conexão volta
   useEffect(() => {
@@ -976,13 +1033,20 @@ export default function NotebookEditor() {
     }
   };
 
-  const deletePage = async () => {
+  const deletePage = async (targetIndex = currentPage) => {
     if (pages.length <= 1) return;
-    const pageToDelete = pages[currentPage];
-    await supabase.from("notebook_pages").delete().eq("id", pageToDelete.id);
-    const newPages = pages.filter((_, i) => i !== currentPage);
+    const pageToDelete = pages[targetIndex];
+    if (!pageToDelete) return;
+    const { error } = await supabase.from("notebook_pages").delete().eq("id", pageToDelete.id);
+    if (error) { toast.error("Não foi possível excluir a página."); return; }
+    const background = pageToDelete.drawing_data?.backgroundImage;
+    if (background?.includes("/notebook-images/")) {
+      const path = decodeURIComponent(background.split("/notebook-images/")[1]?.split("?")[0] || "");
+      if (path) void supabase.storage.from("notebook-images").remove([path]);
+    }
+    const newPages = pages.filter((_, i) => i !== targetIndex);
     setPages(newPages);
-    setCurrentPage(Math.min(currentPage, newPages.length - 1));
+    setCurrentPage(Math.min(targetIndex, newPages.length - 1));
   };
 
   const persistPageLinks = useCallback((next: Record<string, NotebookStudyLink>) => {
@@ -1591,11 +1655,28 @@ export default function NotebookEditor() {
       if (e.key === "Escape" && autoSolveEnabled) {
         setAutoSolveEnabled(false);
       }
+      const el = document.activeElement as HTMLElement | null;
+      const typing = !!el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable);
+      if (!typing && mode === "draw" && drawTool === "select" && selectionBounds) {
+        if (e.key === "Delete" || e.key === "Backspace") {
+          e.preventDefault();
+          canvasRef.current?.deleteSelection?.();
+        }
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "d") {
+          e.preventDefault();
+          canvasRef.current?.duplicateSelection?.();
+        }
+      }
+      if (!typing && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        if (e.key.toLowerCase() === "p") { setMode("draw"); setDrawTool("pen"); }
+        if (e.key.toLowerCase() === "e") { setMode("draw"); setDrawTool("eraser"); }
+        if (e.key.toLowerCase() === "l") { setMode("draw"); setDrawTool("select"); }
+      }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [autoSolveEnabled]);
+  }, [autoSolveEnabled, drawTool, mode, selectionBounds]);
 
   // When IA is toggled ON, automatically switch to draw mode with selection tool
   // so the user can immediately select a region to solve. Toggling OFF restores
@@ -1659,6 +1740,126 @@ export default function NotebookEditor() {
     );
   }
 
+  async function handleExplainDrawing() {
+    const img = canvasRef.current?.getImageData?.(null);
+    if (!img) { toast.error("Desenhe algo primeiro."); return; }
+    const tid = toast.loading("Flora analisando o desenho...");
+    try {
+      const { data, error } = await supabase.functions.invoke("flora-engine", {
+        body: { action: "explain_drawing", data: { image: img } },
+      });
+      if (error) throw error;
+      const explanation = typeof data === "object" && data !== null && "explanation" in data
+        ? String(data.explanation ?? "").trim()
+        : "";
+      toast.dismiss(tid);
+      if (!explanation) { toast.error("Flora não conseguiu explicar."); return; }
+      toast.success("Flora explicou seu desenho", {
+        description: explanation.length > 600 ? explanation.slice(0, 600) + "..." : explanation,
+        duration: 20000,
+      });
+    } catch (e: unknown) {
+      toast.dismiss(tid);
+      toast.error(e instanceof Error ? e.message : "Erro ao chamar Flora.");
+    }
+  }
+
+  function toggleGhostCompletion() {
+    const next = !ghostEnabled;
+    setGhostEnabled(next);
+    window.localStorage.setItem(GHOST_ENABLED_KEY, next ? "1" : "0");
+    toast.success(next ? "Autocomplete Flora ativado (Tab aceita, Esc descarta)" : "Autocomplete Flora desativado");
+  }
+
+  async function exportNotebookPdf() {
+    if (!pages.length) return;
+    const loadingId = toast.loading("Preparando o PDF do caderno...");
+    try {
+      const [{ jsPDF }, { renderStrokesToDataUrl }] = await Promise.all([
+        import("jspdf"),
+        import("@/components/notebook/KonvaDrawingCanvas"),
+      ]);
+      const pdf = new jsPDF({ unit: "pt", format: "a4", orientation: "portrait" });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      pages.forEach((item, index) => {
+        if (index > 0) pdf.addPage();
+        const image = renderStrokesToDataUrl(item.drawing_data?.strokes ?? []);
+        if (image) pdf.addImage(image, "PNG", 0, 0, pageWidth, pageHeight, undefined, "FAST");
+        const parsed = new DOMParser().parseFromString(item.content || "", "text/html");
+        const text = (parsed.body.textContent || "").replace(/\s+/g, " ").trim();
+        if (text) {
+          pdf.setFont("helvetica", "normal");
+          pdf.setFontSize(11);
+          pdf.setTextColor(25, 25, 25);
+          const lines = pdf.splitTextToSize(text, pageWidth - 96);
+          pdf.text(lines, 48, 64, { maxWidth: pageWidth - 96 });
+        }
+        pdf.setFontSize(8);
+        pdf.setTextColor(120, 120, 120);
+        pdf.text(`${notebook?.title || "Caderno"} · ${index + 1}/${pages.length}`, 48, pageHeight - 24);
+      });
+      pdf.save(`${(notebook?.title || "caderno").replace(/[^a-z0-9á-ú_-]+/gi, "-")}.pdf`);
+      toast.dismiss(loadingId);
+      toast.success("Caderno exportado em PDF.");
+    } catch (error: unknown) {
+      toast.dismiss(loadingId);
+      toast.error(error instanceof Error ? error.message : "Não foi possível exportar o PDF.");
+    }
+  }
+
+  async function importPdfAsPages(file: File) {
+    if (!user?.id || !id || pdfImporting) return;
+    if (file.size > 50 * 1024 * 1024) { toast.error("Escolha um PDF de até 50 MB."); return; }
+    setPdfImporting(true);
+    const loadingId = toast.loading("Abrindo o PDF...");
+    const uploadedPaths: string[] = [];
+    try {
+      const { renderPdfPages } = await import("@/lib/notebookPdfImport");
+      const rendered = await renderPdfPages(file, (current, total) => {
+        toast.loading(`Renderizando página ${current} de ${total}...`, { id: loadingId });
+      });
+      const importId = crypto.randomUUID();
+      const rows: Array<{ notebook_id: string; user_id: string; page_number: number; content: string; drawing_data: Json }> = [];
+      for (const renderedPage of rendered) {
+        toast.loading(`Salvando página ${renderedPage.pageNumber} de ${rendered.length}...`, { id: loadingId });
+        const path = `${user.id}/${id}/pdf-${importId}/page-${renderedPage.pageNumber}.jpg`;
+        const { error: uploadError } = await supabase.storage.from("notebook-images").upload(path, renderedPage.blob, {
+          contentType: "image/jpeg",
+          upsert: false,
+        });
+        if (uploadError) throw uploadError;
+        uploadedPaths.push(path);
+        const { data: publicData } = supabase.storage.from("notebook-images").getPublicUrl(path);
+        rows.push({
+          notebook_id: id,
+          user_id: user.id,
+          page_number: pages.length + renderedPage.pageNumber,
+          content: "",
+          drawing_data: drawingToJson({ ...emptyDrawing, backgroundImage: publicData.publicUrl, backgroundSource: "pdf" }),
+        });
+      }
+      const { data, error } = await supabase.from("notebook_pages").insert(rows).select();
+      if (error) throw error;
+      const imported = (data ?? []).map(rowToNotebookPage);
+      setPages((current) => [...current, ...imported]);
+      if (imported.length) {
+        setCurrentPage(pages.length);
+        setMode("draw");
+        setDrawTool("pen");
+      }
+      toast.dismiss(loadingId);
+      toast.success(`${imported.length} página${imported.length === 1 ? "" : "s"} importada${imported.length === 1 ? "" : "s"}. Agora você pode escrever por cima.`);
+    } catch (error: unknown) {
+      if (uploadedPaths.length) await supabase.storage.from("notebook-images").remove(uploadedPaths);
+      toast.dismiss(loadingId);
+      toast.error(error instanceof Error ? error.message : "Não foi possível importar o PDF.");
+    } finally {
+      setPdfImporting(false);
+      if (pdfInputRef.current) pdfInputRef.current.value = "";
+    }
+  }
+
   return (
     <div className={`min-h-dvh bg-background flex flex-col ${expandedEditor ? "fixed inset-0 z-50 overflow-auto" : ""}`}
       style={expandedEditor ? { touchAction: "pan-x pan-y pinch-zoom" } : undefined}
@@ -1677,11 +1878,9 @@ export default function NotebookEditor() {
         </>
       )}
 
-      {/* Header - auto-hide. Show only on hover (peek strip at top). */}
+      {/* Cabeçalho estável: também funciona em tablets/celulares sem depender de hover. */}
       <div
-        className={`nb-peek-top sticky top-0 z-40 ${
-          headerPinned || generatingStudy !== "none" || ocrLoading ? "pinned" : ""
-        }`}
+        className="nb-peek-top pinned sticky top-0 z-40"
       >
         <div className="nb-peek-trigger" aria-hidden />
         <header className="nb-peek-content border-b border-border bg-card/80 backdrop-blur-md">
@@ -1720,35 +1919,14 @@ export default function NotebookEditor() {
             )}
           </div>
 
-          {/* Mode toggle */}
-          <div className="order-4 sm:order-none w-full sm:w-auto flex items-center bg-muted rounded-lg p-0.5 gap-0.5 overflow-x-auto">
-            <button
-              type="button"
-              onClick={() => setMode("text")}
-              className={`flex-1 sm:flex-none justify-center flex items-center gap-1 px-4 py-2 sm:px-3 sm:py-1 rounded-md text-sm font-medium transition-all whitespace-nowrap ${
-                mode === "text" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"
-              }`}
-            >
-              <Type className="w-4 h-4" />
-              Texto
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode("draw")}
-              className={`flex-1 sm:flex-none justify-center flex items-center gap-1 px-4 py-2 sm:px-3 sm:py-1 rounded-md text-sm font-medium transition-all whitespace-nowrap ${
-                mode === "draw" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"
-              }`}
-            >
-              <Pencil className="w-4 h-4" />
-              Desenhar
-            </button>
-          </div>
-
           <div className="order-6 sm:order-none w-full sm:w-auto flex flex-wrap sm:flex-nowrap items-center gap-2">
+            <form className="relative min-w-[150px] flex-1 sm:w-48 sm:flex-none" onSubmit={(event) => { event.preventDefault(); searchAndJumpToPage(); }}>
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Buscar no caderno" className="h-9 pl-8 pr-2 text-xs" aria-label="Buscar texto ou etiqueta no caderno" />
+            </form>
             <Select
               value={selectedSubject}
               onValueChange={(v) => setSelectedSubject(v as Subject)}
-              onOpenChange={(open) => setHeaderPinned(open)}
             >
               <SelectTrigger className="h-9 w-full sm:w-auto min-w-0 sm:min-w-[150px]">
                 <SelectValue placeholder="Matéria" />
@@ -1776,7 +1954,7 @@ export default function NotebookEditor() {
               <span className="hidden sm:inline">IA</span>
             </button>
 
-            <DropdownMenu onOpenChange={(open) => setHeaderPinned(open)}>
+            <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-11 w-11 sm:h-8 sm:w-8" aria-label="Ações da Flora">
                   <Brain className="w-4 h-4" />
@@ -1863,85 +2041,58 @@ export default function NotebookEditor() {
             >
               <Eye className="w-4 h-4" />
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setHandwritingMode((v) => !v)}
-              className={`h-11 w-11 sm:h-8 sm:w-8 ${handwritingMode ? "text-primary" : ""}`}
-              title={handwritingMode ? "Voltar para tipografia digital" : "Usar caligrafia manuscrita"}
-              aria-label={handwritingMode ? "Voltar para tipografia digital" : "Usar caligrafia manuscrita"}
-              aria-pressed={handwritingMode}
-            >
-              <span className="text-base font-bold" style={{ fontFamily: "Caveat, cursive" }}>Aa</span>
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setPaperMargin((v) => !v)}
-              className={`h-11 w-11 sm:h-8 sm:w-8 ${paperMargin ? "text-primary" : ""}`}
-              title={paperMargin ? "Esconder margem vermelha" : "Mostrar margem vermelha"}
-              aria-label={paperMargin ? "Esconder margem vermelha" : "Mostrar margem vermelha"}
-              aria-pressed={paperMargin}
-            >
-              <span className="block w-0.5 h-4 mx-auto rounded" style={{ background: paperMargin ? "#ef4444" : "currentColor", opacity: paperMargin ? 1 : 0.4 }} />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setExpandedEditor((v) => !v)}
-              className="h-11 w-11 sm:h-8 sm:w-8"
-              title={expandedEditor ? "Sair da tela cheia" : "Tela cheia"}
-              aria-label={expandedEditor ? "Sair da tela cheia" : "Tela cheia"}
-              aria-pressed={expandedEditor}
-            >
-              {expandedEditor ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={async () => {
-                const img = canvasRef.current?.getImageData?.(null);
-                if (!img) { toast.error("Desenhe algo primeiro."); return; }
-                const tid = toast.loading("Flora analisando o desenho...");
-                try {
-                  const { data, error } = await supabase.functions.invoke("flora-engine", {
-                    body: { action: "explain_drawing", data: { image: img } },
-                  });
-                  if (error) throw error;
-                  const explanation = (data as any)?.explanation?.trim();
-                  toast.dismiss(tid);
-                  if (!explanation) { toast.error("Flora não conseguiu explicar."); return; }
-                  toast.success("Flora explicou seu desenho", {
-                    description: explanation.length > 600 ? explanation.slice(0, 600) + "..." : explanation,
-                    duration: 20000,
-                  });
-                } catch (e: any) {
-                  toast.dismiss(tid);
-                  toast.error(e?.message || "Erro ao chamar Flora.");
-                }
-              }}
-              className="h-11 w-11 sm:h-8 sm:w-8"
-              title="Flora explica o desenho desta página"
-              aria-label="Flora explica o desenho desta página"
-            >
-              <Wand2 className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => {
-                const next = !ghostEnabled;
-                setGhostEnabled(next);
-                window.localStorage.setItem(GHOST_ENABLED_KEY, next ? "1" : "0");
-                toast.success(next ? "Autocomplete Flora ativado (Tab aceita, Esc descarta)" : "Autocomplete Flora desativado");
-              }}
-              className={`h-11 w-11 sm:h-8 sm:w-8 ${ghostEnabled ? "text-primary" : ""}`}
-              title={ghostEnabled ? "Desativar autocomplete Flora" : "Ativar autocomplete Flora (consome créditos)"}
-              aria-label={ghostEnabled ? "Desativar autocomplete Flora" : "Ativar autocomplete Flora"}
-              aria-pressed={ghostEnabled}
-            >
-              <Sparkles className="w-4 h-4" />
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-11 w-11 sm:h-8 sm:w-8" aria-label="Mais opções do caderno">
+                  <MoreHorizontal className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64">
+                <DropdownMenuLabel>Visual e ferramentas</DropdownMenuLabel>
+                <DropdownMenuItem onClick={() => setHandwritingMode((v) => !v)}>
+                  <span className="mr-2 text-base font-bold" style={{ fontFamily: "Caveat, cursive" }}>Aa</span>
+                  {handwritingMode ? "Usar tipografia digital" : "Usar caligrafia manuscrita"}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setPaperMargin((v) => !v)}>
+                  <span className="mr-3 block h-4 w-0.5 rounded bg-red-500" />
+                  {paperMargin ? "Esconder margem" : "Mostrar margem"}
+                </DropdownMenuItem>
+                <DropdownMenuLabel className="mt-1 text-[11px] uppercase tracking-wide text-muted-foreground">Modelo desta página</DropdownMenuLabel>
+                <div className="grid grid-cols-2 gap-1 px-1 pb-1">
+                  {([
+                    ["blank", "Em branco"], ["lined", "Pautado"], ["grid", "Quadriculado"],
+                    ["dotted", "Pontilhado"], ["physics", "Física"], ["chemistry", "Química"], ["essay", "Redação"],
+                  ] as const).map(([value, label]) => (
+                    <Button key={value} type="button" variant={pageTemplate === value ? "secondary" : "ghost"} size="sm" className="h-8 justify-start text-xs" onClick={() => changePageTemplate(value)}>
+                      <LayoutTemplate className="mr-1.5 h-3.5 w-3.5" />{label}
+                    </Button>
+                  ))}
+                </div>
+                <DropdownMenuItem onClick={() => setExpandedEditor((v) => !v)}>
+                  {expandedEditor ? <Minimize2 className="mr-2 h-4 w-4" /> : <Maximize2 className="mr-2 h-4 w-4" />}
+                  {expandedEditor ? "Sair da tela cheia" : "Abrir tela cheia"}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => void exportNotebookPdf()}>
+                  <Download className="mr-2 h-4 w-4" /> Exportar caderno em PDF
+                </DropdownMenuItem>
+                <DropdownMenuItem disabled={pdfImporting} onClick={() => pdfInputRef.current?.click()}>
+                  {pdfImporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileUp className="mr-2 h-4 w-4" />}
+                  {pdfImporting ? "Importando PDF..." : "Importar PDF para anotar"}
+                </DropdownMenuItem>
+                <input ref={pdfInputRef} type="file" accept="application/pdf,.pdf" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) void importPdfAsPages(file); }} />
+                <DropdownMenuItem onClick={restorePreviousVersion}>
+                  <History className="mr-2 h-4 w-4" /> Restaurar versão anterior
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => void handleExplainDrawing()}>
+                  <Wand2 className="mr-2 h-4 w-4" /> Flora explica o desenho
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={toggleGhostCompletion}>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  {ghostEnabled ? "Desativar autocomplete" : "Ativar autocomplete"}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           {/* Page navigation */}
@@ -1954,6 +2105,9 @@ export default function NotebookEditor() {
             </span>
             <Button variant="ghost" size="icon" aria-label="Próxima página" onClick={() => setCurrentPage((prev) => Math.min(pages.length - 1, prev + 1))} disabled={currentPage === pages.length - 1}>
               <ChevronRight className="w-4 h-4" />
+            </Button>
+            <Button variant="ghost" size="icon" aria-label="Adicionar nova página" onClick={addPage} title="Nova página">
+              <Plus className="w-4 h-4" />
             </Button>
             <AudioSummaryButton
               content={currentPageData?.content || ""}
@@ -1979,9 +2133,18 @@ export default function NotebookEditor() {
         onUndo={() => {
           const lastStroke = drawingState.strokes[drawingState.strokes.length - 1];
           if (lastStroke) {
+            setRedoStrokes((prev) => [...prev, lastStroke]);
             updateDrawingState({ ...drawingState, strokes: drawingState.strokes.slice(0, -1) });
           }
         }}
+        onRedo={() => {
+          const restored = redoStrokes[redoStrokes.length - 1];
+          if (!restored) return;
+          setRedoStrokes((prev) => prev.slice(0, -1));
+          updateDrawingState({ ...drawingState, strokes: [...drawingState.strokes, restored] });
+        }}
+        canUndo={drawingState.strokes.length > 0}
+        canRedo={redoStrokes.length > 0}
         onAddSticky={(color) => handleStickyNotesChange([
           ...drawingState.stickyNotes,
           { id: crypto.randomUUID(), x: 80, y: 80, width: 180, height: 140, text: "", color },
@@ -1993,6 +2156,8 @@ export default function NotebookEditor() {
         onToggleAutoSolve={handleToggleAutoSolve}
         solvingMath={solvingMath}
         hasSelection={!!selectionBounds}
+        onDuplicateSelection={() => canvasRef.current?.duplicateSelection?.()}
+        onDeleteSelection={() => canvasRef.current?.deleteSelection?.()}
         mathStatus={mathStatus}
       />
 
@@ -2024,6 +2189,7 @@ export default function NotebookEditor() {
                 wide={expandedEditor}
                 handwriting={handwritingMode}
                 showMargin={paperMargin}
+                backgroundImage={drawingState.backgroundImage}
                 paperOverlay={
                   <KonvaDrawingCanvas
                     ref={canvasRef}
@@ -2061,7 +2227,7 @@ export default function NotebookEditor() {
               currentPage={currentPage}
               onSelectPage={setCurrentPage}
               onAddPage={addPage}
-              onDeletePage={(idx) => { setCurrentPage(idx === 0 ? 0 : idx - 1); deletePage(); }}
+              onDeletePage={(idx) => { void deletePage(idx); }}
             />
           )}
 
@@ -2082,6 +2248,7 @@ export default function NotebookEditor() {
                 wide={expandedEditor}
                 handwriting={handwritingMode}
                 showMargin={paperMargin}
+                backgroundImage={drawingState.backgroundImage}
                 paperOverlay={
                   <KonvaDrawingCanvas
                     ref={canvasRef}

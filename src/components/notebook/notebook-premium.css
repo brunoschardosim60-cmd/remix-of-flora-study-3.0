@@ -255,7 +255,7 @@
 .nb-paper-area {
   flex: 1;
   overflow: auto;
-  padding: 16px 8px;
+  padding: 16px 8px 104px;
   display: flex;
   justify-content: center;
   align-items: flex-start;
@@ -423,7 +423,7 @@
   position: fixed;
   bottom: 20px;
   left: 50%;
-  transform: translateX(-50%) translateY(calc(100% + 12px));
+  transform: translateX(-50%);
   display: flex;
   align-items: center;
   gap: 4px;
@@ -437,12 +437,13 @@
   z-index: 55;
   transition: transform 0.3s var(--nb-transition-spring);
   opacity: 0.95;
+  max-width: calc(100vw - 32px);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
 }
 
-/* Floating toolbar: peek a sliver, expand on hover */
-.nb-floating-toolbar {
-  transform: translateX(-50%) translateY(calc(100% - 12px));
-}
+.nb-floating-toolbar::-webkit-scrollbar { display: none; }
 .nb-floating-toolbar:hover,
 .nb-floating-toolbar:focus-within {
   transform: translateX(-50%) translateY(0);
@@ -819,5 +820,17 @@
 
   .nb-page-sidebar {
     display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nb-floating-toolbar,
+  .nb-peek-content,
+  .nb-page-thumb,
+  .nb-toolbar-btn,
+  .nb-toolbar-color,
+  .nb-toolbar-flora {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
   }
 }
