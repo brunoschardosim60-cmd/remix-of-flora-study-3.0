@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { BookOpen, NotebookPen, FileText, BarChart3, Sun, Moon, CircleDot, Settings, Library, Users, MessageCircle } from "lucide-react";
+import { BookOpen, NotebookPen, FileText, BarChart3, Sun, Moon, CircleDot, Settings, Library, Swords } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { CustomThemeDialog } from "@/components/CustomThemeDialog";
@@ -54,8 +54,8 @@ export function DashboardHeader({ user, bancoRoute, bancoLabel }: Props) {
             </Button>
           )}
           {user && (
-            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => navigate("/comunidade")} onMouseEnter={() => prefetchRoute("/comunidade")} aria-label="Comunidade">
-              <Users className="w-4 h-4" />
+            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => navigate("/quiz-battle")} aria-label="Batalha de Quiz">
+              <Swords className="w-4 h-4" />
             </Button>
           )}
         </div>
@@ -93,8 +93,8 @@ export function DashboardHeader({ user, bancoRoute, bancoLabel }: Props) {
             </Button>
           )}
           {user && (
-            <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" onClick={() => navigate("/comunidade")} aria-label="Comunidade">
-              <Users className="w-4 h-4" />
+            <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" onClick={() => navigate("/quiz-battle")} aria-label="Batalha de Quiz">
+              <Swords className="w-4 h-4" />
             </Button>
           )}
         </div>

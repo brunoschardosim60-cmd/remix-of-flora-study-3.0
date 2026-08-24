@@ -569,10 +569,6 @@ export default function Index() {
           timer.start();
           toast.success("Cronômetro iniciado. Boa sessão!");
         }}
-        onChooseAulao={() => {
-          setStudyChoiceOpen(false);
-          navigate("/aulao");
-        }}
       />
 
       {/* Loading overlay for Study Now */}

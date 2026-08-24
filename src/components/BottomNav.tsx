@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Home, NotebookPen, FileText, BarChart3, Sparkles, Library, BookOpen, GraduationCap, Users } from "lucide-react";
+import { Home, FileText, BarChart3, Sparkles, Library, Target, Swords } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useStudentObjetivo } from "@/hooks/useStudentObjetivo";
 import { loadTopics } from "@/lib/studyData";
@@ -12,7 +12,7 @@ const BASE_ITEMS: Item[] = [
   { path: "/", label: "Início", icon: Home },
   { path: "/redacao", label: "Redação", icon: FileText },
   { path: "flora", label: "Flora", icon: Sparkles, isAction: true },
-  { path: "/comunidade", label: "Comunidade", icon: Users },
+  { path: "/quiz-battle", label: "Batalha", icon: Swords },
   { path: "/analise", label: "Análise", icon: BarChart3 },
 ];
 
@@ -20,10 +20,8 @@ const CONCURSO_ITEMS: Item[] = [
   { path: "/", label: "Início", icon: Home },
   { path: "/banco-concurso", label: "Banco", icon: Library },
   { path: "flora", label: "Flora", icon: Sparkles, isAction: true },
-  { path: "/aulao", label: "Aulão", icon: BookOpen },
+  { path: "/metas", label: "Metas", icon: Target },
   { path: "/analise", label: "Análise", icon: BarChart3 },
-  // Comunidade omitida intencionalmente: alunos de concurso usam o Banco como hub social.
-  // Para adicionar, substitua um dos itens acima por:
 ];
 
 export function BottomNav() {

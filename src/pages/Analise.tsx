@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft, BarChart3, Loader2, AlertTriangle, Trophy, Target,
-  TrendingUp, TrendingDown, Calendar, Flame, BookOpen, Brain,
+  TrendingUp, TrendingDown, Calendar, Flame, Brain,
   Clock, Zap, FileDown,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -503,9 +503,6 @@ export default function Analise() {
             <div className="flex flex-wrap items-center justify-center gap-2">
               <Button onClick={() => navigate("/")} className="gap-1.5">
                 <Clock className="h-4 w-4" /> Começar a estudar
-              </Button>
-              <Button variant="outline" onClick={() => navigate("/aulao")} className="gap-1.5">
-                <BookOpen className="h-4 w-4" /> Fazer um aulão
               </Button>
               <Button variant="outline" onClick={() => navigate("/redacao")} className="gap-1.5">
                 <Brain className="h-4 w-4" /> Treinar redação

@@ -31,19 +31,12 @@ const SharedNotebook = lazy(() => import("./pages/SharedNotebook"));
 const BancoQuestoes = lazy(() => import("./pages/BancoQuestoes"));
 const BancoConcurso = lazy(() => import("./pages/BancoConcurso"));
 const RedacaoTemas = lazy(() => import("./pages/RedacaoTemas"));
-const Aulao = lazy(() => import("./pages/Aulao"));
 const Pricing = lazy(() => import("./pages/Pricing"));
 const PublicProfile = lazy(() => import("./pages/PublicProfile"));
-const Cursos = lazy(() => import("./pages/Cursos"));
-const CursoPlayer = lazy(() => import("./pages/CursoPlayer"));
-const RedacaoTemplates = lazy(() => import("./pages/RedacaoTemplates"));
 const SimuladoSemanal = lazy(() => import("./pages/SimuladoSemanal"));
 const SimuladoEnem = lazy(() => import("./pages/SimuladoEnem"));
 const ExplicaFoto = lazy(() => import("./pages/ExplicaFoto"));
-const Aulas = lazy(() => import("./pages/Aulas"));
-const Comunidade = lazy(() => import("./pages/Comunidade"));
-const Mensagens = lazy(() => import("./pages/Mensagens"));
-const Grupos = lazy(() => import("./pages/Grupos"));
+const QuizBattle = lazy(() => import("./pages/QuizBattle"));
 const QuizBattleHost = lazy(() => import("./pages/QuizBattleHost"));
 const QuizBattleJoin = lazy(() => import("./pages/QuizBattleJoin"));
 const QuizBattlePlay = lazy(() => import("./pages/QuizBattlePlay"));
@@ -231,7 +224,7 @@ const App = () => (
                 <Route path="/notebooks/:id" element={<ProtectedRoute><NotebookEditor /></ProtectedRoute>} />
                 <Route path="/redacao" element={<ProtectedRoute><Redacao /></ProtectedRoute>} />
                 <Route path="/redacao/temas" element={<ProtectedRoute><RedacaoTemas /></ProtectedRoute>} />
-                <Route path="/redacao/templates" element={<ProtectedRoute><RedacaoTemplates /></ProtectedRoute>} />
+                <Route path="/redacao/templates" element={<Navigate to="/redacao?secao=templates" replace />} />
 
                 <Route path="/banco" element={<ProtectedRoute><BancoQuestoes /></ProtectedRoute>} />
                 <Route path="/banco-concurso" element={<ProtectedRoute><BancoConcurso /></ProtectedRoute>} />
@@ -240,16 +233,17 @@ const App = () => (
                 <Route path="/metas" element={<ProtectedRoute><Metas /></ProtectedRoute>} />
                 <Route path="/flora" element={<ProtectedRoute><Flora /></ProtectedRoute>} />
                 <Route path="/shared/notebook/:token" element={<Suspense fallback={<RouteFallback />}><SharedNotebook /></Suspense>} />
-                <Route path="/aulao" element={<ProtectedRoute><Aulao /></ProtectedRoute>} />
-                <Route path="/cursos" element={<ProtectedRoute><Cursos /></ProtectedRoute>} />
-                <Route path="/cursos/:id" element={<ProtectedRoute><CursoPlayer /></ProtectedRoute>} />
+                {/* Caminhos antigos das áreas de cursos foram descontinuados. */}
+                <Route path="/aulao" element={<Navigate to="/" replace />} />
+                <Route path="/aulas" element={<Navigate to="/" replace />} />
+                <Route path="/cursos/*" element={<Navigate to="/" replace />} />
                 <Route path="/simulado-semanal" element={<ProtectedRoute><SimuladoSemanal /></ProtectedRoute>} />
                 <Route path="/simulado-enem" element={<ProtectedRoute><SimuladoEnem /></ProtectedRoute>} />
                 <Route path="/explica-foto" element={<ProtectedRoute><ExplicaFoto /></ProtectedRoute>} />
-                <Route path="/aulas" element={<ProtectedRoute><Aulas /></ProtectedRoute>} />
-                <Route path="/comunidade" element={<ProtectedRoute><Comunidade /></ProtectedRoute>} />
-                <Route path="/mensagens" element={<ProtectedRoute><Mensagens /></ProtectedRoute>} />
-                <Route path="/grupos" element={<ProtectedRoute><Grupos /></ProtectedRoute>} />
+                <Route path="/comunidade" element={<Navigate to="/quiz-battle" replace />} />
+                <Route path="/mensagens" element={<Navigate to="/quiz-battle" replace />} />
+                <Route path="/grupos" element={<Navigate to="/quiz-battle" replace />} />
+                <Route path="/quiz-battle" element={<ProtectedRoute><QuizBattle /></ProtectedRoute>} />
                 <Route path="/quiz-battle/criar" element={<ProtectedRoute><QuizBattleHost /></ProtectedRoute>} />
                 <Route path="/quiz-battle/entrar" element={<ProtectedRoute><QuizBattleJoin /></ProtectedRoute>} />
                 <Route path="/quiz-battle/jogar/:battleId" element={<ProtectedRoute><QuizBattlePlay /></ProtectedRoute>} />

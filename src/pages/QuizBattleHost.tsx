@@ -472,8 +472,8 @@ export default function QuizBattleHost() {
               >
                 <PlayCircle className="w-4 h-4" /> Jogar de novo
               </Button>
-              <Button variant="outline" className="flex-1" onClick={() => navigate("/comunidade")}>
-                Voltar para Comunidade
+              <Button variant="outline" className="flex-1" onClick={() => navigate("/quiz-battle")}>
+                Voltar para Batalhas
               </Button>
             </div>
           </div>

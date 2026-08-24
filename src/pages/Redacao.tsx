@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { prefetchForContext } from "@/lib/prefetch";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, FileText, Loader2, PlusCircle, Sparkles, Trash2, Wand2, Save, CheckCircle2, AlertCircle, Target, CalendarDays, CalendarRange, Dumbbell, Lightbulb, PanelLeftClose, PanelLeftOpen, WifiOff, CloudUpload, Download } from "lucide-react";
+import { ArrowLeft, FileText, LayoutTemplate, Loader2, PlusCircle, Sparkles, Trash2, Wand2, Save, CheckCircle2, AlertCircle, Target, CalendarDays, CalendarRange, Dumbbell, Lightbulb, PanelLeftClose, PanelLeftOpen, WifiOff, CloudUpload, Download } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +27,7 @@ import {
 } from "@/lib/essays";
 import { reportError, toErrorMessage } from "@/lib/errorHandling";
 import { exportEssayToPdf } from "@/lib/essayPdfExport";
+import RedacaoTemplates from "@/pages/RedacaoTemplates";
 import {
   saveLocalDraft,
   loadLocalDraft,
@@ -199,6 +200,9 @@ export default function Redacao() {
   const [objetivo, setObjetivo] = useState<Objetivo>("enem");
   const [tipoTexto, setTipoTexto] = useState<string>("dissertativo");
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [activeSection, setActiveSection] = useState<"redacoes" | "templates">(() =>
+    new URLSearchParams(window.location.search).get("secao") === "templates" ? "templates" : "redacoes"
+  );
   const [feedbackRevealed, setFeedbackRevealed] = useState(false);
   const [lastSavedTexto, setLastSavedTexto] = useState("");
   const [lastSavedTema, setLastSavedTema] = useState("");
@@ -615,12 +619,26 @@ export default function Redacao() {
                 : `Escreva e receba correção no padrão ${config.label}.`}
             </p>
           </div>
-          <Button onClick={() => void handleNew()}>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Nova redação
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant={activeSection === "templates" ? "default" : "outline"}
+              onClick={() => setActiveSection(activeSection === "templates" ? "redacoes" : "templates")}
+            >
+              <LayoutTemplate className="mr-2 h-4 w-4" />
+              {activeSection === "templates" ? "Minhas redações" : "Templates"}
+            </Button>
+            {activeSection === "redacoes" && (
+              <Button onClick={() => void handleNew()}>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Nova redação
+              </Button>
+            )}
+          </div>
         </div>
 
+        {activeSection === "templates" ? (
+          <RedacaoTemplates />
+        ) : (
         <div className={`grid gap-4 ${sidebarOpen ? "lg:grid-cols-[300px_minmax(0,1fr)]" : "lg:grid-cols-1"}`}>
           {/* Sidebar */}
           <section className={`space-y-2 rounded-2xl border border-border bg-card/70 p-3 ${sidebarOpen ? "" : "hidden"}`}>
@@ -1335,6 +1353,7 @@ export default function Redacao() {
             )}
           </section>
         </div>
+        )}
       </div>
     </div>
   );

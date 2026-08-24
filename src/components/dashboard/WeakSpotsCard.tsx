@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { AlertTriangle, BookOpen, Brain, Loader2 } from "lucide-react";
+import { AlertTriangle, Brain, Loader2, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { floraGenerateQuiz } from "@/lib/floraClient";
 import { toast } from "sonner";
@@ -126,9 +126,9 @@ export function WeakSpotsCard({ perfs, topics }: Props) {
                     <span className="ml-1">Reforço</span>
                   </Button>
                 )}
-                <Button size="sm" onClick={() => navigate("/aulao")}>
-                  <BookOpen className="h-3 w-3" />
-                  <span className="ml-1">Estudar</span>
+                <Button size="sm" onClick={() => navigate("/")}>
+                  <Target className="h-3 w-3" />
+                  <span className="ml-1">Ver plano</span>
                 </Button>
               </div>
             </div>

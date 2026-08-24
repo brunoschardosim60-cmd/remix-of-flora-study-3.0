@@ -4,11 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, BookOpen, Trash2, Loader2, ArrowLeft, Star, StarOff, FolderOpen, Pencil, Search, Share2 } from "lucide-react";
+import { Plus, BookOpen, Trash2, Loader2, ArrowLeft, Star, StarOff, FolderOpen, Pencil, Search } from "lucide-react";
 import { toast } from "sonner";
 import { ALL_SUBJECTS } from "@/lib/studyData";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ShareToCommunityDialog } from "@/components/ShareToCommunityDialog";
 
 interface Notebook {
   id: string;
@@ -35,7 +34,6 @@ export default function Notebooks() {
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
   const [subjectFolders, setSubjectFolders] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [shareNotebook, setShareNotebook] = useState<Notebook | null>(null);
   const [creating, setCreating] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [newTitle, setNewTitle] = useState("");
@@ -372,15 +370,6 @@ export default function Notebooks() {
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
 
-                  {/* Compartilhar */}
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setShareNotebook(nb); }}
-                    aria-label="Compartilhar na Comunidade"
-                    className="absolute top-2 right-[80px] sm:right-[76px] opacity-100 sm:opacity-0 sm:group-hover:opacity-100 bg-black/30 rounded-lg min-w-[36px] min-h-[36px] sm:min-w-0 sm:min-h-0 p-1.5 text-white hover:bg-black/50 transition-all flex items-center justify-center"
-                  >
-                    <Share2 className="w-3.5 h-3.5" />
-                  </button>
-
                   <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3">
                     <p className="font-heading font-bold text-white text-sm truncate">
                       {nb.title?.trim() && nb.title.trim().length > 1
@@ -406,13 +395,6 @@ export default function Notebooks() {
           </div>
         )}
       </div>
-      {shareNotebook && (
-        <ShareToCommunityDialog
-          open={!!shareNotebook}
-          onClose={() => setShareNotebook(null)}
-          defaultContent={`Acabei de organizar meu caderno "${shareNotebook.title}"${shareNotebook.subject ? ` de ${shareNotebook.subject}` : ""}. Quem mais está estudando isso?`}
-        />
-      )}
     </div>
   );
 }

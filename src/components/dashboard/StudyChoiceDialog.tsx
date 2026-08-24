@@ -8,7 +8,6 @@ interface Props {
   onChooseRecommended: () => void;
   onChooseFloraResume: () => void;
   onChooseTimerOnly: () => void;
-  onChooseAulao: () => void;
 }
 
 export function StudyChoiceDialog({
@@ -18,7 +17,6 @@ export function StudyChoiceDialog({
   onChooseRecommended,
   onChooseFloraResume,
   onChooseTimerOnly,
-  onChooseAulao,
 }: Props) {
   if (!open) return null;
   return (
@@ -47,12 +45,6 @@ export function StudyChoiceDialog({
             <div className="text-left">
               <p className="font-semibold text-sm">Só iniciar o cronômetro</p>
               <p className="text-xs text-muted-foreground">Sem matéria fixa — você escolhe enquanto estuda</p>
-            </div>
-          </Button>
-          <Button variant="outline" className="w-full justify-start h-auto py-3" onClick={onChooseAulao}>
-            <div className="text-left">
-              <p className="font-semibold text-sm">Aulão com a Flora</p>
-              <p className="text-xs text-muted-foreground">Aula explicada com macetes, redação e busca de conteúdo</p>
             </div>
           </Button>
         </div>

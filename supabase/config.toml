@@ -1,4 +1,7 @@
-project_id = "huvdtlqbodirecdhueky"
+project_id = "wkygfmviwelfjqfzyxti"
+
+[functions.flora-engine]
+verify_jwt = false
 
 [functions.migrate-sql]
 verify_jwt = false

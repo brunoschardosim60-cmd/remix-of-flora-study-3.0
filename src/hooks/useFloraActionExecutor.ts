@@ -30,15 +30,12 @@ export function useFloraActionExecutor(onClose: () => void) {
           quiz: "/banco",
           banco: "/banco",
           banco_concurso: "/banco-concurso",
-          aulao: "/aulao",
-          aulas: "/aulas",
           simulado: "/simulado-enem",
           simulado_semanal: "/simulado-semanal",
           analise: "/analise",
           cronograma: "/",
           home: "/",
           explica_foto: "/explica-foto",
-          cursos: "/cursos",
         };
         const path = map[destino];
         if (!path) { toast.error("Destino desconhecido."); return; }

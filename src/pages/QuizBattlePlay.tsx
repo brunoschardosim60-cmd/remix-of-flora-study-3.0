@@ -128,7 +128,7 @@ export default function QuizBattlePlay() {
             </div>
           )}
           <Leaderboard players={players} />
-          <Button variant="outline" className="w-full" onClick={() => navigate("/comunidade")}>Voltar</Button>
+          <Button variant="outline" className="w-full" onClick={() => navigate("/quiz-battle")}>Voltar</Button>
         </div>
       </div>
     );

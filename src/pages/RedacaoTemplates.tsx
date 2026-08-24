@@ -1,11 +1,9 @@
-import { useNavigate } from "react-router-dom";
-import { ArrowLeft, BookOpen, Copy, Check, Sparkles, FileText, Layout, Heart, Smartphone } from "lucide-react";
+import { Copy, Check, Sparkles, FileText, Layout, Heart, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import { toast } from "sonner";
-import { BottomNav } from "@/components/BottomNav";
 
 const TEMPLATES = [
   {
@@ -83,7 +81,6 @@ Fica clara, portanto, a necessidade de intervenções. O Ministério da Cultura,
 ];
 
 export default function RedacaoTemplates() {
-  const navigate = useNavigate();
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const copyToClipboard = (id: string, content: string) => {
@@ -94,23 +91,7 @@ export default function RedacaoTemplates() {
   };
 
   return (
-    <div className="min-h-dvh bg-background pb-20 md:pb-6">
-      <div className="border-b border-border bg-card sticky top-0 z-10 shadow-sm">
-        <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-16 py-3 flex items-center gap-3">
-          <Button variant="ghost" size="icon" aria-label="Voltar" onClick={() => navigate(-1)}>
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-            <BookOpen className="w-5 h-5 text-primary" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-lg font-semibold leading-tight">Templates Nota 1000</h1>
-            <p className="text-xs text-muted-foreground">Esqueletos prontos para te ajudar a destravar</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-16 py-6 space-y-6">
+    <div className="space-y-6">
         <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 flex items-start gap-4">
           <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
             <Sparkles className="w-5 h-5 text-primary" />
@@ -158,9 +139,6 @@ export default function RedacaoTemplates() {
             </Card>
           ))}
         </div>
-      </div>
-
-      <BottomNav />
     </div>
   );
 }
