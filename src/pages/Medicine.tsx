@@ -3,10 +3,11 @@ import { useNavigate } from "react-router-dom";
 import {
   Activity, ArrowLeft, ArrowRight, Baby, BookOpen, Brain, Check, ChevronRight, ClipboardCheck,
   AlertTriangle, CircleDot, ExternalLink, Eye, EyeOff, FileHeart, HeartPulse, Layers, ListChecks, MapPin, Menu, NotebookPen,
-  PanelLeftClose, Play, Search, ShieldCheck, Sparkles, Stethoscope, Target, Timer, X, ZoomIn,
+  PanelLeftClose, Play, Search, ShieldCheck, Sparkles, Stethoscope, Target, Timer, Wrench, X, ZoomIn,
 } from "lucide-react";
 import { toast } from "sonner";
 import { BodyAtlas } from "@/components/medicine/BodyAtlas";
+import { InstrumentsStudio } from "@/components/medicine/InstrumentsStudio";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -17,12 +18,14 @@ import {
 import { medicalNotebookTemplates, type MedicalNotebookTemplate } from "@/lib/medicalNotebookTemplates";
 import "@/components/medicine/medicine.css";
 import "@/components/medicine/medicine-enhancements.css";
+import "@/components/medicine/instruments.css";
 
-type MedicineSection = "home" | "atlas" | "systems" | "development" | "practice" | "questions" | "clinic" | "plan" | "notebook" | "sources";
+type MedicineSection = "home" | "atlas" | "instruments" | "systems" | "development" | "practice" | "questions" | "clinic" | "plan" | "notebook" | "sources";
 
 const NAV: Array<{ id: MedicineSection; label: string; Icon: typeof Activity }> = [
   { id: "home", label: "Visão geral", Icon: Activity },
   { id: "atlas", label: "Atlas", Icon: Search },
+  { id: "instruments", label: "Instrumentos", Icon: Wrench },
   { id: "systems", label: "Sistemas", Icon: HeartPulse },
   { id: "development", label: "Desenvolvimento", Icon: Baby },
   { id: "practice", label: "Identificação", Icon: Target },
@@ -211,15 +214,16 @@ export default function Medicine() {
       <div className="med-shell">
         <aside className={`med-sidebar ${mobileNav ? "open" : ""}`}>
           <div className="med-sidebar-label">ESTUDAR</div>
-          {NAV.slice(0, 8).map(({ id, label, Icon }) => <button key={id} onClick={() => go(id)} className={section === id ? "active" : ""}><Icon /><span>{label}</span>{id === "questions" && wrongIds.length > 0 && <b>{wrongIds.length}</b>}</button>)}
+          {NAV.slice(0, 9).map(({ id, label, Icon }) => <button key={id} onClick={() => go(id)} className={section === id ? "active" : ""}><Icon /><span>{label}</span>{id === "questions" && wrongIds.length > 0 && <b>{wrongIds.length}</b>}</button>)}
           <div className="med-sidebar-label">FERRAMENTAS</div>
-          {NAV.slice(8).map(({ id, label, Icon }) => <button key={id} onClick={() => go(id)} className={section === id ? "active" : ""}><Icon /><span>{label}</span></button>)}
+          {NAV.slice(9).map(({ id, label, Icon }) => <button key={id} onClick={() => go(id)} className={section === id ? "active" : ""}><Icon /><span>{label}</span></button>)}
           <div className="med-safety-mini"><ShieldCheck /><div><strong>Uso educacional</strong><span>Não substitui supervisão, avaliação ou atendimento profissional.</span></div></div>
         </aside>
 
         <main className="med-main">
           {section === "home" && <MedicineHome level={level} progress={progress} wrongCount={wrongIds.length} onGo={go} />}
           {section === "atlas" && <div className="med-section-wrap"><BodyAtlas level={level} activeLayer={activeLayer} onLayerChange={setActiveLayer} selected={selectedStructure} onSelect={setSelectedStructure} />{selectedStructure && <div className="med-atlas-actions"><button onClick={() => toggleFavorite(selectedStructure.id)}>{favoriteIds.includes(selectedStructure.id) ? <Check /> : <BookOpen />}{favoriteIds.includes(selectedStructure.id) ? "Salva para revisão" : "Salvar para revisão"}</button><button onClick={() => toast.info("A Flora deve explicar apenas com base nas fontes exibidas nesta estrutura.")}><Sparkles /> Explicar com a Flora</button></div>}</div>}
+          {section === "instruments" && <InstrumentsStudio level={level} />}
           {section === "systems" && <SystemsSection level={level} onOpenAtlas={(layer, structure) => { setActiveLayer(layer); if (structure) setSelectedStructure(structure); go("atlas"); }} />}
           {section === "development" && <DevelopmentSection />}
           {section === "practice" && <PracticeSection level={level} structure={practiceStructure} input={practiceInput} result={practiceResult} onInput={setPracticeInput} onSubmit={() => {
