@@ -1,7 +1,7 @@
 import { statSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { anatomy3DRegions, anatomy3DStructures, anatomy3DSystemMeta, structuresFor3D } from "./anatomy3DModel";
+import { anatomy3DRegions, anatomy3DStructures, anatomy3DSystemMeta, organ3DStructureForAtlasId, structuresFor3D } from "./anatomy3DModel";
 import { bodyLayers, medicalSources } from "./medicineData";
 
 describe("anatomy3DModel", () => {
@@ -51,5 +51,12 @@ describe("anatomy3DModel", () => {
     }
     expect(medicalSources.zAnatomy3D?.url).toContain("body-anatomy-3d-viewer");
     expect(medicalSources.bodyParts3D?.url).toContain("bodyparts3d");
+  });
+
+  it("abre no estúdio somente órgãos cobertos pelas malhas tridimensionais", () => {
+    expect(organ3DStructureForAtlasId("heart")).toBe("organ-heart");
+    expect(organ3DStructureForAtlasId("brain")).toBe("organ-brain");
+    expect(organ3DStructureForAtlasId("jejunum")).toBe("organ-intestines");
+    expect(organ3DStructureForAtlasId("pancreas")).toBeNull();
   });
 });

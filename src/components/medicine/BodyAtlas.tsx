@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Box, ChevronLeft, ChevronRight, ExternalLink, Maximize2, Move, RotateCcw, Search, Volume2, X, ZoomIn, ZoomOut } from "lucide-react";
+import { Box, ChevronLeft, ChevronRight, ExternalLink, Maximize2, Move, Rotate3D, RotateCcw, Search, Volume2, X, ZoomIn, ZoomOut } from "lucide-react";
+import { organ3DStructureForAtlasId } from "@/lib/anatomy3DModel";
 import {
   anatomyPositionFor,
   anatomyStructures,
@@ -20,11 +21,12 @@ interface BodyAtlasProps {
   onLayerChange: (layer: BodyLayer) => void;
   selected: AnatomyStructure | null;
   onSelect: (structure: AnatomyStructure) => void;
+  onOpen3D?: (structureId: string) => void;
 }
 
 const levelOrder: MedicineLevel[] = ["Iniciante", "Ciclo básico", "Ciclo clínico", "Internato", "Residência"];
 
-export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelect }: BodyAtlasProps) {
+export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelect, onOpen3D }: BodyAtlasProps) {
   const [zoom, setZoom] = useState(1);
   const [view, setView] = useState<AtlasView>("anterior");
   const [query, setQuery] = useState("");
@@ -122,6 +124,7 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
   const focusedLayer = focused ? bodyLayers.find((layer) => layer.id === focused.structure.layer) : null;
   const otherDetailView: AtlasView | null = focused ? (focused.view === "anterior" ? "posterior" : "anterior") : null;
   const canChangeDetailView = Boolean(focused && otherDetailView && anatomyPositionFor(focused.structure, otherDetailView));
+  const focused3DStructureId = focused ? organ3DStructureForAtlasId(focused.structure.id) : null;
 
   return <>
     <section className="med-atlas-shell" aria-label="Atlas anatômico visual interativo">
@@ -329,6 +332,10 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
                 <div><dt>Estruturas próximas</dt><dd>{focused.structure.nearby.length ? focused.structure.nearby.join(" · ") : "Aprofunde as relações na fonte anatômica vinculada."}</dd></div>
               </dl>
               <div className="med-anatomy-focus-actions">
+                {focused3DStructureId && onOpen3D && <button className="med-anatomy-open-3d" onClick={() => {
+                  setFocused(null);
+                  onOpen3D(focused3DStructureId);
+                }}><Rotate3D /> Isolar órgão em 3D</button>}
                 <button onClick={() => speakStructure(focused.structure.name)}><Volume2 /> Ouvir nome</button>
                 <a href={medicalSourceUrl(focused.structure.sourceId)} target="_blank" rel="noreferrer">Conferir fonte <ExternalLink /></a>
               </div>

@@ -255,37 +255,37 @@ export const anatomy3DStructures: Anatomy3DStructure[] = [
 
   {
     id: "organ-brain", name: "Encéfalo", latin: "Encephalon", layer: "organs", regionId: "head", region: "Cavidade craniana", system: "Nervoso",
-    summary: "Conjunto formado por cérebro, cerebelo e tronco encefálico.", function: "Integra informação, coordena respostas e participa da regulação homeostática.", sourceId: "openstaxCns", focus: [0, 3.5, 0], focusDistance: 1.95, color: "#c78586",
+    summary: "Conjunto formado por cérebro, cerebelo e tronco encefálico.", function: "Integra informação, coordena respostas e participa da regulação homeostática.", sourceId: "openstaxCns", focus: [0, 3.526, -0.158], focusDistance: 1.65, color: "#c78586",
     parts: [sphere([0.25, 3.53, 0], [0.38, 0.52, 0.43]), sphere([-0.25, 3.53, 0], [0.38, 0.52, 0.43]), sphere([0, 3.15, -0.32], [0.38, 0.25, 0.27])],
   },
   {
     id: "organ-lungs", name: "Pulmões", latin: "Pulmones", layer: "organs", regionId: "thorax", region: "Cavidades pleurais", system: "Respiratório",
-    summary: "Órgãos pares do tórax organizados em lobos ao redor do mediastino.", function: "Realizam ventilação e oferecem a interface para trocas gasosas com o sangue.", sourceId: "openstaxRespiratory", focus: [0, 1.55, 0], focusDistance: 2.7, color: "#7299a2",
+    summary: "Órgãos pares do tórax organizados em lobos ao redor do mediastino.", function: "Realizam ventilação e oferecem a interface para trocas gasosas com o sangue.", sourceId: "openstaxRespiratory", focus: [-0.004, 2.141, 0.054], focusDistance: 4.15, color: "#7299a2",
     parts: [capsule([0.48, 1.55, 0], [0.48, 0.78, 0.42], [0, 0, 0.08]), capsule([-0.48, 1.55, 0], [0.48, 0.78, 0.42], [0, 0, -0.08])],
   },
   {
     id: "organ-heart", name: "Coração", latin: "Cor", layer: "organs", regionId: "thorax", region: "Mediastino médio", system: "Cardiovascular",
-    summary: "Órgão muscular oco situado entre os pulmões, com maior parte à esquerda da linha mediana.", function: "Mantém o fluxo sanguíneo pelas circulações pulmonar e sistêmica.", sourceId: "openstaxHeart", focus: [-0.08, 1.42, 0.3], focusDistance: 2.05, color: "#b44255",
+    summary: "Órgão muscular oco situado entre os pulmões, com maior parte à esquerda da linha mediana.", function: "Mantém o fluxo sanguíneo pelas circulações pulmonar e sistêmica.", sourceId: "openstaxHeart", focus: [0.114, 2.105, 0.131], focusDistance: 1.85, color: "#b44255",
     parts: [sphere([-0.08, 1.42, 0.25], [0.38, 0.5, 0.34])],
   },
   {
     id: "organ-liver", name: "Fígado", latin: "Hepar", layer: "organs", regionId: "abdomen", region: "Hipocôndrio direito e epigástrio", system: "Digestório",
-    summary: "Grande órgão abdominal predominantemente à direita, logo abaixo do diafragma.", function: "Participa do metabolismo, armazenamento, síntese de proteínas plasmáticas e produção de bile.", sourceId: "openstaxDigestive", focus: [-0.28, 0.45, 0.2], focusDistance: 2.35, color: "#8c5147",
+    summary: "Grande órgão abdominal predominantemente à direita, logo abaixo do diafragma.", function: "Participa do metabolismo, armazenamento, síntese de proteínas plasmáticas e produção de bile.", sourceId: "openstaxDigestive", focus: [-0.092, 1.487, 0.108], focusDistance: 3.2, color: "#8c5147",
     parts: [sphere([-0.28, 0.45, 0.18], [0.72, 0.38, 0.42])],
   },
   {
     id: "organ-stomach", name: "Estômago", latin: "Gaster", layer: "organs", regionId: "abdomen", region: "Epigástrio e hipocôndrio esquerdo", system: "Digestório",
-    summary: "Órgão muscular dilatado entre esôfago e duodeno.", function: "Armazena, mistura e inicia etapas da digestão química do alimento.", sourceId: "openstaxDigestive", focus: [0.38, 0.25, 0.26], focusDistance: 2.15, color: "#b56d74",
+    summary: "Órgão muscular dilatado entre esôfago e duodeno.", function: "Armazena, mistura e inicia etapas da digestão química do alimento.", sourceId: "openstaxDigestive", focus: [0.227, 1.51, 0.214], focusDistance: 2.3, color: "#b56d74",
     parts: [sphere([0.38, 0.25, 0.23], [0.38, 0.48, 0.28])],
   },
   {
     id: "organ-kidneys", name: "Rins", latin: "Renes", layer: "organs", regionId: "abdomen", region: "Retroperitônio abdominal", system: "Urinário",
-    summary: "Órgãos pares localizados posteriormente no abdome, um de cada lado da coluna.", function: "Filtram plasma e regulam água, eletrólitos, equilíbrio ácido-base e outras funções homeostáticas.", sourceId: "openstaxKidney", focus: [0, 0.05, -0.3], focusDistance: 2.45, color: "#855868",
+    summary: "Órgãos pares localizados posteriormente no abdome, um de cada lado da coluna.", function: "Filtram plasma e regulam água, eletrólitos, equilíbrio ácido-base e outras funções homeostáticas.", sourceId: "openstaxKidney", focus: [-0.023, 1.183, -0.13], focusDistance: 2.9, color: "#855868",
     parts: [sphere([0.48, 0.05, -0.3], [0.22, 0.36, 0.2]), sphere([-0.48, 0.05, -0.3], [0.22, 0.36, 0.2])],
   },
   {
     id: "organ-intestines", name: "Intestinos", latin: "Intestina", layer: "organs", regionId: "abdomen", region: "Cavidade abdominal", system: "Digestório",
-    summary: "Alças do intestino delgado envolvidas em parte pelo intestino grosso.", function: "Continuam a digestão, absorvem nutrientes, água e eletrólitos e formam o conteúdo fecal.", sourceId: "openstaxDigestive", focus: [0, -0.18, 0.22], focusDistance: 2.35, color: "#c28a78",
+    summary: "Alças do intestino delgado envolvidas em parte pelo intestino grosso.", function: "Continuam a digestão, absorvem nutrientes, água e eletrólitos e formam o conteúdo fecal.", sourceId: "openstaxDigestive", focus: [0.019, 0.691, 0.239], focusDistance: 4.42, color: "#c28a78",
     parts: [torus([0, -0.12, 0.18], [0.62, 0.78, 0.36], [Math.PI / 2, 0, 0]), torus([0, -0.15, 0.22], [0.38, 0.5, 0.28], [Math.PI / 2, 0, 0])],
   },
   {
@@ -301,4 +301,28 @@ export function structuresFor3D(system: Anatomy3DSystemId, region: Anatomy3DRegi
     const regionMatches = region === "whole" || structure.regionId === region || structure.regionId === "whole";
     return systemMatches && regionMatches;
   });
+}
+
+const atlasOrgan3DMap: Record<string, string> = {
+  brain: "organ-brain",
+  heart: "organ-heart",
+  lungs: "organ-lungs",
+  liver: "organ-liver",
+  stomach: "organ-stomach",
+  kidneys: "organ-kidneys",
+  duodenum: "organ-intestines",
+  jejunum: "organ-intestines",
+  ileum: "organ-intestines",
+  cecum: "organ-intestines",
+  "vermiform-appendix": "organ-intestines",
+  "ascending-colon": "organ-intestines",
+  "transverse-colon": "organ-intestines",
+  "descending-colon": "organ-intestines",
+  "sigmoid-colon": "organ-intestines",
+  rectum: "organ-intestines",
+};
+
+/** Relaciona apenas estruturas cobertas por uma malha 3D anatômica disponível. */
+export function organ3DStructureForAtlasId(atlasId: string) {
+  return atlasOrgan3DMap[atlasId] ?? null;
 }

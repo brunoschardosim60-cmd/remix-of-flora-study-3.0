@@ -2,7 +2,7 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "rea
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { ContactShadows, Grid, OrbitControls, useGLTF } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
-import { Box3, CatmullRomCurve3, Color, DoubleSide, Mesh, MeshStandardMaterial, Object3D, Vector2, Vector3 } from "three";
+import { Box3, CatmullRomCurve3, Color, DoubleSide, Mesh, MeshStandardMaterial, Object3D, Plane, Vector2, Vector3 } from "three";
 import {
   Box,
   Brain,
@@ -37,9 +37,12 @@ import {
 import { medicalSources, type MedicineLevel } from "@/lib/medicineData";
 
 type CameraView = "perspective" | "front" | "back" | "left" | "right";
+type OrganViewMode = "context" | "isolated" | "section" | "transparent";
+type SectionAxis = "x" | "y" | "z";
 
 interface Anatomy3DStudioProps {
   level: MedicineLevel;
+  initialStructureId?: string | null;
 }
 
 const layerOpacity: Record<Exclude<Anatomy3DSystemId, "all">, number> = {
@@ -56,18 +59,23 @@ const REAL_SKIN_PATH = "/medicine/models/bodyparts3d-skin-v1.glb";
 const REAL_ORGANS_PATH = "/medicine/models/bodyparts3d-organs-v1.glb";
 const BODY_PARTS_SOURCE_BOUNDS = new Box3(new Vector3(-1.33905, -3.534865, -0.187946), new Vector3(1.33396, 3.18329, 0.971386));
 
-export function Anatomy3DStudio({ level }: Anatomy3DStudioProps) {
-  const [system, setSystem] = useState<Anatomy3DSystemId>("all");
-  const [region, setRegion] = useState<Anatomy3DRegionId>("whole");
-  const [selectedId, setSelectedId] = useState("organ-heart");
+export function Anatomy3DStudio({ level, initialStructureId }: Anatomy3DStudioProps) {
+  const initialStructure = anatomy3DStructures.find((item) => item.id === initialStructureId);
+  const startsWithOrgan = initialStructure?.layer === "organs";
+  const [system, setSystem] = useState<Anatomy3DSystemId>(startsWithOrgan ? "organs" : "all");
+  const [region, setRegion] = useState<Anatomy3DRegionId>(initialStructure?.regionId ?? "whole");
+  const [selectedId, setSelectedId] = useState(initialStructure?.id ?? "organ-heart");
   const [query, setQuery] = useState("");
   const [autoRotate, setAutoRotate] = useState(false);
   const [cameraView, setCameraView] = useState<CameraView>("perspective");
-  const [zoom, setZoom] = useState(1);
+  const [zoom, setZoom] = useState(startsWithOrgan ? 1.25 : 1);
   const [skinOpacity, setSkinOpacity] = useState(0.12);
   const [focusKey, setFocusKey] = useState(0);
-  const [focusSelected, setFocusSelected] = useState(false);
+  const [focusSelected, setFocusSelected] = useState(startsWithOrgan);
   const [modelSelection, setModelSelection] = useState<Anatomy3DStructure | null>(null);
+  const [organView, setOrganView] = useState<OrganViewMode>(startsWithOrgan ? "isolated" : "context");
+  const [sectionAxis, setSectionAxis] = useState<SectionAxis>("x");
+  const [sectionOffset, setSectionOffset] = useState(0);
   const rootRef = useRef<HTMLElement>(null);
 
   const regionMeta = anatomy3DRegions.find((item) => item.id === region) ?? anatomy3DRegions[0];
@@ -78,6 +86,7 @@ export function Anatomy3DStudio({ level }: Anatomy3DStudioProps) {
     return visibleStructures.filter((item) => normalize(`${item.name} ${item.latin ?? ""} ${item.region} ${item.system} ${item.function}`).includes(normalized));
   }, [query, visibleStructures]);
   const selected = anatomy3DStructures.find((item) => item.id === selectedId) ?? modelSelection;
+  const selectedOrganSemantic = organSemanticFromSelection(selected?.id ?? null);
   const selectedIsVisible = Boolean(selected && (selected.id.startsWith("model:") || visibleStructures.some((item) => item.id === selected.id)));
   const cameraFocus = focusSelected && selected && selectedIsVisible ? selected.focus : regionMeta.focus;
   const cameraDistance = focusSelected && selected && selectedIsVisible ? selected.focusDistance : regionMeta.distance;
@@ -95,6 +104,7 @@ export function Anatomy3DStudio({ level }: Anatomy3DStudioProps) {
     const next = structuresFor3D(nextSystem, region)[0] ?? structuresFor3D(nextSystem, "whole")[0];
     if (next) setSelectedId(next.id);
     setModelSelection(null);
+    setOrganView("context");
     setFocusSelected(false);
     setFocusKey((value) => value + 1);
   };
@@ -116,6 +126,7 @@ export function Anatomy3DStudio({ level }: Anatomy3DStudioProps) {
     setModelSelection(structure.id.startsWith("model:") ? structure : null);
     setCameraView("perspective");
     setFocusSelected(true);
+    if (structure.layer === "organs") setOrganView("isolated");
     setFocusKey((value) => value + 1);
   };
 
@@ -131,6 +142,8 @@ export function Anatomy3DStudio({ level }: Anatomy3DStudioProps) {
     setCameraView("perspective");
     setZoom(1);
     setFocusSelected(false);
+    setOrganView("context");
+    setSectionOffset(0);
     setFocusKey((value) => value + 1);
   };
 
@@ -139,6 +152,14 @@ export function Anatomy3DStudio({ level }: Anatomy3DStudioProps) {
     if (!root) return;
     if (document.fullscreenElement) await document.exitFullscreen();
     else await root.requestFullscreen();
+  };
+
+  const changeOrganView = (mode: OrganViewMode) => {
+    setOrganView(mode);
+    setSectionOffset(0);
+    setFocusSelected(mode !== "context");
+    if (mode !== "context") setZoom(1.35);
+    setFocusKey((value) => value + 1);
   };
 
   return (
@@ -198,9 +219,26 @@ export function Anatomy3DStudio({ level }: Anatomy3DStudioProps) {
             </div>
           </div>
 
+          {system === "organs" && selected && selectedOrganSemantic && <div className="med-3d-organ-stagebar" aria-label="Modo de visualização do órgão">
+            <div className="med-3d-organ-stage-title"><span>ÓRGÃO SELECIONADO</span><strong>{selected.name}</strong></div>
+            <div className="med-3d-organ-modes">
+              {([
+                ["context", "No corpo"],
+                ["isolated", "Inteiro"],
+                ["section", "Metade"],
+                ["transparent", "Interior"],
+              ] as Array<[OrganViewMode, string]>).map(([mode, label]) => <button key={mode} className={organView === mode ? "active" : ""} onClick={() => changeOrganView(mode)}>{mode === "section" ? <Box /> : mode === "transparent" ? <Eye /> : <PersonStanding />}{label}</button>)}
+            </div>
+            {organView === "section" && <div className="med-3d-section-controls">
+              <span>PLANO DO CORTE</span>
+              {(["x", "y", "z"] as SectionAxis[]).map((axis) => <button key={axis} className={sectionAxis === axis ? "active" : ""} onClick={() => setSectionAxis(axis)}>{axis === "x" ? "Sagital" : axis === "y" ? "Transversal" : "Coronal"}</button>)}
+              <input aria-label="Posição do corte anatômico" type="range" min="-0.7" max="0.7" step="0.05" value={sectionOffset} onChange={(event) => setSectionOffset(Number(event.target.value))} />
+            </div>}
+          </div>}
+
           <div className="med-3d-canvas" role="img" aria-label={`Modelo 3D interativo mostrando ${anatomy3DSystemMeta.find((item) => item.id === system)?.label} em ${regionMeta.label}`}>
             <Suspense fallback={<div className="med-3d-loading"><Rotate3D /><strong>Preparando o modelo tridimensional…</strong></div>}>
-              <Canvas shadows dpr={[1, 1.8]} camera={{ position: [4.2, 1.4, 9.5], fov: 36, near: 0.1, far: 80 }} gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}>
+              <Canvas shadows dpr={[1, 1.8]} camera={{ position: [4.2, 1.4, 9.5], fov: 36, near: 0.1, far: 80 }} gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }} onCreated={({ gl }) => { gl.localClippingEnabled = true; }}>
                 <color attach="background" args={["#edf3f0"]} />
                 <fog attach="fog" args={["#edf3f0", 13, 24]} />
                 <ambientLight intensity={1.1} />
@@ -208,7 +246,7 @@ export function Anatomy3DStudio({ level }: Anatomy3DStudioProps) {
                 <directionalLight position={[5, 9, 7]} intensity={2.3} castShadow shadow-mapSize={[1024, 1024]} />
                 <directionalLight position={[-6, 3, 2]} intensity={1.1} color="#b9d7cd" />
                 <pointLight position={[0, 2, -5]} intensity={1.2} color="#9fc7bb" />
-                <RealBodyPartsModel system={system} selectedId={selected?.id ?? null} skinOpacity={skinOpacity} onSelect={selectStructure} />
+                <RealBodyPartsModel system={system} selectedId={selected?.id ?? null} skinOpacity={skinOpacity} organView={organView} sectionAxis={sectionAxis} sectionOffset={sectionOffset} onSelect={selectStructure} />
                 <RealMusculoskeletalModel system={system} selectedId={selected?.id ?? null} onSelect={selectStructure} />
                 <AnatomyModel system={system} region={region} selectedId={selected?.id ?? null} skinOpacity={skinOpacity} onSelect={selectStructure} />
                 <ContactShadows position={[0, -4.46, 0]} opacity={0.34} scale={8} blur={2.6} far={5} />
@@ -232,10 +270,11 @@ export function Anatomy3DStudio({ level }: Anatomy3DStudioProps) {
             <p>{selected.summary}</p>
             <dl><div><dt>Função</dt><dd>{selected.function}</dd></div><div><dt>Localização espacial</dt><dd>Centro do modelo em {formatCoordinates(selected.focus)}. Use a rotação para conferir relações anteriores, posteriores e laterais.</dd></div></dl>
             <div className="med-3d-detail-actions">
-              <button onClick={() => { setFocusSelected(true); setZoom(1.25); setFocusKey((value) => value + 1); }}><Focus /> Isolar e aproximar</button>
+              <button onClick={() => { setFocusSelected(true); setZoom(1.25); if (selected.layer === "organs") setOrganView("isolated"); setFocusKey((value) => value + 1); }}><Focus /> Isolar e aproximar</button>
               <button onClick={() => speak(selected.name)}><Volume2 /> Ouvir nome</button>
               <a href={medicalSources[selected.sourceId]?.url ?? medicalSources.openAnatomy.url} target="_blank" rel="noreferrer"><ExternalLink /> Conferir anatomia</a>
             </div>
+            {selected.layer === "organs" && <div className="med-3d-organ-disclaimer"><Box /><span><strong>{organViewLabel(organView)}</strong>{organViewDescription(organView)}</span></div>}
             <div className="med-3d-safety"><ShieldCheck /><span><strong>Modelo educacional</strong>As formas 3D ajudam a entender orientação e relações gerais; não substituem atlas anatômico validado, dissecação ou avaliação profissional.</span></div>
           </> : <div className="med-3d-no-selection"><MousePointer2 /><h3>Toque em uma estrutura</h3><p>Você pode selecionar direto no corpo ou usar o índice ao lado.</p></div>}
         </aside>
@@ -255,11 +294,34 @@ function AnatomyModel({ system, region, selectedId, skinOpacity, onSelect }: { s
   ))}</group>;
 }
 
-function RealBodyPartsModel({ system, selectedId, skinOpacity, onSelect }: { system: Anatomy3DSystemId; selectedId: string | null; skinOpacity: number; onSelect: (structure: Anatomy3DStructure) => void }) {
+function RealBodyPartsModel({ system, selectedId, skinOpacity, organView, sectionAxis, sectionOffset, onSelect }: {
+  system: Anatomy3DSystemId;
+  selectedId: string | null;
+  skinOpacity: number;
+  organView: OrganViewMode;
+  sectionAxis: SectionAxis;
+  sectionOffset: number;
+  onSelect: (structure: Anatomy3DStructure) => void;
+}) {
   const skinGltf = useGLTF(REAL_SKIN_PATH, "/medicine/models/draco/");
   const organsGltf = useGLTF(REAL_ORGANS_PATH, "/medicine/models/draco/");
   const skinModel = useMemo(() => prepareBodyPartsRoot(skinGltf.scene, "skin"), [skinGltf.scene]);
   const organsModel = useMemo(() => prepareBodyPartsRoot(organsGltf.scene, "organs"), [organsGltf.scene]);
+  const selectedSemantic = organSemanticFromSelection(selectedId);
+  const sectionPlane = useMemo(() => {
+    if (!selectedSemantic) return null;
+    const bounds = new Box3();
+    organsModel.traverse((object) => {
+      if (object instanceof Mesh && organSemantic(object.name) === selectedSemantic) bounds.expandByObject(object);
+    });
+    if (bounds.isEmpty()) return null;
+    const center = bounds.getCenter(new Vector3());
+    const size = bounds.getSize(new Vector3());
+    const normal = sectionAxis === "x" ? new Vector3(1, 0, 0) : sectionAxis === "y" ? new Vector3(0, 1, 0) : new Vector3(0, 0, 1);
+    const axisSize = sectionAxis === "x" ? size.x : sectionAxis === "y" ? size.y : size.z;
+    const point = center.clone().addScaledVector(normal, sectionOffset * axisSize * .5);
+    return new Plane().setFromNormalAndCoplanarPoint(normal, point);
+  }, [organsModel, sectionAxis, sectionOffset, selectedSemantic]);
 
   useEffect(() => {
     skinModel.visible = system === "all" || system === "surface";
@@ -277,14 +339,23 @@ function RealBodyPartsModel({ system, selectedId, skinOpacity, onSelect }: { sys
     organsModel.traverse((object) => {
       if (!(object instanceof Mesh)) return;
       const semantic = organSemantic(object.name);
-      object.visible = system !== "nervous" || semantic === "brain";
+      const isolateOrgan = system === "organs" && organView !== "context" && Boolean(selectedSemantic);
+      object.visible = (system !== "nervous" || semantic === "brain") && (!isolateOrgan || semantic === selectedSemantic);
       const material = object.material as MeshStandardMaterial;
       const guidedId = system === "nervous" && semantic === "brain" ? "nerve-brain" : `organ-${semantic}`;
       const active = selectedId === guidedId || selectedId === `model:${system === "nervous" ? "nerve" : "organ"}:${semantic}`;
       material.emissive.copy(material.color);
       material.emissiveIntensity = active ? 0.34 : 0.12;
+      const transparentInterior = system === "organs" && organView === "transparent" && semantic === selectedSemantic;
+      material.opacity = transparentInterior ? .32 : 1;
+      material.transparent = transparentInterior;
+      material.depthWrite = !transparentInterior;
+      material.clippingPlanes = system === "organs" && organView === "section" && semantic === selectedSemantic && sectionPlane ? [sectionPlane] : [];
+      material.clipShadows = Boolean(material.clippingPlanes.length);
+      material.side = DoubleSide;
+      material.needsUpdate = true;
     });
-  }, [organsModel, selectedId, skinModel, skinOpacity, system]);
+  }, [organView, organsModel, sectionPlane, selectedId, selectedSemantic, skinModel, skinOpacity, system]);
 
   const selectSkinModel = useCallback(() => {
     onSelect({
@@ -524,6 +595,27 @@ function meshFromEvent(event: ThreeEvent<MouseEvent>) {
 
 function organSemantic(name: string) {
   return name.split("__")[0]?.replace(/\.\d+$/, "") || "brain";
+}
+
+function organSemanticFromSelection(id: string | null) {
+  if (!id) return null;
+  if (id === "nerve-brain" || id === "model:nerve:brain") return "brain";
+  const semantic = id.startsWith("model:organ:") ? id.slice("model:organ:".length) : id.startsWith("organ-") ? id.slice("organ-".length) : "";
+  return ["brain", "heart", "intestines", "kidneys", "liver", "lungs", "stomach"].includes(semantic) ? semantic : null;
+}
+
+function organViewLabel(mode: OrganViewMode) {
+  if (mode === "context") return "Órgão em contexto";
+  if (mode === "isolated") return "Exterior isolado";
+  if (mode === "section") return "Corte geométrico ajustável";
+  return "Exploração translúcida";
+}
+
+function organViewDescription(mode: OrganViewMode) {
+  if (mode === "context") return "Mantém os demais órgãos para estudar relações espaciais.";
+  if (mode === "isolated") return "Remove o entorno e permite rotação livre de toda a superfície da malha.";
+  if (mode === "section") return "Recorta a malha pelo plano escolhido. Só revela volumes realmente presentes no arquivo 3D.";
+  return "Reduz a opacidade para comparar superfícies sobrepostas; não cria câmaras ausentes do modelo.";
 }
 
 function organColor(semantic: string) {

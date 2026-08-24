@@ -377,6 +377,15 @@
 .med-anatomy-focus-actions button,
 .med-anatomy-focus-actions a { display: flex; min-height: 42px; align-items: center; justify-content: center; gap: 6px; border-radius: 11px; background: #e8f0ed; color: #416f62; font-size: 8px; font-weight: 900; text-align: center; }
 .med-anatomy-focus-actions svg { width: 13px; }
+.med-anatomy-focus-actions .med-anatomy-open-3d {
+  grid-column: 1 / -1;
+  min-height: 46px;
+  border: 1px solid #2f7563;
+  background: linear-gradient(135deg, #2f7563, #245f51);
+  box-shadow: 0 12px 25px rgba(38, 102, 84, .18);
+  color: #fff;
+}
+.med-anatomy-focus-actions .med-anatomy-open-3d:hover { background: linear-gradient(135deg, #367f6c, #286857); }
 
 @keyframes med-detail-dialog-in { from { transform: translateY(14px) scale(.975); opacity: 0; } }
 @keyframes med-detail-pulse { 50% { transform: scale(1.2); opacity: .25; } }
