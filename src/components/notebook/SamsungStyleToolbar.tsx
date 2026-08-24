@@ -282,10 +282,7 @@ export function SamsungStyleToolbar({
           </ToolBtn>
         </>
       ) : (
-        /* Text mode: show a simpler toolbar with Flora */
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground px-2">Use a barra de formatação no topo do papel</span>
-        </div>
+        <span className="hidden sm:inline px-2 text-xs text-muted-foreground">Escreva livremente na página</span>
       )}
 
       <div className="nb-toolbar-sep" />

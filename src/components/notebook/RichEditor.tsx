@@ -145,13 +145,6 @@ export function RichEditor({ content, onChange, userId, notebookId, darkMode, on
 
   return (
     <div className={`flex flex-col h-full ${darkMode ? "text-gray-100" : ""}`}>
-      <EditorToolbar
-        editor={editor}
-        userId={userId}
-        notebookId={notebookId}
-        darkMode={darkMode}
-        onToggleDarkMode={onToggleDarkMode}
-      />
       {editor && (
         <BubbleMenu
           editor={editor}
@@ -197,25 +190,35 @@ export function RichEditor({ content, onChange, userId, notebookId, darkMode, on
           </div>
         </BubbleMenu>
       )}
-      <div className="flex-1 overflow-auto py-4 sm:py-6 px-2 sm:px-3">
+      <div className="flex-1 py-5 sm:py-7 px-3 sm:px-6">
         <div
-          className={`relative mx-auto w-full ${wide ? "max-w-[1400px]" : "max-w-[1180px]"} rounded-2xl transition-shadow duration-300 animate-fade-in notebook-paper-realistic ${showMargin ? "with-margin" : ""} ${handwriting ? "notebook-handwriting" : ""} ${
+          className={`relative mx-auto w-full ${wide ? "max-w-[1180px]" : "max-w-[920px]"} overflow-hidden rounded-xl transition-shadow duration-300 animate-fade-in notebook-paper-realistic ${showMargin ? "with-margin" : ""} ${handwriting ? "notebook-handwriting" : ""} ${
             darkMode
               ? "bg-gray-900 shadow-[0_8px_30px_rgba(0,0,0,0.5)] [&_.ProseMirror]:text-gray-100 [&_.ProseMirror_h1]:text-gray-50 [&_.ProseMirror_h2]:text-gray-50 [&_.ProseMirror_h3]:text-gray-50"
               : "bg-white shadow-[0_4px_24px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.08)]"
           } ${TEMPLATE_CLASS[template] || ""}`}
           style={{
-            padding: "56px 64px",
             minHeight: "85vh",
             transform: `scale(${zoom})`,
             transformOrigin: "top center",
           }}
         >
-          {backgroundImage && (
-            <img src={backgroundImage} alt="Página importada do PDF" draggable={false} className="pointer-events-none absolute inset-0 h-full w-full select-none object-contain object-top opacity-100" />
-          )}
-          <EditorContent editor={editor} className="relative z-[1] min-h-dvh" />
-          {paperOverlay}
+          <div className="relative z-30 border-b border-black/[0.06] bg-white/90 backdrop-blur dark:bg-gray-900/90">
+            <EditorToolbar
+              editor={editor}
+              userId={userId}
+              notebookId={notebookId}
+              darkMode={darkMode}
+              onToggleDarkMode={onToggleDarkMode}
+            />
+          </div>
+          <div className="relative min-h-[calc(85vh-42px)] px-8 py-10 sm:px-14 sm:py-12">
+            {backgroundImage && (
+              <img src={backgroundImage} alt="Página importada do PDF" draggable={false} className="pointer-events-none absolute inset-0 h-full w-full select-none object-contain object-top opacity-100" />
+            )}
+            <EditorContent editor={editor} className="relative z-[1] min-h-[70vh]" />
+            {paperOverlay}
+          </div>
         </div>
       </div>
     </div>
