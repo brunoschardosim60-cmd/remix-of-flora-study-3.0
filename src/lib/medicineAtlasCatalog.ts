@@ -139,6 +139,165 @@ const muscularStructures = makeGroup("muscular", "openstaxMuscle", [
   ["calcaneal-tendon", "Tendão calcâneo", "tornozelo posterior", "Transmite ao calcâneo a força do tríceps sural para a flexão plantar.", posterior(55, 93), "Tendo calcaneus", ["tendão de aquiles"]],
 ]);
 
+const individualVertebraRows: CatalogRow[] = [
+  ...Array.from({ length: 7 }, (_, index) => {
+    const number = index + 1;
+    const specialName = number === 1 ? "Atlas (C1)" : number === 2 ? "Áxis (C2)" : `Vértebra cervical C${number}`;
+    const functionText = number === 1
+      ? "Sustenta o crânio e participa principalmente do movimento de flexão e extensão da cabeça."
+      : number === 2
+        ? "Seu processo odontoide forma o pivô principal da rotação entre atlas e áxis."
+        : "Protege a medula cervical, transmite cargas e participa da mobilidade do pescoço.";
+    return [
+      `vertebra-c${number}`,
+      specialName,
+      "coluna cervical",
+      functionText,
+      posterior(49.6 + (index % 2) * 0.8, 13.2 + index * 0.85),
+      `Vertebra cervicalis ${number}`,
+      [`c${number}`, `vértebra c${number}`],
+    ] as CatalogRow;
+  }),
+  ...Array.from({ length: 12 }, (_, index) => {
+    const number = index + 1;
+    return [
+      `vertebra-t${number}`,
+      `Vértebra torácica T${number}`,
+      "coluna torácica",
+      "Protege a medula, transmite cargas e articula-se com as costelas na caixa torácica.",
+      posterior(49.5 + (index % 2) * 1, 19.5 + index * 1.62),
+      `Vertebra thoracica ${number}`,
+      [`t${number}`, `vértebra t${number}`],
+    ] as CatalogRow;
+  }),
+  ...Array.from({ length: 5 }, (_, index) => {
+    const number = index + 1;
+    return [
+      `vertebra-l${number}`,
+      `Vértebra lombar L${number}`,
+      "coluna lombar",
+      "Suporta grande parte da carga do tronco e protege as estruturas neurais lombares.",
+      posterior(49.5 + (index % 2) * 1, 39 + index * 1.9),
+      `Vertebra lumbalis ${number}`,
+      [`l${number}`, `vértebra l${number}`],
+    ] as CatalogRow;
+  }),
+  ...Array.from({ length: 5 }, (_, index) => {
+    const number = index + 1;
+    return [
+      `sacral-segment-s${number}`,
+      `Segmento sacral S${number}`,
+      "sacro",
+      "Compõe o sacro fusionado, participa da parede posterior da pelve e transmite carga à cintura pélvica.",
+      posterior(49.6 + (index % 2) * 0.8, 48.8 + index * 1.05),
+      `Vertebra sacralis ${number}`,
+      [`s${number}`, `segmento s${number}`],
+    ] as CatalogRow;
+  }),
+  ...Array.from({ length: 4 }, (_, index) => {
+    const number = index + 1;
+    return [
+      `coccygeal-segment-co${number}`,
+      `Segmento coccígeo Co${number}`,
+      "cóccix",
+      "Compõe a extremidade inferior da coluna e oferece inserção a ligamentos e músculos do assoalho pélvico.",
+      posterior(49.7 + (index % 2) * 0.6, 54.1 + index * 0.75),
+      `Vertebra coccygea ${number}`,
+      [`co${number}`, `segmento coccígeo ${number}`],
+    ] as CatalogRow;
+  }),
+];
+
+const individualRibRows: CatalogRow[] = Array.from({ length: 12 }, (_, index) => {
+  const number = index + 1;
+  return [
+    `rib-${number}`,
+    `${number}ª costela`,
+    "caixa torácica posterior",
+    "Protege as vísceras torácicas, oferece inserções musculares e participa da mecânica respiratória.",
+    posterior(58.5 + (index % 2) * 1.1, 21 + index * 1.35),
+    `Costa ${number}`,
+    [`costela ${number}`, `${number}ª costela`],
+  ];
+});
+
+const detailedHandBoneRows: CatalogRow[] = [
+  ["scaphoid", "Escafoide", "carpo", "Participa da fileira proximal do carpo e da articulação radiocárpica.", posterior(79.2, 48.5), "Os scaphoideum"],
+  ["lunate", "Semilunar", "carpo", "Ocupa a fileira proximal do carpo e articula-se proximalmente com o rádio.", posterior(80.3, 48.2), "Os lunatum"],
+  ["triquetrum", "Piramidal", "carpo", "Integra a fileira proximal do carpo no lado ulnar.", posterior(81.4, 48.3), "Os triquetrum"],
+  ["pisiform", "Pisiforme", "carpo", "Osso sesamoide no tendão do flexor ulnar do carpo.", posterior(82.3, 48.5), "Os pisiforme"],
+  ["trapezium", "Trapézio", "carpo", "Articula-se com o primeiro metacarpal e permite grande mobilidade do polegar.", posterior(79.3, 49.7), "Os trapezium"],
+  ["trapezoid", "Trapezoide", "carpo", "Articula-se principalmente com o segundo metacarpal.", posterior(80.4, 49.5), "Os trapezoideum"],
+  ["capitate", "Capitato", "carpo", "É o maior osso do carpo e ocupa posição central na fileira distal.", posterior(81.4, 49.5), "Os capitatum", ["osso grande"]],
+  ["hamate", "Hamato", "carpo", "Integra a fileira distal ulnar do carpo e apresenta o hâmulo do hamato.", posterior(82.4, 49.7), "Os hamatum", ["unciforme"]],
+  ...Array.from({ length: 5 }, (_, index) => {
+    const number = index + 1;
+    return [
+      `metacarpal-${number}`,
+      `${number}º metacarpal`,
+      "mão",
+      "Forma um dos raios ósseos da palma e transmite forças entre carpo e falanges.",
+      posterior(79.2 + index * 1.35, 51.2 + Math.abs(2 - index) * 0.25),
+      `Os metacarpale ${number}`,
+      [`metacarpo ${number}`],
+    ] as CatalogRow;
+  }),
+  ...[1, 2, 3, 4, 5].flatMap((digit): CatalogRow[] => {
+    const isThumb = digit === 1;
+    const segments = isThumb ? ["proximal", "distal"] : ["proximal", "media", "distal"];
+    return segments.map((segment, segmentIndex) => {
+      const segmentLabel = segment === "media" ? "média" : segment;
+      const romanDigit = ["I", "II", "III", "IV", "V"][digit - 1];
+      return [
+        `hand-phalanx-${digit}-${segment}`,
+        `Falange ${segmentLabel} do dedo ${romanDigit} da mão`,
+        "dedos da mão",
+        "Compõe o esqueleto digital e participa dos movimentos finos e da preensão.",
+        posterior(79.1 + (digit - 1) * 1.45, 52.7 + segmentIndex * 0.75),
+        `Phalanx ${segment} digiti ${digit} manus`,
+        [`falange ${segmentLabel} do dedo ${digit}`],
+      ];
+    });
+  }),
+];
+
+const detailedFootBoneRows: CatalogRow[] = [
+  ["navicular-bone", "Navicular", "mediopé", "Contribui para o arco longitudinal medial e articula tálus e cuneiformes.", posterior(55.7, 94.3), "Os naviculare"],
+  ["cuboid-bone", "Cuboide", "mediopé lateral", "Contribui para a coluna lateral do pé e articula-se com o calcâneo.", posterior(59.1, 94.5), "Os cuboideum"],
+  ["medial-cuneiform", "Cuneiforme medial", "mediopé", "Articula-se com o primeiro metatarsal e participa do arco medial.", posterior(55.8, 95.2), "Os cuneiforme mediale"],
+  ["intermediate-cuneiform", "Cuneiforme intermédio", "mediopé", "Articula-se principalmente com o segundo metatarsal.", posterior(57.1, 95.1), "Os cuneiforme intermedium"],
+  ["lateral-cuneiform", "Cuneiforme lateral", "mediopé", "Articula-se com metatarsais centrais e com outros ossos do tarso.", posterior(58.2, 95.2), "Os cuneiforme laterale"],
+  ...Array.from({ length: 5 }, (_, index) => {
+    const number = index + 1;
+    return [
+      `metatarsal-${number}`,
+      `${number}º metatarsal`,
+      "antepé",
+      "Forma um dos raios do antepé e participa da sustentação dos arcos e da propulsão.",
+      posterior(55.2 + index * 1.3, 96.2 + Math.abs(2 - index) * 0.16),
+      `Os metatarsale ${number}`,
+      [`metatarso ${number}`],
+    ] as CatalogRow;
+  }),
+  ...[1, 2, 3, 4, 5].flatMap((digit): CatalogRow[] => {
+    const isHallux = digit === 1;
+    const segments = isHallux ? ["proximal", "distal"] : ["proximal", "media", "distal"];
+    return segments.map((segment, segmentIndex) => {
+      const segmentLabel = segment === "media" ? "média" : segment;
+      const romanDigit = ["I", "II", "III", "IV", "V"][digit - 1];
+      return [
+        `foot-phalanx-${digit}-${segment}`,
+        `Falange ${segmentLabel} do dedo ${romanDigit} do pé`,
+        "dedos do pé",
+        "Compõe o esqueleto digital do pé e auxilia equilíbrio e propulsão durante a marcha.",
+        posterior(55.1 + (digit - 1) * 1.4, 97.4 + segmentIndex * 0.55),
+        `Phalanx ${segment} digiti ${digit} pedis`,
+        [`falange ${segmentLabel} do dedo ${digit} do pé`],
+      ];
+    });
+  }),
+];
+
 const skeletalStructures = makeGroup("skeletal", "openstaxSkeleton", [
   ["frontal-bone", "Osso frontal", "crânio anterior", "Forma a fronte e parte das órbitas e da base anterior do crânio.", anterior(50, 5), "Os frontale"],
   ["parietal-bone", "Osso parietal", "calvária", "Forma grande parte das paredes superior e lateral do crânio.", both(46, 4, 54, 4), "Os parietale"],
@@ -155,8 +314,8 @@ const skeletalStructures = makeGroup("skeletal", "openstaxSkeleton", [
   ["sternum", "Esterno", "tórax anterior", "Protege estruturas mediastinais e articula-se com clavículas e cartilagens costais.", anterior(50, 27), "Sternum"],
   ["ribs", "Costelas", "caixa torácica", "Protegem órgãos torácicos e participam da mecânica respiratória.", both(41, 28, 59, 28), "Costae"],
   ["humerus", "Úmero", "braço", "Forma o esqueleto do braço e participa das articulações do ombro e cotovelo.", both(31, 31, 69, 31), "Humerus"],
-  ["radius", "Rádio", "antebraço lateral", "Participa das articulações do cotovelo e punho e permite pronação e supinação.", anterior(23, 44), "Radius"],
-  ["ulna", "Ulna", "antebraço medial", "Estabiliza o antebraço e forma importante articulação com o úmero.", anterior(27, 44), "Ulna"],
+  ["radius", "Rádio", "antebraço lateral", "Participa das articulações do cotovelo e punho e permite pronação e supinação.", both(23, 44, 77, 44), "Radius"],
+  ["ulna", "Ulna", "antebraço medial", "Estabiliza o antebraço e forma importante articulação com o úmero.", both(27, 44, 73, 44), "Ulna"],
   ["carpals", "Ossos do carpo", "punho", "Formam o esqueleto proximal da mão e permitem mobilidade do punho.", both(20, 49, 80, 49), "Ossa carpi"],
   ["metacarpals", "Metacarpos", "palma", "Formam o esqueleto da palma da mão.", both(18, 51, 82, 51), "Ossa metacarpi"],
   ["hand-phalanges", "Falanges da mão", "dedos da mão", "Formam o esqueleto dos dedos e permitem preensão fina.", both(15, 53, 85, 53), "Phalanges manus"],
@@ -174,6 +333,10 @@ const skeletalStructures = makeGroup("skeletal", "openstaxSkeleton", [
   ["tarsals", "Ossos do tarso", "retropé e mediopé", "Formam a porção proximal do esqueleto do pé.", both(43, 94, 57, 94), "Ossa tarsi"],
   ["metatarsals", "Metatarsos", "antepé", "Formam o esqueleto intermediário do pé e participam dos arcos plantares.", both(42, 96, 58, 96), "Ossa metatarsi"],
   ["foot-phalanges", "Falanges do pé", "dedos do pé", "Formam o esqueleto dos dedos e auxiliam equilíbrio e propulsão.", both(40, 98, 60, 98), "Phalanges pedis"],
+  ...individualVertebraRows,
+  ...individualRibRows,
+  ...detailedHandBoneRows,
+  ...detailedFootBoneRows,
 ]);
 
 const vascularStructures = makeGroup("vascular", "openstaxCirculation", [

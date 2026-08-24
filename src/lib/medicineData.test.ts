@@ -159,6 +159,46 @@ describe("medicine content integrity", () => {
     }
   });
 
+  it("catalogs the posterior skeleton bone by bone instead of only as grouped regions", () => {
+    const posteriorBoneIds = [
+      ...Array.from({ length: 7 }, (_, index) => `vertebra-c${index + 1}`),
+      ...Array.from({ length: 12 }, (_, index) => `vertebra-t${index + 1}`),
+      ...Array.from({ length: 5 }, (_, index) => `vertebra-l${index + 1}`),
+      ...Array.from({ length: 5 }, (_, index) => `sacral-segment-s${index + 1}`),
+      ...Array.from({ length: 4 }, (_, index) => `coccygeal-segment-co${index + 1}`),
+      ...Array.from({ length: 12 }, (_, index) => `rib-${index + 1}`),
+      "scaphoid",
+      "lunate",
+      "triquetrum",
+      "pisiform",
+      "trapezium",
+      "trapezoid",
+      "capitate",
+      "hamate",
+      "talus",
+      "calcaneus",
+      "navicular-bone",
+      "cuboid-bone",
+      "medial-cuneiform",
+      "intermediate-cuneiform",
+      "lateral-cuneiform",
+    ];
+
+    for (const id of posteriorBoneIds) {
+      const structure = anatomyStructures.find((item) => item.id === id);
+      expect(structure, id).toBeDefined();
+      expect(structure?.layer, id).toBe("skeletal");
+      expect(anatomyPositionFor(structure!, "posterior"), `${id} posterior marker`).not.toBeNull();
+    }
+
+    for (const digit of [1, 2, 3, 4, 5]) {
+      expect(anatomyStructures.some((item) => item.id === `metacarpal-${digit}`), `metacarpal ${digit}`).toBe(true);
+      expect(anatomyStructures.some((item) => item.id === `metatarsal-${digit}`), `metatarsal ${digit}`).toBe(true);
+      expect(anatomyStructures.some((item) => item.id === `hand-phalanx-${digit}-proximal`), `hand phalanx ${digit}`).toBe(true);
+      expect(anatomyStructures.some((item) => item.id === `foot-phalanx-${digit}-proximal`), `foot phalanx ${digit}`).toBe(true);
+    }
+  });
+
   it("keeps every medical illustration available in the public bundle", () => {
     expect(publicAssetExists("/medicine/medicine-hero-v2.png")).toBe(true);
 
