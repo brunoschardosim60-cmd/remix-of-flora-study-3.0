@@ -35,6 +35,9 @@ interface RichEditorProps {
   showMargin?: boolean;
   /** Imagem persistente usada como fundo, por exemplo uma página importada de PDF. */
   backgroundImage?: string;
+  /** Bloco solicitado por uma ferramenta externa, inserido na seleção atual. */
+  insertionRequest?: { id: number; html: string } | null;
+  onInsertionHandled?: (id: number) => void;
 }
 
 const TEMPLATE_CLASS: Record<string, string> = {
@@ -47,8 +50,9 @@ const TEMPLATE_CLASS: Record<string, string> = {
   essay: "notebook-essay",
 };
 
-export function RichEditor({ content, onChange, userId, notebookId, darkMode, onToggleDarkMode, template = "blank", zoom = 1, paperOverlay, wide = false, handwriting = false, showMargin = true, backgroundImage }: RichEditorProps) {
+export function RichEditor({ content, onChange, userId, notebookId, darkMode, onToggleDarkMode, template = "blank", zoom = 1, paperOverlay, wide = false, handwriting = false, showMargin = true, backgroundImage, insertionRequest, onInsertionHandled }: RichEditorProps) {
   const isExternalUpdate = useRef(false);
+  const lastInsertionId = useRef<number | null>(null);
   const [floraBusy, setFloraBusy] = useState<null | string>(null);
 
   const editor = useEditor({
@@ -116,6 +120,13 @@ export function RichEditor({ content, onChange, userId, notebookId, darkMode, on
       isExternalUpdate.current = false;
     }
   }, [content, editor]);
+
+  useEffect(() => {
+    if (!editor || !insertionRequest || lastInsertionId.current === insertionRequest.id) return;
+    lastInsertionId.current = insertionRequest.id;
+    editor.chain().focus().insertContent(insertionRequest.html).run();
+    onInsertionHandled?.(insertionRequest.id);
+  }, [editor, insertionRequest, onInsertionHandled]);
 
   const runFlora = async (mode: "fix" | "formal" | "simple" | "summary") => {
     if (!editor) return;

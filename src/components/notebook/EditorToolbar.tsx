@@ -5,7 +5,7 @@ import {
   AlignLeft, AlignCenter, AlignRight, ImagePlus, Undo, Redo,
   Palette, Type as TypeIcon, ChevronDown, ChevronUp, Sigma,
   Code, Quote, Minus, Table, Link, Subscript, Superscript,
-  GitBranch, FileCode,
+  GitBranch, FileCode, Loader2,
 } from "lucide-react";
 import { useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,31 +26,38 @@ interface EditorToolbarProps {
 export function EditorToolbar({ editor, userId, notebookId, darkMode, onToggleDarkMode }: EditorToolbarProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [expanded, setExpanded] = useState(false);
+  const [imageUploading, setImageUploading] = useState(false);
 
   if (!editor) return null;
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    const ext = file.name.split(".").pop();
-    const path = `${userId}/${notebookId}/${crypto.randomUUID()}.${ext}`;
-
-    const { error } = await supabase.storage
-      .from("notebook-images")
-      .upload(path, file);
-
-    if (error) {
-      toast.error("Erro ao enviar imagem");
+    if (!file.type.startsWith("image/")) {
+      toast.error("Escolha um arquivo de imagem válido.");
+      return;
+    }
+    if (file.size > 12 * 1024 * 1024) {
+      toast.error("A imagem deve ter no máximo 12 MB.");
       return;
     }
 
-    const { data: { publicUrl } } = supabase.storage
-      .from("notebook-images")
-      .getPublicUrl(path);
-
-    editor.chain().focus().setImage({ src: publicUrl }).run();
-    if (fileInputRef.current) fileInputRef.current.value = "";
+    const ext = file.name.split(".").pop();
+    const path = `${userId}/${notebookId}/${crypto.randomUUID()}.${ext}`;
+    setImageUploading(true);
+    try {
+      const { error } = await supabase.storage.from("notebook-images").upload(path, file, { contentType: file.type, upsert: false });
+      if (error) throw error;
+      const { data: { publicUrl } } = supabase.storage.from("notebook-images").getPublicUrl(path);
+      const alt = file.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").trim();
+      editor.chain().focus().setImage({ src: publicUrl, alt }).run();
+      toast.success("Imagem inserida na página.");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível enviar a imagem.");
+    } finally {
+      setImageUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   };
 
   const ToolBtn = ({ active, onClick, children, title }: { active?: boolean; onClick: () => void; children: React.ReactNode; title: string }) => (
@@ -175,8 +182,8 @@ export function EditorToolbar({ editor, userId, notebookId, darkMode, onToggleDa
 
       <div className="w-px h-5 bg-border mx-1" />
 
-      <ToolBtn onClick={() => fileInputRef.current?.click()} title="Inserir imagem">
-        <ImagePlus className="w-4 h-4" />
+      <ToolBtn onClick={() => { if (!imageUploading) fileInputRef.current?.click(); }} title={imageUploading ? "Enviando imagem" : "Inserir imagem"}>
+        {imageUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImagePlus className="w-4 h-4" />}
       </ToolBtn>
 
       <ToolBtn

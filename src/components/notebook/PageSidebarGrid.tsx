@@ -1,4 +1,4 @@
-import { Plus, Trash2, Pin, Sparkles, Pencil, Files } from "lucide-react";
+import { ChevronDown, ChevronUp, Copy, Plus, Trash2, Pin, Sparkles, Pencil, Files } from "lucide-react";
 import { useState } from "react";
 import "./notebook-premium.css";
 
@@ -20,6 +20,7 @@ interface PageSidebarGridProps {
   onSelectPage: (idx: number) => void;
   onAddPage: () => void;
   onDeletePage: (idx: number) => void;
+  onDuplicatePage?: (idx: number) => void;
   onReorderPages?: (fromIdx: number, toIdx: number) => void;
   pageMeta?: Record<string, PageMeta>;
   notebookId?: string;
@@ -42,6 +43,7 @@ export function PageSidebarGrid({
   onSelectPage,
   onAddPage,
   onDeletePage,
+  onDuplicatePage,
   onReorderPages,
   pageMeta = {},
   notebookId,
@@ -140,17 +142,12 @@ export function PageSidebarGrid({
               </div>
             </button>
 
-            {pages.length > 1 && (
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); onDeletePage(idx); }}
-                className="absolute top-0 right-1 w-6 h-6 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity flex items-center justify-center shadow-md z-10"
-                title="Deletar página"
-                aria-label={`Excluir página ${idx + 1}`}
-              >
-                <Trash2 className="w-3 h-3" />
-              </button>
-            )}
+            <div className="nb-page-thumb-actions">
+              {onDuplicatePage && <button type="button" onClick={(event) => { event.stopPropagation(); onDuplicatePage(idx); }} title="Duplicar página" aria-label={`Duplicar página ${idx + 1}`}><Copy /></button>}
+              {onReorderPages && idx > 0 && <button type="button" onClick={(event) => { event.stopPropagation(); onReorderPages(idx, idx - 1); }} title="Mover página para cima" aria-label={`Mover página ${idx + 1} para cima`}><ChevronUp /></button>}
+              {onReorderPages && idx < pages.length - 1 && <button type="button" onClick={(event) => { event.stopPropagation(); onReorderPages(idx, idx + 1); }} title="Mover página para baixo" aria-label={`Mover página ${idx + 1} para baixo`}><ChevronDown /></button>}
+              {pages.length > 1 && <button type="button" className="danger" onClick={(event) => { event.stopPropagation(); onDeletePage(idx); }} title="Excluir página" aria-label={`Excluir página ${idx + 1}`}><Trash2 /></button>}
+            </div>
           </div>
         );
       })}

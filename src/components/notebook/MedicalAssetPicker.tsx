@@ -1,0 +1,50 @@
+import { useMemo, useState } from "react";
+import { Images, Search, ShieldCheck } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { notebookMedicalAssets, type MedicalAssetCategory, type NotebookMedicalAsset } from "@/lib/notebookMedicalAssets";
+import "./notebook-premium.css";
+
+interface MedicalAssetPickerProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onInsert: (asset: NotebookMedicalAsset) => void;
+}
+
+const categories: Array<"Todas" | MedicalAssetCategory> = ["Todas", "Camadas", "Sistemas", "Desenvolvimento"];
+
+export function MedicalAssetPicker({ open, onOpenChange, onInsert }: MedicalAssetPickerProps) {
+  const [category, setCategory] = useState<(typeof categories)[number]>("Todas");
+  const [query, setQuery] = useState("");
+  const filtered = useMemo(() => {
+    const normalizedQuery = query.trim().toLocaleLowerCase("pt-BR");
+    return notebookMedicalAssets.filter((asset) => {
+      if (category !== "Todas" && asset.category !== category) return false;
+      return !normalizedQuery || `${asset.label} ${asset.description}`.toLocaleLowerCase("pt-BR").includes(normalizedQuery);
+    });
+  }, [category, query]);
+
+  return <Dialog open={open} onOpenChange={onOpenChange}>
+    <DialogContent className="nb-medical-picker max-w-5xl overflow-hidden p-0">
+      <DialogHeader className="nb-medical-picker-header">
+        <span><Images /></span>
+        <div><DialogTitle>Biblioteca anatômica</DialogTitle><DialogDescription>Insira uma imagem educacional no ponto atual da página e desenhe setas, rótulos e relações sobre ela.</DialogDescription></div>
+      </DialogHeader>
+
+      <div className="nb-medical-picker-controls">
+        <label><Search /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar sistema, camada ou fase…" autoFocus /></label>
+        <div>{categories.map((item) => <button key={item} type="button" className={category === item ? "active" : ""} onClick={() => setCategory(item)}>{item}</button>)}</div>
+      </div>
+
+      <div className="nb-medical-assets-grid">
+        {filtered.map((asset) => <button key={asset.id} type="button" onClick={() => { onInsert(asset); onOpenChange(false); }}>
+          <span><img src={asset.src} alt="" loading="lazy" /></span>
+          <div><small>{asset.category}{asset.orientation ? ` · ${asset.orientation}` : ""}</small><strong>{asset.label}</strong><p>{asset.description}</p></div>
+        </button>)}
+        {filtered.length === 0 && <div className="nb-medical-assets-empty"><Search /><strong>Nenhuma imagem encontrada</strong><p>Tente um termo mais amplo ou escolha outra categoria.</p></div>}
+      </div>
+
+      <footer><ShieldCheck /><span>Ilustrações educacionais do Atlas Flora. Confirme detalhes anatômicos nas fontes indicadas pela área Medicina; não use para diagnóstico.</span></footer>
+    </DialogContent>
+  </Dialog>;
+}
+

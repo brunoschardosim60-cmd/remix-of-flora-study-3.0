@@ -1,5 +1,6 @@
 import { NodeViewWrapper, type NodeViewProps } from "@tiptap/react";
 import { useRef, useState, useCallback, useEffect } from "react";
+import { AlignCenter, AlignLeft, AlignRight, Trash2 } from "lucide-react";
 
 /**
  * Imagem do caderno: arrastável (drag nativo do ProseMirror) e
@@ -7,7 +8,7 @@ import { useRef, useState, useCallback, useEffect } from "react";
  * - Largura/altura ficam salvas como atributos no nó tiptap (persistem).
  * - Touch-action: none na alça evita conflito com scroll/zoom.
  */
-export function ResizableImageView({ node, updateAttributes, selected }: NodeViewProps) {
+export function ResizableImageView({ node, updateAttributes, deleteNode, selected }: NodeViewProps) {
   const imgRef = useRef<HTMLImageElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [resizing, setResizing] = useState(false);
@@ -72,6 +73,13 @@ export function ResizableImageView({ node, updateAttributes, selected }: NodeVie
           borderRadius: 8,
         }}
       >
+        {selected && <div className="nb-image-controls" contentEditable={false} onPointerDown={(event) => event.stopPropagation()}>
+          <button type="button" className={alignment === "left" ? "active" : ""} onClick={() => updateAttributes({ alignment: "left" })} title="Alinhar imagem à esquerda" aria-label="Alinhar imagem à esquerda"><AlignLeft /></button>
+          <button type="button" className={alignment === "center" ? "active" : ""} onClick={() => updateAttributes({ alignment: "center" })} title="Centralizar imagem" aria-label="Centralizar imagem"><AlignCenter /></button>
+          <button type="button" className={alignment === "right" ? "active" : ""} onClick={() => updateAttributes({ alignment: "right" })} title="Alinhar imagem à direita" aria-label="Alinhar imagem à direita"><AlignRight /></button>
+          <span />
+          <button type="button" className="danger" onClick={deleteNode} title="Remover imagem" aria-label="Remover imagem"><Trash2 /></button>
+        </div>}
         <img
           ref={imgRef}
           src={node.attrs.src as string}

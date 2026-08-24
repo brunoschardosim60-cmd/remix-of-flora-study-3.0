@@ -16,7 +16,7 @@ import {
 import {
   ArrowLeft, Plus, Trash2, ChevronLeft, ChevronRight, Loader2, Maximize2, Minimize2, Share2,
   Brain, Sparkles, BookPlus, CheckCircle2, XCircle, ZoomIn, ZoomOut, FileText, Cloud, CloudOff, RefreshCw, Eye, Camera, Wand2,
-  LayoutTemplate, Tag as TagIcon, MoreHorizontal, Search, Download, History, FileUp,
+  LayoutTemplate, Tag as TagIcon, MoreHorizontal, Search, Download, History, FileUp, Images,
 } from "lucide-react";
 
 import { toast } from "sonner";
@@ -60,6 +60,7 @@ interface MathSuggestion {
 import { NotebookStudioToolbar } from "@/components/notebook/NotebookStudioToolbar";
 import { AudioSummaryButton } from "@/components/notebook/AudioSummaryButton";
 import { PageSidebarGrid } from "@/components/notebook/PageSidebarGrid";
+import { MedicalAssetPicker } from "@/components/notebook/MedicalAssetPicker";
 import { FloraNotebookSidebar } from "@/components/notebook/FloraNotebookSidebar";
 import { GHOST_ENABLED_KEY } from "@/components/notebook/GhostTextExtension";
 import "@/components/notebook/notebook-premium.css";
@@ -75,6 +76,7 @@ import { scheduleSpacedReviews } from "@/lib/spacedReviews";
 import type { Json } from "@/integrations/supabase/types";
 import { enqueuePageUpdate, flushQueue, pendingCount } from "@/lib/notebookOfflineQueue";
 import { getTemplatesForSubject, suggestTagsFromText } from "@/lib/notebookTemplates";
+import type { NotebookMedicalAsset } from "@/lib/notebookMedicalAssets";
 
 type PageTemplate = "blank" | "lined" | "grid" | "dotted" | "physics" | "chemistry" | "essay";
 const PAGE_TEMPLATES: PageTemplate[] = ["blank", "lined", "grid", "dotted", "physics", "chemistry", "essay"];
@@ -286,6 +288,7 @@ export default function NotebookEditor() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [notebook, setNotebook] = useState<Notebook | null>(null);
+  const [titleDraft, setTitleDraft] = useState("");
   const [pages, setPages] = useState<NotebookPage[]>([]);
   const [currentPage, setCurrentPage] = useState(0);
   const page = pages[currentPage];
@@ -299,6 +302,8 @@ export default function NotebookEditor() {
   const [expandedEditor, setExpandedEditor] = useState(false);
   const [focusModeActive, setFocusModeActive] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [medicalAssetPickerOpen, setMedicalAssetPickerOpen] = useState(false);
+  const [editorInsertion, setEditorInsertion] = useState<{ id: number; html: string } | null>(null);
   const [zoom, setZoom] = useState(1);
   const editorContainerRef = useRef<HTMLDivElement>(null);
   const [drawTool, setDrawTool] = useState<"pen" | "marker" | "eraser" | "select" | "line" | "rect" | "circle">("pen");
@@ -584,6 +589,7 @@ export default function NotebookEditor() {
 
         if (notebookError) throw notebookError;
         setNotebook(notebookData);
+        setTitleDraft(notebookData.title || "Sem título");
         if (notebookData.subject) setSelectedSubject(notebookData.subject as Subject);
 
         const { data: pagesData, error: pagesError } = await supabase
@@ -1035,6 +1041,49 @@ export default function NotebookEditor() {
     }
   };
 
+  const duplicatePage = async (targetIndex: number) => {
+    const sourcePage = pages[targetIndex];
+    if (!sourcePage || !id || !user?.id) return;
+    const { data, error } = await supabase.from("notebook_pages").insert({
+      notebook_id: id,
+      user_id: user.id,
+      page_number: pages.length + 1,
+      content: sourcePage.content,
+      drawing_data: sourcePage.drawing_data ? drawingToJson(sourcePage.drawing_data) : drawingToJson(emptyDrawing),
+      template: sourcePage.template,
+      tags: sourcePage.tags,
+    }).select().single();
+    if (error || !data) {
+      toast.error("Não foi possível duplicar a página.");
+      return;
+    }
+    setPages((currentPages) => [...currentPages, rowToNotebookPage(data)]);
+    setCurrentPage(pages.length);
+    toast.success("Cópia criada no final do caderno.");
+  };
+
+  const reorderPages = async (fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex || !pages[fromIndex] || !pages[toIndex]) return;
+    const previousPages = pages;
+    const activePageId = pages[currentPage]?.id;
+    const reordered = [...pages];
+    const [movedPage] = reordered.splice(fromIndex, 1);
+    reordered.splice(toIndex, 0, movedPage);
+    const normalized = reordered.map((pageItem, index) => ({ ...pageItem, page_number: index + 1 }));
+    setPages(normalized);
+    setCurrentPage(Math.max(0, normalized.findIndex((pageItem) => pageItem.id === activePageId)));
+    setSaveStatus("saving");
+    const results = await Promise.all(normalized.map((pageItem) => supabase.from("notebook_pages").update({ page_number: pageItem.page_number }).eq("id", pageItem.id)));
+    if (results.some((result) => result.error)) {
+      setPages(previousPages);
+      setCurrentPage(Math.max(0, previousPages.findIndex((pageItem) => pageItem.id === activePageId)));
+      setSaveStatus("error");
+      toast.error("A nova ordem não pôde ser salva.");
+      return;
+    }
+    setSaveStatus("saved");
+  };
+
   const deletePage = async (targetIndex = currentPage) => {
     if (pages.length <= 1) return;
     const pageToDelete = pages[targetIndex];
@@ -1042,14 +1091,48 @@ export default function NotebookEditor() {
     const { error } = await supabase.from("notebook_pages").delete().eq("id", pageToDelete.id);
     if (error) { toast.error("Não foi possível excluir a página."); return; }
     const background = pageToDelete.drawing_data?.backgroundImage;
-    if (background?.includes("/notebook-images/")) {
+    const backgroundIsShared = pages.some((otherPage) => otherPage.id !== pageToDelete.id && otherPage.drawing_data?.backgroundImage === background);
+    if (!backgroundIsShared && background?.includes("/notebook-images/")) {
       const path = decodeURIComponent(background.split("/notebook-images/")[1]?.split("?")[0] || "");
       if (path) void supabase.storage.from("notebook-images").remove([path]);
     }
-    const newPages = pages.filter((_, i) => i !== targetIndex);
+    const newPages = pages.filter((_, i) => i !== targetIndex).map((pageItem, index) => ({ ...pageItem, page_number: index + 1 }));
     setPages(newPages);
     setCurrentPage(Math.min(targetIndex, newPages.length - 1));
+    const renumberResults = await Promise.all(newPages.map((pageItem) => supabase.from("notebook_pages").update({ page_number: pageItem.page_number }).eq("id", pageItem.id)));
+    if (renumberResults.some((result) => result.error)) {
+      toast.warning("A página foi excluída, mas a numeração será reorganizada na próxima alteração.");
+    }
   };
+
+  const saveNotebookTitle = async () => {
+    if (!notebook) return;
+    const nextTitle = titleDraft.trim() || "Sem título";
+    if (nextTitle === notebook.title) { setTitleDraft(nextTitle); return; }
+    const previousTitle = notebook.title;
+    setNotebook({ ...notebook, title: nextTitle });
+    setTitleDraft(nextTitle);
+    setSaveStatus("saving");
+    const { error } = await supabase.from("notebooks").update({ title: nextTitle }).eq("id", notebook.id);
+    if (error) {
+      setNotebook({ ...notebook, title: previousTitle });
+      setTitleDraft(previousTitle);
+      setSaveStatus("error");
+      toast.error("Não foi possível renomear o caderno.");
+      return;
+    }
+    setSaveStatus("saved");
+  };
+
+  const insertMedicalAsset = (asset: NotebookMedicalAsset) => {
+    const html = `<h2>${asset.label}</h2><img src="${asset.src}" alt="${asset.label}" title="${asset.description}"/><blockquote><strong>Orientação:</strong> ${asset.description}</blockquote><p><strong>Estrutura ou etapa em foco:</strong> ______________________________</p><p><strong>Relação anatômica ou sequência:</strong> __________________ → __________________</p>`;
+    setEditorInsertion({ id: Date.now(), html });
+    toast.success(`${asset.label} inserido. Use Desenhar para adicionar setas e rótulos.`);
+  };
+
+  const handleInsertionHandled = useCallback((handledId: number) => {
+    setEditorInsertion((currentRequest) => currentRequest?.id === handledId ? null : currentRequest);
+  }, []);
 
   const persistPageLinks = useCallback((next: Record<string, NotebookStudyLink>) => {
     setPageLinks(next);
@@ -1887,7 +1970,7 @@ export default function NotebookEditor() {
             <button type="button" className="nb-editor-back" aria-label="Voltar para cadernos" onClick={() => navigate("/notebooks")}><ArrowLeft /></button>
             <div className="nb-editor-identity">
               <span><FileText /></span>
-              <div><small>{notebook?.subject || selectedSubject || "CADERNO LIVRE"}</small><h1>{notebook?.title || "Sem título"}</h1></div>
+              <div><small>{notebook?.subject || selectedSubject || "CADERNO LIVRE"}</small><input className="nb-editor-title-input" value={titleDraft} onChange={(event) => setTitleDraft(event.target.value)} onBlur={() => void saveNotebookTitle()} onKeyDown={(event) => { if (event.key === "Enter") event.currentTarget.blur(); if (event.key === "Escape") { setTitleDraft(notebook?.title || "Sem título"); event.currentTarget.blur(); } }} aria-label="Nome do caderno" title="Clique para renomear" /></div>
             </div>
 
             <div className={`nb-save-state ${saveStatus}`}>
@@ -1958,6 +2041,8 @@ export default function NotebookEditor() {
               </DropdownMenuContent>
             </DropdownMenu>
 
+            <button type="button" className="nb-medical-gallery-button" onClick={() => setMedicalAssetPickerOpen(true)}><Images /><span>Atlas visual</span></button>
+
             <AudioSummaryButton content={currentPageData?.content || ""} title={notebook?.title || `Página ${currentPage + 1}`} />
           </div>
         </header>
@@ -2014,6 +2099,8 @@ export default function NotebookEditor() {
         userId={user?.id || ""}
       />
 
+      <MedicalAssetPicker open={medicalAssetPickerOpen} onOpenChange={setMedicalAssetPickerOpen} onInsert={insertMedicalAsset} />
+
       {/* Editor */}
       {focusModeActive ? (
         <FocusMode isActive={focusModeActive} onToggle={() => setFocusModeActive(false)}>
@@ -2035,6 +2122,8 @@ export default function NotebookEditor() {
                 handwriting={handwritingMode}
                 showMargin={paperMargin}
                 backgroundImage={drawingState.backgroundImage}
+                insertionRequest={editorInsertion}
+                onInsertionHandled={handleInsertionHandled}
                 paperOverlay={
                   <KonvaDrawingCanvas
                     ref={canvasRef}
@@ -2073,6 +2162,11 @@ export default function NotebookEditor() {
               onSelectPage={setCurrentPage}
               onAddPage={addPage}
               onDeletePage={(idx) => { void deletePage(idx); }}
+              onDuplicatePage={(idx) => { void duplicatePage(idx); }}
+              onReorderPages={(fromIndex, toIndex) => { void reorderPages(fromIndex, toIndex); }}
+              pageMeta={pageMeta}
+              notebookId={id}
+              hasActivity={(pageId) => aiActivities.some((activity) => activity.pageId === pageId)}
             />
           )}
 
@@ -2094,6 +2188,8 @@ export default function NotebookEditor() {
                 handwriting={handwritingMode}
                 showMargin={paperMargin}
                 backgroundImage={drawingState.backgroundImage}
+                insertionRequest={editorInsertion}
+                onInsertionHandled={handleInsertionHandled}
                 paperOverlay={
                   <KonvaDrawingCanvas
                     ref={canvasRef}
