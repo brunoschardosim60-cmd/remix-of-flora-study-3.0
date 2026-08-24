@@ -55,6 +55,43 @@
 .med-structure-actions button { background: #f0f4f2; }
 .med-structure-actions svg { width: 14px; flex-shrink: 0; }
 
+.med-body-viewport {
+  width: 400px;
+  height: 700px;
+  isolation: isolate;
+}
+
+.med-body-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  user-select: none;
+  filter: drop-shadow(0 26px 24px rgba(46, 75, 67, .17));
+  animation: med-atlas-image-in .28s ease both;
+}
+
+.med-anatomy-pin { z-index: 2; }
+
+.med-atlas-image-note {
+  position: absolute;
+  bottom: 35px;
+  left: 50%;
+  z-index: 3;
+  transform: translateX(-50%);
+  padding: 6px 10px;
+  border: 1px solid rgba(73, 116, 102, .13);
+  border-radius: 999px;
+  background: rgba(248, 251, 249, .82);
+  color: #58736a;
+  font-size: 7px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  white-space: nowrap;
+  backdrop-filter: blur(10px);
+}
+
 .med-development-note {
   display: block;
   margin-top: 14px;
@@ -164,6 +201,11 @@
   50% { box-shadow: 0 0 0 15px rgba(255, 255, 255, .08), 0 6px 18px rgba(63, 100, 89, .35); }
 }
 
+@keyframes med-atlas-image-in {
+  from { opacity: 0; transform: scale(.985); }
+  to { opacity: 1; transform: scale(1); }
+}
+
 .dark .med-app,
 .black .med-app {
   --med-ink: #e4eee9;
@@ -242,6 +284,13 @@
 .dark .med-body-stage,
 .black .med-body-stage { background: radial-gradient(circle at 50% 42%, #24342e 0, #14201b 70%, #0d1512 100%); }
 
+.dark .med-atlas-image-note,
+.black .med-atlas-image-note {
+  border-color: rgba(207, 229, 220, .12);
+  background: rgba(18, 29, 24, .82);
+  color: #a8beb6;
+}
+
 .dark .med-layer-rail button.active,
 .black .med-layer-rail button.active { background: #233c33; }
 
@@ -260,4 +309,10 @@
   .med-atlas-controls a.wide { flex: 1; justify-content: center; }
   .med-practice-visual > svg { height: 300px; }
   .med-focus-toggle { display: none; }
+  .med-body-viewport { width: 350px; height: 620px; }
+}
+
+@media (max-width: 520px) {
+  .med-body-viewport { width: 300px; height: 550px; }
+  .med-atlas-image-note { bottom: 31px; }
 }
