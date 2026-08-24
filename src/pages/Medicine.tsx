@@ -10,7 +10,7 @@ import { BodyAtlas } from "@/components/medicine/BodyAtlas";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  anatomyPositionFor, anatomyStructures, bodyLayers, embryologyTimeline, medicalNotebookTemplates, medicalQuestions,
+  anatomyPositionFor, anatomyStructures, bodyLayers, embryologyTimeline, medicalClinicalCase, medicalNotebookTemplates, medicalQuestions,
   medicineLevelProfiles, medicalSources, medicalSystems, type AnatomyStructure, type BodyLayer, type MedicineLevel,
   preferredAnatomyView,
 } from "@/lib/medicineData";
@@ -88,6 +88,7 @@ export default function Medicine() {
   const [practiceStructure, setPracticeStructure] = useState(() => anatomyStructures.find((item) => item.id === "heart")!);
   const [caseStep, setCaseStep] = useState(0);
   const [caseReflection, setCaseReflection] = useState("");
+  const [caseAnswer, setCaseAnswer] = useState<number | null>(null);
   const [studyHours, setStudyHours] = useState(8);
   const [studyGoal, setStudyGoal] = useState("Dominar anatomia e fisiologia");
   const [cloudReady, setCloudReady] = useState(false);
@@ -124,7 +125,7 @@ export default function Medicine() {
         setFavoriteIds(Array.isArray(data.favorites) ? data.favorites.filter((item): item is string => typeof item === "string") : []);
         setWrongIds(Array.isArray(data.wrong_items) ? data.wrong_items.filter((item): item is string => typeof item === "string") : []);
         setAnswered(data.answered && typeof data.answered === "object" && !Array.isArray(data.answered) ? data.answered as Record<string, boolean> : {});
-        setCaseStep(data.case_step);
+        setCaseStep(Math.min(Math.max(Number(data.case_step) || 0, 0), medicalClinicalCase.steps.length));
       }
       setCloudReady(true);
     });
@@ -205,7 +206,15 @@ export default function Medicine() {
             if (!correct) { const next = Array.from(new Set([...wrongIds, `structure:${practiceStructure.id}`])); setWrongIds(next); saveMedicineState("wrong", next); }
           }} onNext={() => { const currentIndex = practicePool.findIndex((structure) => structure.id === practiceStructure.id); const nextIndex = (Math.max(currentIndex, 0) + 1) % practicePool.length; setPracticeStructure(practicePool[nextIndex]); setPracticeInput(""); setPracticeResult(null); }} />}
           {section === "questions" && <QuestionsSection level={level} question={currentQuestion} index={questionIndex % sessionQuestions.length} total={sessionQuestions.length} answer={answer} wrongCount={reviewQuestions.length} reviewOnly={activeReview} onToggleReview={() => { if (!reviewQuestions.length) { toast.info("Quando você errar uma questão deste nível, ela aparecerá aqui para revisão."); return; } setReviewOnly((value) => !value); setQuestionIndex(0); setAnswer(null); }} onAnswer={submitAnswer} onNext={() => { setQuestionIndex((value) => value + 1); setAnswer(null); }} />}
-          {section === "clinic" && <ClinicalSection level={level} step={caseStep} reflection={caseReflection} onReflection={setCaseReflection} onNext={() => { if (caseReflection.trim().length < 20) { toast.info("Justifique seu raciocínio em pelo menos uma frase antes de avançar."); return; } setCaseStep((value) => Math.min(value + 1, 5)); setCaseReflection(""); }} />}
+          {section === "clinic" && <ClinicalSection level={level} step={caseStep} reflection={caseReflection} answer={caseAnswer} onReflection={setCaseReflection} onAnswer={setCaseAnswer} onNext={() => {
+            if (caseAnswer === null) { toast.info("Escolha uma resposta antes de avançar."); return; }
+            if (caseReflection.trim().length < 40) { toast.info("Desenvolva a justificativa em pelo menos 40 caracteres."); return; }
+            const finishing = caseStep === medicalClinicalCase.steps.length - 1;
+            setCaseStep((value) => Math.min(value + 1, medicalClinicalCase.steps.length));
+            setCaseAnswer(null);
+            setCaseReflection("");
+            if (finishing) toast.success("Caso clínico concluído", { description: "A síntese final foi liberada para revisão." });
+          }} onRestart={() => { setCaseStep(0); setCaseAnswer(null); setCaseReflection(""); toast.success("Caso reiniciado."); }} />}
           {section === "plan" && <StudyPlanSection level={level} hours={studyHours} goal={studyGoal} onHours={setStudyHours} onGoal={setStudyGoal} onStart={() => { saveMedicineState("plan", { level, studyHours, studyGoal, createdAt: Date.now() }); toast.success("Plano médico salvo neste dispositivo."); }} />}
           {section === "notebook" && <NotebookSection navigate={navigate} />}
           {section === "sources" && <SourcesSection />}
@@ -461,18 +470,52 @@ function QuestionsSection({ level, question, index, total, answer, wrongCount, r
   </div>;
 }
 
-const caseSteps = [
-  { label: "Queixa principal", content: "Pessoa adulta fictícia relata cansaço aos esforços há algumas semanas. Este cenário existe apenas para treino de representação do problema." },
-  { label: "História", content: "O sintoma ocorre ao subir escadas e melhora com repouso. Não há informação suficiente para definir uma causa." },
-  { label: "Exame simulado", content: "Frequência cardíaca discretamente elevada após esforço padronizado; demais dados ainda não foram fornecidos." },
-  { label: "Dados complementares", content: "Hemograma fictício mostra redução da concentração de hemoglobina. Interprete o dado no contexto educacional." },
-  { label: "Hipóteses", content: "Compare mecanismos que reduzam a oferta de oxigênio aos tecidos e explicite quais informações faltam." },
-  { label: "Síntese", content: "Construa uma síntese fisiopatológica sem prescrever conduta e identifique limites do caso." },
-];
+function ClinicalSection({ level, step, reflection, answer, onReflection, onAnswer, onNext, onRestart }: { level: MedicineLevel; step: number; reflection: string; answer: number | null; onReflection: (value: string) => void; onAnswer: (value: number) => void; onNext: () => void; onRestart: () => void }) {
+  const clinicalCase = medicalClinicalCase;
+  const completed = step >= clinicalCase.steps.length;
+  const activeStep = clinicalCase.steps[Math.min(step, clinicalCase.steps.length - 1)];
+  const source = medicalSources[activeStep.sourceId];
+  const correct = answer === activeStep.answer;
+  const progress = completed ? 100 : Math.round((step / clinicalCase.steps.length) * 100);
 
-function ClinicalSection({ level, step, reflection, onReflection, onNext }: { level: MedicineLevel; step: number; reflection: string; onReflection: (value: string) => void; onNext: () => void }) {
-  return <div className="med-page"><PageHeading eyebrow={`Simulação educacional · ${level}`} title="Caso clínico progressivo" description={medicineLevelProfiles[level].clinicalInstruction} /><div className="med-clinical-warning"><ShieldCheck/><span><strong>Limite de segurança</strong> Conteúdo para raciocínio acadêmico, sem diagnóstico ou recomendação terapêutica.</span></div>
-    <div className="med-case-layout"><ol>{caseSteps.map((item, index) => <li key={item.label} className={index < step ? "done" : index === step ? "active" : ""}><span>{index < step ? <Check/> : index + 1}</span><strong>{item.label}</strong></li>)}</ol><article><span className="med-eyebrow">ETAPA {step + 1} DE {caseSteps.length}</span><h2>{caseSteps[step].label}</h2><p>{caseSteps[step].content}</p><label>Justifique seu raciocínio antes de revelar a próxima etapa<textarea value={reflection} onChange={(event) => onReflection(event.target.value)} placeholder="Quais mecanismos e estruturas podem estar relacionados? O que ainda é necessário saber?" /></label><button onClick={onNext} disabled={step === caseSteps.length - 1}>Liberar próxima etapa <ArrowRight /></button></article></div>
+  return <div className="med-page med-clinic-page">
+    <PageHeading eyebrow={`Simulação educacional · ${level}`} title="Clínica: raciocínio passo a passo" description={medicineLevelProfiles[level].clinicalInstruction} />
+    <div className="med-clinical-warning"><ShieldCheck/><span><strong>Limite de segurança</strong> Caso inteiramente fictício para estudo. Não oferece diagnóstico, prescrição ou orientação para uma pessoa real.</span></div>
+
+    <section className="med-clinical-case-heading">
+      <div><span className="med-eyebrow">CASO 01 · HEMATOLOGIA</span><h2>{clinicalCase.title}</h2><p>{clinicalCase.subtitle}</p></div>
+      <div className="med-clinical-case-meta"><span>{clinicalCase.patient}</span><strong>{completed ? "Concluído" : `Etapa ${step + 1} de ${clinicalCase.steps.length}`}</strong><div><i style={{ width: `${progress}%` }} /></div></div>
+    </section>
+
+    <div className={`med-case-layout ${completed ? "completed" : ""}`}>
+      <ol className="med-case-steps">{clinicalCase.steps.map((item, index) => <li key={item.id} className={index < step ? "done" : index === step ? "active" : "locked"}>
+        <span>{index < step ? <Check/> : index + 1}</span><div><small>{index < step ? "REVISADA" : index === step ? "EM ANÁLISE" : "BLOQUEADA"}</small><strong>{item.label}</strong></div>
+      </li>)}</ol>
+
+      {completed ? <article className="med-case-completion">
+        <span><Check /></span><small>SEIS ETAPAS CONCLUÍDAS</small><h2>{clinicalCase.completion.title}</h2><p>{clinicalCase.completion.summary}</p>
+        <div>{clinicalCase.completion.takeaways.map((takeaway) => <div key={takeaway}><Check /><span>{takeaway}</span></div>)}</div>
+        <aside><ShieldCheck /><p><strong>Limite mantido</strong> Você reconheceu um padrão em um cenário fictício. Isso não equivale a avaliar uma pessoa real nem define tratamento.</p></aside>
+        <button onClick={onRestart}>Refazer o caso <ArrowRight /></button>
+      </article> : <article className="med-case-workspace">
+        <header><div><span className="med-eyebrow">ETAPA {step + 1} DE {clinicalCase.steps.length}</span><h2>{activeStep.title}</h2></div><span>Dados liberados agora</span></header>
+
+        <div className="med-case-findings">{activeStep.release.map((finding, index) => <div key={finding}><span>{String(index + 1).padStart(2, "0")}</span><p>{finding}</p></div>)}</div>
+
+        <section className="med-case-decision">
+          <span className="med-eyebrow">DECISÃO CLÍNICA EDUCACIONAL</span><h3>{activeStep.question}</h3>
+          <div>{activeStep.options.map((option, optionIndex) => {
+            const state = answer === null ? "" : optionIndex === activeStep.answer ? "correct" : optionIndex === answer ? "wrong" : "muted";
+            return <button key={option} className={state} onClick={() => answer === null && onAnswer(optionIndex)}><b>{String.fromCharCode(65 + optionIndex)}</b><span>{option}</span>{state === "correct" && <Check />}{state === "wrong" && <X />}</button>;
+          })}</div>
+          {answer !== null && <aside className={correct ? "correct" : "review"}><Sparkles /><div><strong>{correct ? "Boa decisão" : "Compare com a melhor resposta"}</strong><p>{activeStep.explanation}</p><a href={source.url} target="_blank" rel="noreferrer">Conferir referência desta etapa <ExternalLink /></a></div></aside>}
+        </section>
+
+        <label className="med-case-reflection"><span><strong>Registre seu raciocínio</strong><small>{activeStep.reflectionPrompt}</small></span><textarea value={reflection} onChange={(event) => onReflection(event.target.value)} placeholder={activeStep.placeholder} /><i>{reflection.trim().length}/40 caracteres mínimos</i></label>
+
+        <footer><div><BookOpen /><span><small>FONTE DA ETAPA</small><strong>{source.title}</strong></span></div><button onClick={onNext}>{step === clinicalCase.steps.length - 1 ? "Concluir e liberar síntese" : "Validar e liberar próxima etapa"} <ArrowRight /></button></footer>
+      </article>}
+    </div>
   </div>;
 }
 

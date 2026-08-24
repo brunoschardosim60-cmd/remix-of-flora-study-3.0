@@ -87,6 +87,34 @@ export interface DevelopmentStage {
   imageAlt: string;
 }
 
+export interface MedicalClinicalStep {
+  id: string;
+  label: string;
+  title: string;
+  release: string[];
+  question: string;
+  options: string[];
+  answer: number;
+  explanation: string;
+  reflectionPrompt: string;
+  placeholder: string;
+  sourceId: string;
+}
+
+export interface MedicalClinicalCase {
+  id: string;
+  title: string;
+  subtitle: string;
+  patient: string;
+  focus: string;
+  steps: MedicalClinicalStep[];
+  completion: {
+    title: string;
+    summary: string;
+    takeaways: string[];
+  };
+}
+
 export const medicalSources: Record<string, MedicalSource> = {
   openstax: {
     title: "Anatomy and Physiology 2e",
@@ -255,6 +283,26 @@ export const medicalSources: Record<string, MedicalSource> = {
     reviewedAt: "2026-08-24",
     license: "CC BY-NC-SA 4.0",
     attribution: "Access for free at openstax.org.",
+  },
+  openstaxErythrocytes: {
+    title: "Erythrocytes — Anatomy and Physiology 2e",
+    organization: "OpenStax, Rice University",
+    url: "https://openstax.org/books/anatomy-and-physiology-2e/pages/18-3-erythrocytes",
+    reviewedAt: "2026-08-24",
+    license: "CC BY-NC-SA 4.0",
+    attribution: "Access for free at openstax.org.",
+  },
+  nhlbiAnemiaDiagnosis: {
+    title: "Anemia — Diagnosis",
+    organization: "National Heart, Lung, and Blood Institute / NIH",
+    url: "https://www.nhlbi.nih.gov/health/anemia/diagnosis",
+    reviewedAt: "2026-08-24",
+  },
+  ncbiAnemia: {
+    title: "Anemia",
+    organization: "NCBI Bookshelf / StatPearls",
+    url: "https://www.ncbi.nlm.nih.gov/books/NBK499994/",
+    reviewedAt: "2026-08-24",
   },
   ncbiFertilization: {
     title: "Embryology, Fertilization",
@@ -516,6 +564,99 @@ export const embryologyTimeline: DevelopmentStage[] = [
     imageAlt: "Representação educacional de uma pessoa no início da vida adulta",
   },
 ];
+
+export const medicalClinicalCase: MedicalClinicalCase = {
+  id: "microcytic-anemia",
+  title: "Fadiga progressiva e microcitose",
+  subtitle: "Caso fictício para integrar fisiologia do transporte de oxigênio, hemograma e metabolismo do ferro.",
+  patient: "Mulher de 24 anos · cenário inteiramente fictício",
+  focus: "Reconhecer estabilidade, classificar a anemia, comparar hipóteses e construir uma síntese segura.",
+  steps: [
+    {
+      id: "initial-assessment",
+      label: "Avaliação inicial",
+      title: "Queixa, tempo e segurança",
+      release: ["Cansaço progressivo há cerca de 3 meses", "Falta de ar ao subir dois lances de escada, com melhora no repouso", "Sem dor torácica, síncope, febre ou sangramento ativo relatado", "PA 112/70 mmHg · FC 102 bpm · FR 18 irpm · SpO₂ 99% em ar ambiente"],
+      question: "Antes de formular uma causa, qual é a prioridade de raciocínio nesta primeira etapa?",
+      options: ["Confirmar estabilidade e procurar sinais de alarme", "Escolher imediatamente um suplemento de ferro", "Concluir que a falta de ar é pulmonar", "Solicitar apenas uma imagem do tórax"],
+      answer: 0,
+      explanation: "A primeira tarefa é reconhecer estabilidade e sinais de alarme. Etiologia e investigação dirigida vêm depois; o caso não oferece base para prescrição nem para atribuir o sintoma a um único sistema.",
+      reflectionPrompt: "Escreva uma representação do problema em uma frase, incluindo duração, impacto funcional e estabilidade atual.",
+      placeholder: "Ex.: pessoa adulta jovem, com sintoma progressivo há…, limitação aos esforços e sem…",
+      sourceId: "nhlbiAnemiaDiagnosis",
+    },
+    {
+      id: "directed-history",
+      label: "História dirigida",
+      title: "Procure pistas de perda ou menor oferta de ferro",
+      release: ["Relata vontade frequente de mastigar gelo", "Menstruações de 8 dias, com coágulos e troca de absorvente a cada 2 horas nos dias de maior fluxo", "Dieta com pouca carne e sem suplementação", "Nega fezes escuras, dor abdominal e histórico familiar conhecido de anemia"],
+      question: "Qual combinação aumenta mais a suspeita de depleção de ferro por perda crônica neste cenário?",
+      options: ["Ausência de dor abdominal e de febre", "Fluxo menstrual prolongado associado a pagofagia", "Idade jovem associada à frequência respiratória de 18", "Falta de ar associada à saturação de 99%"],
+      answer: 1,
+      explanation: "Perdas menstruais persistentes são uma fonte possível de perda crônica de ferro, e pagofagia é uma pista associada à deficiência de ferro. Esses dados orientam a hipótese, mas ainda exigem confirmação laboratorial e investigação da causa da perda.",
+      reflectionPrompt: "Liste a hipótese principal e duas informações adicionais que você perguntaria para avaliar perdas, ingestão ou absorção de ferro.",
+      placeholder: "Hipótese: … | Ainda perguntaria sobre: 1) … 2) …",
+      sourceId: "ncbiAnemia",
+    },
+    {
+      id: "physical-exam",
+      label: "Exame físico",
+      title: "Conecte os achados ao transporte de oxigênio",
+      release: ["Consciente, orientada e sem desconforto em repouso", "Palidez conjuntival", "Taquicardia regular, sem sinais de congestão", "Sem icterícia, linfonodomegalias ou hepatoesplenomegalia no exame simulado"],
+      question: "Qual mecanismo explica melhor fadiga e taquicardia quando a concentração de hemoglobina está reduzida?",
+      options: ["Aumento da difusão de oxigênio por excesso de hemoglobina", "Bloqueio mecânico dos brônquios pela redução de ferro", "Menor capacidade de transporte de oxigênio, com resposta cardiovascular compensatória", "Produção excessiva de plaquetas como causa direta da dispneia"],
+      answer: 2,
+      explanation: "A hemoglobina dos eritrócitos transporta a maior parte do oxigênio. Quando sua concentração cai, a oferta de oxigênio aos tecidos pode diminuir e respostas compensatórias, como aumento da frequência cardíaca, podem aparecer.",
+      reflectionPrompt: "Explique em duas frases a sequência: hemoglobina reduzida → oferta de oxigênio → sintomas e compensação.",
+      placeholder: "Com menos hemoglobina… Por isso, o organismo…",
+      sourceId: "openstaxErythrocytes",
+    },
+    {
+      id: "laboratory-classification",
+      label: "Hemograma e ferro",
+      title: "Classifique antes de nomear a causa",
+      release: ["Hemoglobina 8,9 g/dL · hematócrito 29%", "VCM 68 fL · RDW 18,4%", "Reticulócitos 0,8%", "Ferritina 5 ng/mL · saturação de transferrina 6% · PCR sem elevação", "Valores e intervalos são didáticos; referências laboratoriais variam"],
+      question: "Qual descrição integra melhor esses resultados?",
+      options: ["Anemia macrocítica com reticulocitose intensa", "Anemia microcítica com resposta reticulocitária inadequada e estoques de ferro reduzidos", "Policitemia com sobrecarga de ferro", "Hemograma normal, sem alteração do transporte de oxigênio"],
+      answer: 1,
+      explanation: "VCM abaixo de 80 fL classifica a anemia como microcítica. Ferritina e saturação de transferrina muito baixas apoiam depleção de ferro, enquanto a resposta reticulocitária não está aumentada de modo proporcional à anemia.",
+      reflectionPrompt: "Registre os quatro dados que sustentam a classificação e diga o que cada um acrescenta ao raciocínio.",
+      placeholder: "Hb: … | VCM: … | Reticulócitos: … | Ferritina/TSAT: …",
+      sourceId: "ncbiAnemia",
+    },
+    {
+      id: "differential",
+      label: "Hipóteses comparadas",
+      title: "Não pare na palavra “microcitose”",
+      release: ["Deficiência de ferro: pode cursar com ferritina baixa, saturação baixa e RDW elevado", "Traço talassêmico: também pode ser microcítico, mas não explica isoladamente estoques de ferro esgotados", "Anemia da inflamação: a ferritina pode estar normal ou elevada por ser reagente de fase aguda", "A história de perdas continua necessária para explicar por que o ferro foi depletado"],
+      question: "Qual hipótese de trabalho é mais coerente com o conjunto, mantendo o limite adequado?",
+      options: ["Traço talassêmico confirmado apenas pelo VCM", "Anemia da inflamação confirmada apesar da PCR e ferritina baixas", "Hemólise intravascular confirmada sem dados de destruição eritrocitária", "Anemia por deficiência de ferro, provavelmente relacionada a perda crônica; a fonte ainda precisa ser investigada"],
+      answer: 3,
+      explanation: "O conjunto favorece deficiência de ferro, mas reconhecer o padrão não encerra o caso. É necessário investigar a origem da depleção e manter diferenciais quando a história, a resposta ou os exames forem discordantes.",
+      reflectionPrompt: "Compare deficiência de ferro com uma hipótese alternativa usando ao menos dois dados discriminatórios do caso.",
+      placeholder: "Favorece deficiência de ferro porque… Em comparação, a hipótese de… seria esperada se…",
+      sourceId: "ncbiAnemia",
+    },
+    {
+      id: "safe-synthesis",
+      label: "Síntese final",
+      title: "Feche o raciocínio sem ultrapassar os dados",
+      release: ["O padrão laboratorial sustenta anemia microcítica com depleção de ferro", "A história sugere perda menstrual crônica como possibilidade importante", "O cenário não avalia todas as causas de sangramento, absorção inadequada ou diagnósticos associados", "Nenhuma conduta terapêutica deve ser inferida desta simulação"],
+      question: "Qual conclusão final é mais precisa e segura para este exercício?",
+      options: ["A causa está definitivamente provada e dispensa investigação adicional", "Os sintomas demonstram doença pulmonar, independentemente do hemograma", "O padrão apoia deficiência de ferro; é preciso investigar a fonte da perda e causas concorrentes antes de encerrar a avaliação", "O caso permite definir tratamento individual sem avaliação profissional"],
+      answer: 2,
+      explanation: "Uma boa síntese declara o padrão sustentado pelos dados, propõe a origem como hipótese e explicita o que falta. Ela não transforma uma simulação em diagnóstico definitivo nem em orientação terapêutica individual.",
+      reflectionPrompt: "Produza três frases: representação do problema, evidências que sustentam sua hipótese e lacunas que ainda precisam ser investigadas.",
+      placeholder: "1) Trata-se de… 2) A hipótese é sustentada por… 3) Ainda faltam…",
+      sourceId: "nhlbiAnemiaDiagnosis",
+    },
+  ],
+  completion: {
+    title: "Caso concluído: raciocínio auditável",
+    summary: "Você percorreu segurança, história dirigida, mecanismo fisiológico, classificação laboratorial, diferenciais e síntese final sem transformar o exercício em prescrição.",
+    takeaways: ["Estabilidade vem antes da etiologia", "VCM classifica o padrão; ferritina e saturação ajudam a interpretar o ferro", "Uma hipótese forte ainda precisa explicar a origem da alteração", "Síntese clínica segura inclui evidências, alternativas e lacunas"],
+  },
+};
 
 export const medicalQuestions: MedicalQuestion[] = [
   { id: "mq1", level: "Iniciante", system: "Cardiovascular", type: "Múltipla escolha", prompt: "Qual câmara cardíaca ejeta sangue para a circulação sistêmica?", options: ["Átrio direito", "Ventrículo direito", "Átrio esquerdo", "Ventrículo esquerdo"], answer: 3, explanation: "O ventrículo esquerdo ejeta sangue para a aorta, iniciando a circulação sistêmica.", sourceId: "openstaxHeart" },

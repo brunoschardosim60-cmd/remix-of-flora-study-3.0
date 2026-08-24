@@ -7,6 +7,7 @@ import {
   bodyLayers,
   embryologyTimeline,
   medicineLevelProfiles,
+  medicalClinicalCase,
   medicalQuestions,
   medicalSources,
   medicalSystems,
@@ -52,6 +53,22 @@ describe("medicine content integrity", () => {
       expect(stage.milestones.length, `${stage.id} milestones`).toBeGreaterThanOrEqual(3);
       expect(stage.systems.length, `${stage.id} systems`).toBeGreaterThanOrEqual(3);
       expect(stage.studyQuestions.length, `${stage.id} questions`).toBeGreaterThanOrEqual(2);
+    }
+  });
+
+  it("keeps the progressive clinical case concrete, answerable and completable", () => {
+    expect(medicalClinicalCase.steps.length).toBeGreaterThanOrEqual(6);
+    expect(new Set(medicalClinicalCase.steps.map((step) => step.id)).size).toBe(medicalClinicalCase.steps.length);
+    expect(medicalClinicalCase.completion.takeaways.length).toBeGreaterThanOrEqual(4);
+
+    for (const step of medicalClinicalCase.steps) {
+      expect(step.release.length, `${step.id} released findings`).toBeGreaterThanOrEqual(4);
+      expect(step.options.length, `${step.id} options`).toBe(4);
+      expect(step.answer, `${step.id} answer`).toBeGreaterThanOrEqual(0);
+      expect(step.answer, `${step.id} answer`).toBeLessThan(step.options.length);
+      expect(step.explanation.length, `${step.id} explanation`).toBeGreaterThan(120);
+      expect(step.reflectionPrompt.length, `${step.id} reflection`).toBeGreaterThan(70);
+      expect(medicalSources[step.sourceId], `source for clinical step ${step.id}`).toBeDefined();
     }
   });
 
