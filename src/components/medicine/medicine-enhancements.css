@@ -100,17 +100,147 @@
   line-height: 1.5;
 }
 
-.med-practice-visual > svg {
-  width: 190px;
-  height: 430px;
-  fill: rgba(248, 252, 250, .45);
-  stroke: rgba(255, 255, 255, .72);
-  stroke-width: 2;
-  filter: drop-shadow(0 20px 28px rgba(48, 92, 79, .3));
+.med-system-intro {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 270px;
+  align-items: center;
+  gap: 30px;
 }
 
-.med-practice-visual > i {
+.med-system-intro > div:first-child > p {
+  margin-top: 10px;
+  color: var(--med-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.med-system-visual {
+  position: relative;
+  display: grid;
+  min-height: 280px;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--system) 18%, transparent);
+  border-radius: 22px;
+  background: radial-gradient(circle at 50% 42%, #fff 0, color-mix(in srgb, var(--system) 11%, #f4f7f4) 72%);
+}
+
+.med-system-visual::before {
   position: absolute;
+  inset: 12%;
+  border: 1px solid color-mix(in srgb, var(--system) 20%, transparent);
+  border-radius: 50%;
+  content: "";
+  box-shadow: 0 0 0 28px color-mix(in srgb, var(--system) 4%, transparent);
+}
+
+.med-system-visual img {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 270px;
+  object-fit: contain;
+  padding: 12px;
+  filter: drop-shadow(0 20px 20px rgba(49, 80, 70, .16));
+  animation: med-atlas-image-in .3s ease both;
+}
+
+.med-system-visual span,
+.med-development-visual span {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  left: 10px;
+  z-index: 2;
+  padding: 6px 9px;
+  border-radius: 999px;
+  background: rgba(249, 251, 249, .82);
+  color: #60776f;
+  font-size: 7px;
+  font-weight: 800;
+  text-align: center;
+  backdrop-filter: blur(10px);
+}
+
+.med-development-stage > article {
+  overflow: hidden;
+  padding: 0;
+}
+
+.med-development-visual {
+  position: relative;
+  height: 310px;
+  overflow: hidden;
+  border-bottom: 1px solid var(--med-line);
+  background: #edf2ed;
+}
+
+.med-development-visual img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  animation: med-atlas-image-in .3s ease both;
+}
+
+.med-development-visual span {
+  right: auto;
+  left: 18px;
+  width: max-content;
+  max-width: calc(100% - 36px);
+}
+
+.med-development-content { padding: 34px 44px 42px; }
+
+.med-development-content > p {
+  color: var(--med-muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.med-development-content > a {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: max-content;
+  margin-top: 26px;
+  color: #4b776a;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.med-development-content > a svg { width: 13px; }
+
+.med-practice-visual {
+  background: radial-gradient(circle at 50% 42%, #edf5f1 0, #b7d1c8 58%, #85aa9e 100%);
+}
+
+.med-practice-visual .pulse-ring {
+  width: 360px;
+  height: 360px;
+  opacity: .58;
+}
+
+.med-practice-model {
+  position: relative;
+  z-index: 1;
+  width: 293px;
+  height: 520px;
+}
+
+.med-practice-model img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  user-select: none;
+  filter: drop-shadow(0 24px 22px rgba(48, 92, 79, .22));
+  animation: med-atlas-image-in .28s ease both;
+}
+
+.med-practice-model > i {
+  position: absolute;
+  z-index: 2;
   width: 18px;
   height: 18px;
   transform: translate(-50%, -50%);
@@ -119,6 +249,17 @@
   background: #cc6f68;
   box-shadow: 0 0 0 9px rgba(255, 255, 255, .2), 0 6px 18px rgba(63, 100, 89, .35);
   animation: med-marker 1.8s ease-in-out infinite;
+}
+
+.med-practice-visual > span { bottom: 27px; z-index: 3; }
+
+.med-practice-visual > small {
+  position: absolute;
+  bottom: 11px;
+  z-index: 3;
+  color: rgba(255, 255, 255, .82);
+  font-size: 7px;
+  font-weight: 700;
 }
 
 .med-question-layout aside button.active {
@@ -291,6 +432,19 @@
   color: #a8beb6;
 }
 
+.dark .med-system-visual,
+.black .med-system-visual {
+  background: radial-gradient(circle at 50% 42%, #25342e 0, #15201c 75%);
+}
+
+.dark .med-system-visual span,
+.dark .med-development-visual span,
+.black .med-system-visual span,
+.black .med-development-visual span {
+  background: rgba(18, 29, 24, .82);
+  color: #abc0b8;
+}
+
 .dark .med-layer-rail button.active,
 .black .med-layer-rail button.active { background: #233c33; }
 
@@ -304,12 +458,21 @@
 .dark .ring::after,
 .black .ring::after { background: #18211d; }
 
+@media (max-width: 1500px) {
+  .med-system-intro { grid-template-columns: 1fr; }
+  .med-system-visual { min-height: 250px; }
+  .med-system-visual img { height: 240px; }
+}
+
 @media (max-width: 820px) {
   .med-report-card { grid-template-columns: 1fr; }
   .med-atlas-controls a.wide { flex: 1; justify-content: center; }
-  .med-practice-visual > svg { height: 300px; }
   .med-focus-toggle { display: none; }
   .med-body-viewport { width: 350px; height: 620px; }
+  .med-development-visual { height: 230px; }
+  .med-development-content { padding: 28px; }
+  .med-practice-model { width: 186px; height: 330px; }
+  .med-practice-visual .pulse-ring { width: 250px; height: 250px; }
 }
 
 @media (max-width: 520px) {

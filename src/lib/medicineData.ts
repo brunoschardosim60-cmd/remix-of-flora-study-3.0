@@ -33,6 +33,7 @@ export interface MedicalSystem {
   description: string;
   color: string;
   icon: string;
+  image: string;
   structures: string[];
   topics: string[];
 }
@@ -234,22 +235,22 @@ export const anatomyStructures: AnatomyStructure[] = [
 ];
 
 export const medicalSystems: MedicalSystem[] = [
-  { id: "cardiovascular", name: "Cardiovascular", description: "Bomba cardíaca, vasos e transporte sistêmico.", color: "#b35f68", icon: "heart", structures: ["Coração", "Aorta", "Artérias", "Veias", "Capilares"], topics: ["Ciclo cardíaco", "Hemodinâmica", "Circulações pulmonar e sistêmica"] },
-  { id: "respiratory", name: "Respiratório", description: "Ventilação, difusão e transporte de gases.", color: "#7398a8", icon: "lungs", structures: ["Pulmões", "Traqueia", "Brônquios", "Alvéolos", "Diafragma"], topics: ["Mecânica ventilatória", "Trocas gasosas", "Controle da respiração"] },
-  { id: "nervous", name: "Nervoso", description: "Integração sensorial, motora e autonômica.", color: "#b48a46", icon: "brain", structures: ["Encéfalo", "Medula espinal", "Nervos periféricos"], topics: ["Potencial de ação", "Sinapses", "Vias motoras e sensitivas"] },
-  { id: "digestive", name: "Digestório", description: "Digestão, absorção e metabolismo de nutrientes.", color: "#8d7861", icon: "activity", structures: ["Esôfago", "Estômago", "Intestinos", "Fígado", "Pâncreas"], topics: ["Motilidade", "Secreções", "Absorção"] },
-  { id: "musculoskeletal", name: "Musculoesquelético", description: "Sustentação, movimento e proteção.", color: "#9d685f", icon: "bone", structures: ["Ossos", "Articulações", "Músculos", "Tendões"], topics: ["Tecido ósseo", "Contração muscular", "Biomecânica"] },
-  { id: "endocrine", name: "Endócrino", description: "Sinalização hormonal e homeostase.", color: "#8d7397", icon: "sparkles", structures: ["Hipófise", "Tireoide", "Suprarrenais", "Pâncreas endócrino"], topics: ["Eixos hormonais", "Feedback", "Metabolismo"] },
-  { id: "urinary", name: "Urinário", description: "Filtração, equilíbrio interno e excreção.", color: "#6085a0", icon: "droplets", structures: ["Rins", "Ureteres", "Bexiga", "Uretra"], topics: ["Filtração glomerular", "Transporte tubular", "Equilíbrio ácido-base"] },
-  { id: "immune", name: "Linfático e imune", description: "Defesa, vigilância e retorno de fluidos.", color: "#668a75", icon: "shield", structures: ["Linfonodos", "Baço", "Timo", "Vasos linfáticos"], topics: ["Imunidade inata", "Imunidade adaptativa", "Drenagem linfática"] },
+  { id: "cardiovascular", name: "Cardiovascular", description: "Bomba cardíaca, vasos e transporte sistêmico.", color: "#b35f68", icon: "heart", image: "/medicine/systems/cardiovascular-v1.png", structures: ["Coração", "Aorta", "Artérias", "Veias", "Capilares"], topics: ["Ciclo cardíaco", "Hemodinâmica", "Circulações pulmonar e sistêmica"] },
+  { id: "respiratory", name: "Respiratório", description: "Ventilação, difusão e transporte de gases.", color: "#7398a8", icon: "lungs", image: "/medicine/systems/respiratory-v1.png", structures: ["Pulmões", "Traqueia", "Brônquios", "Alvéolos", "Diafragma"], topics: ["Mecânica ventilatória", "Trocas gasosas", "Controle da respiração"] },
+  { id: "nervous", name: "Nervoso", description: "Integração sensorial, motora e autonômica.", color: "#b48a46", icon: "brain", image: "/medicine/systems/nervous-v1.png", structures: ["Encéfalo", "Medula espinal", "Nervos periféricos"], topics: ["Potencial de ação", "Sinapses", "Vias motoras e sensitivas"] },
+  { id: "digestive", name: "Digestório", description: "Digestão, absorção e metabolismo de nutrientes.", color: "#8d7861", icon: "activity", image: "/medicine/systems/digestive-v1.png", structures: ["Esôfago", "Estômago", "Intestinos", "Fígado", "Pâncreas"], topics: ["Motilidade", "Secreções", "Absorção"] },
+  { id: "musculoskeletal", name: "Musculoesquelético", description: "Sustentação, movimento e proteção.", color: "#9d685f", icon: "bone", image: "/medicine/systems/musculoskeletal-v1.png", structures: ["Ossos", "Articulações", "Músculos", "Tendões"], topics: ["Tecido ósseo", "Contração muscular", "Biomecânica"] },
+  { id: "endocrine", name: "Endócrino", description: "Sinalização hormonal e homeostase.", color: "#8d7397", icon: "sparkles", image: "/medicine/systems/endocrine-v1.png", structures: ["Hipófise", "Tireoide", "Suprarrenais", "Pâncreas endócrino"], topics: ["Eixos hormonais", "Feedback", "Metabolismo"] },
+  { id: "urinary", name: "Urinário", description: "Filtração, equilíbrio interno e excreção.", color: "#6085a0", icon: "droplets", image: "/medicine/systems/urinary-v1.png", structures: ["Rins", "Ureteres", "Bexiga", "Uretra"], topics: ["Filtração glomerular", "Transporte tubular", "Equilíbrio ácido-base"] },
+  { id: "immune", name: "Linfático e imune", description: "Defesa, vigilância e retorno de fluidos.", color: "#668a75", icon: "shield", image: "/medicine/systems/immune-v1.png", structures: ["Linfonodos", "Baço", "Timo", "Vasos linfáticos"], topics: ["Imunidade inata", "Imunidade adaptativa", "Drenagem linfática"] },
 ];
 
 export const embryologyTimeline = [
-  { period: "Semana 1", title: "Fecundação e clivagem", detail: "Formação do zigoto, divisões celulares, mórula e blastocisto; início da implantação.", sourceId: "ncbiFertilization" },
-  { period: "Semanas 2–3", title: "Implantação e gastrulação", detail: "Organização do disco embrionário e estabelecimento de ectoderma, mesoderma e endoderma.", sourceId: "ncbiGastrulation" },
-  { period: "Semanas 3–8", title: "Período embrionário", detail: "Organogênese e formação inicial dos principais sistemas; período de alta sensibilidade do desenvolvimento.", sourceId: "ncbiFertilization" },
-  { period: "Semana 9 ao nascimento", title: "Período fetal", detail: "Predominam crescimento, diferenciação e maturação funcional dos sistemas.", sourceId: "openstaxFetal" },
-  { period: "Nascimento", title: "Transição neonatal", detail: "O início da respiração e as mudanças circulatórias marcam a adaptação à vida extrauterina.", sourceId: "openstaxFetal" },
+  { period: "Semana 1", title: "Fecundação e clivagem", detail: "Formação do zigoto, divisões celulares, mórula e blastocisto; início da implantação.", sourceId: "ncbiFertilization", image: "/medicine/development/week-1-v1.png", imageAlt: "Sequência ilustrativa da fecundação ao blastocisto" },
+  { period: "Semanas 2–3", title: "Implantação e gastrulação", detail: "Organização do disco embrionário e estabelecimento de ectoderma, mesoderma e endoderma.", sourceId: "ncbiGastrulation", image: "/medicine/development/weeks-2-3-v1.png", imageAlt: "Modelo didático de implantação e disco embrionário trilaminar" },
+  { period: "Semanas 3–8", title: "Período embrionário", detail: "Organogênese e formação inicial dos principais sistemas; período de alta sensibilidade do desenvolvimento.", sourceId: "ncbiFertilization", image: "/medicine/development/weeks-3-8-v2.png", imageAlt: "Modelo didático de embrião ao final do período embrionário" },
+  { period: "Semana 9 ao nascimento", title: "Período fetal", detail: "Predominam crescimento, diferenciação e maturação funcional dos sistemas.", sourceId: "openstaxFetal", image: "/medicine/development/fetal-period-v1.png", imageAlt: "Modelo didático do período fetal em envoltório protetor" },
+  { period: "Nascimento", title: "Transição neonatal", detail: "O início da respiração e as mudanças circulatórias marcam a adaptação à vida extrauterina.", sourceId: "openstaxFetal", image: "/medicine/development/neonatal-transition-v1.png", imageAlt: "Manequim neonatal didático com destaque para pulmões e coração" },
 ];
 
 export const medicalQuestions: MedicalQuestion[] = [

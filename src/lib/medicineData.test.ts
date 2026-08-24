@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
 import {
   anatomyStructures,
   bodyLayers,
@@ -10,6 +12,8 @@ import {
 } from "./medicineData";
 
 describe("medicine content integrity", () => {
+  const publicAssetExists = (asset: string) => existsSync(resolve(process.cwd(), "public", asset.replace(/^\//, "")));
+
   it("keeps every content reference traceable", () => {
     for (const structure of anatomyStructures) {
       expect(medicalSources[structure.sourceId], `source for ${structure.id}`).toBeDefined();
@@ -49,6 +53,23 @@ describe("medicine content integrity", () => {
 
     for (const layer of bodyLayers) {
       expect(anatomyStructures.some((structure) => structure.layer === layer.id), layer.label).toBe(true);
+    }
+  });
+
+  it("keeps every medical illustration available in the public bundle", () => {
+    expect(publicAssetExists("/medicine/medicine-hero-v2.png")).toBe(true);
+
+    for (const system of medicalSystems) {
+      expect(publicAssetExists(system.image), system.image).toBe(true);
+    }
+
+    for (const stage of embryologyTimeline) {
+      expect(publicAssetExists(stage.image), stage.image).toBe(true);
+    }
+
+    for (const layer of bodyLayers) {
+      expect(publicAssetExists(`/medicine/atlas/${layer.id}-anterior-v2.png`)).toBe(true);
+      expect(publicAssetExists(`/medicine/atlas/${layer.id}-posterior-v2.png`)).toBe(true);
     }
   });
 });
