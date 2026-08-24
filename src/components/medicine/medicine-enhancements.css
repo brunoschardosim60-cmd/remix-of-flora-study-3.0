@@ -72,7 +72,154 @@
   animation: med-atlas-image-in .28s ease both;
 }
 
-.med-anatomy-pin { z-index: 2; }
+.med-atlas-body {
+  height: 700px;
+  min-height: 700px;
+  grid-template-columns: 250px minmax(420px, 1fr) 290px;
+}
+
+.med-layer-rail {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.med-layer-list { flex: 0 0 auto; }
+
+.med-layer-list > button > span:nth-child(2) {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.med-layer-list > button > b {
+  display: grid;
+  min-width: 27px;
+  height: 22px;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(82, 126, 113, .09);
+  color: #55756c;
+  font-size: 8px;
+  font-weight: 900;
+}
+
+.med-atlas-index {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--med-line);
+}
+
+.med-atlas-index > label {
+  display: flex;
+  height: 38px;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  border: 1px solid var(--med-line);
+  border-radius: 11px;
+  background: #fff;
+  transition: border-color .18s ease, box-shadow .18s ease;
+}
+
+.med-atlas-index > label:focus-within {
+  border-color: #719789;
+  box-shadow: 0 0 0 3px rgba(92, 139, 123, .12);
+}
+
+.med-atlas-index > label svg { width: 14px; color: #758a83; }
+.med-atlas-index > label input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--med-ink); font-size: 10px; }
+
+.med-atlas-index-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 10px 3px 7px;
+  color: #7b8c87;
+  font-size: 8px;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+}
+
+.med-atlas-index-meta strong { color: #426f61; font-size: 11px; }
+
+.med-atlas-structure-list {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+  overflow: auto;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(78, 117, 105, .26) transparent;
+}
+
+.med-layer-rail .med-atlas-structure-list > button {
+  display: flex;
+  min-height: 41px;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
+  padding: 7px 9px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+}
+
+.med-layer-rail .med-atlas-structure-list > button:hover { background: rgba(227, 238, 233, .66); }
+.med-layer-rail .med-atlas-structure-list > button.active { border-color: rgba(82, 134, 118, .16); background: #e6f0ec; box-shadow: inset 2px 0 #568676; }
+.med-atlas-structure-list > button span { overflow: hidden; width: 100%; color: #345c51; font-size: 9px; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+.med-atlas-structure-list > button small { overflow: hidden; width: 100%; color: #82928d; font-size: 7px; text-overflow: ellipsis; white-space: nowrap; }
+.med-atlas-structure-list > p { padding: 12px 6px; color: var(--med-muted); font-size: 9px; line-height: 1.5; }
+
+.med-anatomy-pin {
+  z-index: 2;
+  width: 15px;
+  height: 15px;
+  border-width: 1.5px;
+  background: rgba(255, 255, 255, .82);
+  box-shadow: 0 2px 7px rgba(31, 70, 59, .18), 0 0 0 3px rgba(76, 133, 114, .08);
+  transition: width .15s ease, height .15s ease, box-shadow .15s ease;
+}
+
+.med-anatomy-pin span { width: 5px; height: 5px; }
+.med-anatomy-pin:hover,
+.med-anatomy-pin.active { z-index: 5; width: 22px; height: 22px; }
+
+.med-anatomy-pin::after {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  width: max-content;
+  max-width: 180px;
+  transform: translate(-50%, 4px);
+  padding: 6px 8px;
+  border: 1px solid rgba(53, 91, 80, .13);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .96);
+  box-shadow: 0 8px 24px rgba(36, 66, 58, .16);
+  color: #284f44;
+  content: attr(data-label);
+  font-size: 8px;
+  font-weight: 800;
+  line-height: 1.3;
+  opacity: 0;
+  pointer-events: none;
+  transition: .15s ease;
+}
+
+.med-anatomy-pin:hover::after,
+.med-anatomy-pin:focus-visible::after { transform: translate(-50%, 0); opacity: 1; }
 
 .med-atlas-image-note {
   position: absolute;
@@ -448,6 +595,15 @@
 .dark .med-layer-rail button.active,
 .black .med-layer-rail button.active { background: #233c33; }
 
+.dark .med-atlas-index > label,
+.black .med-atlas-index > label { background: #101713; }
+
+.dark .med-atlas-structure-list > button span,
+.black .med-atlas-structure-list > button span { color: #c7ddd5; }
+
+.dark .med-anatomy-pin::after,
+.black .med-anatomy-pin::after { border-color: rgba(207, 229, 220, .13); background: rgba(18, 29, 24, .96); color: #dceae5; }
+
 .dark .med-answer-box input,
 .dark .med-case-layout textarea,
 .dark .med-report-card textarea,
@@ -464,10 +620,23 @@
   .med-system-visual img { height: 240px; }
 }
 
+@media (max-width: 1100px) {
+  .med-atlas-body { height: auto; grid-template-columns: 220px minmax(330px, 1fr); }
+  .med-layer-rail { height: 700px; }
+}
+
 @media (max-width: 820px) {
   .med-report-card { grid-template-columns: 1fr; }
   .med-atlas-controls a.wide { flex: 1; justify-content: center; }
   .med-focus-toggle { display: none; }
+  .med-atlas-body { grid-template-columns: 1fr; }
+  .med-layer-rail { display: block; height: auto; overflow: visible; padding: 12px; }
+  .med-layer-list { display: flex; gap: 4px; overflow-x: auto; padding-bottom: 4px; }
+  .med-layer-list > button { min-width: 152px; }
+  .med-atlas-index { display: grid; grid-template-columns: minmax(180px, 1fr) auto; margin-top: 10px; padding-top: 10px; }
+  .med-atlas-index-meta { padding: 0 5px 0 12px; }
+  .med-atlas-structure-list { grid-column: 1 / -1; flex-direction: row; overflow-x: auto; padding-top: 8px; }
+  .med-layer-rail .med-atlas-structure-list > button { width: 145px; min-width: 145px; }
   .med-body-viewport { width: 350px; height: 620px; }
   .med-development-visual { height: 230px; }
   .med-development-content { padding: 28px; }

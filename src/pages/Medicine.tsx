@@ -10,8 +10,9 @@ import { BodyAtlas } from "@/components/medicine/BodyAtlas";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  anatomyStructures, embryologyTimeline, medicalNotebookTemplates, medicalQuestions,
+  anatomyPositionFor, anatomyStructures, embryologyTimeline, medicalNotebookTemplates, medicalQuestions,
   medicalSources, medicalSystems, type AnatomyStructure, type BodyLayer, type MedicineLevel,
+  preferredAnatomyView,
 } from "@/lib/medicineData";
 import "@/components/medicine/medicine.css";
 import "@/components/medicine/medicine-enhancements.css";
@@ -208,11 +209,10 @@ function DevelopmentSection() {
 }
 
 function PracticeSection({ structure, input, result, onInput, onSubmit, onNext }: { structure: AnatomyStructure; input: string; result: "correct" | "wrong" | null; onInput: (value: string) => void; onSubmit: () => void; onNext: () => void }) {
-  const modelView = structure.id === "sciatic" ? "posterior" : "anterior";
-  const markerX = modelView === "posterior" ? 100 - structure.x : structure.x;
-  const markerY = modelView === "posterior" && structure.id === "brain" ? 10 : structure.y;
+  const modelView = preferredAnatomyView(structure);
+  const markerPosition = anatomyPositionFor(structure, modelView) ?? { x: structure.x, y: structure.y };
   return <div className="med-page"><PageHeading eyebrow="Aprendizado ativo" title="Identificação anatômica" description="Digite o nome da estrutura destacada. Sinônimos anatômicos comuns são aceitos." />
-    <div className="med-practice-card"><div className="med-practice-visual"><div className="pulse-ring"/><div className="med-practice-model"><img key={`${structure.layer}-${modelView}`} src={`/medicine/atlas/${structure.layer}-${modelView}-v2.png`} alt={`Modelo anatômico educacional em vista ${modelView}`} /><i style={{ left: `${markerX}%`, top: `${markerY}%` } as CSSProperties}/></div><span>MODELO ANATÔMICO EM ALTA DEFINIÇÃO</span><small>Ilustração educacional · não diagnóstica</small></div><div className="med-practice-prompt"><span className="med-eyebrow">REGIÃO: {structure.region}</span><h2>Qual é esta estrutura?</h2><p>{result ? structure.summary : "Observe a estrutura destacada no modelo anatômico e informe o nome correspondente."}</p><div className="med-answer-box"><input value={input} onChange={(event) => onInput(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") onSubmit(); }} placeholder="Digite o nome da estrutura" disabled={result !== null}/>{result === null ? <button onClick={onSubmit}>Responder</button> : <button onClick={onNext}>Próxima <ArrowRight /></button>}</div>{result && <div className={`med-feedback ${result}`}><span>{result === "correct" ? <Check /> : <X />}</span><div><strong>{result === "correct" ? "Resposta correta" : `Resposta: ${structure.name}`}</strong><p><b>Função:</b> {structure.function}</p><p><b>Próximas:</b> {structure.nearby.join(", ")}</p></div></div>}</div></div>
+    <div className="med-practice-card"><div className="med-practice-visual"><div className="pulse-ring"/><div className="med-practice-model"><img key={`${structure.layer}-${modelView}`} src={`/medicine/atlas/${structure.layer}-${modelView}-v2.png`} alt={`Modelo anatômico educacional em vista ${modelView}`} /><i style={{ left: `${markerPosition.x}%`, top: `${markerPosition.y}%` } as CSSProperties}/></div><span>MODELO ANATÔMICO EM ALTA DEFINIÇÃO</span><small>Ilustração educacional · não diagnóstica</small></div><div className="med-practice-prompt"><span className="med-eyebrow">REGIÃO: {structure.region}</span><h2>Qual é esta estrutura?</h2><p>{result ? structure.summary : "Observe a estrutura destacada no modelo anatômico e informe o nome correspondente."}</p><div className="med-answer-box"><input value={input} onChange={(event) => onInput(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") onSubmit(); }} placeholder="Digite o nome da estrutura" disabled={result !== null}/>{result === null ? <button onClick={onSubmit}>Responder</button> : <button onClick={onNext}>Próxima <ArrowRight /></button>}</div>{result && <div className={`med-feedback ${result}`}><span>{result === "correct" ? <Check /> : <X />}</span><div><strong>{result === "correct" ? "Resposta correta" : `Resposta: ${structure.name}`}</strong><p><b>Função:</b> {structure.function}</p><p><b>Próximas:</b> {structure.nearby.length ? structure.nearby.join(", ") : "consulte a fonte anatômica"}</p></div></div>}</div></div>
   </div>;
 }
 

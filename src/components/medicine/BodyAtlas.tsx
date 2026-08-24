@@ -1,6 +1,14 @@
 import { useMemo, useState } from "react";
 import { Box, ExternalLink, RotateCcw, Search, Volume2, ZoomIn, ZoomOut } from "lucide-react";
-import { anatomyStructures, bodyLayers, medicalSources, type AnatomyStructure, type BodyLayer } from "@/lib/medicineData";
+import {
+  anatomyPositionFor,
+  anatomyStructures,
+  bodyLayers,
+  medicalSources,
+  type AnatomyStructure,
+  type AtlasView,
+  type BodyLayer,
+} from "@/lib/medicineData";
 
 interface BodyAtlasProps {
   activeLayer: BodyLayer;
@@ -11,14 +19,41 @@ interface BodyAtlasProps {
 
 export function BodyAtlas({ activeLayer, onLayerChange, selected, onSelect }: BodyAtlasProps) {
   const [zoom, setZoom] = useState(1);
-  const [view, setView] = useState<"anterior" | "posterior">("anterior");
-  const visibleStructures = useMemo(() => anatomyStructures.filter((item) => item.layer === activeLayer), [activeLayer]);
+  const [view, setView] = useState<AtlasView>("anterior");
+  const [query, setQuery] = useState("");
+  const structuresInLayer = useMemo(() => anatomyStructures.filter((item) => item.layer === activeLayer), [activeLayer]);
+  const visibleStructures = useMemo(
+    () => structuresInLayer.filter((item) => anatomyPositionFor(item, view)),
+    [structuresInLayer, view],
+  );
+  const filteredStructures = useMemo(() => {
+    const term = normalizeSearch(query);
+    if (!term) return visibleStructures;
+    return visibleStructures.filter((structure) => normalizeSearch([
+      structure.name,
+      structure.latin ?? "",
+      structure.region,
+      ...structure.synonyms,
+    ].join(" ")).includes(term));
+  }, [query, visibleStructures]);
   const atlasImage = `/medicine/atlas/${activeLayer}-${view}-v2.png`;
 
   const selectLayer = (layer: BodyLayer) => {
     onLayerChange(layer);
-    const firstStructure = anatomyStructures.find((item) => item.layer === layer);
+    setQuery("");
+    const structures = anatomyStructures.filter((item) => item.layer === layer);
+    const firstStructure = structures.find((item) => anatomyPositionFor(item, view)) ?? structures[0];
     if (firstStructure) onSelect(firstStructure);
+  };
+
+  const changeView = () => {
+    const nextView: AtlasView = view === "anterior" ? "posterior" : "anterior";
+    setView(nextView);
+    const selectedIsVisible = selected?.layer === activeLayer && anatomyPositionFor(selected, nextView);
+    if (!selectedIsVisible) {
+      const firstVisible = structuresInLayer.find((item) => anatomyPositionFor(item, nextView));
+      if (firstVisible) onSelect(firstVisible);
+    }
   };
 
   return (
@@ -33,19 +68,38 @@ export function BodyAtlas({ activeLayer, onLayerChange, selected, onSelect }: Bo
           <button onClick={() => setZoom((value) => Math.max(0.8, value - 0.1))} aria-label="Diminuir zoom"><ZoomOut /></button>
           <span>{Math.round(zoom * 100)}%</span>
           <button onClick={() => setZoom((value) => Math.min(1.5, value + 0.1))} aria-label="Aumentar zoom"><ZoomIn /></button>
-          <button className="wide" onClick={() => setView((value) => value === "anterior" ? "posterior" : "anterior")}><RotateCcw /> {view === "anterior" ? "Anterior" : "Posterior"}</button>
+          <button className="wide" onClick={changeView}><RotateCcw /> {view === "anterior" ? "Anterior" : "Posterior"}</button>
           <a className="wide" href="https://www.openanatomy.org/atlas-pages/" target="_blank" rel="noreferrer"><Box /> Atlas validado <ExternalLink /></a>
         </div>
       </div>
 
       <div className="med-atlas-body">
         <nav className="med-layer-rail" aria-label="Camadas do corpo">
-          {bodyLayers.map((layer) => (
-            <button key={layer.id} className={activeLayer === layer.id ? "active" : ""} onClick={() => selectLayer(layer.id)}>
-              <span className="dot" style={{ background: layer.color }} />
-              <span><strong>{layer.label}</strong><small>{layer.description}</small></span>
-            </button>
-          ))}
+          <div className="med-layer-list">
+            {bodyLayers.map((layer) => {
+              const total = anatomyStructures.filter((structure) => structure.layer === layer.id).length;
+              return <button key={layer.id} className={activeLayer === layer.id ? "active" : ""} onClick={() => selectLayer(layer.id)}>
+                <span className="dot" style={{ background: layer.color }} />
+                <span><strong>{layer.label}</strong><small>{layer.description}</small></span>
+                <b>{total}</b>
+              </button>;
+            })}
+          </div>
+          <div className="med-atlas-index">
+            <label>
+              <Search />
+              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar estrutura" aria-label="Buscar estrutura nesta camada" />
+            </label>
+            <div className="med-atlas-index-meta"><strong>{filteredStructures.length}</strong><span>na vista {view}</span></div>
+            <div className="med-atlas-structure-list">
+              {filteredStructures.map((structure) => (
+                <button key={structure.id} className={selected?.id === structure.id ? "active" : ""} onClick={() => onSelect(structure)}>
+                  <span>{structure.name}</span><small>{structure.region}</small>
+                </button>
+              ))}
+              {!filteredStructures.length && <p>Nenhuma estrutura encontrada nesta vista.</p>}
+            </div>
+          </div>
         </nav>
 
         <div className="med-body-stage">
@@ -58,11 +112,18 @@ export function BodyAtlas({ activeLayer, onLayerChange, selected, onSelect }: Bo
               alt={`Ilustração educacional do corpo humano, vista ${view}, camada ${activeLayer}`}
               draggable={false}
             />
-            {visibleStructures.map((structure) => (
-              <button key={structure.id} className={`med-anatomy-pin ${selected?.id === structure.id ? "active" : ""}`} style={{ left: `${view === "posterior" ? 100 - structure.x : structure.x}%`, top: `${view === "posterior" && structure.id === "brain" ? 10 : structure.y}%` }} onClick={() => onSelect(structure)} aria-label={`Selecionar ${structure.name}`}>
-                <span />
-              </button>
-            ))}
+            {filteredStructures.map((structure) => {
+              const position = anatomyPositionFor(structure, view);
+              if (!position) return null;
+              return <button
+                key={structure.id}
+                className={`med-anatomy-pin ${selected?.id === structure.id ? "active" : ""}`}
+                style={{ left: `${position.x}%`, top: `${position.y}%` }}
+                onClick={() => onSelect(structure)}
+                aria-label={`Selecionar ${structure.name}`}
+                data-label={structure.name}
+              ><span /></button>;
+            })}
           </div>
           <span className="med-atlas-image-note">Ilustração educacional gerada · não diagnóstica</span>
           <div className="med-orientation"><span>D</span><strong>{view === "anterior" ? "ANTERIOR" : "POSTERIOR"}</strong><span>E</span></div>
@@ -74,13 +135,17 @@ export function BodyAtlas({ activeLayer, onLayerChange, selected, onSelect }: Bo
             <h3>{selected.name}</h3>
             {selected.latin && <em>{selected.latin}</em>}
             <p>{selected.summary}</p>
-            <dl><div><dt>Função</dt><dd>{selected.function}</dd></div><div><dt>Relações</dt><dd>{selected.relations}</dd></div><div><dt>Estruturas próximas</dt><dd>{selected.nearby.join(" · ")}</dd></div></dl>
+            <dl><div><dt>Função</dt><dd>{selected.function}</dd></div><div><dt>Relações</dt><dd>{selected.relations}</dd></div><div><dt>Estruturas próximas</dt><dd>{selected.nearby.length ? selected.nearby.join(" · ") : "Consulte a fonte e as vistas regionais para relações de proximidade."}</dd></div></dl>
             <div className="med-structure-actions"><button onClick={() => speakStructure(selected.name)}><Volume2 /> Ouvir nome</button><a href={medicalSourceUrl(selected.sourceId)} target="_blank" rel="noreferrer">Ver fonte anatômica <ExternalLink /></a></div>
           </> : <div className="med-empty-selection"><Search /><h3>Selecione uma estrutura</h3><p>Os pontos ativos mudam conforme a camada escolhida.</p></div>}
         </aside>
       </div>
     </section>
   );
+}
+
+function normalizeSearch(value: string) {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR").trim();
 }
 
 function medicalSourceUrl(sourceId: string) {

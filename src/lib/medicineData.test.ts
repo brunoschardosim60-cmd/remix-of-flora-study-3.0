@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import {
+  anatomyPositionFor,
   anatomyStructures,
   bodyLayers,
   embryologyTimeline,
@@ -53,6 +54,26 @@ describe("medicine content integrity", () => {
 
     for (const layer of bodyLayers) {
       expect(anatomyStructures.some((structure) => structure.layer === layer.id), layer.label).toBe(true);
+    }
+  });
+
+  it("provides broad whole-body atlas coverage with valid marker coordinates", () => {
+    expect(anatomyStructures.length).toBeGreaterThanOrEqual(200);
+
+    for (const layer of bodyLayers) {
+      const structures = anatomyStructures.filter((structure) => structure.layer === layer.id);
+      expect(structures.length, layer.label).toBeGreaterThanOrEqual(30);
+    }
+
+    for (const structure of anatomyStructures) {
+      const positions = [anatomyPositionFor(structure, "anterior"), anatomyPositionFor(structure, "posterior")].filter(Boolean);
+      expect(positions.length, `marker view for ${structure.id}`).toBeGreaterThan(0);
+      for (const position of positions) {
+        expect(position!.x, `${structure.id} x`).toBeGreaterThanOrEqual(0);
+        expect(position!.x, `${structure.id} x`).toBeLessThanOrEqual(100);
+        expect(position!.y, `${structure.id} y`).toBeGreaterThanOrEqual(0);
+        expect(position!.y, `${structure.id} y`).toBeLessThanOrEqual(100);
+      }
     }
   });
 

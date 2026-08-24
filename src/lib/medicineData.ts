@@ -1,5 +1,13 @@
+import { medicineAtlasCatalog } from "./medicineAtlasCatalog";
+
 export type MedicineLevel = "Iniciante" | "Ciclo básico" | "Ciclo clínico" | "Internato" | "Residência";
 export type BodyLayer = "surface" | "muscular" | "skeletal" | "vascular" | "nervous" | "organs";
+export type AtlasView = "anterior" | "posterior";
+
+export interface AtlasPosition {
+  x: number;
+  y: number;
+}
 
 export interface MedicalSource {
   title: string;
@@ -25,6 +33,7 @@ export interface AnatomyStructure {
   sourceId: string;
   x: number;
   y: number;
+  positions?: Partial<Record<AtlasView, AtlasPosition>>;
 }
 
 export interface MedicalSystem {
@@ -221,18 +230,40 @@ export const bodyLayers: Array<{ id: BodyLayer; label: string; description: stri
   { id: "organs", label: "Órgãos", description: "Estruturas viscerais", color: "#8b6b83" },
 ];
 
-export const anatomyStructures: AnatomyStructure[] = [
-  { id: "skin", name: "Pele", latin: "Cutis", layer: "surface", system: "Tegumentar", region: "Corpo inteiro", summary: "Órgão de revestimento que constitui a interface entre o organismo e o ambiente.", function: "Barreira física, termorregulação, sensibilidade e participação na síntese de vitamina D.", relations: "Recobre o tecido subcutâneo e continua-se com mucosas nas aberturas naturais.", nearby: ["Tecido subcutâneo", "Fáscia superficial"], synonyms: ["pele", "cutis", "tegumento"], sourceId: "openstaxSkin", x: 50, y: 37 },
-  { id: "deltoid", name: "Músculo deltoide", latin: "Musculus deltoideus", layer: "muscular", system: "Musculoesquelético", region: "Ombro", summary: "Músculo triangular que recobre a articulação glenoumeral.", function: "Participa da abdução do braço; suas porções também contribuem para flexão, extensão e rotação.", relations: "Situa-se superficialmente ao úmero proximal e à articulação do ombro.", nearby: ["Acrômio", "Úmero", "Manguito rotador"], synonyms: ["deltoide", "músculo deltoide"], sourceId: "openstaxMuscle", x: 34, y: 25 },
-  { id: "femur", name: "Fêmur", latin: "Femur", layer: "skeletal", system: "Musculoesquelético", region: "Coxa", summary: "Osso longo da coxa, articulado proximalmente com o acetábulo e distalmente com tíbia e patela.", function: "Transmite cargas e oferece alavancas para músculos do quadril e do joelho.", relations: "A cabeça ocupa o acetábulo; os côndilos participam da articulação do joelho.", nearby: ["Acetábulo", "Patela", "Tíbia"], synonyms: ["fêmur", "osso da coxa"], sourceId: "openstaxSkeleton", x: 43, y: 67 },
-  { id: "aorta", name: "Aorta", latin: "Aorta", layer: "vascular", system: "Cardiovascular", region: "Tórax e abdome", summary: "Maior artéria da circulação sistêmica, originada no ventrículo esquerdo.", function: "Distribui sangue da circulação sistêmica por meio de seus ramos.", relations: "O arco relaciona-se com os grandes vasos; a aorta descendente segue no mediastino posterior e atravessa o diafragma.", nearby: ["Ventrículo esquerdo", "Tronco pulmonar", "Veia cava superior"], synonyms: ["aorta", "artéria aorta"], sourceId: "openstaxCirculation", x: 53, y: 35 },
-  { id: "sciatic", name: "Nervo isquiático", latin: "Nervus ischiadicus", layer: "nervous", system: "Nervoso", region: "Pelve e membro inferior", summary: "Grande nervo do plexo sacral que percorre a região glútea e a face posterior da coxa.", function: "Reúne fibras destinadas a funções motoras e sensitivas de grande parte do membro inferior.", relations: "Forma-se a partir do plexo sacral e contém componentes tibial e fibular comum.", nearby: ["Plexo sacral", "Nervo tibial", "Nervo fibular comum"], synonyms: ["nervo isquiático", "ciático", "nervo ciático"], sourceId: "openstaxPns", x: 58, y: 66 },
-  { id: "brain", name: "Encéfalo", latin: "Encephalon", layer: "organs", system: "Nervoso", region: "Cavidade craniana", summary: "Conjunto de estruturas do sistema nervoso central contidas no crânio.", function: "Integra informação sensorial, planejamento motor, cognição, memória e regulação autonômica.", relations: "Continua-se inferiormente com a medula espinal e é envolvido pelas meninges.", nearby: ["Meninges", "Medula espinal", "Nervos cranianos"], synonyms: ["encéfalo", "encephalon"], sourceId: "openstaxCns", x: 50, y: 6 },
-  { id: "heart", name: "Coração", latin: "Cor", layer: "organs", system: "Cardiovascular", region: "Mediastino", summary: "Órgão muscular oco com quatro câmaras que impulsiona sangue pelas circulações pulmonar e sistêmica.", function: "Gera fluxo sanguíneo por contrações coordenadas de átrios e ventrículos.", relations: "Situa-se no pericárdio, posterior ao esterno, entre os pulmões e sobre o diafragma.", nearby: ["Pulmões", "Aorta", "Tronco pulmonar", "Diafragma"], synonyms: ["coração", "cor"], sourceId: "openstaxHeart", x: 52, y: 27 },
-  { id: "lungs", name: "Pulmões", latin: "Pulmones", layer: "organs", system: "Respiratório", region: "Cavidades pleurais", summary: "Órgãos pares da respiração localizados no tórax.", function: "Realizam trocas gasosas entre o ar alveolar e o sangue capilar.", relations: "Ladeiam o mediastino, são revestidos por pleura visceral e apoiam-se no diafragma.", nearby: ["Pleura", "Brônquios principais", "Diafragma", "Coração"], synonyms: ["pulmões", "pulmão"], sourceId: "openstaxRespiratory", x: 57, y: 22 },
-  { id: "liver", name: "Fígado", latin: "Hepar", layer: "organs", system: "Digestório", region: "Quadrante superior direito do abdome", summary: "Grande órgão glandular predominantemente situado sob o hemidiafragma direito.", function: "Participa do metabolismo, síntese de proteínas plasmáticas, produção de bile e processamento de substâncias absorvidas.", relations: "Relaciona-se superiormente com o diafragma e inferiormente com vísceras abdominais.", nearby: ["Vesícula biliar", "Veia porta", "Diafragma"], synonyms: ["fígado", "hepar"], sourceId: "openstaxDigestive", x: 43, y: 34 },
-  { id: "kidneys", name: "Rins", latin: "Renes", layer: "organs", system: "Urinário", region: "Retroperitônio", summary: "Órgãos pares situados na parede posterior do abdome.", function: "Filtram o plasma, regulam água e eletrólitos e participam do equilíbrio ácido-base e de funções endócrinas.", relations: "São retroperitoneais; o rim direito costuma situar-se ligeiramente mais inferior que o esquerdo.", nearby: ["Glândulas suprarrenais", "Ureteres", "Aorta abdominal"], synonyms: ["rins", "rim", "renes"], sourceId: "openstaxKidney", x: 56, y: 37 },
+const featuredAnatomyStructures: AnatomyStructure[] = [
+  { id: "skin", name: "Pele", latin: "Cutis", layer: "surface", system: "Tegumentar", region: "Corpo inteiro", summary: "Órgão de revestimento que constitui a interface entre o organismo e o ambiente.", function: "Barreira física, termorregulação, sensibilidade e participação na síntese de vitamina D.", relations: "Recobre o tecido subcutâneo e continua-se com mucosas nas aberturas naturais.", nearby: ["Tecido subcutâneo", "Fáscia superficial"], synonyms: ["pele", "cutis", "tegumento"], sourceId: "openstaxSkin", x: 50, y: 37, positions: { anterior: { x: 50, y: 37 }, posterior: { x: 50, y: 37 } } },
+  { id: "deltoid", name: "Músculo deltoide", latin: "Musculus deltoideus", layer: "muscular", system: "Musculoesquelético", region: "Ombro", summary: "Músculo triangular que recobre a articulação glenoumeral.", function: "Participa da abdução do braço; suas porções também contribuem para flexão, extensão e rotação.", relations: "Situa-se superficialmente ao úmero proximal e à articulação do ombro.", nearby: ["Acrômio", "Úmero", "Manguito rotador"], synonyms: ["deltoide", "músculo deltoide"], sourceId: "openstaxMuscle", x: 34, y: 25, positions: { anterior: { x: 34, y: 25 }, posterior: { x: 66, y: 25 } } },
+  { id: "femur", name: "Fêmur", latin: "Femur", layer: "skeletal", system: "Musculoesquelético", region: "Coxa", summary: "Osso longo da coxa, articulado proximalmente com o acetábulo e distalmente com tíbia e patela.", function: "Transmite cargas e oferece alavancas para músculos do quadril e do joelho.", relations: "A cabeça ocupa o acetábulo; os côndilos participam da articulação do joelho.", nearby: ["Acetábulo", "Patela", "Tíbia"], synonyms: ["fêmur", "osso da coxa"], sourceId: "openstaxSkeleton", x: 43, y: 67, positions: { anterior: { x: 43, y: 67 }, posterior: { x: 57, y: 67 } } },
+  { id: "aorta", name: "Aorta", latin: "Aorta", layer: "vascular", system: "Cardiovascular", region: "Tórax e abdome", summary: "Maior artéria da circulação sistêmica, originada no ventrículo esquerdo.", function: "Distribui sangue da circulação sistêmica por meio de seus ramos.", relations: "O arco relaciona-se com os grandes vasos; a aorta descendente segue no mediastino posterior e atravessa o diafragma.", nearby: ["Ventrículo esquerdo", "Tronco pulmonar", "Veia cava superior"], synonyms: ["aorta", "artéria aorta"], sourceId: "openstaxCirculation", x: 53, y: 35, positions: { anterior: { x: 53, y: 35 }, posterior: { x: 47, y: 35 } } },
+  { id: "sciatic", name: "Nervo isquiático", latin: "Nervus ischiadicus", layer: "nervous", system: "Nervoso", region: "Pelve e membro inferior", summary: "Grande nervo do plexo sacral que percorre a região glútea e a face posterior da coxa.", function: "Reúne fibras destinadas a funções motoras e sensitivas de grande parte do membro inferior.", relations: "Forma-se a partir do plexo sacral e contém componentes tibial e fibular comum.", nearby: ["Plexo sacral", "Nervo tibial", "Nervo fibular comum"], synonyms: ["nervo isquiático", "ciático", "nervo ciático"], sourceId: "openstaxPns", x: 58, y: 66, positions: { posterior: { x: 58, y: 66 } } },
+  { id: "brain", name: "Encéfalo", latin: "Encephalon", layer: "organs", system: "Nervoso", region: "Cavidade craniana", summary: "Conjunto de estruturas do sistema nervoso central contidas no crânio.", function: "Integra informação sensorial, planejamento motor, cognição, memória e regulação autonômica.", relations: "Continua-se inferiormente com a medula espinal e é envolvido pelas meninges.", nearby: ["Meninges", "Medula espinal", "Nervos cranianos"], synonyms: ["encéfalo", "encephalon"], sourceId: "openstaxCns", x: 50, y: 6, positions: { anterior: { x: 50, y: 6 }, posterior: { x: 50, y: 10 } } },
+  { id: "heart", name: "Coração", latin: "Cor", layer: "organs", system: "Cardiovascular", region: "Mediastino", summary: "Órgão muscular oco com quatro câmaras que impulsiona sangue pelas circulações pulmonar e sistêmica.", function: "Gera fluxo sanguíneo por contrações coordenadas de átrios e ventrículos.", relations: "Situa-se no pericárdio, posterior ao esterno, entre os pulmões e sobre o diafragma.", nearby: ["Pulmões", "Aorta", "Tronco pulmonar", "Diafragma"], synonyms: ["coração", "cor"], sourceId: "openstaxHeart", x: 52, y: 27, positions: { anterior: { x: 52, y: 27 }, posterior: { x: 48, y: 27 } } },
+  { id: "lungs", name: "Pulmões", latin: "Pulmones", layer: "organs", system: "Respiratório", region: "Cavidades pleurais", summary: "Órgãos pares da respiração localizados no tórax.", function: "Realizam trocas gasosas entre o ar alveolar e o sangue capilar.", relations: "Ladeiam o mediastino, são revestidos por pleura visceral e apoiam-se no diafragma.", nearby: ["Pleura", "Brônquios principais", "Diafragma", "Coração"], synonyms: ["pulmões", "pulmão"], sourceId: "openstaxRespiratory", x: 57, y: 22, positions: { anterior: { x: 57, y: 22 }, posterior: { x: 43, y: 23 } } },
+  { id: "liver", name: "Fígado", latin: "Hepar", layer: "organs", system: "Digestório", region: "Quadrante superior direito do abdome", summary: "Grande órgão glandular predominantemente situado sob o hemidiafragma direito.", function: "Participa do metabolismo, síntese de proteínas plasmáticas, produção de bile e processamento de substâncias absorvidas.", relations: "Relaciona-se superiormente com o diafragma e inferiormente com vísceras abdominais.", nearby: ["Vesícula biliar", "Veia porta", "Diafragma"], synonyms: ["fígado", "hepar"], sourceId: "openstaxDigestive", x: 43, y: 34, positions: { anterior: { x: 43, y: 34 }, posterior: { x: 57, y: 34 } } },
+  { id: "kidneys", name: "Rins", latin: "Renes", layer: "organs", system: "Urinário", region: "Retroperitônio", summary: "Órgãos pares situados na parede posterior do abdome.", function: "Filtram o plasma, regulam água e eletrólitos e participam do equilíbrio ácido-base e de funções endócrinas.", relations: "São retroperitoneais; o rim direito costuma situar-se ligeiramente mais inferior que o esquerdo.", nearby: ["Glândulas suprarrenais", "Ureteres", "Aorta abdominal"], synonyms: ["rins", "rim", "renes"], sourceId: "openstaxKidney", x: 56, y: 37, positions: { anterior: { x: 56, y: 37 }, posterior: { x: 44, y: 37 } } },
 ];
+
+export const anatomyStructures: AnatomyStructure[] = [
+  ...featuredAnatomyStructures,
+  ...medicineAtlasCatalog.map((structure) => {
+    const firstPosition = structure.positions.anterior ?? structure.positions.posterior ?? { x: 50, y: 50 };
+    return { ...structure, x: firstPosition.x, y: firstPosition.y };
+  }),
+];
+
+export function anatomyPositionFor(structure: AnatomyStructure, view: AtlasView): AtlasPosition | null {
+  if (structure.positions) return structure.positions[view] ?? null;
+  return {
+    x: view === "posterior" ? 100 - structure.x : structure.x,
+    y: view === "posterior" && structure.id === "brain" ? 10 : structure.y,
+  };
+}
+
+export function preferredAnatomyView(structure: AnatomyStructure): AtlasView {
+  if (structure.positions?.anterior) return "anterior";
+  if (structure.positions?.posterior) return "posterior";
+  return structure.id === "sciatic" ? "posterior" : "anterior";
+}
 
 export const medicalSystems: MedicalSystem[] = [
   { id: "cardiovascular", name: "Cardiovascular", description: "Bomba cardíaca, vasos e transporte sistêmico.", color: "#b35f68", icon: "heart", image: "/medicine/systems/cardiovascular-v1.png", structures: ["Coração", "Aorta", "Artérias", "Veias", "Capilares"], topics: ["Ciclo cardíaco", "Hemodinâmica", "Circulações pulmonar e sistêmica"] },
