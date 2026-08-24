@@ -420,14 +420,14 @@ export default function NotebookEditor() {
 
   useEffect(() => {
     if (!pageKey) return;
-    const saved = loadJsonStorage<Record<string, PageTemplate>>(NOTEBOOK_TEMPLATE_STORAGE_KEY, {});
+    const saved = loadJsonStorage<Record<string, PageTemplate>>(NOTEBOOK_TEMPLATE_STORAGE_KEY) ?? {};
     setPageTemplate(saved[pageKey] ?? "blank");
   }, [pageKey]);
 
   const changePageTemplate = useCallback((template: PageTemplate) => {
     setPageTemplate(template);
     if (!pageKey) return;
-    const saved = loadJsonStorage<Record<string, PageTemplate>>(NOTEBOOK_TEMPLATE_STORAGE_KEY, {});
+    const saved = loadJsonStorage<Record<string, PageTemplate>>(NOTEBOOK_TEMPLATE_STORAGE_KEY) ?? {};
     window.localStorage.setItem(NOTEBOOK_TEMPLATE_STORAGE_KEY, JSON.stringify({ ...saved, [pageKey]: template }));
   }, [pageKey]);
 
@@ -462,7 +462,7 @@ export default function NotebookEditor() {
 
   const recordPageVersion = useCallback((item: NotebookPage) => {
     try {
-      const all = loadJsonStorage<Record<string, NotebookVersion[]>>(NOTEBOOK_HISTORY_STORAGE_KEY, {});
+      const all = loadJsonStorage<Record<string, NotebookVersion[]>>(NOTEBOOK_HISTORY_STORAGE_KEY) ?? {};
       const versions = all[item.id] ?? [];
       const snapshot: NotebookVersion = { savedAt: Date.now(), content: item.content, drawing: item.drawing_data ?? emptyDrawing };
       const signature = JSON.stringify({ content: snapshot.content, drawing: snapshot.drawing });
@@ -474,7 +474,7 @@ export default function NotebookEditor() {
 
   const restorePreviousVersion = useCallback(() => {
     if (!currentPageData) return;
-    const all = loadJsonStorage<Record<string, NotebookVersion[]>>(NOTEBOOK_HISTORY_STORAGE_KEY, {});
+    const all = loadJsonStorage<Record<string, NotebookVersion[]>>(NOTEBOOK_HISTORY_STORAGE_KEY) ?? {};
     const versions = all[currentPageData.id] ?? [];
     if (versions.length < 2) { toast.info("Ainda não há uma versão anterior desta página."); return; }
     const previous = versions[versions.length - 2];
