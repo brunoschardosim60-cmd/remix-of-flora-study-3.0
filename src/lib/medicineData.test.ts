@@ -6,6 +6,7 @@ import {
   anatomyStructures,
   bodyLayers,
   embryologyTimeline,
+  medicineLevelProfiles,
   medicalQuestions,
   medicalSources,
   medicalSystems,
@@ -44,6 +45,9 @@ describe("medicine content integrity", () => {
     const levels: MedicineLevel[] = ["Iniciante", "Ciclo básico", "Ciclo clínico", "Internato", "Residência"];
     for (const level of levels) {
       expect(medicalQuestions.some((question) => question.level === level), level).toBe(true);
+      expect(medicineLevelProfiles[level].title.length, `${level} title`).toBeGreaterThan(5);
+      expect(medicineLevelProfiles[level].focus.length, `${level} focus`).toBeGreaterThan(5);
+      expect(medicineLevelProfiles[level].cycle.length, `${level} cycle`).toBeGreaterThanOrEqual(5);
     }
   });
 

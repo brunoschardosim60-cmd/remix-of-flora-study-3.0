@@ -59,6 +59,17 @@ export interface MedicalQuestion {
   sourceId: string;
 }
 
+export interface MedicineLevelProfile {
+  title: string;
+  focus: string;
+  homeDescription: string;
+  atlasDescription: string;
+  practiceDescription: string;
+  questionDescription: string;
+  clinicalInstruction: string;
+  cycle: string[];
+}
+
 export const medicalSources: Record<string, MedicalSource> = {
   openstax: {
     title: "Anatomy and Physiology 2e",
@@ -229,6 +240,59 @@ export const bodyLayers: Array<{ id: BodyLayer; label: string; description: stri
   { id: "nervous", label: "Nervos", description: "Integração e condução", color: "#d7a947" },
   { id: "organs", label: "Órgãos", description: "Estruturas viscerais", color: "#8b6b83" },
 ];
+
+export const medicineLevelProfiles: Record<MedicineLevel, MedicineLevelProfile> = {
+  Iniciante: {
+    title: "Reconhecimento fundamental",
+    focus: "Nomes, localização e funções essenciais",
+    homeDescription: "Comece pelas estruturas mais reconhecíveis, construa vocabulário anatômico e conecte cada nome à sua função básica.",
+    atlasDescription: "Priorize nome, região e função. Relações mais complexas ficam ocultas para reduzir a sobrecarga inicial.",
+    practiceDescription: "Você recebe região, camada e uma dica com a primeira letra.",
+    questionDescription: "Questões introdutórias do nível Iniciante, sem misturar conteúdos avançados.",
+    clinicalInstruction: "Identifique os dados principais e descreva o mecanismo básico antes de avançar.",
+    cycle: ["Explorar estruturas essenciais", "Aprender nomes e regiões", "Identificar com dicas", "Resolver questões introdutórias", "Revisar erros"],
+  },
+  "Ciclo básico": {
+    title: "Integração estrutura–função",
+    focus: "Anatomia, histologia e fisiologia",
+    homeDescription: "Relacione estruturas, tecidos e mecanismos fisiológicos para formar uma base sólida antes da aplicação clínica.",
+    atlasDescription: "Além da localização, estude função e relações anatômicas diretas entre as estruturas.",
+    practiceDescription: "A região permanece visível, mas a dica de primeira letra é retirada.",
+    questionDescription: "A sessão usa somente questões de Ciclo básico.",
+    clinicalInstruction: "Explique a relação entre estrutura e função e registre quais dados ainda faltam.",
+    cycle: ["Revisar anatomia", "Estudar fisiologia", "Identificar sem dica", "Resolver questões do ciclo básico", "Criar revisão espaçada", "Sintetizar no caderno"],
+  },
+  "Ciclo clínico": {
+    title: "Aplicação anatômica e fisiopatológica",
+    focus: "Relações clínicas e mecanismos",
+    homeDescription: "Use a base anatômica para interpretar mecanismos, correlações clínicas e alterações funcionais com segurança.",
+    atlasDescription: "Explore função, relações topográficas e estruturas próximas com foco em aplicação clínica.",
+    practiceDescription: "A identificação mostra apenas a região anatômica; o catálogo completo entra na sessão.",
+    questionDescription: "A sessão usa somente casos e questões de Ciclo clínico.",
+    clinicalInstruction: "Construa uma representação do problema e justifique mecanismos fisiopatológicos possíveis.",
+    cycle: ["Revisar anatomia aplicada", "Conectar fisiopatologia", "Identificar estruturas", "Resolver casos do ciclo clínico", "Revisar hipóteses", "Registrar lacunas"],
+  },
+  Internato: {
+    title: "Raciocínio orientado por problemas",
+    focus: "Síntese, prioridades e limites",
+    homeDescription: "Treine síntese de dados, priorização de hipóteses e comunicação do raciocínio sem transformar o módulo em orientação assistencial.",
+    atlasDescription: "A localização visual permanece, mas o painel prioriza relações e nomenclatura anatômica.",
+    practiceDescription: "A região deixa de ser exibida antes da resposta; use somente imagem e camada.",
+    questionDescription: "A sessão usa somente questões de Internato.",
+    clinicalInstruction: "Priorize hipóteses, explicite dados discriminatórios e reconheça os limites da simulação.",
+    cycle: ["Revisar pontos fracos", "Localizar estruturas críticas", "Resolver problemas", "Priorizar hipóteses", "Justificar decisões", "Auditar lacunas"],
+  },
+  Residência: {
+    title: "Revisão avançada e precisão",
+    focus: "Nomenclatura, relações e discriminação",
+    homeDescription: "Faça revisão seletiva de alta precisão, identificando relações anatômicas, mecanismos e lacunas que exigem consulta à referência.",
+    atlasDescription: "O painel exibe nomenclatura e relações completas; use as fontes para aprofundamento regional.",
+    practiceDescription: "Sem dicas textuais antes da resposta e com prioridade para estruturas de nomenclatura específica.",
+    questionDescription: "A sessão usa somente questões de Residência.",
+    clinicalInstruction: "Produza uma síntese concisa, compare mecanismos concorrentes e declare incertezas relevantes.",
+    cycle: ["Mapear lacunas", "Revisar relações avançadas", "Identificar sem pistas", "Resolver questões de residência", "Comparar mecanismos", "Conferir fontes"],
+  },
+};
 
 const featuredAnatomyStructures: AnatomyStructure[] = [
   { id: "skin", name: "Pele", latin: "Cutis", layer: "surface", system: "Tegumentar", region: "Corpo inteiro", summary: "Órgão de revestimento que constitui a interface entre o organismo e o ambiente.", function: "Barreira física, termorregulação, sensibilidade e participação na síntese de vitamina D.", relations: "Recobre o tecido subcutâneo e continua-se com mucosas nas aberturas naturais.", nearby: ["Tecido subcutâneo", "Fáscia superficial"], synonyms: ["pele", "cutis", "tegumento"], sourceId: "openstaxSkin", x: 50, y: 37, positions: { anterior: { x: 50, y: 37 }, posterior: { x: 50, y: 37 } } },

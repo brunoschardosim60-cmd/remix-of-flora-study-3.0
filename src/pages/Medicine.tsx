@@ -10,8 +10,8 @@ import { BodyAtlas } from "@/components/medicine/BodyAtlas";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  anatomyPositionFor, anatomyStructures, embryologyTimeline, medicalNotebookTemplates, medicalQuestions,
-  medicalSources, medicalSystems, type AnatomyStructure, type BodyLayer, type MedicineLevel,
+  anatomyPositionFor, anatomyStructures, bodyLayers, embryologyTimeline, medicalNotebookTemplates, medicalQuestions,
+  medicineLevelProfiles, medicalSources, medicalSystems, type AnatomyStructure, type BodyLayer, type MedicineLevel,
   preferredAnatomyView,
 } from "@/lib/medicineData";
 import "@/components/medicine/medicine.css";
@@ -33,6 +33,28 @@ const NAV: Array<{ id: MedicineSection; label: string; Icon: typeof Activity }> 
 ];
 
 const levelOrder: MedicineLevel[] = ["Iniciante", "Ciclo básico", "Ciclo clínico", "Internato", "Residência"];
+const levelStartStructure: Record<MedicineLevel, string> = {
+  Iniciante: "heart",
+  "Ciclo básico": "deltoid",
+  "Ciclo clínico": "aorta",
+  Internato: "sciatic",
+  Residência: "brainstem",
+};
+
+const beginnerPracticeIds = new Set([
+  "heart", "lungs", "brain", "liver", "kidneys", "skin", "deltoid", "femur", "aorta", "scalp",
+  "frontal-region", "oral-region", "cervical-vertebrae", "clavicle", "sternum", "ribs", "humerus",
+  "radius", "ulna", "patella", "tibia", "fibula", "pectoralis-major", "biceps-brachii", "triceps-brachii",
+  "rectus-abdominis", "gluteus-maximus", "gastrocnemius", "trachea", "stomach", "pancreas", "spleen",
+  "urinary-bladder", "thyroid-gland", "spinal-cord",
+]);
+
+function practiceStructuresForLevel(level: MedicineLevel) {
+  if (level === "Iniciante") return anatomyStructures.filter((structure) => beginnerPracticeIds.has(structure.id));
+  if (level === "Ciclo básico") return anatomyStructures.filter((structure) => ["surface", "muscular", "skeletal", "organs"].includes(structure.layer));
+  if (level === "Residência") return [...anatomyStructures].sort((a, b) => Number(Boolean(b.latin)) - Number(Boolean(a.latin)) || a.name.localeCompare(b.name, "pt-BR"));
+  return anatomyStructures;
+}
 
 function loadMedicineState<T>(key: string, fallback: T): T {
   try { const value = localStorage.getItem(`flora.medicine.${key}`); return value ? JSON.parse(value) as T : fallback; } catch { return fallback; }
@@ -40,6 +62,10 @@ function loadMedicineState<T>(key: string, fallback: T): T {
 
 function saveMedicineState(key: string, value: unknown) {
   try { localStorage.setItem(`flora.medicine.${key}`, JSON.stringify(value)); } catch { /* progresso local opcional */ }
+}
+
+function normalizeAnswer(value: string) {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR").trim();
 }
 
 export default function Medicine() {
@@ -66,12 +92,25 @@ export default function Medicine() {
   const [studyGoal, setStudyGoal] = useState("Dominar anatomia e fisiologia");
   const [cloudReady, setCloudReady] = useState(false);
 
-  const progress = Math.round((Object.values(answered).filter(Boolean).length / medicalQuestions.length) * 100);
-  const filteredQuestions = useMemo(() => medicalQuestions.filter((item) => levelOrder.indexOf(item.level) <= levelOrder.indexOf(level)), [level]);
+  const levelProfile = medicineLevelProfiles[level];
+  const filteredQuestions = useMemo(() => medicalQuestions.filter((item) => item.level === level), [level]);
+  const practicePool = useMemo(() => practiceStructuresForLevel(level), [level]);
+  const masteredAtLevel = filteredQuestions.filter((question) => answered[question.id]).length;
+  const progress = Math.round((masteredAtLevel / Math.max(filteredQuestions.length, 1)) * 100);
   const reviewQuestions = useMemo(() => filteredQuestions.filter((item) => wrongIds.includes(item.id)), [filteredQuestions, wrongIds]);
   const activeReview = reviewOnly && reviewQuestions.length > 0;
   const sessionQuestions = activeReview ? reviewQuestions : filteredQuestions.length > 0 ? filteredQuestions : medicalQuestions;
   const currentQuestion = sessionQuestions[questionIndex % sessionQuestions.length];
+
+  useEffect(() => {
+    setQuestionIndex(0);
+    setAnswer(null);
+    setReviewOnly(false);
+    setPracticeInput("");
+    setPracticeResult(null);
+    const recommended = practicePool.find((structure) => structure.id === levelStartStructure[level]) ?? practicePool[0];
+    if (recommended) setPracticeStructure(recommended);
+  }, [level, practicePool]);
 
   useEffect(() => {
     if (!user) return;
@@ -111,7 +150,12 @@ export default function Medicine() {
   }, [answered, caseStep, cloudReady, favoriteIds, level, studyGoal, studyHours, user, wrongIds]);
 
   const go = (next: MedicineSection) => { setSection(next); setMobileNav(false); window.scrollTo({ top: 0, behavior: "smooth" }); };
-  const updateLevel = (next: MedicineLevel) => { setLevel(next); saveMedicineState("level", next); };
+  const updateLevel = (next: MedicineLevel) => {
+    if (next === level) return;
+    setLevel(next);
+    saveMedicineState("level", next);
+    toast.success(`${next} ativado`, { description: medicineLevelProfiles[next].focus });
+  };
   const toggleFavorite = (id: string) => {
     const next = favoriteIds.includes(id) ? favoriteIds.filter((item) => item !== id) : [...favoriteIds, id];
     setFavoriteIds(next); saveMedicineState("favorites", next);
@@ -133,7 +177,7 @@ export default function Medicine() {
         <div className="med-header-context"><span>Ambiente educacional</span><strong>{NAV.find((item) => item.id === section)?.label}</strong></div>
         <div className="med-header-actions">
           <button className={`med-focus-toggle ${focusMode ? "active" : ""}`} onClick={() => setFocusMode((value) => !value)} aria-label={focusMode ? "Sair do modo foco" : "Entrar no modo foco"}><PanelLeftClose /></button>
-          <div className="med-level-chip"><span>Nível</span><select value={level} onChange={(event) => updateLevel(event.target.value as MedicineLevel)}>{levelOrder.map((item) => <option key={item}>{item}</option>)}</select></div>
+          <div className="med-level-chip" title={levelProfile.focus}><span>Nível</span><select aria-label="Nível de estudo" value={level} onChange={(event) => updateLevel(event.target.value as MedicineLevel)}>{levelOrder.map((item) => <option key={item}>{item}</option>)}</select></div>
           <button className="med-source-status" onClick={() => go("sources")}><ShieldCheck /> {cloudReady ? "Progresso protegido" : "Conteúdo rastreável"}</button>
           <button className="med-menu-button" onClick={() => setMobileNav((value) => !value)} aria-label="Abrir navegação"><Menu /></button>
         </div>
@@ -150,17 +194,18 @@ export default function Medicine() {
 
         <main className="med-main">
           {section === "home" && <MedicineHome level={level} progress={progress} wrongCount={wrongIds.length} onGo={go} />}
-          {section === "atlas" && <div className="med-section-wrap"><BodyAtlas activeLayer={activeLayer} onLayerChange={setActiveLayer} selected={selectedStructure} onSelect={setSelectedStructure} />{selectedStructure && <div className="med-atlas-actions"><button onClick={() => toggleFavorite(selectedStructure.id)}>{favoriteIds.includes(selectedStructure.id) ? <Check /> : <BookOpen />}{favoriteIds.includes(selectedStructure.id) ? "Salva para revisão" : "Salvar para revisão"}</button><button onClick={() => toast.info("A Flora deve explicar apenas com base nas fontes exibidas nesta estrutura.")}><Sparkles /> Explicar com a Flora</button></div>}</div>}
+          {section === "atlas" && <div className="med-section-wrap"><BodyAtlas level={level} activeLayer={activeLayer} onLayerChange={setActiveLayer} selected={selectedStructure} onSelect={setSelectedStructure} />{selectedStructure && <div className="med-atlas-actions"><button onClick={() => toggleFavorite(selectedStructure.id)}>{favoriteIds.includes(selectedStructure.id) ? <Check /> : <BookOpen />}{favoriteIds.includes(selectedStructure.id) ? "Salva para revisão" : "Salvar para revisão"}</button><button onClick={() => toast.info("A Flora deve explicar apenas com base nas fontes exibidas nesta estrutura.")}><Sparkles /> Explicar com a Flora</button></div>}</div>}
           {section === "systems" && <SystemsSection onOpenAtlas={(layer) => { setActiveLayer(layer); go("atlas"); }} />}
           {section === "development" && <DevelopmentSection />}
-          {section === "practice" && <PracticeSection structure={practiceStructure} input={practiceInput} result={practiceResult} onInput={setPracticeInput} onSubmit={() => {
-            const normalized = practiceInput.trim().toLowerCase();
-            const correct = practiceStructure.synonyms.some((name) => normalized === name.toLowerCase());
+          {section === "practice" && <PracticeSection level={level} structure={practiceStructure} input={practiceInput} result={practiceResult} onInput={setPracticeInput} onSubmit={() => {
+            const normalized = normalizeAnswer(practiceInput);
+            const acceptedNames = [...practiceStructure.synonyms, practiceStructure.name, practiceStructure.latin ?? ""].map(normalizeAnswer);
+            const correct = acceptedNames.includes(normalized);
             setPracticeResult(correct ? "correct" : "wrong");
             if (!correct) { const next = Array.from(new Set([...wrongIds, `structure:${practiceStructure.id}`])); setWrongIds(next); saveMedicineState("wrong", next); }
-          }} onNext={() => { const nextIndex = (anatomyStructures.indexOf(practiceStructure) + 1) % anatomyStructures.length; setPracticeStructure(anatomyStructures[nextIndex]); setPracticeInput(""); setPracticeResult(null); }} />}
-          {section === "questions" && <QuestionsSection question={currentQuestion} index={questionIndex % sessionQuestions.length} total={sessionQuestions.length} answer={answer} wrongCount={reviewQuestions.length} reviewOnly={activeReview} onToggleReview={() => { if (!reviewQuestions.length) { toast.info("Quando você errar uma questão, ela aparecerá aqui para revisão."); return; } setReviewOnly((value) => !value); setQuestionIndex(0); setAnswer(null); }} onAnswer={submitAnswer} onNext={() => { setQuestionIndex((value) => value + 1); setAnswer(null); }} />}
-          {section === "clinic" && <ClinicalSection step={caseStep} reflection={caseReflection} onReflection={setCaseReflection} onNext={() => { if (caseReflection.trim().length < 20) { toast.info("Justifique seu raciocínio em pelo menos uma frase antes de avançar."); return; } setCaseStep((value) => Math.min(value + 1, 5)); setCaseReflection(""); }} />}
+          }} onNext={() => { const currentIndex = practicePool.findIndex((structure) => structure.id === practiceStructure.id); const nextIndex = (Math.max(currentIndex, 0) + 1) % practicePool.length; setPracticeStructure(practicePool[nextIndex]); setPracticeInput(""); setPracticeResult(null); }} />}
+          {section === "questions" && <QuestionsSection level={level} question={currentQuestion} index={questionIndex % sessionQuestions.length} total={sessionQuestions.length} answer={answer} wrongCount={reviewQuestions.length} reviewOnly={activeReview} onToggleReview={() => { if (!reviewQuestions.length) { toast.info("Quando você errar uma questão deste nível, ela aparecerá aqui para revisão."); return; } setReviewOnly((value) => !value); setQuestionIndex(0); setAnswer(null); }} onAnswer={submitAnswer} onNext={() => { setQuestionIndex((value) => value + 1); setAnswer(null); }} />}
+          {section === "clinic" && <ClinicalSection level={level} step={caseStep} reflection={caseReflection} onReflection={setCaseReflection} onNext={() => { if (caseReflection.trim().length < 20) { toast.info("Justifique seu raciocínio em pelo menos uma frase antes de avançar."); return; } setCaseStep((value) => Math.min(value + 1, 5)); setCaseReflection(""); }} />}
           {section === "plan" && <StudyPlanSection level={level} hours={studyHours} goal={studyGoal} onHours={setStudyHours} onGoal={setStudyGoal} onStart={() => { saveMedicineState("plan", { level, studyHours, studyGoal, createdAt: Date.now() }); toast.success("Plano médico salvo neste dispositivo."); }} />}
           {section === "notebook" && <NotebookSection navigate={navigate} />}
           {section === "sources" && <SourcesSection />}
@@ -171,14 +216,15 @@ export default function Medicine() {
 }
 
 function MedicineHome({ level, progress, wrongCount, onGo }: { level: MedicineLevel; progress: number; wrongCount: number; onGo: (id: MedicineSection) => void }) {
+  const profile = medicineLevelProfiles[level];
   return <div className="med-home">
-    <section className="med-hero"><img src="/medicine/medicine-hero-v2.png" alt="Modelo anatômico educacional translúcido com coração, cérebro, vasos e nervos" /><div className="med-hero-overlay"/><div className="med-hero-content"><span className="med-kicker"><ShieldCheck /> Conteúdo educacional com fontes</span><h1>Entenda o corpo.<br/><em>Construa raciocínio.</em></h1><p>Um ambiente sereno para explorar anatomia, revisar fisiologia e praticar com segurança — do início da graduação à residência.</p><div className="med-hero-actions"><button onClick={() => onGo("atlas")}><Play /> Explorar o corpo</button><button onClick={() => onGo("plan")}>Montar meu plano <ArrowRight /></button></div><small>Nível atual: {level}</small></div></section>
+    <section className="med-hero"><img src="/medicine/medicine-hero-v2.png" alt="Modelo anatômico educacional translúcido com coração, cérebro, vasos e nervos" /><div className="med-hero-overlay"/><div className="med-hero-content"><span className="med-kicker"><ShieldCheck /> Conteúdo educacional com fontes</span><div className="med-home-level"><span>{level}</span><strong>{profile.title}</strong></div><h1>Entenda o corpo.<br/><em>Construa raciocínio.</em></h1><p>{profile.homeDescription}</p><div className="med-hero-actions"><button onClick={() => onGo("atlas")}><Play /> Explorar o corpo</button><button onClick={() => onGo("plan")}>Montar meu plano <ArrowRight /></button></div><small>Foco deste nível: {profile.focus}</small></div></section>
     <section className="med-command-grid">
       <button className="primary" onClick={() => onGo("atlas")}><span><Search /></span><div><small>EXPLORAR</small><h3>Atlas por camadas</h3><p>Pele, músculos, esqueleto, vasos, nervos e órgãos.</p></div><ChevronRight /></button>
       <button onClick={() => onGo("practice")}><span><Target /></span><div><small>PRATICAR</small><h3>Identificação ativa</h3><p>Nomeie estruturas e transforme erros em revisão.</p></div><ChevronRight /></button>
       <button onClick={() => onGo("clinic")}><span><Stethoscope /></span><div><small>RACIOCINAR</small><h3>Caso progressivo</h3><p>Informações liberadas em etapas, com justificativa.</p></div><ChevronRight /></button>
     </section>
-    <section className="med-progress-row"><div><span className="med-eyebrow">Seu percurso</span><h2>Aprendizado longitudinal</h2></div><div className="med-progress-card"><div className="ring" style={{ "--progress": `${progress * 3.6}deg` } as CSSProperties}><strong>{progress}%</strong></div><div><strong>Questões dominadas</strong><span>{wrongCount ? `${wrongCount} item(ns) aguardando revisão` : "Nenhum erro pendente"}</span></div></div><div className="med-progress-card"><Brain /><div><strong>Ciclo recomendado</strong><span>Atlas → Identificação → Questões → Caso</span></div></div></section>
+    <section className="med-progress-row"><div><span className="med-eyebrow">Seu percurso</span><h2>Aprendizado longitudinal</h2></div><div className="med-progress-card"><div className="ring" style={{ "--progress": `${progress * 3.6}deg` } as CSSProperties}><strong>{progress}%</strong></div><div><strong>Domínio em {level}</strong><span>{wrongCount ? `${wrongCount} item(ns) aguardando revisão` : "Nenhum erro pendente"}</span></div></div><div className="med-progress-card"><Brain /><div><strong>{profile.title}</strong><span>{profile.cycle.slice(0, 4).join(" → ")}</span></div></div></section>
     <section className="med-systems-preview"><div className="med-section-heading"><div><span className="med-eyebrow">Anatomia e fisiologia</span><h2>Sistemas do corpo</h2></div><button onClick={() => onGo("systems")}>Ver todos <ArrowRight /></button></div><div className="med-system-mini-grid">{medicalSystems.slice(0, 4).map((system) => <button key={system.id} onClick={() => onGo("systems")} style={{ "--system": system.color } as CSSProperties}><span>{system.name.slice(0, 2).toUpperCase()}</span><strong>{system.name}</strong><small>{system.description}</small></button>)}</div></section>
   </div>;
 }
@@ -208,16 +254,21 @@ function DevelopmentSection() {
   </div>;
 }
 
-function PracticeSection({ structure, input, result, onInput, onSubmit, onNext }: { structure: AnatomyStructure; input: string; result: "correct" | "wrong" | null; onInput: (value: string) => void; onSubmit: () => void; onNext: () => void }) {
+function PracticeSection({ level, structure, input, result, onInput, onSubmit, onNext }: { level: MedicineLevel; structure: AnatomyStructure; input: string; result: "correct" | "wrong" | null; onInput: (value: string) => void; onSubmit: () => void; onNext: () => void }) {
   const modelView = preferredAnatomyView(structure);
   const markerPosition = anatomyPositionFor(structure, modelView) ?? { x: structure.x, y: structure.y };
-  return <div className="med-page"><PageHeading eyebrow="Aprendizado ativo" title="Identificação anatômica" description="Digite o nome da estrutura destacada. Sinônimos anatômicos comuns são aceitos." />
-    <div className="med-practice-card"><div className="med-practice-visual"><div className="pulse-ring"/><div className="med-practice-model"><img key={`${structure.layer}-${modelView}`} src={`/medicine/atlas/${structure.layer}-${modelView}-v2.png`} alt={`Modelo anatômico educacional em vista ${modelView}`} /><i style={{ left: `${markerPosition.x}%`, top: `${markerPosition.y}%` } as CSSProperties}/></div><span>MODELO ANATÔMICO EM ALTA DEFINIÇÃO</span><small>Ilustração educacional · não diagnóstica</small></div><div className="med-practice-prompt"><span className="med-eyebrow">REGIÃO: {structure.region}</span><h2>Qual é esta estrutura?</h2><p>{result ? structure.summary : "Observe a estrutura destacada no modelo anatômico e informe o nome correspondente."}</p><div className="med-answer-box"><input value={input} onChange={(event) => onInput(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") onSubmit(); }} placeholder="Digite o nome da estrutura" disabled={result !== null}/>{result === null ? <button onClick={onSubmit}>Responder</button> : <button onClick={onNext}>Próxima <ArrowRight /></button>}</div>{result && <div className={`med-feedback ${result}`}><span>{result === "correct" ? <Check /> : <X />}</span><div><strong>{result === "correct" ? "Resposta correta" : `Resposta: ${structure.name}`}</strong><p><b>Função:</b> {structure.function}</p><p><b>Próximas:</b> {structure.nearby.length ? structure.nearby.join(", ") : "consulte a fonte anatômica"}</p></div></div>}</div></div>
+  const rank = levelOrder.indexOf(level);
+  const profile = medicineLevelProfiles[level];
+  const layerName = bodyLayers.find((layer) => layer.id === structure.layer)?.label ?? structure.layer;
+  const clue = rank === 0 ? `Camada ${layerName} · começa com “${structure.name.charAt(0)}”` : rank === 1 ? `Camada anatômica: ${layerName}` : "Observe a estrutura destacada e informe o nome anatômico.";
+  const eyebrow = rank <= 2 ? `REGIÃO: ${structure.region}` : rank === 3 ? `CAMADA: ${layerName}` : "IDENTIFICAÇÃO AVANÇADA · SEM PISTAS";
+  return <div className="med-page"><PageHeading eyebrow={`Aprendizado ativo · ${level}`} title="Identificação anatômica" description={profile.practiceDescription} />
+    <div className="med-practice-card"><div className="med-practice-visual"><div className="pulse-ring"/><div className="med-practice-model"><img key={`${structure.layer}-${modelView}`} src={`/medicine/atlas/${structure.layer}-${modelView}-v2.png`} alt={`Modelo anatômico educacional em vista ${modelView}`} /><i style={{ left: `${markerPosition.x}%`, top: `${markerPosition.y}%` } as CSSProperties}/></div><span>MODELO ANATÔMICO EM ALTA DEFINIÇÃO</span><small>Ilustração educacional · não diagnóstica</small></div><div className="med-practice-prompt"><span className="med-eyebrow">{eyebrow}</span><h2>Qual é esta estrutura?</h2><p>{result ? structure.summary : clue}</p><div className="med-answer-box"><input value={input} onChange={(event) => onInput(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") onSubmit(); }} placeholder="Digite o nome da estrutura" disabled={result !== null}/>{result === null ? <button onClick={onSubmit}>Responder</button> : <button onClick={onNext}>Próxima <ArrowRight /></button>}</div>{result && <div className={`med-feedback ${result}`}><span>{result === "correct" ? <Check /> : <X />}</span><div><strong>{result === "correct" ? "Resposta correta" : `Resposta: ${structure.name}`}</strong><p><b>Função:</b> {structure.function}</p><p><b>Próximas:</b> {structure.nearby.length ? structure.nearby.join(", ") : "consulte a fonte anatômica"}</p></div></div>}</div></div>
   </div>;
 }
 
-function QuestionsSection({ question, index, total, answer, wrongCount, reviewOnly, onToggleReview, onAnswer, onNext }: { question: typeof medicalQuestions[number]; index: number; total: number; answer: number | null; wrongCount: number; reviewOnly: boolean; onToggleReview: () => void; onAnswer: (value: number) => void; onNext: () => void }) {
-  return <div className="med-page"><PageHeading eyebrow="Banco médico" title="Questões com explicação e fonte" description="Itens educacionais autorais baseados nas referências apresentadas; não são questões oficiais de prova." />
+function QuestionsSection({ level, question, index, total, answer, wrongCount, reviewOnly, onToggleReview, onAnswer, onNext }: { level: MedicineLevel; question: typeof medicalQuestions[number]; index: number; total: number; answer: number | null; wrongCount: number; reviewOnly: boolean; onToggleReview: () => void; onAnswer: (value: number) => void; onNext: () => void }) {
+  return <div className="med-page"><PageHeading eyebrow={`Banco médico · ${level}`} title="Questões com explicação e fonte" description={medicineLevelProfiles[level].questionDescription} />
     <div className="med-question-layout"><aside><div><strong>{wrongCount}</strong><span>para revisar</span></div><div><strong>{index + 1}/{total}</strong><span>sessão atual</span></div><button className={reviewOnly ? "active" : ""} onClick={onToggleReview}>{reviewOnly ? "Ver sessão normal" : "Revisar meus erros"}</button></aside><article className="med-question-card"><div className="med-question-meta"><span>{question.level}</span><span>{question.system}</span><span>{question.type}</span></div><h2>{question.prompt}</h2><div className="med-options">{question.options.map((option, optionIndex) => { const state = answer === null ? "" : optionIndex === question.answer ? "correct" : optionIndex === answer ? "wrong" : "muted"; return <button key={option} className={state} onClick={() => answer === null && onAnswer(optionIndex)}><b>{String.fromCharCode(65 + optionIndex)}</b><span>{option}</span>{state === "correct" && <Check />}{state === "wrong" && <X />}</button>; })}</div>{answer !== null && <div className="med-explanation"><Sparkles/><div><strong>Explicação</strong><p>{question.explanation}</p><a href={medicalSources[question.sourceId].url} target="_blank" rel="noreferrer">Fonte usada <ExternalLink /></a></div></div>}<footer><span>Questão {index + 1}</span><button disabled={answer === null} onClick={onNext}>Próxima <ArrowRight /></button></footer></article></div>
   </div>;
 }
@@ -231,15 +282,16 @@ const caseSteps = [
   { label: "Síntese", content: "Construa uma síntese fisiopatológica sem prescrever conduta e identifique limites do caso." },
 ];
 
-function ClinicalSection({ step, reflection, onReflection, onNext }: { step: number; reflection: string; onReflection: (value: string) => void; onNext: () => void }) {
-  return <div className="med-page"><PageHeading eyebrow="Simulação educacional" title="Caso clínico progressivo" description="Caso inteiramente fictício. Não use esta área para avaliar sintomas, exames ou decisões de uma pessoa real." /><div className="med-clinical-warning"><ShieldCheck/><span><strong>Limite de segurança</strong> Conteúdo para raciocínio acadêmico, sem diagnóstico ou recomendação terapêutica.</span></div>
+function ClinicalSection({ level, step, reflection, onReflection, onNext }: { level: MedicineLevel; step: number; reflection: string; onReflection: (value: string) => void; onNext: () => void }) {
+  return <div className="med-page"><PageHeading eyebrow={`Simulação educacional · ${level}`} title="Caso clínico progressivo" description={medicineLevelProfiles[level].clinicalInstruction} /><div className="med-clinical-warning"><ShieldCheck/><span><strong>Limite de segurança</strong> Conteúdo para raciocínio acadêmico, sem diagnóstico ou recomendação terapêutica.</span></div>
     <div className="med-case-layout"><ol>{caseSteps.map((item, index) => <li key={item.label} className={index < step ? "done" : index === step ? "active" : ""}><span>{index < step ? <Check/> : index + 1}</span><strong>{item.label}</strong></li>)}</ol><article><span className="med-eyebrow">ETAPA {step + 1} DE {caseSteps.length}</span><h2>{caseSteps[step].label}</h2><p>{caseSteps[step].content}</p><label>Justifique seu raciocínio antes de revelar a próxima etapa<textarea value={reflection} onChange={(event) => onReflection(event.target.value)} placeholder="Quais mecanismos e estruturas podem estar relacionados? O que ainda é necessário saber?" /></label><button onClick={onNext} disabled={step === caseSteps.length - 1}>Liberar próxima etapa <ArrowRight /></button></article></div>
   </div>;
 }
 
 function StudyPlanSection({ level, hours, goal, onHours, onGoal, onStart }: { level: MedicineLevel; hours: number; goal: string; onHours: (value: number) => void; onGoal: (value: string) => void; onStart: () => void }) {
-  const cycle = ["Explorar anatomia", "Ler teoria", "Identificar estruturas", "Resolver questões", "Revisar erros", "Fazer caso fictício"];
-  return <div className="med-page"><PageHeading eyebrow="Plano adaptativo" title="Seu ciclo médico" description="Distribuição educacional baseada no nível informado e no tempo disponível; não substitui o currículo da instituição." /><div className="med-plan-grid"><section><label>Objetivo principal<input value={goal} onChange={(event) => onGoal(event.target.value)} /></label><label>Horas disponíveis por semana<div className="med-range"><input type="range" min="2" max="40" value={hours} onChange={(event) => onHours(Number(event.target.value))}/><strong>{hours}h</strong></div></label><label>Nível atual<div className="med-static-field">{level}</div></label><button onClick={onStart}>Salvar meu plano <Check /></button></section><article><span className="med-eyebrow">CICLO RECOMENDADO</span><h2>{Math.max(3, Math.round(hours / 2))} blocos por semana</h2><div className="med-cycle">{cycle.map((item, index) => <div key={item}><span>{index + 1}</span><div><strong>{item}</strong><small>{Math.max(20, Math.round((hours * 60) / cycle.length))} min sugeridos</small></div></div>)}</div></article></div>
+  const profile = medicineLevelProfiles[level];
+  const cycle = profile.cycle;
+  return <div className="med-page"><PageHeading eyebrow={`Plano adaptativo · ${level}`} title="Seu ciclo médico" description={`${profile.title}: ${profile.focus}. A distribuição é educacional e não substitui o currículo da instituição.`} /><div className="med-plan-grid"><section><label>Objetivo principal<input value={goal} onChange={(event) => onGoal(event.target.value)} /></label><label>Horas disponíveis por semana<div className="med-range"><input type="range" min="2" max="40" value={hours} onChange={(event) => onHours(Number(event.target.value))}/><strong>{hours}h</strong></div></label><label>Nível atual<div className="med-static-field">{level} · {profile.title}</div></label><button onClick={onStart}>Salvar meu plano <Check /></button></section><article><span className="med-eyebrow">CICLO RECOMENDADO PARA {level}</span><h2>{Math.max(3, Math.round(hours / 2))} blocos por semana</h2><div className="med-cycle">{cycle.map((item, index) => <div key={item}><span>{index + 1}</span><div><strong>{item}</strong><small>{Math.max(20, Math.round((hours * 60) / cycle.length))} min sugeridos</small></div></div>)}</div></article></div>
   </div>;
 }
 

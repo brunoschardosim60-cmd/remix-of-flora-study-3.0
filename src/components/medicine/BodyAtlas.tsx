@@ -4,20 +4,25 @@ import {
   anatomyPositionFor,
   anatomyStructures,
   bodyLayers,
+  medicineLevelProfiles,
   medicalSources,
   type AnatomyStructure,
   type AtlasView,
   type BodyLayer,
+  type MedicineLevel,
 } from "@/lib/medicineData";
 
 interface BodyAtlasProps {
+  level: MedicineLevel;
   activeLayer: BodyLayer;
   onLayerChange: (layer: BodyLayer) => void;
   selected: AnatomyStructure | null;
   onSelect: (structure: AnatomyStructure) => void;
 }
 
-export function BodyAtlas({ activeLayer, onLayerChange, selected, onSelect }: BodyAtlasProps) {
+const levelOrder: MedicineLevel[] = ["Iniciante", "Ciclo básico", "Ciclo clínico", "Internato", "Residência"];
+
+export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelect }: BodyAtlasProps) {
   const [zoom, setZoom] = useState(1);
   const [view, setView] = useState<AtlasView>("anterior");
   const [query, setQuery] = useState("");
@@ -37,6 +42,8 @@ export function BodyAtlas({ activeLayer, onLayerChange, selected, onSelect }: Bo
     ].join(" ")).includes(term));
   }, [query, visibleStructures]);
   const atlasImage = `/medicine/atlas/${activeLayer}-${view}-v2.png`;
+  const levelProfile = medicineLevelProfiles[level];
+  const levelRank = levelOrder.indexOf(level);
 
   const selectLayer = (layer: BodyLayer) => {
     onLayerChange(layer);
@@ -63,6 +70,7 @@ export function BodyAtlas({ activeLayer, onLayerChange, selected, onSelect }: Bo
           <span className="med-eyebrow">Atlas imersivo 2D</span>
           <h2>Explore por camadas</h2>
           <p>Ilustrações anatômicas em alta definição. Conteúdo educacional — confirme detalhes nas fontes vinculadas.</p>
+          <div className="med-atlas-level-context" aria-live="polite"><span>{level}</span><strong>{levelProfile.title}</strong><small>{levelProfile.atlasDescription}</small></div>
         </div>
         <div className="med-atlas-controls">
           <button onClick={() => setZoom((value) => Math.max(0.8, value - 0.1))} aria-label="Diminuir zoom"><ZoomOut /></button>
@@ -133,9 +141,13 @@ export function BodyAtlas({ activeLayer, onLayerChange, selected, onSelect }: Bo
           {selected ? <>
             <span className="med-eyebrow">{selected.region}</span>
             <h3>{selected.name}</h3>
-            {selected.latin && <em>{selected.latin}</em>}
+            {selected.latin && levelRank >= 1 && <em>{selected.latin}</em>}
             <p>{selected.summary}</p>
-            <dl><div><dt>Função</dt><dd>{selected.function}</dd></div><div><dt>Relações</dt><dd>{selected.relations}</dd></div><div><dt>Estruturas próximas</dt><dd>{selected.nearby.length ? selected.nearby.join(" · ") : "Consulte a fonte e as vistas regionais para relações de proximidade."}</dd></div></dl>
+            <dl>
+              <div><dt>Função</dt><dd>{selected.function}</dd></div>
+              {levelRank >= 1 && <div><dt>Relações</dt><dd>{selected.relations}</dd></div>}
+              {levelRank >= 2 && <div><dt>Estruturas próximas</dt><dd>{selected.nearby.length ? selected.nearby.join(" · ") : "Consulte a fonte e as vistas regionais para relações de proximidade."}</dd></div>}
+            </dl>
             <div className="med-structure-actions"><button onClick={() => speakStructure(selected.name)}><Volume2 /> Ouvir nome</button><a href={medicalSourceUrl(selected.sourceId)} target="_blank" rel="noreferrer">Ver fonte anatômica <ExternalLink /></a></div>
           </> : <div className="med-empty-selection"><Search /><h3>Selecione uma estrutura</h3><p>Os pontos ativos mudam conforme a camada escolhida.</p></div>}
         </aside>
