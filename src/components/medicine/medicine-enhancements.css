@@ -702,12 +702,86 @@
   opacity: .58;
 }
 
+.med-practice-viewport {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  display: flex;
+  overflow: hidden;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  touch-action: none;
+  overscroll-behavior: contain;
+}
+
+.med-practice-viewport.is-panning { cursor: grabbing; }
+
+.med-practice-zoom-controls {
+  position: absolute;
+  z-index: 5;
+  top: 14px;
+  left: 14px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px;
+  border: 1px solid rgba(255, 255, 255, .66);
+  border-radius: 13px;
+  background: rgba(244, 249, 247, .9);
+  box-shadow: 0 10px 26px rgba(45, 86, 74, .13);
+  backdrop-filter: blur(12px);
+}
+
+.med-practice-zoom-controls button {
+  display: flex;
+  width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid rgba(54, 95, 82, .12);
+  border-radius: 9px;
+  background: #fff;
+  color: #49766a;
+  font-size: 8px;
+  font-weight: 850;
+}
+
+.med-practice-zoom-controls button:hover { border-color: #6b998b; color: #2f6b5b; }
+.med-practice-zoom-controls button.wide { width: auto; padding: 0 10px; }
+.med-practice-zoom-controls button svg { width: 13px; }
+.med-practice-zoom-controls strong { min-width: 42px; color: #3f6d60; font-size: 8px; text-align: center; }
+
+.med-practice-drag-help {
+  position: absolute;
+  z-index: 4;
+  bottom: 48px;
+  left: 50%;
+  padding: 6px 10px;
+  transform: translateX(-50%);
+  border: 1px solid rgba(255, 255, 255, .5);
+  border-radius: 999px;
+  background: rgba(40, 78, 67, .72);
+  color: rgba(255, 255, 255, .9);
+  font-size: 7px;
+  font-weight: 750;
+  white-space: nowrap;
+  pointer-events: none;
+  backdrop-filter: blur(8px);
+}
+
 .med-practice-model {
   position: relative;
   z-index: 1;
   width: 293px;
   height: 520px;
+  transform-origin: center;
+  transition: transform .18s ease-out;
+  will-change: transform;
 }
+
+.med-practice-viewport.is-panning .med-practice-model { transition: none; }
 
 .med-practice-model img {
   position: absolute;
@@ -718,6 +792,7 @@
   user-select: none;
   filter: drop-shadow(0 24px 22px rgba(48, 92, 79, .22));
   animation: med-atlas-image-in .28s ease both;
+  pointer-events: none;
 }
 
 .med-practice-model > i {
@@ -1274,6 +1349,13 @@
 .black .med-system-flow > article,
 .black .med-system-question { background: #090d0b; }
 
+.dark .med-practice-zoom-controls,
+.black .med-practice-zoom-controls { border-color: rgba(190, 218, 208, .14); background: rgba(23, 35, 30, .9); }
+.dark .med-practice-zoom-controls button,
+.black .med-practice-zoom-controls button { border-color: rgba(190, 218, 208, .12); background: #111a16; color: #b8cec6; }
+.dark .med-practice-zoom-controls strong,
+.black .med-practice-zoom-controls strong { color: #b9cec7; }
+
 .dark .med-system-hero,
 .black .med-system-hero { background: radial-gradient(circle at 88% 10%, color-mix(in srgb, var(--system) 18%, transparent), transparent 34%), linear-gradient(135deg, #1b2722, #131c18); }
 .dark .med-system-tabs,
@@ -1385,6 +1467,9 @@
   .med-anatomy-focus-canvas { height: 395px; min-height: 395px; }
   .med-anatomy-focus-visual > footer button { font-size: 8px; }
   .med-anatomy-focus-info { padding: 22px 18px; }
+  .med-practice-zoom-controls { right: 8px; left: 8px; flex-wrap: wrap; justify-content: center; }
+  .med-practice-zoom-controls button.wide { flex: 1; }
+  .med-practice-drag-help { display: none; }
   .med-system-hero { padding: 22px 18px; }
   .med-system-hero-copy h2 { font-size: 40px; }
   .med-system-hero-stats { gap: 4px; }

@@ -1,9 +1,9 @@
-import { lazy, Suspense, useEffect, useMemo, useState, type CSSProperties } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Activity, ArrowLeft, ArrowRight, Baby, BookOpen, Brain, Check, ChevronRight, ClipboardCheck,
   AlertTriangle, CircleDot, ExternalLink, Eye, EyeOff, FileHeart, HeartPulse, Layers, ListChecks, MapPin, Menu, NotebookPen,
-  PanelLeftClose, Play, Rotate3D, Scissors, Search, ShieldCheck, Sparkles, Stethoscope, Target, Timer, Wrench, X, ZoomIn,
+  Focus, PanelLeftClose, Play, Rotate3D, RotateCcw, Scissors, Search, ShieldCheck, Sparkles, Stethoscope, Target, Timer, Wrench, X, ZoomIn, ZoomOut,
 } from "lucide-react";
 import { toast } from "sonner";
 import { BodyAtlas } from "@/components/medicine/BodyAtlas";
@@ -492,13 +492,94 @@ function DevelopmentSection() {
 function PracticeSection({ level, structure, input, result, onInput, onSubmit, onNext }: { level: MedicineLevel; structure: AnatomyStructure; input: string; result: "correct" | "wrong" | null; onInput: (value: string) => void; onSubmit: () => void; onNext: () => void }) {
   const modelView = preferredAnatomyView(structure);
   const markerPosition = anatomyPositionFor(structure, modelView) ?? { x: structure.x, y: structure.y };
+  const [visualZoom, setVisualZoom] = useState(2.2);
+  const [visualPan, setVisualPan] = useState({ x: 0, y: 0 });
+  const [panning, setPanning] = useState(false);
+  const modelRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef<{ pointerId: number; x: number; y: number } | null>(null);
   const rank = levelOrder.indexOf(level);
   const profile = medicineLevelProfiles[level];
   const layerName = bodyLayers.find((layer) => layer.id === structure.layer)?.label ?? structure.layer;
   const clue = rank === 0 ? `Camada ${layerName} · começa com “${structure.name.charAt(0)}”` : rank === 1 ? `Camada anatômica: ${layerName}` : "Observe a estrutura destacada e informe o nome anatômico.";
   const eyebrow = rank <= 2 ? `REGIÃO: ${structure.region}` : rank === 3 ? `CAMADA: ${layerName}` : "IDENTIFICAÇÃO AVANÇADA · SEM PISTAS";
+
+  const focusMarker = (targetZoom = Math.max(visualZoom, 2.2)) => {
+    const width = modelRef.current?.clientWidth ?? 293;
+    const height = modelRef.current?.clientHeight ?? 520;
+    setVisualZoom(targetZoom);
+    setVisualPan({
+      x: -((markerPosition.x / 100) - .5) * width * targetZoom,
+      y: -((markerPosition.y / 100) - .5) * height * targetZoom,
+    });
+  };
+
+  const changeVisualZoom = (delta: number) => {
+    const nextZoom = Math.min(5, Math.max(1, Number((visualZoom + delta).toFixed(2))));
+    const ratio = nextZoom / visualZoom;
+    setVisualZoom(nextZoom);
+    setVisualPan((current) => ({ x: current.x * ratio, y: current.y * ratio }));
+  };
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      const width = modelRef.current?.clientWidth ?? 293;
+      const height = modelRef.current?.clientHeight ?? 520;
+      const targetZoom = 2.2;
+      setVisualZoom(targetZoom);
+      setVisualPan({
+        x: -((markerPosition.x / 100) - .5) * width * targetZoom,
+        y: -((markerPosition.y / 100) - .5) * height * targetZoom,
+      });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [markerPosition.x, markerPosition.y, structure.id]);
+
   return <div className="med-page"><PageHeading eyebrow={`Aprendizado ativo · ${level}`} title="Identificação anatômica" description={profile.practiceDescription} />
-    <div className="med-practice-card"><div className="med-practice-visual"><div className="pulse-ring"/><div className="med-practice-model"><img key={`${structure.layer}-${modelView}`} src={`/medicine/atlas/${structure.layer}-${modelView}-v2.png`} alt={`Modelo anatômico educacional em vista ${modelView}`} /><i style={{ left: `${markerPosition.x}%`, top: `${markerPosition.y}%` } as CSSProperties}/></div><span>MODELO ANATÔMICO EM ALTA DEFINIÇÃO</span><small>Ilustração educacional · não diagnóstica</small></div><div className="med-practice-prompt"><span className="med-eyebrow">{eyebrow}</span><h2>Qual é esta estrutura?</h2><p>{result ? structure.summary : clue}</p><div className="med-answer-box"><input value={input} onChange={(event) => onInput(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") onSubmit(); }} placeholder="Digite o nome da estrutura" disabled={result !== null}/>{result === null ? <button onClick={onSubmit}>Responder</button> : <button onClick={onNext}>Próxima <ArrowRight /></button>}</div>{result && <div className={`med-feedback ${result}`}><span>{result === "correct" ? <Check /> : <X />}</span><div><strong>{result === "correct" ? "Resposta correta" : `Resposta: ${structure.name}`}</strong><p><b>Função:</b> {structure.function}</p><p><b>Próximas:</b> {structure.nearby.length ? structure.nearby.join(", ") : "consulte a fonte anatômica"}</p></div></div>}</div></div>
+    <div className="med-practice-card"><div className="med-practice-visual"><div className="pulse-ring"/>
+      <div className="med-practice-zoom-controls">
+        <button onClick={() => changeVisualZoom(-.35)} aria-label="Diminuir zoom da identificação"><ZoomOut /></button>
+        <strong>{Math.round(visualZoom * 100)}%</strong>
+        <button onClick={() => changeVisualZoom(.35)} aria-label="Aumentar zoom da identificação"><ZoomIn /></button>
+        <button className="wide" onClick={() => focusMarker()}><Focus /> Focar ponto</button>
+        <button className="wide" onClick={() => { setVisualZoom(1); setVisualPan({ x: 0, y: 0 }); }}><RotateCcw /> Corpo inteiro</button>
+      </div>
+      <div
+        className={`med-practice-viewport ${panning ? "is-panning" : ""}`}
+        onWheel={(event) => { event.preventDefault(); changeVisualZoom(event.deltaY < 0 ? .25 : -.25); }}
+        onPointerDown={(event) => {
+          if (event.button !== 0) return;
+          event.preventDefault();
+          event.currentTarget.setPointerCapture(event.pointerId);
+          dragRef.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY };
+          setPanning(true);
+        }}
+        onPointerMove={(event) => {
+          const drag = dragRef.current;
+          if (!drag || drag.pointerId !== event.pointerId) return;
+          const deltaX = event.clientX - drag.x;
+          const deltaY = event.clientY - drag.y;
+          drag.x = event.clientX;
+          drag.y = event.clientY;
+          const limitX = event.currentTarget.clientWidth * visualZoom;
+          const limitY = event.currentTarget.clientHeight * visualZoom;
+          setVisualPan((current) => ({
+            x: Math.min(limitX, Math.max(-limitX, current.x + deltaX)),
+            y: Math.min(limitY, Math.max(-limitY, current.y + deltaY)),
+          }));
+        }}
+        onPointerUp={(event) => {
+          if (dragRef.current?.pointerId !== event.pointerId) return;
+          dragRef.current = null;
+          setPanning(false);
+          if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+        }}
+        onPointerCancel={() => { dragRef.current = null; setPanning(false); }}
+        onLostPointerCapture={() => { dragRef.current = null; setPanning(false); }}
+        aria-label="Imagem anatômica ampliável; arraste para navegar"
+      >
+        <div ref={modelRef} className="med-practice-model" style={{ transform: `translate3d(${visualPan.x}px, ${visualPan.y}px, 0) scale(${visualZoom})` }}><img key={`${structure.layer}-${modelView}`} src={`/medicine/atlas/${structure.layer}-${modelView}-v2.png`} alt={`Modelo anatômico educacional em vista ${modelView}`} draggable={false} /><i style={{ left: `${markerPosition.x}%`, top: `${markerPosition.y}%` } as CSSProperties}/></div>
+      </div>
+      <div className="med-practice-drag-help">Arraste para navegar · roda para aproximar</div><span>MODELO ANATÔMICO EM ALTA DEFINIÇÃO</span><small>Ilustração educacional · não diagnóstica</small></div><div className="med-practice-prompt"><span className="med-eyebrow">{eyebrow}</span><h2>Qual é esta estrutura?</h2><p>{result ? structure.summary : clue}</p><div className="med-answer-box"><input value={input} onChange={(event) => onInput(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") onSubmit(); }} placeholder="Digite o nome da estrutura" disabled={result !== null}/>{result === null ? <button onClick={onSubmit}>Responder</button> : <button onClick={onNext}>Próxima <ArrowRight /></button>}</div>{result && <div className={`med-feedback ${result}`}><span>{result === "correct" ? <Check /> : <X />}</span><div><strong>{result === "correct" ? "Resposta correta" : `Resposta: ${structure.name}`}</strong><p><b>Função:</b> {structure.function}</p><p><b>Próximas:</b> {structure.nearby.length ? structure.nearby.join(", ") : "consulte a fonte anatômica"}</p></div></div>}</div></div>
   </div>;
 }
 
