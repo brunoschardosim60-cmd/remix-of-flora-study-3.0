@@ -381,11 +381,64 @@ function SystemsSection({ level, onOpenAtlas }: { level: MedicineLevel; onOpenAt
 
 function DevelopmentSection() {
   const [active, setActive] = useState(0);
-  return <div className="med-page"><PageHeading eyebrow="Embriologia e desenvolvimento" title="Da fecundação à vida extrauterina" description="Linha do tempo educacional. Idades embrionária, fetal e gestacional devem ser interpretadas conforme a convenção da fonte." />
-    <div className="med-development-stage"><div className="med-timeline">{embryologyTimeline.map((item, index) => <button key={item.period} className={active === index ? "active" : ""} onClick={() => setActive(index)}><span>{index + 1}</span><div><small>{item.period}</small><strong>{item.title}</strong></div></button>)}</div><article>
-      <div className="med-development-visual"><img key={embryologyTimeline[active].image} src={embryologyTimeline[active].image} alt={embryologyTimeline[active].imageAlt} /><span>Ilustração didática gerada · confirme os detalhes na fonte</span></div>
-      <div className="med-development-content"><span className="med-eyebrow">{embryologyTimeline[active].period}</span><h2>{embryologyTimeline[active].title}</h2><p>{embryologyTimeline[active].detail}</p><div className="med-germ-layers"><div><b>Ectoderma</b><span>Sistema nervoso e epiderme, entre outros derivados.</span></div><div><b>Mesoderma</b><span>Músculos, ossos, sistema circulatório e diversos órgãos.</span></div><div><b>Endoderma</b><span>Epitélios dos sistemas digestório e respiratório e derivados.</span></div></div><small className="med-development-note">Resumo introdutório: cada camada germinativa possui derivados e exceções que exigem estudo detalhado.</small><a href={medicalSources[embryologyTimeline[active].sourceId].url} target="_blank" rel="noreferrer">Conferir a fonte desta etapa <ExternalLink /></a></div>
-    </article></div>
+  const stage = embryologyTimeline[active];
+  const source = medicalSources[stage.sourceId];
+  const selectStage = (index: number) => setActive(Math.min(Math.max(index, 0), embryologyTimeline.length - 1));
+
+  return <div className="med-page med-development-page">
+    <PageHeading eyebrow="Embriologia e desenvolvimento humano" title="Do começo da vida à fase adulta" description="Uma jornada visual para entender o que muda em cada fase, quais sistemas estão em foco e o que revisar antes de avançar." />
+
+    <div className="med-development-safety"><ShieldCheck /><div><strong>Guia educacional com fontes por etapa</strong><span>Faixas etárias são didáticas e o desenvolvimento apresenta variações individuais. As imagens ajudam na orientação visual, mas não são fonte anatômica nem material diagnóstico.</span></div></div>
+
+    <nav className="med-development-ribbon" aria-label="Etapas do desenvolvimento humano">
+      {embryologyTimeline.map((item, index) => <button key={item.id} className={active === index ? "active" : ""} onClick={() => selectStage(index)} aria-current={active === index ? "step" : undefined}>
+        <span>{String(index + 1).padStart(2, "0")}</span>
+        <div><small>{item.phase} · {item.period}</small><strong>{item.title}</strong></div>
+      </button>)}
+    </nav>
+
+    <article className="med-development-hero">
+      <div className="med-development-hero-image">
+        <img key={stage.image} src={stage.image} alt={stage.imageAlt} />
+        <span>Imagem educacional · não diagnóstica</span>
+        <div className="med-development-image-index">ETAPA {active + 1} / {embryologyTimeline.length}</div>
+      </div>
+      <div className="med-development-hero-copy">
+        <div className="med-development-phase"><Baby /><span>{stage.phase}</span><i /> <span>{stage.period}</span></div>
+        <h2>{stage.title}</h2>
+        <p>{stage.detail}</p>
+        <div className="med-development-source-mini"><BookOpen /><div><small>FONTE DESTA ETAPA</small><strong>{source.title}</strong><span>{source.organization} · revisada em {source.reviewedAt.split("-").reverse().join("/")}</span></div></div>
+        <div className="med-development-hero-actions">
+          <button onClick={() => selectStage(active - 1)} disabled={active === 0}><ArrowLeft /> Anterior</button>
+          <button className="primary" onClick={() => selectStage(active + 1)} disabled={active === embryologyTimeline.length - 1}>Próxima fase <ArrowRight /></button>
+        </div>
+      </div>
+    </article>
+
+    <div className="med-development-learning-grid">
+      <section className="med-development-milestones">
+        <header><span className="med-eyebrow">O QUE ACONTECE</span><h3>Marcos desta fase</h3><p>Uma sequência curta para construir o entendimento antes dos detalhes.</p></header>
+        <div>{stage.milestones.map((milestone, index) => <article key={milestone}><span>{index + 1}</span><p>{milestone}</p></article>)}</div>
+      </section>
+
+      <aside className="med-development-processes">
+        <span className="med-eyebrow">MAPA DE ESTUDO</span><h3>Sistemas e processos em foco</h3>
+        <div>{stage.systems.map((system) => <span key={system}>{system}</span>)}</div>
+        <a href={source.url} target="_blank" rel="noreferrer"><BookOpen /> Abrir referência completa <ExternalLink /></a>
+      </aside>
+    </div>
+
+    <section className="med-development-prompts">
+      <div><span className="med-eyebrow">RECUPERAÇÃO ATIVA</span><h3>Consegue explicar sem reler?</h3><p>Responda com suas palavras. Se travar, volte aos marcos e confira a referência.</p></div>
+      <ol>{stage.studyQuestions.map((question, index) => <li key={question}><span>{String(index + 1).padStart(2, "0")}</span><p>{question}</p></li>)}</ol>
+    </section>
+
+    <section className="med-development-gallery">
+      <header><div><span className="med-eyebrow">JORNADA COMPLETA</span><h3>Compare as fases lado a lado</h3></div><span>{embryologyTimeline.length} etapas ilustradas</span></header>
+      <div>{embryologyTimeline.map((item, index) => <button key={item.id} className={active === index ? "active" : ""} onClick={() => selectStage(index)}>
+        <span><img src={item.image} alt="" loading="lazy" /></span><small>{item.period}</small><strong>{item.title}</strong>
+      </button>)}</div>
+    </section>
   </div>;
 }
 

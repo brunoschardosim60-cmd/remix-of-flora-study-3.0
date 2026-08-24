@@ -73,6 +73,20 @@ export interface MedicineLevelProfile {
   cycle: string[];
 }
 
+export interface DevelopmentStage {
+  id: string;
+  phase: "Pré-natal" | "Pós-natal";
+  period: string;
+  title: string;
+  detail: string;
+  milestones: string[];
+  systems: string[];
+  studyQuestions: string[];
+  sourceId: string;
+  image: string;
+  imageAlt: string;
+}
+
 export const medicalSources: Record<string, MedicalSource> = {
   openstax: {
     title: "Anatomy and Physiology 2e",
@@ -198,6 +212,46 @@ export const medicalSources: Record<string, MedicalSource> = {
     title: "Fetal Development — Anatomy and Physiology 2e",
     organization: "OpenStax, Rice University",
     url: "https://openstax.org/books/anatomy-and-physiology-2e/pages/28-3-fetal-development",
+    reviewedAt: "2026-08-24",
+    license: "CC BY-NC-SA 4.0",
+    attribution: "Access for free at openstax.org.",
+  },
+  openstaxEmbryonic: {
+    title: "Embryonic Development — Anatomy and Physiology 2e",
+    organization: "OpenStax, Rice University",
+    url: "https://openstax.org/books/anatomy-and-physiology-2e/pages/28-2-embryonic-development",
+    reviewedAt: "2026-08-24",
+    license: "CC BY-NC-SA 4.0",
+    attribution: "Access for free at openstax.org.",
+  },
+  openstaxInfancy: {
+    title: "Physical Development in Infants and Toddlers",
+    organization: "OpenStax, Rice University",
+    url: "https://openstax.org/books/lifespan-development/pages/3-1-physical-development-in-infants-and-toddlers",
+    reviewedAt: "2026-08-24",
+    license: "CC BY-NC-SA 4.0",
+    attribution: "Access for free at openstax.org.",
+  },
+  openstaxChildhood: {
+    title: "Physical Health and Growth in Early Childhood",
+    organization: "OpenStax, Rice University",
+    url: "https://openstax.org/books/lifespan-development/pages/5-1-physical-health-and-growth-in-early-childhood",
+    reviewedAt: "2026-08-24",
+    license: "CC BY-NC-SA 4.0",
+    attribution: "Access for free at openstax.org.",
+  },
+  openstaxAdolescence: {
+    title: "Physical Growth and Development in Adolescence",
+    organization: "OpenStax, Rice University",
+    url: "https://openstax.org/books/lifespan-development/pages/9-1-physical-growth-and-development-in-adolescence",
+    reviewedAt: "2026-08-24",
+    license: "CC BY-NC-SA 4.0",
+    attribution: "Access for free at openstax.org.",
+  },
+  openstaxEarlyAdult: {
+    title: "Physical Health and Growth in Early Adulthood",
+    organization: "OpenStax, Rice University",
+    url: "https://openstax.org/books/lifespan-development/pages/11-2-physical-health-and-growth-in-early-adulthood",
     reviewedAt: "2026-08-24",
     license: "CC BY-NC-SA 4.0",
     attribution: "Access for free at openstax.org.",
@@ -343,12 +397,124 @@ export const medicalSystems: MedicalSystem[] = [
   { id: "immune", name: "Linfático e imune", description: "Defesa, vigilância e retorno de fluidos.", color: "#668a75", icon: "shield", image: "/medicine/systems/immune-v1.png", structures: ["Linfonodos", "Baço", "Timo", "Vasos linfáticos"], topics: ["Imunidade inata", "Imunidade adaptativa", "Drenagem linfática"], atlasStructureIds: ["thymus", "spleen", "palatine-tonsils", "cervical-lymph-nodes", "axillary-lymph-nodes", "inguinal-lymph-nodes"], questionSystems: ["Imune", "Linfático"], sourceId: "openstaxImmune" },
 ];
 
-export const embryologyTimeline = [
-  { period: "Semana 1", title: "Fecundação e clivagem", detail: "Formação do zigoto, divisões celulares, mórula e blastocisto; início da implantação.", sourceId: "ncbiFertilization", image: "/medicine/development/week-1-v1.png", imageAlt: "Sequência ilustrativa da fecundação ao blastocisto" },
-  { period: "Semanas 2–3", title: "Implantação e gastrulação", detail: "Organização do disco embrionário e estabelecimento de ectoderma, mesoderma e endoderma.", sourceId: "ncbiGastrulation", image: "/medicine/development/weeks-2-3-v1.png", imageAlt: "Modelo didático de implantação e disco embrionário trilaminar" },
-  { period: "Semanas 3–8", title: "Período embrionário", detail: "Organogênese e formação inicial dos principais sistemas; período de alta sensibilidade do desenvolvimento.", sourceId: "ncbiFertilization", image: "/medicine/development/weeks-3-8-v2.png", imageAlt: "Modelo didático de embrião ao final do período embrionário" },
-  { period: "Semana 9 ao nascimento", title: "Período fetal", detail: "Predominam crescimento, diferenciação e maturação funcional dos sistemas.", sourceId: "openstaxFetal", image: "/medicine/development/fetal-period-v1.png", imageAlt: "Modelo didático do período fetal em envoltório protetor" },
-  { period: "Nascimento", title: "Transição neonatal", detail: "O início da respiração e as mudanças circulatórias marcam a adaptação à vida extrauterina.", sourceId: "openstaxFetal", image: "/medicine/development/neonatal-transition-v1.png", imageAlt: "Manequim neonatal didático com destaque para pulmões e coração" },
+export const embryologyTimeline: DevelopmentStage[] = [
+  {
+    id: "fertilization",
+    phase: "Pré-natal",
+    period: "Semana 1",
+    title: "Fecundação, clivagem e blastocisto",
+    detail: "O desenvolvimento começa com a união dos gametas. O zigoto passa por divisões celulares sucessivas, forma a mórula e depois o blastocisto, que inicia a implantação no endométrio.",
+    milestones: ["Formação do zigoto após a fecundação", "Clivagens aumentam o número de células sem crescimento proporcional do conjunto", "Diferenciação inicial entre embrioblasto e trofoblasto no blastocisto"],
+    systems: ["Fecundação", "Clivagem", "Mórula", "Blastocisto"],
+    studyQuestions: ["Como a clivagem difere do crescimento corporal?", "Quais partes do blastocisto participam do embrião e da interface com o organismo materno?"],
+    sourceId: "ncbiFertilization",
+    image: "/medicine/development/week-1-v1.png",
+    imageAlt: "Sequência didática da fecundação ao blastocisto",
+  },
+  {
+    id: "implantation",
+    phase: "Pré-natal",
+    period: "Semanas 2–3",
+    title: "Implantação e gastrulação",
+    detail: "A implantação progride e o disco embrionário se reorganiza. Na gastrulação surgem as três camadas germinativas que darão origem aos tecidos e sistemas do corpo.",
+    milestones: ["Aprofundamento da implantação no endométrio", "Formação da linha primitiva e reorganização celular", "Estabelecimento de ectoderma, mesoderma e endoderma"],
+    systems: ["Implantação", "Disco embrionário", "Gastrulação", "Camadas germinativas"],
+    studyQuestions: ["Por que a gastrulação é um marco de organização corporal?", "Quais são os principais derivados de cada camada germinativa?"],
+    sourceId: "ncbiGastrulation",
+    image: "/medicine/development/weeks-2-3-v1.png",
+    imageAlt: "Modelo didático de implantação e disco embrionário trilaminar",
+  },
+  {
+    id: "embryonic",
+    phase: "Pré-natal",
+    period: "Semanas 3–8",
+    title: "Organogênese embrionária",
+    detail: "O plano corporal torna-se reconhecível e ocorre a formação inicial dos principais sistemas. Ao final do período embrionário, os sistemas existem em forma rudimentar e continuarão a crescer e amadurecer.",
+    milestones: ["Dobramentos estabelecem a forma corporal básica", "Tubo neural, coração inicial e somitos avançam em organização", "Brotos dos membros e contornos da face tornam-se progressivamente definidos"],
+    systems: ["Sistema nervoso", "Sistema cardiovascular", "Musculoesquelético", "Face e membros"],
+    studyQuestions: ["Como os dobramentos alteram a relação entre as estruturas embrionárias?", "Por que formação inicial não significa maturidade funcional?"],
+    sourceId: "openstaxEmbryonic",
+    image: "/medicine/development/weeks-3-8-v2.png",
+    imageAlt: "Modelo didático do embrião ao final da oitava semana",
+  },
+  {
+    id: "fetal",
+    phase: "Pré-natal",
+    period: "Semana 9 ao nascimento",
+    title: "Crescimento e maturação fetal",
+    detail: "No período fetal, o corpo cresce rapidamente, as proporções se modificam e os sistemas formados no período embrionário prosseguem em diferenciação e maturação funcional.",
+    milestones: ["Crescimento corporal e mudança progressiva das proporções", "Aprimoramento estrutural dos órgãos e sistemas", "Maturação gradual necessária para a transição à vida extrauterina"],
+    systems: ["Crescimento somático", "Movimento", "Maturação pulmonar", "Maturação neurológica"],
+    studyQuestions: ["Qual é a diferença central entre os períodos embrionário e fetal?", "Quais sistemas precisam de adaptações imediatas ao nascimento?"],
+    sourceId: "openstaxFetal",
+    image: "/medicine/development/fetal-period-v1.png",
+    imageAlt: "Modelo fetal didático em envoltório protetor",
+  },
+  {
+    id: "neonatal",
+    phase: "Pós-natal",
+    period: "Nascimento–28 dias",
+    title: "Transição neonatal",
+    detail: "O nascimento exige adaptação rápida à vida fora do útero. O início da ventilação pulmonar e a reorganização da circulação estão entre as mudanças fisiológicas centrais desse período.",
+    milestones: ["Início da ventilação pulmonar", "Mudança do padrão circulatório fetal", "Adaptação progressiva da termorregulação, alimentação e interação com o ambiente"],
+    systems: ["Respiratório", "Cardiovascular", "Termorregulação", "Nutrição"],
+    studyQuestions: ["O que muda na circulação quando a troca gasosa passa a ocorrer nos pulmões?", "Quais adaptações distinguem a vida intrauterina da extrauterina?"],
+    sourceId: "openstaxFetal",
+    image: "/medicine/development/neonatal-transition-v1.png",
+    imageAlt: "Representação neonatal didática com destaque para pulmões e coração",
+  },
+  {
+    id: "infancy",
+    phase: "Pós-natal",
+    period: "1 mês–2 anos",
+    title: "Bebê e primeira infância",
+    detail: "É uma fase de crescimento corporal intenso, amadurecimento sensorial e rápida aquisição motora. A sequência geral do desenvolvimento é previsível, mas o momento exato varia entre crianças.",
+    milestones: ["Controle motor avança das regiões centrais para movimentos mais precisos", "Integração entre visão, audição, postura e exploração do ambiente", "Crescimento cerebral e corporal acompanha novas formas de mobilidade e comunicação"],
+    systems: ["Neurodesenvolvimento", "Crescimento", "Coordenação motora", "Integração sensorial"],
+    studyQuestions: ["Por que marcos do desenvolvimento devem ser interpretados como faixas?", "Como habilidades motoras amplas preparam movimentos mais finos?"],
+    sourceId: "openstaxInfancy",
+    image: "/medicine/development/infancy-toddler-v1.png",
+    imageAlt: "Representação educacional de um bebê explorando um bloco de madeira",
+  },
+  {
+    id: "childhood",
+    phase: "Pós-natal",
+    period: "3–10 anos · faixa didática",
+    title: "Infância",
+    detail: "O crescimento torna-se mais estável que nos primeiros anos, enquanto coordenação, força, equilíbrio, linguagem e autonomia continuam a se desenvolver em interação com o ambiente.",
+    milestones: ["Aprimoramento do equilíbrio e das habilidades motoras", "Mudanças graduais nas proporções corporais", "Maior integração entre movimento, aprendizagem e participação social"],
+    systems: ["Musculoesquelético", "Sistema nervoso", "Dentição", "Crescimento"],
+    studyQuestions: ["Como crescimento e maturação diferem entre si?", "Quais fatores biológicos e ambientais participam do desenvolvimento infantil?"],
+    sourceId: "openstaxChildhood",
+    image: "/medicine/development/childhood-v1.png",
+    imageAlt: "Representação educacional de uma criança em idade escolar",
+  },
+  {
+    id: "adolescence",
+    phase: "Pós-natal",
+    period: "11–17 anos · faixa didática",
+    title: "Adolescência e puberdade",
+    detail: "A puberdade produz mudanças hormonais, crescimento acelerado e maturação sexual. O início, a duração e a sequência visível variam, por isso a faixa etária é apenas uma orientação didática.",
+    milestones: ["Estirão de crescimento e mudanças nas proporções corporais", "Desenvolvimento de características sexuais secundárias", "Maturação cerebral e reorganização de ritmos biológicos continuam ao longo da adolescência"],
+    systems: ["Endócrino", "Reprodutor", "Musculoesquelético", "Sistema nervoso"],
+    studyQuestions: ["Como os eixos hormonais coordenam as mudanças puberais?", "Por que idade cronológica e estágio puberal não são equivalentes?"],
+    sourceId: "openstaxAdolescence",
+    image: "/medicine/development/adolescence-v1.png",
+    imageAlt: "Representação educacional de uma pessoa adolescente",
+  },
+  {
+    id: "adult",
+    phase: "Pós-natal",
+    period: "18 anos em diante",
+    title: "Início da vida adulta",
+    detail: "No início da vida adulta, a estatura tende a se estabilizar e os sistemas corporais alcançam sua organização madura. Desenvolvimento, porém, continua como adaptação física, cognitiva e social ao longo da vida.",
+    milestones: ["Consolidação das características corporais adultas", "Manutenção e adaptação dos sistemas maduros às demandas do cotidiano", "Hábitos, ambiente e condições de saúde passam a influenciar de forma acumulativa a trajetória corporal"],
+    systems: ["Homeostase", "Saúde musculoesquelética", "Metabolismo", "Cognição"],
+    studyQuestions: ["Por que desenvolvimento humano não termina com o crescimento em altura?", "Como hábitos e ambiente interagem com a biologia na vida adulta?"],
+    sourceId: "openstaxEarlyAdult",
+    image: "/medicine/development/early-adulthood-v1.png",
+    imageAlt: "Representação educacional de uma pessoa no início da vida adulta",
+  },
 ];
 
 export const medicalQuestions: MedicalQuestion[] = [

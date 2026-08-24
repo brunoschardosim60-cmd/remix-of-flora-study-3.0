@@ -41,6 +41,20 @@ describe("medicine content integrity", () => {
     }
   });
 
+  it("covers the complete development journey with study-ready content", () => {
+    expect(embryologyTimeline.length).toBeGreaterThanOrEqual(9);
+    expect(embryologyTimeline[0].phase).toBe("Pré-natal");
+    expect(embryologyTimeline.at(-1)?.phase).toBe("Pós-natal");
+    expect(new Set(embryologyTimeline.map((stage) => stage.id)).size).toBe(embryologyTimeline.length);
+
+    for (const stage of embryologyTimeline) {
+      expect(stage.detail.length, `${stage.id} detail`).toBeGreaterThan(90);
+      expect(stage.milestones.length, `${stage.id} milestones`).toBeGreaterThanOrEqual(3);
+      expect(stage.systems.length, `${stage.id} systems`).toBeGreaterThanOrEqual(3);
+      expect(stage.studyQuestions.length, `${stage.id} questions`).toBeGreaterThanOrEqual(2);
+    }
+  });
+
   it("covers every declared learning level", () => {
     const levels: MedicineLevel[] = ["Iniciante", "Ciclo básico", "Ciclo clínico", "Internato", "Residência"];
     for (const level of levels) {
