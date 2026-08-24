@@ -4,10 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, BookOpen, Trash2, Loader2, ArrowLeft, Star, StarOff, FolderOpen, Pencil, Search } from "lucide-react";
+import { Plus, BookOpen, Trash2, Loader2, ArrowLeft, Star, FolderOpen, Search, Clock3, LayoutGrid } from "lucide-react";
 import { toast } from "sonner";
 import { ALL_SUBJECTS } from "@/lib/studyData";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import "@/components/notebook/notebooks-studio.css";
 
 interface Notebook {
   id: string;
@@ -93,7 +94,11 @@ export default function Notebooks() {
       .eq("user_id", user!.id)
       .maybeSingle();
     if (data?.topics && Array.isArray(data.topics)) {
-      const subjects = [...new Set((data.topics as any[]).map((t: any) => t.materia).filter(Boolean))] as string[];
+      const subjects = [...new Set(data.topics.flatMap((topic) => {
+        if (typeof topic !== "object" || topic === null || !("materia" in topic)) return [];
+        const subject = (topic as { materia?: unknown }).materia;
+        return typeof subject === "string" && subject.trim() ? [subject] : [];
+      }))];
       setSubjectFolders(subjects);
     }
   };
@@ -184,217 +189,103 @@ export default function Notebooks() {
 
   if (loading) {
     return (
-      <div className="min-h-dvh bg-background animate-fade-in">
-        <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-16 py-5 sm:py-8 space-y-5">
-          <div className="h-8 w-48 rounded bg-muted animate-pulse" />
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            {[1,2,3,4].map(i => <div key={i} className="h-40 rounded-2xl bg-muted/40 animate-pulse" />)}
+      <div className="notebooks-studio animate-fade-in">
+        <div className="notebooks-content">
+          <div className="h-56 rounded-[28px] bg-white/70 animate-pulse" />
+          <div className="mt-7 grid grid-cols-2 gap-4 lg:grid-cols-4">
+            {[1,2,3,4].map(i => <div key={i} className="h-72 rounded-2xl bg-white/70 animate-pulse" />)}
           </div>
         </div>
       </div>
     );
   }
 
+  const activeLabel = showFavorites ? "Favoritos" : activeFolder || "Todos os cadernos";
+  const folderCount = (folder: string) => notebooks.filter((notebook) => notebook.folder === folder).length;
+  const favoriteCount = notebooks.filter((notebook) => notebook.is_favorite).length;
+  const formatUpdatedAt = (date: string) => new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short" }).format(new Date(date));
+
   return (
-    <div className="min-h-dvh bg-background">
-      <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-16 py-5 sm:py-8 space-y-5 sm:space-y-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => navigate("/")}
-              className="rounded-lg h-11 w-11 sm:h-10 sm:w-10"
-              title="Voltar"
-              aria-label="Voltar"
-            >
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
-            <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
-            <h1 className="font-heading text-xl sm:text-2xl font-bold truncate">Meus Cadernos</h1>
-          </div>
-          <Button onClick={() => setShowNew(true)} className="gap-1.5 w-full sm:w-auto">
-            <Plus className="w-4 h-4" /> Novo Caderno
-          </Button>
+    <div className="notebooks-studio">
+      <header className="notebooks-topbar">
+        <button className="notebooks-back" onClick={() => navigate("/")} title="Voltar" aria-label="Voltar"><ArrowLeft /></button>
+        <div className="notebooks-brand"><span><BookOpen /></span><div><small>FLORA CANVAS</small><strong>Cadernos</strong></div></div>
+        <div className="notebooks-top-actions">
+          <label className="notebooks-search">
+            {searching ? <Loader2 className="animate-spin" /> : <Search />}
+            <input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Buscar título, matéria ou conteúdo…" />
+          </label>
+          <button className="notebooks-new-button" onClick={() => setShowNew(true)}><Plus /><span>Novo caderno</span></button>
         </div>
+      </header>
 
-        {/* Search + Filters */}
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1.5 flex-1 min-w-[180px] max-w-sm">
-            {searching ? <Loader2 className="w-4 h-4 text-muted-foreground animate-spin" /> : <Search className="w-4 h-4 text-muted-foreground" />}
-            <input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar cadernos e conteúdo..."
-              className="bg-transparent text-sm outline-none w-full"
-            />
-          </div>
-          <button
-            onClick={() => { setActiveFolder(null); setShowFavorites(false); }}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-all ${
-              !activeFolder && !showFavorites ? "bg-primary/10 border-primary/30 text-primary" : "border-border text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Todos
-          </button>
-          <button
-            onClick={() => { setShowFavorites(!showFavorites); setActiveFolder(null); }}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border transition-all ${
-              showFavorites ? "bg-amber-500/15 border-amber-500/40 text-amber-600" : "border-border text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <Star className="w-3.5 h-3.5" /> Favoritos
-          </button>
-          {allFolders.map((f) => (
-            <button
-              key={f}
-              onClick={() => { setActiveFolder(f); setShowFavorites(false); }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border transition-all ${
-                activeFolder === f ? "bg-primary/10 border-primary/30 text-primary" : "border-border text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <FolderOpen className="w-3.5 h-3.5" /> {f}
-            </button>
-          ))}
-        </div>
-
-        {showNew && (
-          <div className="glass-card rounded-xl p-4 space-y-3">
-            <Input
-              value={newTitle}
-              onChange={(e) => setNewTitle(e.target.value)}
-              placeholder="Nome do caderno..."
-              onKeyDown={(e) => e.key === "Enter" && createNotebook()}
-              autoFocus
-            />
-            <div className="flex gap-3 flex-wrap items-end">
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">Matéria (opcional)</p>
-                <Select value={newSubject} onValueChange={(v) => {
-                  const val = v === "__none__" ? "" : v;
-                  setNewSubject(val);
-                  if (val) setNewFolder(val);
-                }}>
-                  <SelectTrigger className="w-full sm:w-[180px]">
-                    <SelectValue placeholder="Sem matéria" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">Sem matéria</SelectItem>
-                    {ALL_SUBJECTS.map((s) => (
-                      <SelectItem key={s} value={s}>{s}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">Pasta</p>
-                <Select value={newFolder} onValueChange={(v) => setNewFolder(v === "__none__" ? "" : v)}>
-                  <SelectTrigger className="w-full sm:w-[150px]">
-                    <SelectValue placeholder="Sem pasta" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">Sem pasta</SelectItem>
-                    {allFolders.map((f) => (
-                      <SelectItem key={f} value={f}>{f}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">Cor da capa</p>
-                <div className="flex gap-1.5 flex-wrap max-w-[220px] sm:max-w-none">
-                  {COVER_COLORS.map((c) => (
-                    <button
-                      key={c}
-                      onClick={() => setNewColor(c)}
-                      className={`w-11 h-11 sm:w-7 sm:h-7 rounded-lg transition-all ${newColor === c ? "ring-2 ring-offset-2 ring-primary scale-110" : ""}`}
-                      style={{ backgroundColor: c }}
-                    />
-                  ))}
-                </div>
-              </div>
-              <div className="flex gap-2 ml-auto w-full sm:w-auto">
-                <Button variant="ghost" size="sm" className="flex-1 sm:flex-none" onClick={() => setShowNew(false)}>Cancelar</Button>
-                <Button size="sm" className="flex-1 sm:flex-none" onClick={createNotebook} disabled={creating}>
-                  {creating && <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />}
-                  Criar
-                </Button>
-              </div>
+      <main className="notebooks-content">
+        <section className="notebooks-hero">
+          <div className="notebooks-hero-copy">
+            <span className="notebooks-eyebrow">SEU ESPAÇO DE PENSAMENTO</span>
+            <h1>Escreva, desenhe e conecte ideias no mesmo papel.</h1>
+            <p>Um caderno flexível para anotações livres, PDFs, imagens, mapas visuais e estudos guiados — com suas páginas sempre organizadas.</p>
+            <div className="notebooks-stats">
+              <span><b>{notebooks.length}</b> caderno{notebooks.length === 1 ? "" : "s"}</span>
+              <span><b>{allFolders.length}</b> pasta{allFolders.length === 1 ? "" : "s"}</span>
+              <span><b>{favoriteCount}</b> favorito{favoriteCount === 1 ? "" : "s"}</span>
             </div>
           </div>
-        )}
+          <div className="notebooks-hero-art" aria-hidden="true"><div className="notebooks-paper-stack" /><div className="notebooks-pen-art" /></div>
+        </section>
 
-        {filtered.length === 0 && !showNew ? (
-          <div className="text-center py-16 space-y-3">
-            <BookOpen className="w-12 h-12 text-muted-foreground/40 mx-auto" />
-            <p className="text-muted-foreground">
-              {notebooks.length === 0 ? "Nenhum caderno ainda." : "Nenhum caderno encontrado."}
-            </p>
-            {notebooks.length === 0 && (
-              <Button onClick={() => setShowNew(true)} variant="outline" className="gap-1.5">
-                <Plus className="w-4 h-4" /> Criar primeiro caderno
-              </Button>
-            )}
-          </div>
-        ) : (
-          <div
-            className="grid gap-3 sm:gap-4"
-            style={{ gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))" }}
-          >
-            {filtered.map((nb) => (
-              <div
-                key={nb.id}
-                onClick={() => navigate(`/notebooks/${nb.id}`)}
-                className="group cursor-pointer"
-              >
-                <div
-                  className="aspect-[4/5] rounded-xl flex flex-col justify-end p-4 relative overflow-hidden transition-transform hover:scale-[1.02] shadow-md"
-                  style={{ backgroundColor: nb.cover_color }}
-                >
-                  {/* Decorative pen icon */}
-                  <Pencil className="absolute top-3 left-3 w-5 h-5 text-white/30" />
+        <div className="notebooks-workspace">
+          <aside className="notebooks-folders">
+            <span>BIBLIOTECA</span>
+            <button className={`notebooks-folder-button ${!activeFolder && !showFavorites ? "active" : ""}`} onClick={() => { setActiveFolder(null); setShowFavorites(false); }}><LayoutGrid />Todos<b>{notebooks.length}</b></button>
+            <button className={`notebooks-folder-button favorite ${showFavorites ? "active" : ""}`} onClick={() => { setShowFavorites(true); setActiveFolder(null); }}><Star />Favoritos<b>{favoriteCount}</b></button>
+            {allFolders.map((folder) => <button key={folder} className={`notebooks-folder-button ${activeFolder === folder ? "active" : ""}`} onClick={() => { setActiveFolder(folder); setShowFavorites(false); }}><FolderOpen />{folder}<b>{folderCount(folder)}</b></button>)}
+          </aside>
 
-                  {/* Favorite toggle */}
-                  <button
-                    onClick={(e) => toggleFavorite(nb.id, nb.is_favorite, e)}
-                    className="absolute top-2 right-10 sm:right-10 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 bg-black/20 rounded-lg min-w-[36px] min-h-[36px] sm:min-w-0 sm:min-h-0 p-1.5 text-white hover:bg-black/40 transition-all flex items-center justify-center"
-                  >
-                    {nb.is_favorite ? <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" /> : <StarOff className="w-3.5 h-3.5" />}
-                  </button>
+          <section className="notebooks-main">
+            <header className="notebooks-main-heading">
+              <div><h2>{activeLabel}</h2><p>{filtered.length} resultado{filtered.length === 1 ? "" : "s"}{searchQuery ? ` para “${searchQuery}”` : ""}</p></div>
+              <span className="notebooks-view-chip"><LayoutGrid /> Capas</span>
+            </header>
 
-                  {/* Delete */}
-                  <button
-                    onClick={(e) => deleteNotebook(nb.id, e)}
-                    className="absolute top-2 right-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 bg-black/30 rounded-lg min-w-[36px] min-h-[36px] sm:min-w-0 sm:min-h-0 p-1.5 text-white hover:bg-black/50 transition-all flex items-center justify-center"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+            {showNew && <section className="notebooks-create-panel">
+              <header><span><Plus /></span><div><h3>Novo caderno</h3><p>Escolha uma capa agora; você pode organizar o conteúdo depois.</p></div></header>
+              <div className="notebooks-create-grid">
+                <label className="notebooks-create-field"><span>Nome do caderno</span><Input value={newTitle} onChange={(event) => setNewTitle(event.target.value)} onKeyDown={(event) => event.key === "Enter" && void createNotebook()} placeholder="Ex.: Anatomia — sistema nervoso" autoFocus /></label>
+                <label className="notebooks-create-field"><span>Matéria</span><Select value={newSubject} onValueChange={(value) => { const selected = value === "__none__" ? "" : value; setNewSubject(selected); if (selected) setNewFolder(selected); }}><SelectTrigger><SelectValue placeholder="Sem matéria" /></SelectTrigger><SelectContent><SelectItem value="__none__">Sem matéria</SelectItem>{ALL_SUBJECTS.map((subject) => <SelectItem key={subject} value={subject}>{subject}</SelectItem>)}</SelectContent></Select></label>
+                <label className="notebooks-create-field"><span>Pasta</span><Select value={newFolder} onValueChange={(value) => setNewFolder(value === "__none__" ? "" : value)}><SelectTrigger><SelectValue placeholder="Sem pasta" /></SelectTrigger><SelectContent><SelectItem value="__none__">Sem pasta</SelectItem>{allFolders.map((folder) => <SelectItem key={folder} value={folder}>{folder}</SelectItem>)}</SelectContent></Select></label>
+              </div>
+              <label className="notebooks-create-field mt-4"><span>Cor da capa</span><div className="notebooks-cover-picker">{COVER_COLORS.map((color) => <button key={color} type="button" className={newColor === color ? "active" : ""} style={{ backgroundColor: color }} onClick={() => setNewColor(color)} aria-label={`Usar capa ${color}`} />)}</div></label>
+              <div className="notebooks-create-actions"><Button variant="ghost" onClick={() => setShowNew(false)}>Cancelar</Button><Button onClick={() => void createNotebook()} disabled={creating || !newTitle.trim()}>{creating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Criar e abrir</Button></div>
+            </section>}
 
-                  <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3">
-                    <p className="font-heading font-bold text-white text-sm truncate">
-                      {nb.title?.trim() && nb.title.trim().length > 1
-                        ? nb.title
-                        : "Sem título"}
-                    </p>
-                    <p className="text-white/70 text-xs truncate">
-                      {nb.subject || "Sem matéria"}
-                    </p>
-                    {nb.folder && (
-                      <p className="text-white/50 text-[10px] truncate mt-0.5">📁 {nb.folder}</p>
-                    )}
-                    {nb.topic_id && (
-                      <p className="text-white/70 text-[10px] truncate mt-0.5">🔗 Tema vinculado</p>
-                    )}
-                    {contentMatches[nb.id] && (
-                      <p className="text-white/60 text-[10px] mt-1 line-clamp-2 italic">🔍 {contentMatches[nb.id]}</p>
-                    )}
+            {filtered.length === 0 && !showNew ? <div className="notebooks-empty">
+              <span><BookOpen /></span>
+              <h3>{notebooks.length === 0 ? "Seu primeiro caderno começa aqui" : "Nada encontrado"}</h3>
+              <p>{notebooks.length === 0 ? "Crie uma página em branco ou abra um template completo pela área Medicina." : "Tente outro termo ou volte para todos os cadernos."}</p>
+              {notebooks.length === 0 && <Button onClick={() => setShowNew(true)}><Plus className="mr-2 h-4 w-4" />Criar caderno</Button>}
+            </div> : <div className="notebooks-grid">
+              {filtered.map((notebook) => <article key={notebook.id} className="notebook-studio-card" onClick={() => navigate(`/notebooks/${notebook.id}`)}>
+                <div className="notebook-cover" style={{ "--cover": notebook.cover_color } as React.CSSProperties}>
+                  <div className="notebook-cover-top">
+                    <span className="notebook-subject-pill">{notebook.subject || notebook.folder || "CADERNO LIVRE"}</span>
+                    <div className="notebook-card-actions">
+                      <button onClick={(event) => void toggleFavorite(notebook.id, notebook.is_favorite, event)} title={notebook.is_favorite ? "Remover dos favoritos" : "Favoritar"} aria-label={notebook.is_favorite ? "Remover dos favoritos" : "Favoritar"}><Star className={notebook.is_favorite ? "fill-amber-300 text-amber-300" : ""} /></button>
+                      <button onClick={(event) => void deleteNotebook(notebook.id, event)} title="Apagar caderno" aria-label="Apagar caderno"><Trash2 /></button>
+                    </div>
+                  </div>
+                  <div className="notebook-cover-copy">
+                    <h3>{notebook.title?.trim().length > 1 ? notebook.title : "Sem título"}</h3>
+                    <p>{notebook.folder ? `Pasta ${notebook.folder}` : "Anotações livres"}</p>
+                    {contentMatches[notebook.id] && <span className="notebook-search-match">{contentMatches[notebook.id].replace(/<[^>]*>/g, " ")}</span>}
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+                <div className="notebook-card-meta"><Clock3 /><span>Atualizado {formatUpdatedAt(notebook.updated_at)}</span>{notebook.topic_id && <span>Vinculado</span>}</div>
+              </article>)}
+            </div>}
+          </section>
+        </div>
+      </main>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 /**
- * KonvaDrawingCanvas — canvas de desenho nível Samsung Notes
+ * KonvaDrawingCanvas — canvas de desenho do Flora Canvas
  *
  * Melhorias v2:
  *  - Pressure sensitivity via pointer.pressure (caneta stylus / touch)
@@ -443,7 +443,16 @@ export const KonvaDrawingCanvas = forwardRef<DrawingCanvasRef, KonvaDrawingCanva
           ctx.lineCap = "round";
           ctx.beginPath();
           const s = shapeStartRef.current;
-          if (tool === "line") { ctx.moveTo(s.x, s.y); ctx.lineTo(pos.x, pos.y); }
+          if (tool === "line") {
+            const angle = Math.atan2(pos.y - s.y, pos.x - s.x);
+            const head = Math.max(11, Math.min(24, Math.hypot(pos.x - s.x, pos.y - s.y) * 0.18));
+            ctx.moveTo(s.x, s.y);
+            ctx.lineTo(pos.x, pos.y);
+            ctx.moveTo(pos.x, pos.y);
+            ctx.lineTo(pos.x - head * Math.cos(angle - Math.PI / 6), pos.y - head * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(pos.x, pos.y);
+            ctx.lineTo(pos.x - head * Math.cos(angle + Math.PI / 6), pos.y - head * Math.sin(angle + Math.PI / 6));
+          }
           else if (tool === "rect") { ctx.rect(s.x, s.y, pos.x - s.x, pos.y - s.y); }
           else { const rx = Math.abs(pos.x - s.x) / 2; const ry = Math.abs(pos.y - s.y) / 2; ctx.ellipse(s.x + (pos.x - s.x) / 2, s.y + (pos.y - s.y) / 2, rx, ry, 0, 0, Math.PI * 2); }
           ctx.stroke();
@@ -478,7 +487,17 @@ export const KonvaDrawingCanvas = forwardRef<DrawingCanvasRef, KonvaDrawingCanva
         // Converte shape para pontos
         let shapePts: Stroke["points"] = [];
         if (tool === "line") {
-          shapePts = [{ x: s.x, y: s.y, pressure: 0.5, width: penWidth }, { x: pos.x, y: pos.y, pressure: 0.5, width: penWidth }];
+          const angle = Math.atan2(pos.y - s.y, pos.x - s.x);
+          const head = Math.max(11, Math.min(24, Math.hypot(pos.x - s.x, pos.y - s.y) * 0.18));
+          const wingOne = { x: pos.x - head * Math.cos(angle - Math.PI / 6), y: pos.y - head * Math.sin(angle - Math.PI / 6) };
+          const wingTwo = { x: pos.x - head * Math.cos(angle + Math.PI / 6), y: pos.y - head * Math.sin(angle + Math.PI / 6) };
+          shapePts = [
+            { x: s.x, y: s.y, pressure: 0.5, width: penWidth },
+            { x: pos.x, y: pos.y, pressure: 0.5, width: penWidth },
+            { ...wingOne, pressure: 0.5, width: penWidth },
+            { x: pos.x, y: pos.y, pressure: 0.5, width: penWidth },
+            { ...wingTwo, pressure: 0.5, width: penWidth },
+          ];
         } else if (tool === "rect") {
           const pts = [[s.x, s.y],[pos.x, s.y],[pos.x, pos.y],[s.x, pos.y],[s.x, s.y]];
           shapePts = pts.map(([x, y]) => ({ x, y, pressure: 0.5, width: penWidth }));

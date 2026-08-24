@@ -129,22 +129,22 @@ export function RichEditor({ content, onChange, userId, notebookId, darkMode, on
         body: { action: "rewrite_selection", data: { text, mode } },
       });
       if (error) throw error;
-      const result = (data as any)?.result;
+      const result = (data as { result?: string } | null)?.result;
       if (!result) {
         toast.error("Flora não conseguiu responder.");
         return;
       }
       editor.chain().focus().insertContentAt({ from, to }, result).run();
       toast.success("Flora aplicou a edição.");
-    } catch (e: any) {
-      toast.error(e?.message || "Erro ao chamar Flora.");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Erro ao chamar Flora.");
     } finally {
       setFloraBusy(null);
     }
   };
 
   return (
-    <div className={`flex flex-col h-full ${darkMode ? "text-gray-100" : ""}`}>
+    <div className={`nb-rich-editor-root flex flex-col h-full ${darkMode ? "text-gray-100" : ""}`}>
       {editor && (
         <BubbleMenu
           editor={editor}
@@ -190,9 +190,9 @@ export function RichEditor({ content, onChange, userId, notebookId, darkMode, on
           </div>
         </BubbleMenu>
       )}
-      <div className="flex-1 py-5 sm:py-7 px-3 sm:px-6">
+      <div className="nb-paper-viewport flex-1 py-5 sm:py-7 px-3 sm:px-6">
         <div
-          className={`relative mx-auto w-full ${wide ? "max-w-[1180px]" : "max-w-[920px]"} overflow-hidden rounded-xl transition-shadow duration-300 animate-fade-in notebook-paper-realistic ${showMargin ? "with-margin" : ""} ${handwriting ? "notebook-handwriting" : ""} ${
+          className={`nb-paper-frame relative mx-auto w-full ${wide ? "max-w-[1180px]" : "max-w-[920px]"} overflow-hidden rounded-xl transition-shadow duration-300 animate-fade-in notebook-paper-realistic ${showMargin ? "with-margin" : ""} ${handwriting ? "notebook-handwriting" : ""} ${
             darkMode
               ? "bg-gray-900 shadow-[0_8px_30px_rgba(0,0,0,0.5)] [&_.ProseMirror]:text-gray-100 [&_.ProseMirror_h1]:text-gray-50 [&_.ProseMirror_h2]:text-gray-50 [&_.ProseMirror_h3]:text-gray-50"
               : "bg-white shadow-[0_4px_24px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.08)]"
@@ -203,7 +203,7 @@ export function RichEditor({ content, onChange, userId, notebookId, darkMode, on
             transformOrigin: "top center",
           }}
         >
-          <div className="relative z-30 border-b border-black/[0.06] bg-white/90 backdrop-blur dark:bg-gray-900/90">
+          <div className="nb-editor-formatbar relative z-30 border-b border-black/[0.06] bg-white/90 backdrop-blur dark:bg-gray-900/90">
             <EditorToolbar
               editor={editor}
               userId={userId}
@@ -212,7 +212,7 @@ export function RichEditor({ content, onChange, userId, notebookId, darkMode, on
               onToggleDarkMode={onToggleDarkMode}
             />
           </div>
-          <div className="relative min-h-[calc(85vh-42px)] px-8 py-10 sm:px-14 sm:py-12">
+          <div className="nb-paper-content relative min-h-[calc(85vh-42px)] px-8 py-10 sm:px-14 sm:py-12">
             {backgroundImage && (
               <img src={backgroundImage} alt="Página importada do PDF" draggable={false} className="pointer-events-none absolute inset-0 h-full w-full select-none object-contain object-top opacity-100" />
             )}

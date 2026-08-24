@@ -57,7 +57,7 @@ interface MathSuggestion {
   confidence?: number;
 }
 
-import { SamsungStyleToolbar } from "@/components/notebook/SamsungStyleToolbar";
+import { NotebookStudioToolbar } from "@/components/notebook/NotebookStudioToolbar";
 import { AudioSummaryButton } from "@/components/notebook/AudioSummaryButton";
 import { PageSidebarGrid } from "@/components/notebook/PageSidebarGrid";
 import { FloraNotebookSidebar } from "@/components/notebook/FloraNotebookSidebar";
@@ -77,6 +77,11 @@ import { enqueuePageUpdate, flushQueue, pendingCount } from "@/lib/notebookOffli
 import { getTemplatesForSubject, suggestTagsFromText } from "@/lib/notebookTemplates";
 
 type PageTemplate = "blank" | "lined" | "grid" | "dotted" | "physics" | "chemistry" | "essay";
+const PAGE_TEMPLATES: PageTemplate[] = ["blank", "lined", "grid", "dotted", "physics", "chemistry", "essay"];
+
+function normalizePageTemplate(value: string | null | undefined): PageTemplate {
+  return PAGE_TEMPLATES.includes(value as PageTemplate) ? value as PageTemplate : "blank";
+}
 
 // Adapta DrawingState (que contém Date implicitamente nada, mas é typed local) para Json do Supabase.
 function drawingToJson(d: DrawingState): Json {
@@ -86,7 +91,7 @@ function drawingToJson(d: DrawingState): Json {
 // Converte um row genérico do supabase para NotebookPage (drawing_data vem como Json | null).
 function rowToNotebookPage(row: {
   id: string; notebook_id: string; user_id: string; page_number: number;
-  content: string; drawing_data: Json | null; tags: string[];
+  content: string; drawing_data: Json | null; tags: string[]; template: string;
 }): NotebookPage {
   return {
     id: row.id,
@@ -96,6 +101,7 @@ function rowToNotebookPage(row: {
     content: row.content,
     drawing_data: (row.drawing_data as unknown as DrawingState | null) ?? null,
     tags: row.tags ?? [],
+    template: normalizePageTemplate(row.template),
   };
 }
 
@@ -107,6 +113,7 @@ interface NotebookPage {
   content: string;
   drawing_data: DrawingState | null;
   tags: string[];
+  template: PageTemplate;
 }
 
 interface Notebook {
@@ -411,15 +418,19 @@ export default function NotebookEditor() {
   useEffect(() => {
     if (!pageKey) return;
     const saved = loadJsonStorage<Record<string, PageTemplate>>(NOTEBOOK_TEMPLATE_STORAGE_KEY) ?? {};
-    setPageTemplate(saved[pageKey] ?? "blank");
-  }, [pageKey]);
+    setPageTemplate(saved[pageKey] ?? currentPageData?.template ?? "blank");
+  }, [currentPageData?.template, pageKey]);
 
   const changePageTemplate = useCallback((template: PageTemplate) => {
     setPageTemplate(template);
     if (!pageKey) return;
     const saved = loadJsonStorage<Record<string, PageTemplate>>(NOTEBOOK_TEMPLATE_STORAGE_KEY) ?? {};
     window.localStorage.setItem(NOTEBOOK_TEMPLATE_STORAGE_KEY, JSON.stringify({ ...saved, [pageKey]: template }));
-  }, [pageKey]);
+    if (currentPageData?.id) {
+      setPages((currentPages) => currentPages.map((currentPageItem) => currentPageItem.id === currentPageData.id ? { ...currentPageItem, template } : currentPageItem));
+      void supabase.from("notebook_pages").update({ template }).eq("id", currentPageData.id);
+    }
+  }, [currentPageData?.id, pageKey]);
 
   const updateDrawingState = useCallback((next: DrawingState) => {
     drawingStateRef.current = next;
@@ -1869,233 +1880,90 @@ export default function NotebookEditor() {
         </>
       )}
 
-      {/* Cabeçalho estável: também funciona em tablets/celulares sem depender de hover. */}
-      <div
-        className="nb-peek-top pinned sticky top-0 z-40"
-      >
+      <div className="nb-peek-top pinned sticky top-0 z-40">
         <div className="nb-peek-trigger" aria-hidden />
         <header className="nb-peek-content nb-editor-header">
-        <div className="w-full px-3 sm:px-5 lg:px-7 py-2 flex flex-wrap items-center gap-2 sm:gap-3">
-          <Button variant="ghost" size="icon" aria-label="Voltar para cadernos" onClick={() => navigate("/notebooks")} className="h-11 w-11 sm:h-10 sm:w-10">
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div className="nb-title-block min-w-0 flex-1">
-            <h1 className="truncate font-heading text-base font-semibold tracking-tight sm:text-lg">{notebook?.title}</h1>
-            <span className="hidden text-[11px] text-muted-foreground sm:block">{notebook?.subject || selectedSubject} · Caderno</span>
-          </div>
-          {/* Save status indicator */}
-          <div className="flex items-center gap-1 text-xs shrink-0">
-            {saveStatus === "saving" && (
-              <span className="flex items-center gap-1 text-muted-foreground animate-pulse">
-                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                <span className="hidden sm:inline">Salvando…</span>
-              </span>
-            )}
-            {saveStatus === "saved" && (
-              <span className="flex items-center gap-1 text-primary">
-                <Cloud className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Salvo</span>
-              </span>
-            )}
-            {saveStatus === "error" && (
-              <span className="flex items-center gap-1 text-destructive">
-                <CloudOff className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Erro ao salvar</span>
-              </span>
-            )}
-            {saveStatus === "offline" && (
-              <span className="flex items-center gap-1 text-amber-500" title="Suas alterações estão salvas no dispositivo e serão sincronizadas quando a conexão voltar">
-                <CloudOff className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">
-                  Offline{pendingOffline > 0 ? ` · ${pendingOffline} pendente${pendingOffline === 1 ? "" : "s"}` : ""}
-                </span>
-              </span>
-            )}
-          </div>
+          <div className="nb-editor-topline">
+            <button type="button" className="nb-editor-back" aria-label="Voltar para cadernos" onClick={() => navigate("/notebooks")}><ArrowLeft /></button>
+            <div className="nb-editor-identity">
+              <span><FileText /></span>
+              <div><small>{notebook?.subject || selectedSubject || "CADERNO LIVRE"}</small><h1>{notebook?.title || "Sem título"}</h1></div>
+            </div>
 
-          <div className="order-6 sm:order-none w-full sm:w-auto flex flex-wrap sm:flex-nowrap items-center gap-2">
-            <form className="relative min-w-[150px] flex-1 sm:w-48 sm:flex-none" onSubmit={(event) => { event.preventDefault(); searchAndJumpToPage(); }}>
-              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-              <Input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Buscar no caderno" className="h-9 pl-8 pr-2 text-xs" aria-label="Buscar texto ou etiqueta no caderno" />
+            <div className={`nb-save-state ${saveStatus}`}>
+              {saveStatus === "saving" && <><RefreshCw className="animate-spin" /><span>Salvando</span></>}
+              {saveStatus === "saved" && <><Cloud /><span>Salvo</span></>}
+              {saveStatus === "error" && <><CloudOff /><span>Erro ao salvar</span></>}
+              {saveStatus === "offline" && <><CloudOff /><span>Offline{pendingOffline > 0 ? ` · ${pendingOffline}` : ""}</span></>}
+            </div>
+
+            <form className="nb-editor-search" onSubmit={(event) => { event.preventDefault(); searchAndJumpToPage(); }}>
+              <Search /><Input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Buscar neste caderno…" aria-label="Buscar texto ou etiqueta no caderno" />
             </form>
-            {/* AI toggle icon - works for both text and draw */}
-            <button
-              type="button"
-              onClick={() => handleToggleAutoSolve(!autoSolveEnabled)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
-                autoSolveEnabled ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-muted"
-              }`}
-              title={autoSolveEnabled ? "IA ativa — clique ou ESC para sair" : "Ativar IA (modo seleção)"}
-            >
-              <Sparkles className="w-4 h-4" />
-              <span className="hidden sm:inline">IA</span>
-            </button>
+
+            <div className="nb-editor-actions">
+              <button type="button" onClick={() => setShareDialogOpen(true)} title="Compartilhar caderno" aria-label="Compartilhar caderno"><Share2 /></button>
+              <button type="button" onClick={() => setFocusModeActive((active) => !active)} title="Modo foco" aria-label="Alternar modo foco"><Eye /></button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild><button type="button" title="Mais opções" aria-label="Mais opções do caderno"><MoreHorizontal /></button></DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-72">
+                  <DropdownMenuLabel>Papel e visual</DropdownMenuLabel>
+                  <DropdownMenuItem onClick={() => setHandwritingMode((value) => !value)}><span className="mr-2 text-base font-bold" style={{ fontFamily: "Caveat, cursive" }}>Aa</span>{handwritingMode ? "Usar tipografia digital" : "Usar caligrafia manuscrita"}</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setPaperMargin((value) => !value)}><span className="mr-3 block h-4 w-0.5 rounded bg-red-400" />{paperMargin ? "Esconder margem" : "Mostrar margem"}</DropdownMenuItem>
+                  <DropdownMenuLabel className="mt-1 text-[10px] uppercase tracking-wide text-muted-foreground">Modelo da página</DropdownMenuLabel>
+                  <div className="grid grid-cols-2 gap-1 px-1 pb-1">{([[
+                    "blank", "Em branco"], ["lined", "Pautado"], ["grid", "Quadriculado"], ["dotted", "Pontilhado"], ["physics", "Física"], ["chemistry", "Química"], ["essay", "Redação"],
+                  ] as const).map(([value, label]) => <Button key={value} type="button" variant={pageTemplate === value ? "secondary" : "ghost"} size="sm" className="h-8 justify-start text-xs" onClick={() => changePageTemplate(value)}><LayoutTemplate className="mr-1.5 h-3.5 w-3.5" />{label}</Button>)}</div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setExpandedEditor((value) => !value)}>{expandedEditor ? <Minimize2 className="mr-2 h-4 w-4" /> : <Maximize2 className="mr-2 h-4 w-4" />}{expandedEditor ? "Sair da tela cheia" : "Abrir tela cheia"}</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => void exportNotebookPdf()}><Download className="mr-2 h-4 w-4" />Exportar em PDF</DropdownMenuItem>
+                  <DropdownMenuItem disabled={pdfImporting} onClick={() => pdfInputRef.current?.click()}>{pdfImporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileUp className="mr-2 h-4 w-4" />}{pdfImporting ? "Importando PDF…" : "Importar PDF para anotar"}</DropdownMenuItem>
+                  <input ref={pdfInputRef} type="file" accept="application/pdf,.pdf" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) void importPdfAsPages(file); }} />
+                  <DropdownMenuItem onClick={restorePreviousVersion}><History className="mr-2 h-4 w-4" />Restaurar versão anterior</DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => void handleExplainDrawing()}><Wand2 className="mr-2 h-4 w-4" />Explicar desenho com a Flora</DropdownMenuItem>
+                  <DropdownMenuItem onClick={toggleGhostCompletion}><Sparkles className="mr-2 h-4 w-4" />{ghostEnabled ? "Desativar autocomplete" : "Ativar autocomplete"}</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+
+          <div className="nb-editor-subline">
+            <div className="nb-page-switcher">
+              <button type="button" aria-label="Página anterior" onClick={() => setCurrentPage((pageIndex) => Math.max(0, pageIndex - 1))} disabled={currentPage === 0}><ChevronLeft /></button>
+              <span><b>{currentPage + 1}</b> de {pages.length}</span>
+              <button type="button" aria-label="Próxima página" onClick={() => setCurrentPage((pageIndex) => Math.min(pages.length - 1, pageIndex + 1))} disabled={currentPage === pages.length - 1}><ChevronRight /></button>
+              <button type="button" className="add" aria-label="Adicionar nova página" onClick={addPage} title="Nova página"><Plus /></button>
+            </div>
 
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-11 w-11 sm:h-8 sm:w-8" aria-label="Ações da Flora">
-                  <Brain className="w-4 h-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>Ações da Flora</DropdownMenuLabel>
+              <DropdownMenuTrigger asChild><button type="button" className="nb-study-page-button"><Brain /><span>Estudar esta página</span></button></DropdownMenuTrigger>
+              <DropdownMenuContent align="center" className="w-64">
+                <DropdownMenuLabel>Aprender com a página</DropdownMenuLabel>
+                <DropdownMenuItem onClick={handleGenerateSummaryFromPage} disabled={generatingStudy !== "none"}>{generatingStudy === "summary" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Gerar resumo explicado</DropdownMenuItem>
+                <DropdownMenuItem onClick={handleGenerateFlashcardsFromPage} disabled={generatingStudy !== "none"}>{generatingStudy === "flashcards" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Gerar flashcards</DropdownMenuItem>
+                <DropdownMenuItem onClick={handleGenerateQuizFromPage} disabled={generatingStudy !== "none"}>{generatingStudy === "quiz" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Gerar quiz</DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleGenerateSummaryFromPage} disabled={generatingStudy !== "none"}>
-                  {generatingStudy === "summary" && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                  Gerar Resumo
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleGenerateFlashcardsFromPage} disabled={generatingStudy !== "none"}>
-                  {generatingStudy === "flashcards" && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                  Gerar Flashcards
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleGenerateQuizFromPage} disabled={generatingStudy !== "none"}>
-                  {generatingStudy === "quiz" && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                  Gerar Quiz
-                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleGenerateFlashcardsFromSelection} disabled={generatingStudy !== "none"}>Flashcards do trecho selecionado</DropdownMenuItem>
+                <DropdownMenuItem onClick={handleGenerateQuizFromSelection} disabled={generatingStudy !== "none"}>Quiz do trecho selecionado</DropdownMenuItem>
+                <DropdownMenuItem onClick={handleSuggestTags}><TagIcon className="mr-2 h-4 w-4" />Sugerir etiquetas</DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleGenerateFlashcardsFromSelection} disabled={generatingStudy !== "none"}>
-                  {generatingStudy === "flashcards" && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                  Flashcards do trecho selecionado
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleGenerateQuizFromSelection} disabled={generatingStudy !== "none"}>
-                  {generatingStudy === "quiz" && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                  Quiz do trecho selecionado
-                </DropdownMenuItem>
+                <DropdownMenuLabel className="text-xs opacity-70">Blocos de {selectedSubject || "estudo"}</DropdownMenuLabel>
+                {getTemplatesForSubject(selectedSubject).map((template) => <DropdownMenuItem key={template.id} onClick={() => handleInsertTemplate(template.html, template.label)}><LayoutTemplate className="mr-2 h-4 w-4" />Inserir {template.label}</DropdownMenuItem>)}
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleSuggestTags}>
-                  <TagIcon className="w-4 h-4 mr-2" />
-                  Sugerir tags com Flora
-                </DropdownMenuItem>
-                <DropdownMenuLabel className="text-xs opacity-70 mt-1">Templates de {selectedSubject || "matéria"}</DropdownMenuLabel>
-                {getTemplatesForSubject(selectedSubject).map((tpl) => (
-                  <DropdownMenuItem key={tpl.id} onClick={() => handleInsertTemplate(tpl.html, tpl.label)}>
-                    <LayoutTemplate className="w-4 h-4 mr-2" />
-                    Inserir: {tpl.label}
-                  </DropdownMenuItem>
-                ))}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => fileInputRef.current?.click()} disabled={ocrLoading}>
-                  <Camera className="w-4 h-4 mr-2" />
-                  Digitalizar foto (OCR)
-                </DropdownMenuItem>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  className="hidden"
-                  accept="image/*"
-                  onChange={handleOCR}
-                />
-
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleCreateTopicFromPage}>
-                  <BookPlus className="w-4 h-4 mr-2" />
-                  Criar Tópico a partir da página
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleSyncSummaryToTopic}>
-                  <Cloud className="w-4 h-4 mr-2" />
-                  Enviar Resumo para Tópico
-                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => fileInputRef.current?.click()} disabled={ocrLoading}><Camera className="mr-2 h-4 w-4" />Digitalizar foto (OCR)</DropdownMenuItem>
+                <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleOCR} />
+                <DropdownMenuItem onClick={handleCreateTopicFromPage}><BookPlus className="mr-2 h-4 w-4" />Criar tópico desta página</DropdownMenuItem>
+                <DropdownMenuItem onClick={handleSyncSummaryToTopic}><Cloud className="mr-2 h-4 w-4" />Enviar resumo para tópico</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShareDialogOpen(true)}
-              className="h-11 w-11 sm:h-8 sm:w-8"
-              title="Compartilhar caderno"
-              aria-label="Compartilhar caderno"
-            >
-              <Share2 className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setFocusModeActive((prev) => !prev)}
-              className="h-11 w-11 sm:h-8 sm:w-8"
-              title="Modo foco (F)"
-              aria-label="Alternar modo foco"
-            >
-              <Eye className="w-4 h-4" />
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-11 w-11 sm:h-8 sm:w-8" aria-label="Mais opções do caderno">
-                  <MoreHorizontal className="w-4 h-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-64">
-                <DropdownMenuLabel>Visual e ferramentas</DropdownMenuLabel>
-                <DropdownMenuItem onClick={() => setHandwritingMode((v) => !v)}>
-                  <span className="mr-2 text-base font-bold" style={{ fontFamily: "Caveat, cursive" }}>Aa</span>
-                  {handwritingMode ? "Usar tipografia digital" : "Usar caligrafia manuscrita"}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setPaperMargin((v) => !v)}>
-                  <span className="mr-3 block h-4 w-0.5 rounded bg-red-500" />
-                  {paperMargin ? "Esconder margem" : "Mostrar margem"}
-                </DropdownMenuItem>
-                <DropdownMenuLabel className="mt-1 text-[11px] uppercase tracking-wide text-muted-foreground">Modelo desta página</DropdownMenuLabel>
-                <div className="grid grid-cols-2 gap-1 px-1 pb-1">
-                  {([
-                    ["blank", "Em branco"], ["lined", "Pautado"], ["grid", "Quadriculado"],
-                    ["dotted", "Pontilhado"], ["physics", "Física"], ["chemistry", "Química"], ["essay", "Redação"],
-                  ] as const).map(([value, label]) => (
-                    <Button key={value} type="button" variant={pageTemplate === value ? "secondary" : "ghost"} size="sm" className="h-8 justify-start text-xs" onClick={() => changePageTemplate(value)}>
-                      <LayoutTemplate className="mr-1.5 h-3.5 w-3.5" />{label}
-                    </Button>
-                  ))}
-                </div>
-                <DropdownMenuItem onClick={() => setExpandedEditor((v) => !v)}>
-                  {expandedEditor ? <Minimize2 className="mr-2 h-4 w-4" /> : <Maximize2 className="mr-2 h-4 w-4" />}
-                  {expandedEditor ? "Sair da tela cheia" : "Abrir tela cheia"}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => void exportNotebookPdf()}>
-                  <Download className="mr-2 h-4 w-4" /> Exportar caderno em PDF
-                </DropdownMenuItem>
-                <DropdownMenuItem disabled={pdfImporting} onClick={() => pdfInputRef.current?.click()}>
-                  {pdfImporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileUp className="mr-2 h-4 w-4" />}
-                  {pdfImporting ? "Importando PDF..." : "Importar PDF para anotar"}
-                </DropdownMenuItem>
-                <input ref={pdfInputRef} type="file" accept="application/pdf,.pdf" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) void importPdfAsPages(file); }} />
-                <DropdownMenuItem onClick={restorePreviousVersion}>
-                  <History className="mr-2 h-4 w-4" /> Restaurar versão anterior
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => void handleExplainDrawing()}>
-                  <Wand2 className="mr-2 h-4 w-4" /> Flora explica o desenho
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={toggleGhostCompletion}>
-                  <Sparkles className="mr-2 h-4 w-4" />
-                  {ghostEnabled ? "Desativar autocomplete" : "Ativar autocomplete"}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <AudioSummaryButton content={currentPageData?.content || ""} title={notebook?.title || `Página ${currentPage + 1}`} />
           </div>
-
-          {/* Page navigation */}
-          <div className="order-5 sm:order-none w-full sm:w-auto flex items-center gap-1">
-            <Button variant="ghost" size="icon" aria-label="Página anterior" onClick={() => setCurrentPage((prev) => Math.max(0, prev - 1))} disabled={currentPage === 0}>
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
-            <span className="text-sm text-muted-foreground">
-              Página {currentPage + 1} de {pages.length}
-            </span>
-            <Button variant="ghost" size="icon" aria-label="Próxima página" onClick={() => setCurrentPage((prev) => Math.min(pages.length - 1, prev + 1))} disabled={currentPage === pages.length - 1}>
-              <ChevronRight className="w-4 h-4" />
-            </Button>
-            <Button variant="ghost" size="icon" aria-label="Adicionar nova página" onClick={addPage} title="Nova página">
-              <Plus className="w-4 h-4" />
-            </Button>
-            <AudioSummaryButton
-              content={currentPageData?.content || ""}
-              title={notebook?.title || `Página ${currentPage + 1}`}
-            />
-          </div>
-        </div>
-      </header>
+        </header>
       </div>
 
-      <SamsungStyleToolbar
+      <NotebookStudioToolbar
         mode={mode}
         onModeChange={setMode}
         drawTool={drawTool}

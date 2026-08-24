@@ -10,10 +10,11 @@ import { BodyAtlas } from "@/components/medicine/BodyAtlas";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  anatomyPositionFor, anatomyStructures, bodyLayers, embryologyTimeline, medicalClinicalCase, medicalNotebookTemplates, medicalQuestions,
+  anatomyPositionFor, anatomyStructures, bodyLayers, embryologyTimeline, medicalClinicalCase, medicalQuestions,
   medicineLevelProfiles, medicalSources, medicalSystems, type AnatomyStructure, type BodyLayer, type MedicineLevel,
   preferredAnatomyView,
 } from "@/lib/medicineData";
+import { medicalNotebookTemplates, type MedicalNotebookTemplate } from "@/lib/medicalNotebookTemplates";
 import "@/components/medicine/medicine.css";
 import "@/components/medicine/medicine-enhancements.css";
 
@@ -529,7 +530,7 @@ function StudyPlanSection({ level, hours, goal, onHours, onGoal, onStart }: { le
 function NotebookSection({ navigate }: { navigate: ReturnType<typeof useNavigate> }) {
   const { user } = useAuth();
   const [creatingId, setCreatingId] = useState<string | null>(null);
-  const createFromTemplate = async (template: typeof medicalNotebookTemplates[number]) => {
+  const createFromTemplate = async (template: MedicalNotebookTemplate) => {
     if (!user || creatingId) return;
     setCreatingId(template.id);
     const { data: notebook, error: notebookError } = await supabase.from("notebooks").insert({
@@ -545,25 +546,40 @@ function NotebookSection({ navigate }: { navigate: ReturnType<typeof useNavigate
       toast.error("Não foi possível criar o caderno médico.");
       return;
     }
-    const content = template.body.split("\n").map((line, index) => index === 0 ? `<h2>${line}</h2>` : `<p>${line || "<br>"}</p>`).join("");
-    const { error: pageError } = await supabase.from("notebook_pages").insert({
-      notebook_id: notebook.id,
-      user_id: user.id,
-      page_number: 1,
-      content,
-      template: "blank",
-      tags: ["medicina", template.id],
-    });
+    const { error: pageError } = await supabase.from("notebook_pages").insert(
+      template.pages.map((page, index) => ({
+        notebook_id: notebook.id,
+        user_id: user.id,
+        page_number: index + 1,
+        content: page.html,
+        template: page.paper ?? "blank",
+        tags: ["medicina", template.id, page.title.toLocaleLowerCase("pt-BR")],
+      })),
+    );
     if (pageError) {
       await supabase.from("notebooks").delete().eq("id", notebook.id);
       setCreatingId(null);
       toast.error("O template não pôde ser preparado. Nenhum caderno incompleto foi mantido.");
       return;
     }
-    toast.success("Caderno médico criado com o template selecionado.");
+    toast.success(`${template.pages.length} páginas médicas preparadas no seu Caderno.`);
     navigate(`/notebooks/${notebook.id}`);
   };
-  return <div className="med-page"><PageHeading eyebrow="Caderno médico" title="Anote com estrutura e segurança" description="Templates educacionais integrados ao Caderno. Não inclua dados identificáveis de pacientes reais." /><div className="med-notebook-banner"><NotebookPen/><div><strong>Samsung Notes para medicina</strong><span>Escreva, desenhe sobre PDFs e imagens, gere questões e revise versões.</span></div><button onClick={() => navigate("/notebooks")}>Abrir cadernos <ArrowRight /></button></div><div className="med-template-grid">{medicalNotebookTemplates.map((template) => <article key={template.id}><span><FileHeart /></span><h3>{template.name}</h3><p>{template.description}</p><pre>{template.body}</pre><button disabled={creatingId !== null} onClick={() => void createFromTemplate(template)}>{creatingId === template.id ? "Criando…" : "Criar caderno"} {creatingId !== template.id && <ArrowRight />}</button></article>)}</div></div>;
+  return <div className="med-page">
+    <PageHeading eyebrow="Caderno médico" title="Aprenda desenhando relações" description="Cadernos multipágina com imagens, explicações, fluxos e exercícios. Não inclua dados identificáveis de pacientes reais." />
+    <div className="med-notebook-banner">
+      <NotebookPen />
+      <div><strong>Flora Canvas para medicina</strong><span>Escrita e desenho no mesmo papel, imagens anatômicas, setas, PDFs, questões e revisão ativa.</span></div>
+      <button onClick={() => navigate("/notebooks")}>Abrir meus cadernos <ArrowRight /></button>
+    </div>
+    <div className="med-template-grid med-template-grid-rich">
+      {medicalNotebookTemplates.map((template) => <article key={template.id} style={{ "--template-accent": template.accent } as CSSProperties}>
+        <div className="med-template-preview"><img src={template.coverImage} alt="" loading="lazy" /><span><FileHeart /> {template.eyebrow}</span></div>
+        <div className="med-template-copy"><h3>{template.name}</h3><p>{template.description}</p><div className="med-template-pages">{template.pages.slice(0, 3).map((page, index) => <span key={page.title}><b>{String(index + 1).padStart(2, "0")}</b>{page.title}</span>)}{template.pages.length > 3 && <small>+ {template.pages.length - 3} página{template.pages.length - 3 > 1 ? "s" : ""}</small>}</div></div>
+        <button disabled={creatingId !== null} onClick={() => void createFromTemplate(template)}>{creatingId === template.id ? "Preparando páginas…" : "Criar no Caderno"} {creatingId !== template.id && <ArrowRight />}</button>
+      </article>)}
+    </div>
+  </div>;
 }
 
 function SourcesSection() {

@@ -26,11 +26,14 @@ interface PageSidebarGridProps {
   hasActivity?: (pageId: string) => boolean;
 }
 
-// Extrai texto puro do HTML para preview
-function htmlToText(html: string, max = 150): string {
+function pagePreview(html: string, max = 150): { image: string | null; title: string; text: string } {
+  if (typeof document === "undefined") return { image: null, title: "Página", text: "" };
   const tmp = document.createElement("div");
   tmp.innerHTML = html || "";
-  return (tmp.textContent || "").trim().slice(0, max) || "Página vazia";
+  const image = tmp.querySelector("img")?.getAttribute("src") || null;
+  const title = (tmp.querySelector("h1, h2")?.textContent || "Página").trim();
+  const text = (tmp.textContent || "").replace(/\s+/g, " ").trim().slice(0, max) || "Página vazia";
+  return { image, title, text };
 }
 
 export function PageSidebarGrid({
@@ -95,6 +98,7 @@ export function PageSidebarGrid({
         const isPinned = meta?.pinned;
         const hasAi = hasActivity ? hasActivity(page.id) : false;
         const hasDrawings = page.drawing_data?.strokes?.length > 0;
+        const preview = pagePreview(page.content);
 
         return (
           <div 
@@ -119,7 +123,10 @@ export function PageSidebarGrid({
               <div className="nb-page-thumb-content">
                 {page.drawing_data?.backgroundImage ? (
                   <img src={page.drawing_data.backgroundImage} alt={`Miniatura da página ${idx + 1} do PDF`} className="h-full w-full object-contain object-top" loading="lazy" />
-                ) : typeof document !== "undefined" ? htmlToText(page.content) : "..."}
+                ) : preview.image ? <>
+                  <img src={preview.image} alt="" className="nb-page-inline-image" loading="lazy" />
+                  <span className="nb-page-inline-title">{preview.title}</span>
+                </> : <><strong>{preview.title}</strong><span>{preview.text}</span></>}
               </div>
               
               <div className="nb-page-thumb-indicators">
