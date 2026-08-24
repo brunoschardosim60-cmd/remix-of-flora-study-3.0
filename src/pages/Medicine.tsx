@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Activity, ArrowLeft, ArrowRight, Baby, BookOpen, Brain, Check, ChevronRight, ClipboardCheck,
-  ExternalLink, FileHeart, HeartPulse, Menu, NotebookPen, PanelLeftClose, Play, Search,
-  ShieldCheck, Sparkles, Stethoscope, Target, Timer, X,
+  CircleDot, ExternalLink, FileHeart, HeartPulse, Layers, ListChecks, MapPin, Menu, NotebookPen,
+  PanelLeftClose, Play, Search, ShieldCheck, Sparkles, Stethoscope, Target, Timer, X, ZoomIn,
 } from "lucide-react";
 import { toast } from "sonner";
 import { BodyAtlas } from "@/components/medicine/BodyAtlas";
@@ -195,7 +195,7 @@ export default function Medicine() {
         <main className="med-main">
           {section === "home" && <MedicineHome level={level} progress={progress} wrongCount={wrongIds.length} onGo={go} />}
           {section === "atlas" && <div className="med-section-wrap"><BodyAtlas level={level} activeLayer={activeLayer} onLayerChange={setActiveLayer} selected={selectedStructure} onSelect={setSelectedStructure} />{selectedStructure && <div className="med-atlas-actions"><button onClick={() => toggleFavorite(selectedStructure.id)}>{favoriteIds.includes(selectedStructure.id) ? <Check /> : <BookOpen />}{favoriteIds.includes(selectedStructure.id) ? "Salva para revisão" : "Salvar para revisão"}</button><button onClick={() => toast.info("A Flora deve explicar apenas com base nas fontes exibidas nesta estrutura.")}><Sparkles /> Explicar com a Flora</button></div>}</div>}
-          {section === "systems" && <SystemsSection onOpenAtlas={(layer) => { setActiveLayer(layer); go("atlas"); }} />}
+          {section === "systems" && <SystemsSection level={level} onOpenAtlas={(layer, structure) => { setActiveLayer(layer); if (structure) setSelectedStructure(structure); go("atlas"); }} />}
           {section === "development" && <DevelopmentSection />}
           {section === "practice" && <PracticeSection level={level} structure={practiceStructure} input={practiceInput} result={practiceResult} onInput={setPracticeInput} onSubmit={() => {
             const normalized = normalizeAnswer(practiceInput);
@@ -229,18 +229,153 @@ function MedicineHome({ level, progress, wrongCount, onGo }: { level: MedicineLe
   </div>;
 }
 
-function SystemsSection({ onOpenAtlas }: { onOpenAtlas: (layer: BodyLayer) => void }) {
-  const [selected, setSelected] = useState(medicalSystems[0]);
-  return <div className="med-page med-systems-page"><PageHeading eyebrow="Anatomia por sistemas" title="Conecte estrutura, função e aplicação" description="Conteúdo introdutório estruturado por sistemas, com trilhas que começam na anatomia e avançam para fisiologia." />
-    <div className="med-systems-layout"><div className="med-system-list">{medicalSystems.map((system) => <button key={system.id} onClick={() => setSelected(system)} className={selected.id === system.id ? "active" : ""} style={{ "--system": system.color } as CSSProperties}><span>{system.name.slice(0, 2)}</span><div><strong>{system.name}</strong><small>{system.description}</small></div><ChevronRight /></button>)}</div>
-    <article className="med-system-detail" style={{ "--system": selected.color } as CSSProperties}>
-      <div className="med-system-intro">
-        <div><span className="med-eyebrow">SISTEMA SELECIONADO</span><h2>{selected.name}</h2><p>{selected.description}</p></div>
-        <div className="med-system-visual"><img key={selected.image} src={selected.image} alt={`Ilustração educacional do sistema ${selected.name}`} /><span>Ilustração educacional · não diagnóstica</span></div>
-      </div>
-      <div className="med-detail-columns"><div><h4>Estruturas essenciais</h4>{selected.structures.map((item) => <span key={item}><Check /> {item}</span>)}</div><div><h4>Trilha de fisiologia</h4>{selected.topics.map((item, index) => <span key={item}><b>{index + 1}</b>{item}</span>)}</div></div>
-      <button onClick={() => onOpenAtlas(selected.id === "musculoskeletal" ? "skeletal" : selected.id === "nervous" ? "nervous" : selected.id === "cardiovascular" ? "vascular" : "organs")}>Abrir no atlas <ArrowRight /></button>
-    </article></div>
+type SystemTab = "overview" | "structures" | "physiology" | "practice";
+
+const systemLevelGuides: Record<MedicineLevel, { title: string; goal: string; question: string }> = {
+  Iniciante: { title: "Reconhecimento essencial", goal: "Localize as estruturas, aprenda seus nomes e associe cada uma à função central.", question: "O que é, onde fica e qual função central exerce?" },
+  "Ciclo básico": { title: "Mecanismos fundamentais", goal: "Conecte anatomia, organização tecidual e mecanismos fisiológicos básicos.", question: "Quais estruturas e mecanismos participam deste processo?" },
+  "Ciclo clínico": { title: "Integração fisiopatológica", goal: "Relacione alterações de estrutura e função com manifestações clínicas gerais.", question: "Como uma alteração deste processo repercute no organismo?" },
+  Internato: { title: "Raciocínio aplicado", goal: "Organize achados por mecanismo, localização e impacto funcional sem perder os limites do caso.", question: "Quais dados ajudam a localizar e explicar a alteração funcional?" },
+  Residência: { title: "Síntese avançada", goal: "Integre mecanismos, relações anatômicas e decisões de investigação em cenários educacionais.", question: "Quais mecanismos concorrentes e relações anatômicas precisam ser comparados?" },
+};
+
+const systemTabs: Array<{ id: SystemTab; label: string; Icon: typeof Activity }> = [
+  { id: "overview", label: "Visão integrada", Icon: Layers },
+  { id: "structures", label: "Explorar anatomia", Icon: MapPin },
+  { id: "physiology", label: "Fisiologia", Icon: Activity },
+  { id: "practice", label: "Treino rápido", Icon: ListChecks },
+];
+
+function SystemsSection({ level, onOpenAtlas }: { level: MedicineLevel; onOpenAtlas: (layer: BodyLayer, structure?: AnatomyStructure) => void }) {
+  const [selectedId, setSelectedId] = useState(medicalSystems[0].id);
+  const [tab, setTab] = useState<SystemTab>("overview");
+  const [structureQuery, setStructureQuery] = useState("");
+  const [activeStructureId, setActiveStructureId] = useState("");
+  const [questionIndex, setQuestionIndex] = useState(0);
+  const [systemAnswer, setSystemAnswer] = useState<number | null>(null);
+  const selected = medicalSystems.find((system) => system.id === selectedId) ?? medicalSystems[0];
+  const guide = systemLevelGuides[level];
+  const systemStructures = useMemo(
+    () => selected.atlasStructureIds.map((id) => anatomyStructures.find((structure) => structure.id === id)).filter((structure): structure is AnatomyStructure => Boolean(structure)),
+    [selected],
+  );
+  const filteredStructures = useMemo(() => {
+    const normalized = normalizeAnswer(structureQuery);
+    if (!normalized) return systemStructures;
+    return systemStructures.filter((structure) => normalizeAnswer(`${structure.name} ${structure.latin ?? ""} ${structure.region}`).includes(normalized));
+  }, [structureQuery, systemStructures]);
+  const systemQuestions = useMemo(() => {
+    const candidates = medicalQuestions.filter((question) => selected.questionSystems.includes(question.system));
+    const exactLevel = candidates.filter((question) => question.level === level);
+    if (exactLevel.length) return exactLevel;
+    const targetRank = levelOrder.indexOf(level);
+    return [...candidates].sort((a, b) => Math.abs(levelOrder.indexOf(a.level) - targetRank) - Math.abs(levelOrder.indexOf(b.level) - targetRank));
+  }, [level, selected]);
+  const activeStructure = systemStructures.find((structure) => structure.id === activeStructureId) ?? systemStructures[0];
+  const structureView = activeStructure ? preferredAnatomyView(activeStructure) : "anterior";
+  const structurePosition = activeStructure ? anatomyPositionFor(activeStructure, structureView) : null;
+  const currentQuestion = systemQuestions.length ? systemQuestions[questionIndex % systemQuestions.length] : null;
+  const source = medicalSources[selected.sourceId];
+
+  useEffect(() => {
+    setTab("overview");
+    setStructureQuery("");
+    setActiveStructureId("");
+    setQuestionIndex(0);
+    setSystemAnswer(null);
+  }, [selectedId]);
+
+  const nextQuestion = () => {
+    setQuestionIndex((value) => value + 1);
+    setSystemAnswer(null);
+  };
+
+  return <div className="med-page med-systems-page">
+    <PageHeading eyebrow={`Anatomia por sistemas · ${level}`} title="Veja o organismo funcionando em conjunto" description="Explore o mapa anatômico, siga os mecanismos em sequência e teste o entendimento sem sair do sistema escolhido." />
+    <div className="med-systems-layout med-systems-workspace">
+      <nav className="med-system-list" aria-label="Sistemas do corpo">
+        <div className="med-system-list-heading"><span>8 sistemas</span><strong>Escolha uma área</strong></div>
+        {medicalSystems.map((system) => <button key={system.id} onClick={() => setSelectedId(system.id)} className={selected.id === system.id ? "active" : ""} style={{ "--system": system.color } as CSSProperties}><span>{system.name.slice(0, 2)}</span><div><strong>{system.name}</strong><small>{system.description}</small></div><ChevronRight /></button>)}
+      </nav>
+
+      <article className="med-system-detail med-system-studio" style={{ "--system": selected.color } as CSSProperties}>
+        <section className="med-system-hero">
+          <div className="med-system-hero-copy">
+            <span className="med-eyebrow">SISTEMA {selected.name.toUpperCase()}</span>
+            <h2>{selected.name}</h2>
+            <p>{selected.description}</p>
+            <div className="med-system-hero-stats">
+              <div><strong>{systemStructures.length}</strong><span>estruturas exploráveis</span></div>
+              <div><strong>{selected.topics.length}</strong><span>eixos de fisiologia</span></div>
+              <div><strong>{systemQuestions.length}</strong><span>questões relacionadas</span></div>
+            </div>
+            <div className="med-system-hero-actions"><button onClick={() => setTab("structures")}><ZoomIn /> Explorar de perto</button><button onClick={() => setTab("practice")}>Testar agora <ArrowRight /></button></div>
+          </div>
+          <div className="med-system-visual med-system-hero-visual"><img key={selected.image} src={selected.image} alt={`Ilustração educacional do sistema ${selected.name}`} /><span>Modelo educacional · não diagnóstico</span></div>
+        </section>
+
+        <nav className="med-system-tabs" aria-label="Conteúdo do sistema">
+          {systemTabs.map(({ id, label, Icon }) => <button key={id} className={tab === id ? "active" : ""} onClick={() => setTab(id)}><Icon />{label}</button>)}
+        </nav>
+
+        <div className="med-system-content">
+          {tab === "overview" && <div className="med-system-overview-grid">
+            <section className="med-system-learning-map">
+              <div className="med-system-section-title"><span className="med-eyebrow">ROTA INTEGRADA</span><h3>Da estrutura ao raciocínio</h3><p>Avance na ordem ou entre diretamente no ponto que precisa revisar.</p></div>
+              <div className="med-system-route">
+                <button onClick={() => setTab("structures")}><span>01</span><div><small>ANATOMIA</small><strong>Reconhecer estruturas</strong><p>{selected.structures.join(" · ")}</p></div><ChevronRight /></button>
+                <button onClick={() => setTab("physiology")}><span>02</span><div><small>FISIOLOGIA</small><strong>Entender mecanismos</strong><p>{selected.topics.join(" · ")}</p></div><ChevronRight /></button>
+                <button onClick={() => setTab("practice")}><span>03</span><div><small>RECUPERAÇÃO ATIVA</small><strong>Responder e conferir</strong><p>Questões com explicação e fonte rastreável.</p></div><ChevronRight /></button>
+              </div>
+            </section>
+            <aside className="med-system-level-panel">
+              <span className="med-eyebrow">SEU NÍVEL ATIVO</span><strong>{level}</strong><h3>{guide.title}</h3><p>{guide.goal}</p>
+              <div><CircleDot /><span><b>Pergunta-guia</b>{guide.question}</span></div>
+              <small>O seletor de nível no topo altera este objetivo e prioriza questões compatíveis.</small>
+            </aside>
+            <section className="med-system-core-grid">
+              <div><span><MapPin /></span><small>ESTRUTURAS-CHAVE</small><strong>{selected.structures.join(", ")}</strong></div>
+              <div><span><Activity /></span><small>PROCESSOS-CHAVE</small><strong>{selected.topics.join(", ")}</strong></div>
+              <div><span><ShieldCheck /></span><small>FONTE PRINCIPAL</small><strong>{source.organization}</strong><a href={source.url} target="_blank" rel="noreferrer">Conferir conteúdo <ExternalLink /></a></div>
+            </section>
+          </div>}
+
+          {tab === "structures" && <div className="med-system-structure-explorer">
+            <aside>
+              <div className="med-system-section-title"><span className="med-eyebrow">MAPA ANATÔMICO</span><h3>Estruturas do sistema</h3><p>Selecione um nome para localizar e ampliar.</p></div>
+              <label><Search /><input value={structureQuery} onChange={(event) => setStructureQuery(event.target.value)} placeholder="Buscar estrutura" /></label>
+              <div className="med-system-structure-list">{filteredStructures.map((structure) => <button key={structure.id} className={activeStructure?.id === structure.id ? "active" : ""} onClick={() => setActiveStructureId(structure.id)}><span><MapPin /></span><div><strong>{structure.name}</strong><small>{structure.region}</small></div><ChevronRight /></button>)}</div>
+              {!filteredStructures.length && <div className="med-system-no-results">Nenhuma estrutura encontrada.</div>}
+            </aside>
+            {activeStructure && structurePosition && <article>
+              <div className="med-system-anatomy-preview" aria-label={`Ampliação de ${activeStructure.name}`}>
+                <div className="med-anatomy-focus-grid" />
+                <img key={`${activeStructure.layer}-${structureView}`} src={`/medicine/atlas/${activeStructure.layer}-${structureView}-v2.png`} alt={`Localização anatômica de ${activeStructure.name}`} style={{ height: "280%", left: "50%", top: "50%", transform: `translate(-${structurePosition.x}%, -${structurePosition.y}%)` }} />
+                <i /><div><strong>{activeStructure.name}</strong><span>{activeStructure.region} · vista {structureView}</span></div>
+              </div>
+              <div className="med-system-structure-copy"><span className="med-eyebrow">{bodyLayers.find((layer) => layer.id === activeStructure.layer)?.label}</span><h3>{activeStructure.name}</h3>{activeStructure.latin && <em>{activeStructure.latin}</em>}<p>{activeStructure.summary}</p><dl><div><dt>Função</dt><dd>{activeStructure.function}</dd></div><div><dt>Relações</dt><dd>{activeStructure.relations}</dd></div></dl><button onClick={() => onOpenAtlas(activeStructure.layer, activeStructure)}>Abrir no atlas imersivo <ArrowRight /></button></div>
+            </article>}
+          </div>}
+
+          {tab === "physiology" && <section className="med-system-physiology">
+            <div className="med-system-section-title"><span className="med-eyebrow">TRILHA DE FISIOLOGIA</span><h3>Construa o mecanismo por etapas</h3><p>Os tópicos são organizados como uma sequência de estudo; use a pergunta-guia do seu nível em cada etapa.</p></div>
+            <div className="med-system-flow">{selected.topics.map((topic, index) => <article key={topic}><span>{String(index + 1).padStart(2, "0")}</span><div><small>ETAPA {index + 1}</small><h4>{topic}</h4><p>{guide.question}</p><div><CircleDot />Conecte com {selected.structures[index % selected.structures.length]}</div></div></article>)}</div>
+            <div className="med-system-physiology-footer"><div><Brain /><span><strong>Fechamento ativo</strong>Explique os três tópicos sem consultar e marque onde o encadeamento ficou incompleto.</span></div><button onClick={() => setTab("practice")}>Ir para o treino <ArrowRight /></button></div>
+          </section>}
+
+          {tab === "practice" && <section className="med-system-practice">
+            <div className="med-system-section-title"><span className="med-eyebrow">TREINO DO SISTEMA · {level}</span><h3>Recupere antes de reler</h3><p>A questão mais próxima do nível selecionado é priorizada quando não existe uma pergunta exatamente desse nível.</p></div>
+            {currentQuestion ? <article className="med-system-question">
+              <div className="med-question-meta"><span>{currentQuestion.level}</span><span>{currentQuestion.system}</span><span>{currentQuestion.type}</span></div>
+              <h4>{currentQuestion.prompt}</h4>
+              <div className="med-options">{currentQuestion.options.map((option, optionIndex) => { const state = systemAnswer === null ? "" : optionIndex === currentQuestion.answer ? "correct" : optionIndex === systemAnswer ? "wrong" : "muted"; return <button key={option} className={state} onClick={() => systemAnswer === null && setSystemAnswer(optionIndex)}><b>{String.fromCharCode(65 + optionIndex)}</b><span>{option}</span>{state === "correct" && <Check />}{state === "wrong" && <X />}</button>; })}</div>
+              {systemAnswer !== null && <div className="med-explanation"><Sparkles /><div><strong>{systemAnswer === currentQuestion.answer ? "Resposta correta" : "Revise este mecanismo"}</strong><p>{currentQuestion.explanation}</p><a href={medicalSources[currentQuestion.sourceId].url} target="_blank" rel="noreferrer">Conferir fonte <ExternalLink /></a></div></div>}
+              <footer><span>Questão {questionIndex % systemQuestions.length + 1} de {systemQuestions.length}</span><button disabled={systemAnswer === null} onClick={nextQuestion}>Próxima <ArrowRight /></button></footer>
+            </article> : <div className="med-system-no-results">Ainda não há questão vinculada a este sistema.</div>}
+          </section>}
+        </div>
+      </article>
+    </div>
   </div>;
 }
 

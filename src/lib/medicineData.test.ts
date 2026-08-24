@@ -61,6 +61,23 @@ describe("medicine content integrity", () => {
     }
   });
 
+  it("keeps every system connected to atlas structures, questions and a reviewed source", () => {
+    for (const system of medicalSystems) {
+      expect(medicalSources[system.sourceId], `source for system ${system.id}`).toBeDefined();
+      expect(system.atlasStructureIds.length, `atlas links for ${system.id}`).toBeGreaterThanOrEqual(4);
+      expect(system.questionSystems.length, `question links for ${system.id}`).toBeGreaterThan(0);
+
+      for (const structureId of system.atlasStructureIds) {
+        expect(anatomyStructures.some((structure) => structure.id === structureId), `${system.id} -> ${structureId}`).toBe(true);
+      }
+
+      expect(
+        medicalQuestions.some((question) => system.questionSystems.includes(question.system)),
+        `questions for ${system.id}`,
+      ).toBe(true);
+    }
+  });
+
   it("provides broad whole-body atlas coverage with valid marker coordinates", () => {
     expect(anatomyStructures.length).toBeGreaterThanOrEqual(200);
 
