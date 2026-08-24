@@ -1,4 +1,5 @@
 import { medicineAtlasCatalog } from "./medicineAtlasCatalog";
+import { additionalMedicalClinicalCases } from "./additionalMedicalClinicalCases";
 
 export type MedicineLevel = "Iniciante" | "Ciclo básico" | "Ciclo clínico" | "Internato" | "Residência";
 export type BodyLayer = "surface" | "muscular" | "skeletal" | "vascular" | "nervous" | "organs";
@@ -99,14 +100,36 @@ export interface MedicalClinicalStep {
   reflectionPrompt: string;
   placeholder: string;
   sourceId: string;
+  data?: Array<{
+    label: string;
+    value: string;
+    tone?: "normal" | "attention" | "critical";
+  }>;
+  hint?: string;
 }
 
 export interface MedicalClinicalCase {
   id: string;
+  area: string;
+  setting: string;
+  difficulty: MedicineLevel;
+  durationMinutes: number;
   title: string;
   subtitle: string;
   patient: string;
   focus: string;
+  sensitive: boolean;
+  sensitivityNote?: string;
+  visual?: {
+    image: string;
+    alt: string;
+    caption: string;
+  };
+  triage: Array<{
+    label: string;
+    value: string;
+    tone?: "normal" | "attention" | "critical";
+  }>;
   steps: MedicalClinicalStep[];
   completion: {
     title: string;
@@ -333,6 +356,36 @@ export const medicalSources: Record<string, MedicalSource> = {
     title: "Patient Safety Curriculum Guide",
     organization: "World Health Organization",
     url: "https://www.who.int/publications/i/item/9789241501958",
+    reviewedAt: "2026-08-24",
+  },
+  niceMajorTrauma: {
+    title: "Major trauma: assessment and initial management (NG39)",
+    organization: "National Institute for Health and Care Excellence",
+    url: "https://www.nice.org.uk/guidance/ng39/chapter/recommendations",
+    reviewedAt: "2026-08-24",
+  },
+  niceComplexFracture: {
+    title: "Fractures (complex): assessment and management (NG37)",
+    organization: "National Institute for Health and Care Excellence",
+    url: "https://www.nice.org.uk/guidance/ng37/chapter/recommendations",
+    reviewedAt: "2026-08-24",
+  },
+  niceDiabeticFoot: {
+    title: "Diabetic foot problems: prevention and management (NG19)",
+    organization: "National Institute for Health and Care Excellence",
+    url: "https://www.nice.org.uk/guidance/ng19/chapter/Recommendations",
+    reviewedAt: "2026-08-24",
+  },
+  niceMeningococcal: {
+    title: "Bacterial meningitis and meningococcal disease (NG240)",
+    organization: "National Institute for Health and Care Excellence",
+    url: "https://www.nice.org.uk/guidance/ng240/chapter/Recommendations",
+    reviewedAt: "2026-08-24",
+  },
+  cdcMeningococcal: {
+    title: "Meningococcal Disease — Clinical presentation",
+    organization: "Centers for Disease Control and Prevention",
+    url: "https://www.cdc.gov/yellow-book/hcp/travel-associated-infections-diseases/meningococcal-disease.html",
     reviewedAt: "2026-08-24",
   },
 };
@@ -567,10 +620,21 @@ export const embryologyTimeline: DevelopmentStage[] = [
 
 export const medicalClinicalCase: MedicalClinicalCase = {
   id: "microcytic-anemia",
+  area: "Hematologia",
+  setting: "Ambulatório",
+  difficulty: "Ciclo clínico",
+  durationMinutes: 18,
   title: "Fadiga progressiva e microcitose",
   subtitle: "Caso fictício para integrar fisiologia do transporte de oxigênio, hemograma e metabolismo do ferro.",
   patient: "Mulher de 24 anos · cenário inteiramente fictício",
   focus: "Reconhecer estabilidade, classificar a anemia, comparar hipóteses e construir uma síntese segura.",
+  sensitive: false,
+  triage: [
+    { label: "PA", value: "112/70 mmHg", tone: "normal" },
+    { label: "FC", value: "102 bpm", tone: "attention" },
+    { label: "SpO₂", value: "99% AA", tone: "normal" },
+    { label: "Dor", value: "0/10", tone: "normal" },
+  ],
   steps: [
     {
       id: "initial-assessment",
@@ -657,6 +721,8 @@ export const medicalClinicalCase: MedicalClinicalCase = {
     takeaways: ["Estabilidade vem antes da etiologia", "VCM classifica o padrão; ferritina e saturação ajudam a interpretar o ferro", "Uma hipótese forte ainda precisa explicar a origem da alteração", "Síntese clínica segura inclui evidências, alternativas e lacunas"],
   },
 };
+
+export const medicalClinicalCases: MedicalClinicalCase[] = [medicalClinicalCase, ...additionalMedicalClinicalCases];
 
 export const medicalQuestions: MedicalQuestion[] = [
   { id: "mq1", level: "Iniciante", system: "Cardiovascular", type: "Múltipla escolha", prompt: "Qual câmara cardíaca ejeta sangue para a circulação sistêmica?", options: ["Átrio direito", "Ventrículo direito", "Átrio esquerdo", "Ventrículo esquerdo"], answer: 3, explanation: "O ventrículo esquerdo ejeta sangue para a aorta, iniciando a circulação sistêmica.", sourceId: "openstaxHeart" },

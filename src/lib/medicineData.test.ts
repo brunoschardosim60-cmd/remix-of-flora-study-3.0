@@ -8,6 +8,7 @@ import {
   embryologyTimeline,
   medicineLevelProfiles,
   medicalClinicalCase,
+  medicalClinicalCases,
   medicalQuestions,
   medicalSources,
   medicalSystems,
@@ -69,6 +70,35 @@ describe("medicine content integrity", () => {
       expect(step.explanation.length, `${step.id} explanation`).toBeGreaterThan(120);
       expect(step.reflectionPrompt.length, `${step.id} reflection`).toBeGreaterThan(70);
       expect(medicalSources[step.sourceId], `source for clinical step ${step.id}`).toBeDefined();
+    }
+  });
+
+  it("offers a complete, source-backed clinical simulation library", () => {
+    expect(medicalClinicalCases.length).toBeGreaterThanOrEqual(4);
+    expect(new Set(medicalClinicalCases.map((item) => item.id)).size).toBe(medicalClinicalCases.length);
+    expect(medicalClinicalCases.filter((item) => item.sensitive).length).toBeGreaterThanOrEqual(3);
+
+    for (const clinicalCase of medicalClinicalCases) {
+      expect(clinicalCase.patient.toLocaleLowerCase("pt-BR"), clinicalCase.id).toContain("fictício");
+      expect(clinicalCase.triage.length, `${clinicalCase.id} triage`).toBeGreaterThanOrEqual(4);
+      expect(clinicalCase.steps.length, `${clinicalCase.id} steps`).toBeGreaterThanOrEqual(6);
+      expect(clinicalCase.completion.takeaways.length, `${clinicalCase.id} takeaways`).toBeGreaterThanOrEqual(4);
+
+      if (clinicalCase.sensitive) {
+        expect(clinicalCase.visual, `${clinicalCase.id} visual`).toBeDefined();
+        expect(publicAssetExists(clinicalCase.visual!.image), clinicalCase.visual!.image).toBe(true);
+        expect(clinicalCase.sensitivityNote?.length, `${clinicalCase.id} warning`).toBeGreaterThan(20);
+      }
+
+      for (const step of clinicalCase.steps) {
+        expect(step.release.length, `${clinicalCase.id}/${step.id} findings`).toBeGreaterThanOrEqual(4);
+        expect(step.options.length, `${clinicalCase.id}/${step.id} options`).toBe(4);
+        expect(step.answer, `${clinicalCase.id}/${step.id} answer`).toBeGreaterThanOrEqual(0);
+        expect(step.answer, `${clinicalCase.id}/${step.id} answer`).toBeLessThan(step.options.length);
+        expect(step.explanation.length, `${clinicalCase.id}/${step.id} explanation`).toBeGreaterThan(120);
+        expect(step.reflectionPrompt.length, `${clinicalCase.id}/${step.id} reflection`).toBeGreaterThan(70);
+        expect(medicalSources[step.sourceId], `${clinicalCase.id}/${step.id} source`).toBeDefined();
+      }
     }
   });
 
@@ -143,6 +173,10 @@ describe("medicine content integrity", () => {
     for (const layer of bodyLayers) {
       expect(publicAssetExists(`/medicine/atlas/${layer.id}-anterior-v2.png`)).toBe(true);
       expect(publicAssetExists(`/medicine/atlas/${layer.id}-posterior-v2.png`)).toBe(true);
+    }
+
+    for (const clinicalCase of medicalClinicalCases) {
+      if (clinicalCase.visual) expect(publicAssetExists(clinicalCase.visual.image), clinicalCase.visual.image).toBe(true);
     }
   });
 });
