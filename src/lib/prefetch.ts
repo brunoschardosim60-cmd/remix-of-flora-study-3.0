@@ -9,6 +9,7 @@ const routeImports: Record<string, () => Promise<unknown>> = {
   "/notebooks": () => import("@/pages/Notebooks"),
   "/redacao": () => import("@/pages/Redacao"),
   "/analise": () => import("@/pages/Analise"),
+  "/medicina": () => import("@/pages/Medicine"),
   "/admin": () => import("@/pages/Admin"),
 };
 

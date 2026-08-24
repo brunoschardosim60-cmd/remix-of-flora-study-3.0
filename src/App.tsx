@@ -42,6 +42,7 @@ const QuizBattleJoin = lazy(() => import("./pages/QuizBattleJoin"));
 const QuizBattlePlay = lazy(() => import("./pages/QuizBattlePlay"));
 const Metas = lazy(() => import("./pages/Metas"));
 const Flora = lazy(() => import("./pages/Flora"));
+const Medicine = lazy(() => import("./pages/Medicine"));
 const PainelMigracao = lazy(() => import("./pages/PainelMigracao"));
 
 
@@ -75,8 +76,9 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       // Não faz retry em erros 4xx (RLS, auth, not found) — só em erros de servidor/rede
-      retry: (failureCount, error: any) => {
-        const status = error?.status ?? error?.code;
+      retry: (failureCount, error: unknown) => {
+        const queryError = error as { status?: number; code?: number } | null;
+        const status = queryError?.status ?? queryError?.code;
         if (status >= 400 && status < 500) return false;
         return failureCount < 2;
       },
@@ -146,7 +148,7 @@ function NotificationInit() {
       .eq("completed", false)
       .limit(50)
       .then(({ data }) => {
-        if (data && data.length > 0) initNotifications(data as any);
+        if (data && data.length > 0) initNotifications(data);
       });
   }, [user]);
   return null;
@@ -232,6 +234,7 @@ const App = () => (
                 <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                 <Route path="/metas" element={<ProtectedRoute><Metas /></ProtectedRoute>} />
                 <Route path="/flora" element={<ProtectedRoute><Flora /></ProtectedRoute>} />
+                <Route path="/medicina" element={<ProtectedRoute><Medicine /></ProtectedRoute>} />
                 <Route path="/shared/notebook/:token" element={<Suspense fallback={<RouteFallback />}><SharedNotebook /></Suspense>} />
                 {/* Caminhos antigos das áreas de cursos foram descontinuados. */}
                 <Route path="/aulao" element={<Navigate to="/" replace />} />

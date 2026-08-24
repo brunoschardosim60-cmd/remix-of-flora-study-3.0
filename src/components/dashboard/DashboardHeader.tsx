@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { BookOpen, NotebookPen, FileText, BarChart3, Sun, Moon, CircleDot, Settings, Library, Swords } from "lucide-react";
+import { BookOpen, NotebookPen, FileText, BarChart3, Sun, Moon, CircleDot, Settings, Library, Swords, Stethoscope } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { CustomThemeDialog } from "@/components/CustomThemeDialog";
@@ -39,6 +39,11 @@ export function DashboardHeader({ user, bancoRoute, bancoLabel }: Props) {
             <NotebookPen className="w-4 h-4" /> Cadernos
           </Button>
           {user && (
+            <Button variant="outline" size="sm" className="gap-1.5 border-emerald-200/70 bg-emerald-50/50 text-emerald-900 hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-100" onClick={() => navigate("/medicina")} onMouseEnter={() => prefetchRoute("/medicina")}>
+              <Stethoscope className="w-4 h-4" /> Medicina
+            </Button>
+          )}
+          {user && (
             <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate(bancoRoute)} onMouseEnter={() => prefetchRoute(bancoRoute)}>
               <Library className="w-4 h-4" /> {bancoLabel}
             </Button>
@@ -77,6 +82,11 @@ export function DashboardHeader({ user, bancoRoute, bancoLabel }: Props) {
           <Button variant="outline" size="sm" className="gap-1.5 shrink-0" onClick={() => navigate("/notebooks")}>
             <NotebookPen className="w-4 h-4" /> Cadernos
           </Button>
+          {user && (
+            <Button variant="outline" size="sm" className="gap-1.5 shrink-0 border-emerald-200/70 bg-emerald-50/50 text-emerald-900 hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-100" onClick={() => navigate("/medicina")}>
+              <Stethoscope className="w-4 h-4" /> Medicina
+            </Button>
+          )}
           {user && (
             <Button variant="outline" size="sm" className="gap-1.5 shrink-0" onClick={() => navigate(bancoRoute)}>
               <Library className="w-4 h-4" /> {bancoLabel}

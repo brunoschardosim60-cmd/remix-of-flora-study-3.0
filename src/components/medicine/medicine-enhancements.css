@@ -1,0 +1,263 @@
+.med-atlas-controls a.wide {
+  display: flex;
+  width: auto;
+  height: 36px;
+  align-items: center;
+  gap: 7px;
+  padding: 0 12px;
+  border: 1px solid var(--med-line);
+  border-radius: 10px;
+  background: #e7f0ec;
+  color: #3d6f60;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.med-focus-toggle {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border: 1px solid var(--med-line);
+  border-radius: 12px;
+  background: white;
+  color: var(--med-muted);
+}
+
+.med-focus-toggle svg { width: 17px; }
+.med-focus-toggle.active { background: #416f62; color: white; }
+.med-app.med-focus .med-sidebar { display: none; }
+.med-app.med-focus .med-main { width: 100%; }
+
+.med-structure-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+  margin-top: 20px;
+}
+
+.med-structure-actions button,
+.med-structure-actions a {
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 9px;
+  border-radius: 11px;
+  background: #e5efeb;
+  color: #426f61;
+  font-size: 9px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.med-structure-actions button { background: #f0f4f2; }
+.med-structure-actions svg { width: 14px; flex-shrink: 0; }
+
+.med-development-note {
+  display: block;
+  margin-top: 14px;
+  color: #748781;
+  font-size: 8px;
+  line-height: 1.5;
+}
+
+.med-practice-visual > svg {
+  width: 190px;
+  height: 430px;
+  fill: rgba(248, 252, 250, .45);
+  stroke: rgba(255, 255, 255, .72);
+  stroke-width: 2;
+  filter: drop-shadow(0 20px 28px rgba(48, 92, 79, .3));
+}
+
+.med-practice-visual > i {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  transform: translate(-50%, -50%);
+  border: 4px solid white;
+  border-radius: 50%;
+  background: #cc6f68;
+  box-shadow: 0 0 0 9px rgba(255, 255, 255, .2), 0 6px 18px rgba(63, 100, 89, .35);
+  animation: med-marker 1.8s ease-in-out infinite;
+}
+
+.med-question-layout aside button.active {
+  border-color: #6f9c8e;
+  background: #e5f0eb;
+  color: #376b5c;
+}
+
+.med-safety-hero span {
+  display: block;
+  margin-top: 10px;
+  color: #5b786f;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+
+.med-source-grid small {
+  display: block;
+  margin-top: 6px;
+  color: #758680;
+  font-size: 8px;
+  line-height: 1.5;
+}
+
+.med-report-card {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr auto;
+  align-items: end;
+  gap: 14px;
+  margin-top: 16px;
+  padding: 24px;
+  border: 1px solid var(--med-line);
+  border-radius: 18px;
+  background: #fff;
+}
+
+.med-report-card h3 {
+  margin: 7px 0 5px;
+  font-family: Georgia, serif;
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.med-report-card p { color: var(--med-muted); font-size: 9px; line-height: 1.5; }
+
+.med-report-card textarea {
+  min-height: 90px;
+  padding: 12px;
+  border: 1px solid var(--med-line);
+  border-radius: 12px;
+  background: #fafbf9;
+  color: var(--med-ink);
+  font: 10px/1.5 Inter, sans-serif;
+  outline: 0;
+  resize: vertical;
+}
+
+.med-report-card textarea:focus {
+  border-color: #6c9689;
+  box-shadow: 0 0 0 3px #e3ede9;
+}
+
+.med-report-card button {
+  display: flex;
+  height: 42px;
+  align-items: center;
+  gap: 7px;
+  padding: 0 14px;
+  border-radius: 11px;
+  background: #477668;
+  color: white;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.med-report-card button svg { width: 14px; }
+
+@keyframes med-marker {
+  50% { box-shadow: 0 0 0 15px rgba(255, 255, 255, .08), 0 6px 18px rgba(63, 100, 89, .35); }
+}
+
+.dark .med-app,
+.black .med-app {
+  --med-ink: #e4eee9;
+  --med-muted: #9baca6;
+  --med-sage: #7da999;
+  --med-sage-soft: #1d302a;
+  --med-blue: #1e3035;
+  --med-line: rgba(207, 229, 220, .12);
+  background: #111714;
+}
+
+.black .med-app { background: #050706; }
+
+.dark .med-header,
+.dark .med-sidebar,
+.black .med-header,
+.black .med-sidebar { background: rgba(15, 22, 19, .94); }
+
+.dark .med-level-chip,
+.dark .med-focus-toggle,
+.dark .med-command-grid > button,
+.dark .med-progress-card,
+.dark .med-system-mini-grid button,
+.dark .med-atlas-shell,
+.dark .med-structure-panel,
+.dark .med-system-list button.active,
+.dark .med-development-stage > article,
+.dark .med-practice-card,
+.dark .med-question-layout aside > div,
+.dark .med-question-layout aside button,
+.dark .med-question-card,
+.dark .med-case-layout ol,
+.dark .med-case-layout article,
+.dark .med-plan-grid > section,
+.dark .med-plan-grid > article,
+.dark .med-template-grid article,
+.dark .med-source-grid article,
+.dark .med-governance,
+.dark .med-report-card,
+.black .med-level-chip,
+.black .med-focus-toggle,
+.black .med-command-grid > button,
+.black .med-progress-card,
+.black .med-system-mini-grid button,
+.black .med-atlas-shell,
+.black .med-structure-panel,
+.black .med-system-list button.active,
+.black .med-development-stage > article,
+.black .med-practice-card,
+.black .med-question-layout aside > div,
+.black .med-question-layout aside button,
+.black .med-question-card,
+.black .med-case-layout ol,
+.black .med-case-layout article,
+.black .med-plan-grid > section,
+.black .med-plan-grid > article,
+.black .med-template-grid article,
+.black .med-source-grid article,
+.black .med-governance,
+.black .med-report-card { background: #18211d; }
+
+.black .med-command-grid > button,
+.black .med-progress-card,
+.black .med-system-mini-grid button,
+.black .med-atlas-shell,
+.black .med-structure-panel,
+.black .med-question-card,
+.black .med-template-grid article,
+.black .med-source-grid article,
+.black .med-governance,
+.black .med-report-card { background: #0a0e0c; }
+
+.dark .med-hero-overlay,
+.black .med-hero-overlay { background: linear-gradient(90deg, rgba(17, 25, 21, .97), rgba(17, 25, 21, .78) 45%, rgba(17, 25, 21, .06) 80%); }
+
+.dark .med-body-stage,
+.black .med-body-stage { background: radial-gradient(circle at 50% 42%, #24342e 0, #14201b 70%, #0d1512 100%); }
+
+.dark .med-layer-rail button.active,
+.black .med-layer-rail button.active { background: #233c33; }
+
+.dark .med-answer-box input,
+.dark .med-case-layout textarea,
+.dark .med-report-card textarea,
+.black .med-answer-box input,
+.black .med-case-layout textarea,
+.black .med-report-card textarea { background: #101713; color: var(--med-ink); }
+
+.dark .ring::after,
+.black .ring::after { background: #18211d; }
+
+@media (max-width: 820px) {
+  .med-report-card { grid-template-columns: 1fr; }
+  .med-atlas-controls a.wide { flex: 1; justify-content: center; }
+  .med-practice-visual > svg { height: 300px; }
+  .med-focus-toggle { display: none; }
+}
