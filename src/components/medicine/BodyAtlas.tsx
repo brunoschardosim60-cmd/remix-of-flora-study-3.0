@@ -1,11 +1,13 @@
-import { useMemo, useState } from "react";
-import { Box, ExternalLink, RotateCcw, Search, Volume2, ZoomIn, ZoomOut } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
+import { Box, ChevronLeft, ChevronRight, ExternalLink, Maximize2, RotateCcw, Search, Volume2, X, ZoomIn, ZoomOut } from "lucide-react";
 import {
   anatomyPositionFor,
   anatomyStructures,
   bodyLayers,
   medicineLevelProfiles,
   medicalSources,
+  preferredAnatomyView,
   type AnatomyStructure,
   type AtlasView,
   type BodyLayer,
@@ -26,6 +28,8 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
   const [zoom, setZoom] = useState(1);
   const [view, setView] = useState<AtlasView>("anterior");
   const [query, setQuery] = useState("");
+  const [focused, setFocused] = useState<{ structure: AnatomyStructure; view: AtlasView } | null>(null);
+  const [detailZoom, setDetailZoom] = useState(3);
   const structuresInLayer = useMemo(() => anatomyStructures.filter((item) => item.layer === activeLayer), [activeLayer]);
   const visibleStructures = useMemo(
     () => structuresInLayer.filter((item) => anatomyPositionFor(item, view)),
@@ -45,6 +49,20 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
   const levelProfile = medicineLevelProfiles[level];
   const levelRank = levelOrder.indexOf(level);
 
+  useEffect(() => {
+    if (!focused) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setFocused(null);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [focused]);
+
   const selectLayer = (layer: BodyLayer) => {
     onLayerChange(layer);
     setQuery("");
@@ -63,13 +81,44 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
     }
   };
 
-  return (
+  const openDetail = (structure: AnatomyStructure, requestedView: AtlasView = view) => {
+    const detailView = anatomyPositionFor(structure, requestedView) ? requestedView : preferredAnatomyView(structure);
+    onSelect(structure);
+    setDetailZoom(3);
+    setFocused({ structure, view: detailView });
+  };
+
+  const navigateDetail = (direction: -1 | 1) => {
+    if (!focused) return;
+    const structures = anatomyStructures.filter((structure) => structure.layer === focused.structure.layer && anatomyPositionFor(structure, focused.view));
+    const currentIndex = structures.findIndex((structure) => structure.id === focused.structure.id);
+    const nextIndex = (Math.max(currentIndex, 0) + direction + structures.length) % structures.length;
+    const nextStructure = structures[nextIndex];
+    onSelect(nextStructure);
+    setDetailZoom(3);
+    setFocused({ structure: nextStructure, view: focused.view });
+  };
+
+  const changeDetailView = () => {
+    if (!focused) return;
+    const nextView: AtlasView = focused.view === "anterior" ? "posterior" : "anterior";
+    if (!anatomyPositionFor(focused.structure, nextView)) return;
+    setDetailZoom(3);
+    setFocused({ ...focused, view: nextView });
+  };
+
+  const focusedPosition = focused ? anatomyPositionFor(focused.structure, focused.view) : null;
+  const focusedLayer = focused ? bodyLayers.find((layer) => layer.id === focused.structure.layer) : null;
+  const otherDetailView: AtlasView | null = focused ? (focused.view === "anterior" ? "posterior" : "anterior") : null;
+  const canChangeDetailView = Boolean(focused && otherDetailView && anatomyPositionFor(focused.structure, otherDetailView));
+
+  return <>
     <section className="med-atlas-shell" aria-label="Atlas anatômico visual interativo">
       <div className="med-atlas-topbar">
         <div>
           <span className="med-eyebrow">Atlas imersivo 2D</span>
           <h2>Explore por camadas</h2>
-          <p>Ilustrações anatômicas em alta definição. Conteúdo educacional — confirme detalhes nas fontes vinculadas.</p>
+          <p>Ilustrações anatômicas em alta definição. Toque em qualquer marcador ou nome para abrir a estrutura de perto.</p>
           <div className="med-atlas-level-context" aria-live="polite"><span>{level}</span><strong>{levelProfile.title}</strong><small>{levelProfile.atlasDescription}</small></div>
         </div>
         <div className="med-atlas-controls">
@@ -101,7 +150,7 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
             <div className="med-atlas-index-meta"><strong>{filteredStructures.length}</strong><span>na vista {view}</span></div>
             <div className="med-atlas-structure-list">
               {filteredStructures.map((structure) => (
-                <button key={structure.id} className={selected?.id === structure.id ? "active" : ""} onClick={() => onSelect(structure)}>
+                <button key={structure.id} className={selected?.id === structure.id ? "active" : ""} onClick={() => openDetail(structure)}>
                   <span>{structure.name}</span><small>{structure.region}</small>
                 </button>
               ))}
@@ -127,8 +176,8 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
                 key={structure.id}
                 className={`med-anatomy-pin ${selected?.id === structure.id ? "active" : ""}`}
                 style={{ left: `${position.x}%`, top: `${position.y}%` }}
-                onClick={() => onSelect(structure)}
-                aria-label={`Selecionar ${structure.name}`}
+                onClick={() => openDetail(structure)}
+                aria-label={`Abrir ${structure.name} em detalhe`}
                 data-label={structure.name}
               ><span /></button>;
             })}
@@ -148,12 +197,84 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
               {levelRank >= 1 && <div><dt>Relações</dt><dd>{selected.relations}</dd></div>}
               {levelRank >= 2 && <div><dt>Estruturas próximas</dt><dd>{selected.nearby.length ? selected.nearby.join(" · ") : "Consulte a fonte e as vistas regionais para relações de proximidade."}</dd></div>}
             </dl>
-            <div className="med-structure-actions"><button onClick={() => speakStructure(selected.name)}><Volume2 /> Ouvir nome</button><a href={medicalSourceUrl(selected.sourceId)} target="_blank" rel="noreferrer">Ver fonte anatômica <ExternalLink /></a></div>
+            <div className="med-structure-actions"><button className="detail" onClick={() => openDetail(selected)}><Maximize2 /> Abrir em detalhe</button><button onClick={() => speakStructure(selected.name)}><Volume2 /> Ouvir nome</button><a href={medicalSourceUrl(selected.sourceId)} target="_blank" rel="noreferrer">Ver fonte anatômica <ExternalLink /></a></div>
           </> : <div className="med-empty-selection"><Search /><h3>Selecione uma estrutura</h3><p>Os pontos ativos mudam conforme a camada escolhida.</p></div>}
         </aside>
       </div>
     </section>
-  );
+    {focused && focusedPosition && createPortal(
+      <div className="med-anatomy-focus-root">
+        <button className="med-anatomy-focus-backdrop" onClick={() => setFocused(null)} aria-label="Fechar detalhe anatômico" />
+        <section className="med-anatomy-focus-dialog" role="dialog" aria-modal="true" aria-labelledby="med-anatomy-focus-title">
+          <header>
+            <div>
+              <span className="med-eyebrow">{focusedLayer?.label} · vista {focused.view}</span>
+              <h2 id="med-anatomy-focus-title">{focused.structure.name}</h2>
+              {focused.structure.latin && <em>{focused.structure.latin}</em>}
+            </div>
+            <button className="med-anatomy-focus-close" onClick={() => setFocused(null)} aria-label="Fechar detalhe"><X /></button>
+          </header>
+
+          <div className="med-anatomy-focus-body">
+            <div className="med-anatomy-focus-visual">
+              <div className="med-anatomy-focus-toolbar">
+                <button onClick={() => setDetailZoom((value) => Math.max(2.2, value - 0.4))} aria-label="Diminuir ampliação"><ZoomOut /></button>
+                <strong>{Math.round(detailZoom * 100)}%</strong>
+                <button onClick={() => setDetailZoom((value) => Math.min(5.4, value + 0.4))} aria-label="Aumentar ampliação"><ZoomIn /></button>
+                <button className="wide" onClick={() => setDetailZoom(3)}><RotateCcw /> Centralizar</button>
+                <button className="wide" onClick={changeDetailView} disabled={!canChangeDetailView}><Maximize2 /> {otherDetailView === "anterior" ? "Ver anterior" : "Ver posterior"}</button>
+              </div>
+
+              <div
+                className="med-anatomy-focus-canvas"
+                onWheel={(event) => setDetailZoom((value) => Math.min(5.4, Math.max(2.2, value + (event.deltaY < 0 ? 0.25 : -0.25))))}
+                aria-label={`Ampliação de ${focused.structure.name} na vista ${focused.view}`}
+              >
+                <div className="med-anatomy-focus-grid" />
+                <img
+                  key={`${focused.structure.layer}-${focused.view}`}
+                  src={`/medicine/atlas/${focused.structure.layer}-${focused.view}-v2.png`}
+                  alt={`Ampliação anatômica educacional de ${focused.structure.name}`}
+                  style={{
+                    height: `${detailZoom * 100}%`,
+                    left: "50%",
+                    top: "50%",
+                    transform: `translate(-${focusedPosition.x}%, -${focusedPosition.y}%)`,
+                  }}
+                  draggable={false}
+                />
+                <div className="med-anatomy-focus-reticle"><span /><i /></div>
+                <div className="med-anatomy-focus-caption"><strong>{focused.structure.name}</strong><span>{focused.structure.region}</span></div>
+              </div>
+
+              <footer>
+                <button onClick={() => navigateDetail(-1)}><ChevronLeft /> Estrutura anterior</button>
+                <span>Use a roda do mouse ou os controles para ampliar</span>
+                <button onClick={() => navigateDetail(1)}>Próxima estrutura <ChevronRight /></button>
+              </footer>
+            </div>
+
+            <aside className="med-anatomy-focus-info">
+              <span className="med-eyebrow">{focused.structure.region}</span>
+              <h3>{focused.structure.name}</h3>
+              <p>{focused.structure.summary}</p>
+              <dl>
+                <div><dt>Função</dt><dd>{focused.structure.function}</dd></div>
+                <div><dt>Relações</dt><dd>{focused.structure.relations}</dd></div>
+                <div><dt>Estruturas próximas</dt><dd>{focused.structure.nearby.length ? focused.structure.nearby.join(" · ") : "Aprofunde as relações na fonte anatômica vinculada."}</dd></div>
+              </dl>
+              <div className="med-anatomy-focus-actions">
+                <button onClick={() => speakStructure(focused.structure.name)}><Volume2 /> Ouvir nome</button>
+                <a href={medicalSourceUrl(focused.structure.sourceId)} target="_blank" rel="noreferrer">Conferir fonte <ExternalLink /></a>
+              </div>
+              <small>Ampliação do modelo educacional da camada selecionada. Não diagnóstica.</small>
+            </aside>
+          </div>
+        </section>
+      </div>,
+      document.body,
+    )}
+  </>;
 }
 
 function normalizeSearch(value: string) {
