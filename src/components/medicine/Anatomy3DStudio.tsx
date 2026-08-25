@@ -1,8 +1,8 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { ContactShadows, Grid, OrbitControls, useGLTF } from "@react-three/drei";
+import { ContactShadows, Environment, Grid, Lightformer, OrbitControls, useGLTF } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
-import { Box3, BufferAttribute, CatmullRomCurve3, Color, DoubleSide, Mesh, MeshPhysicalMaterial, MeshStandardMaterial, Object3D, Plane, Vector2, Vector3 } from "three";
+import { ACESFilmicToneMapping, Box3, BufferAttribute, CatmullRomCurve3, Color, DoubleSide, Mesh, MeshPhysicalMaterial, MeshStandardMaterial, Object3D, PCFSoftShadowMap, Plane, SRGBColorSpace, Vector2, Vector3 } from "three";
 import { mergeGeometries, mergeVertices } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import {
   Baby,
@@ -54,7 +54,7 @@ import {
   type Anatomy3DSystemId,
 } from "@/lib/anatomy3DModel";
 import { medicalSources, type MedicineLevel } from "@/lib/medicineData";
-import { organRealismProfile } from "@/lib/organRealism";
+import { organRealismProfile, organTissueVertexColors } from "@/lib/organRealism";
 
 type CameraView = "perspective" | "front" | "back" | "left" | "right";
 type OrganViewMode = "context" | "isolated" | "section" | "transparent";
@@ -88,6 +88,18 @@ const SUPPLEMENTAL_ORGAN_PATHS = {
   spleen: "/medicine/models/zanatomy-organ-spleen-v1.glb",
   eye: "/medicine/models/zanatomy-organ-eye-v1.glb",
 } as const;
+const realisticSupplementByGuidedId: Partial<Record<string, string>> = {
+  "organ-brain": "model:organs:supplement:brain",
+  "organ-heart": "model:organs:supplement:heart",
+  "organ-eyes": "model:organs:supplement:eye",
+};
+function resolveRealisticStructure(structure: Anatomy3DStructure, catalog: Anatomy3DStructure[] | undefined) {
+  if (!catalog?.length) return structure;
+  const supplementalId = realisticSupplementByGuidedId[structure.id];
+  if (supplementalId) return catalog.find((item) => item.id === supplementalId) ?? structure;
+  const targetName = normalize(structure.name);
+  return catalog.find((item) => normalize(item.name) === targetName) ?? structure;
+}
 const BODY_PARTS_SOURCE_BOUNDS = new Box3(new Vector3(-1.33905, -3.534865, -0.187946), new Vector3(1.33396, 3.18329, 0.971386));
 export function Anatomy3DStudio({ level, initialStructureId, onOpenDevelopment }: Anatomy3DStudioProps) {
   const initialStructure = anatomy3DStructures.find((item) => item.id === initialStructureId);
@@ -162,13 +174,13 @@ export function Anatomy3DStudio({ level, initialStructureId, onOpenDevelopment }
   }, [bodyProfileId, skinToneId]);
 
   useEffect(() => {
-    if (visibleStructures.some((item) => item.id === selectedId)) return;
+    if (visibleStructures.some((item) => item.id === selectedId) || modelSelection?.id === selectedId) return;
     const next = visibleStructures.find((item) => item.regionId !== "whole") ?? visibleStructures[0];
     if (next) {
       setSelectedId(next.id);
       setModelSelection(next.id.startsWith("model:") ? next : null);
     }
-  }, [selectedId, visibleStructures]);
+  }, [modelSelection?.id, selectedId, visibleStructures]);
 
   const changeSystem = (nextSystem: Anatomy3DSystemId) => {
     const nextRegion = structuresFor3D(nextSystem, region).length ? region : "whole";
@@ -195,15 +207,18 @@ export function Anatomy3DStudio({ level, initialStructureId, onOpenDevelopment }
 
   const activateRealisticLayer = () => {
     const nextRegion = structuresFor3D("organs", region).length ? region : "whole";
+    const highDefinitionHeart = detailedCatalogs.organs?.find((item) => item.id === "model:organs:supplement:heart");
+    const guidedHeart = structuresFor3D("organs", "whole").find((item) => item.id === "organ-heart");
     setSystem("organs");
     setRegion(nextRegion);
     setAppearance("realistic");
     setQuery("");
-    const next = structuresFor3D("organs", nextRegion)[0] ?? structuresFor3D("organs", "whole")[0];
+    const next = highDefinitionHeart ?? guidedHeart ?? structuresFor3D("organs", nextRegion)[0] ?? structuresFor3D("organs", "whole")[0];
     if (next) setSelectedId(next.id);
-    setModelSelection(null);
-    setOrganView("context");
-    setFocusSelected(false);
+    setModelSelection(next?.id.startsWith("model:") ? next : null);
+    setOrganView(highDefinitionHeart ? "isolated" : "context");
+    setFocusSelected(Boolean(highDefinitionHeart));
+    setZoom(highDefinitionHeart ? 1.08 : 1);
     setFocusKey((value) => value + 1);
   };
 
@@ -220,13 +235,27 @@ export function Anatomy3DStudio({ level, initialStructureId, onOpenDevelopment }
   };
 
   const selectStructure = useCallback((structure: Anatomy3DStructure) => {
-    setSelectedId(structure.id);
-    setModelSelection(structure.id.startsWith("model:") ? structure : null);
+    const resolved = realistic ? resolveRealisticStructure(structure, detailedCatalogs.organs) : structure;
+    setSelectedId(resolved.id);
+    setModelSelection(resolved.id.startsWith("model:") ? resolved : null);
     setCameraView("perspective");
     setFocusSelected(true);
-    if (structure.layer === "organs") setOrganView("isolated");
+    if (resolved.layer === "organs") setOrganView("isolated");
     setFocusKey((value) => value + 1);
-  }, []);
+  }, [detailedCatalogs.organs, realistic]);
+
+  useEffect(() => {
+    if (!realistic) return;
+    const guided = anatomy3DStructures.find((item) => item.id === selectedId);
+    if (!guided) return;
+    const replacement = resolveRealisticStructure(guided, detailedCatalogs.organs);
+    if (replacement.id === guided.id) return;
+    setSelectedId(replacement.id);
+    setModelSelection(replacement);
+    setOrganView("isolated");
+    setFocusSelected(true);
+    setFocusKey((value) => value + 1);
+  }, [detailedCatalogs.organs, realistic, selectedId]);
 
   const selectedPosition = filteredStructures.findIndex((structure) => structure.id === selected?.id);
   const navigateStructure = useCallback((direction: -1 | 1) => {
@@ -308,8 +337,8 @@ export function Anatomy3DStudio({ level, initialStructureId, onOpenDevelopment }
             <div><strong>{item.label}</strong><small>{item.description}</small></div>
           </button>
         ))}
-        <button className={`med-3d-realistic-option ${realistic ? "active" : ""}`} style={{ "--system-color": "#772a35" } as React.CSSProperties} onClick={activateRealisticLayer}>
-          <span><HeartPulse /></span><div><strong>Realista</strong><small>Cores e materiais naturais</small></div>
+          <button className={`med-3d-realistic-option ${realistic ? "active" : ""}`} style={{ "--system-color": "#772a35" } as React.CSSProperties} onClick={activateRealisticLayer}>
+          <span><HeartPulse /></span><div><strong>Realista</strong><small>Microtextura macroscópica</small></div>
         </button>
       </div>
 
@@ -384,18 +413,24 @@ export function Anatomy3DStudio({ level, initialStructureId, onOpenDevelopment }
             </div>}
           </div>}
 
-          {realistic && <div className="med-3d-realism-note"><Sparkles /><span><strong>Camada realista ativa</strong>Materiais físicos e paleta macroscópica aproximam a aparência de tecidos reais.</span></div>}
+          {realistic && <div className="med-3d-realism-note"><Sparkles /><span><strong>Textura macroscópica ativa</strong>Variação vascular, brilho úmido desigual e translucidez superficial por tipo de tecido.</span></div>}
 
           <div className="med-3d-canvas" role="application" tabIndex={0} aria-label={`Modelo 3D interativo mostrando ${anatomy3DSystemMeta.find((item) => item.id === system)?.label} em ${regionMeta.label}. Use as setas esquerda e direita para trocar de estrutura.`}>
             <Suspense fallback={<div className="med-3d-loading"><Rotate3D /><strong>Preparando o modelo tridimensional…</strong></div>}>
               <Canvas shadows dpr={[1, 1.8]} camera={{ position: [4.2, 1.4, 9.5], fov: 36, near: 0.1, far: 80 }} gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }} onCreated={({ gl }) => { gl.localClippingEnabled = true; }}>
+                <RendererAppearance realistic={realistic} />
                 <color attach="background" args={[realistic ? "#1b1a19" : "#edf3f0"]} />
                 <fog attach="fog" args={[realistic ? "#1b1a19" : "#edf3f0", 13, 24]} />
-                <ambientLight intensity={realistic ? .62 : 1.1} />
-                <hemisphereLight args={[realistic ? "#ffe9db" : "#f9fffc", realistic ? "#221917" : "#40554e", realistic ? .9 : 1.35]} />
-                <directionalLight position={[5, 9, 7]} intensity={realistic ? 3.1 : 2.3} color={realistic ? "#ffe4d2" : "#ffffff"} castShadow shadow-mapSize={[1024, 1024]} />
-                <directionalLight position={[-6, 3, 2]} intensity={realistic ? 1.4 : 1.1} color={realistic ? "#c68b83" : "#b9d7cd"} />
-                <pointLight position={[0, 2, -5]} intensity={realistic ? 1.6 : 1.2} color={realistic ? "#8c3e47" : "#9fc7bb"} />
+                <ambientLight intensity={realistic ? .28 : 1.1} />
+                <hemisphereLight args={[realistic ? "#fff3e9" : "#f9fffc", realistic ? "#171918" : "#40554e", realistic ? .55 : 1.35]} />
+                <directionalLight position={[5, 9, 7]} intensity={realistic ? 2.15 : 2.3} color={realistic ? "#fff0e5" : "#ffffff"} castShadow shadow-mapSize={[2048, 2048]} shadow-bias={-.0002} />
+                <directionalLight position={[-6, 3, 2]} intensity={realistic ? .72 : 1.1} color={realistic ? "#cfa29a" : "#b9d7cd"} />
+                <pointLight position={[0, 1, -5]} intensity={realistic ? .7 : 1.2} color={realistic ? "#9b5559" : "#9fc7bb"} />
+                {realistic && <Environment resolution={128}>
+                  <Lightformer form="rect" intensity={2.8} color="#fff4eb" position={[0, 6, 5]} rotation={[-Math.PI / 2, 0, 0]} scale={[9, 7, 1]} />
+                  <Lightformer form="rect" intensity={1.3} color="#c88780" position={[-5, 1, 3]} rotation={[0, Math.PI / 2, 0]} scale={[5, 7, 1]} />
+                  <Lightformer form="rect" intensity={1.1} color="#76998f" position={[5, 0, -3]} rotation={[0, -Math.PI / 2, 0]} scale={[4, 6, 1]} />
+                </Environment>}
                 <group scale={bodyProfile.scale} position={bodyProfile.offset}>
                   {(system === "all" || system === "surface") && <RealBodyPartsModel system={system} selectedId={selected?.id ?? null} skinOpacity={skinOpacity} skinTone={skinTone.color} organView={organView} sectionAxis={sectionAxis} sectionOffset={sectionOffset} onSelect={selectStructure} />}
                   {(system === "all" || system === "muscular" || system === "skeletal") && <RealMusculoskeletalModel system={system} selectedId={selected?.id ?? null} onSelect={selectStructure} />}
@@ -404,7 +439,7 @@ export function Anatomy3DStudio({ level, initialStructureId, onOpenDevelopment }
                   {(system === "all" || system === "organs") && <DetailedOrgansModel profileId={bodyProfileId} integrated={system === "all"} realistic={realistic} selectedId={selected?.id ?? null} organView={organView} sectionAxis={sectionAxis} sectionOffset={sectionOffset} onSelect={selectStructure} onCatalogReady={registerDetailedCatalog} />}
                   <AnatomyModel system={system} region={region} selectedId={selected?.id ?? null} skinOpacity={skinOpacity} onSelect={selectStructure} />
                 </group>
-                <ContactShadows position={[0, -4.46, 0]} opacity={0.34} scale={8} blur={2.6} far={5} />
+                <ContactShadows position={[0, -4.46, 0]} opacity={realistic ? .52 : .34} scale={8} blur={realistic ? 1.8 : 2.6} far={5} />
                 <Grid position={[0, -4.45, 0]} args={[16, 16]} cellSize={0.5} cellThickness={0.45} cellColor={realistic ? "#4b3936" : "#a7bbb4"} sectionSize={2} sectionThickness={0.8} sectionColor={realistic ? "#725049" : "#7e9990"} fadeDistance={14} fadeStrength={1.2} infiniteGrid />
                 <CameraRig focus={cameraFocus} distance={cameraDistance / zoom} focusKey={focusKey} view={cameraView} autoRotate={autoRotate} />
               </Canvas>
@@ -799,7 +834,7 @@ function DetailedOrgansModel({ profileId, integrated = false, realistic, selecte
       const availableForProfile = anatomyOrganNameVisibleForProfile(rawName, profileId);
       mesh.visible = availableForProfile && (!isolates || active);
       const material = mesh.material as MeshPhysicalMaterial;
-      applyOrganAppearance(material, rawName, realistic, active, String(mesh.userData.didacticColor ?? "#a86c79"));
+      applyOrganAppearance(mesh, rawName, realistic, active, String(mesh.userData.didacticColor ?? "#a86c79"));
       material.opacity = organView === "transparent" && active ? .34 : integrated ? .86 : 1;
       material.transparent = material.opacity < 1;
       material.depthWrite = material.opacity > .7;
@@ -813,7 +848,7 @@ function DetailedOrgansModel({ profileId, integrated = false, realistic, selecte
       supplement.root.traverse((object) => {
         if (!(object instanceof Mesh)) return;
         const material = object.material as MeshPhysicalMaterial;
-        applyOrganAppearance(material, supplement.structure.name, realistic, active, String(object.userData.didacticColor ?? supplement.structure.color));
+        applyOrganAppearance(object, supplement.structure.name, realistic, active, String(object.userData.didacticColor ?? supplement.structure.color));
         material.opacity = active && organView === "transparent" ? .36 : 1;
         material.transparent = material.opacity < 1;
         material.depthWrite = material.opacity > .7;
@@ -1082,9 +1117,11 @@ function prepareSupplementalOrgan(source: Object3D, kind: keyof typeof SUPPLEMEN
   return { root, structure };
 }
 
-function applyOrganAppearance(material: MeshPhysicalMaterial, name: string, realistic: boolean, active: boolean, didacticColor: string) {
+function applyOrganAppearance(mesh: Mesh, name: string, realistic: boolean, active: boolean, didacticColor: string) {
+  const material = mesh.material as MeshPhysicalMaterial;
   if (!realistic) {
     material.color.set(didacticColor);
+    material.vertexColors = false;
     material.emissive.set(didacticColor);
     material.emissiveIntensity = active ? .3 : .08;
     material.roughness = .54;
@@ -1092,12 +1129,18 @@ function applyOrganAppearance(material: MeshPhysicalMaterial, name: string, real
     material.clearcoatRoughness = .5;
     material.sheen = 0;
     material.metalness = 0;
+    material.transmission = 0;
+    material.thickness = 0;
+    material.specularIntensity = 1;
+    material.envMapIntensity = 1;
     return;
   }
   const profile = organRealismProfile(name);
-  material.color.set(profile.color);
+  ensureTissueVertexColors(mesh, name);
+  material.color.set("#ffffff");
+  material.vertexColors = true;
   material.emissive.set(profile.highlight);
-  material.emissiveIntensity = active ? .095 : .012;
+  material.emissiveIntensity = active ? .052 : .004;
   material.roughness = profile.roughness;
   material.metalness = 0;
   material.clearcoat = profile.clearcoat;
@@ -1105,6 +1148,43 @@ function applyOrganAppearance(material: MeshPhysicalMaterial, name: string, real
   material.sheen = profile.sheen;
   material.sheenColor.set(profile.sheenColor);
   material.ior = 1.38;
+  material.specularIntensity = profile.specularIntensity;
+  material.specularColor.set("#f4c8bc");
+  material.transmission = profile.transmission;
+  material.thickness = profile.thickness;
+  material.attenuationColor.set(profile.color);
+  material.attenuationDistance = .62;
+  material.envMapIntensity = active ? 1.55 : 1.28;
+}
+
+function ensureTissueVertexColors(mesh: Mesh, name: string) {
+  const geometry = mesh.geometry;
+  if (geometry.userData.tissueRealismName === name) return;
+  const positions = geometry.getAttribute("position");
+  if (!positions) return;
+  const existing = geometry.getAttribute("color");
+  let originalColors: Float32Array | undefined;
+  if (existing) {
+    originalColors = new Float32Array(positions.count * 3);
+    for (let index = 0; index < positions.count; index += 1) {
+      originalColors[index * 3] = existing.getX(index);
+      originalColors[index * 3 + 1] = existing.getY(index);
+      originalColors[index * 3 + 2] = existing.getZ(index);
+    }
+  }
+  geometry.setAttribute("color", new BufferAttribute(organTissueVertexColors(name, positions.array as ArrayLike<number>, originalColors), 3));
+  geometry.userData.tissueRealismName = name;
+}
+
+function RendererAppearance({ realistic }: { realistic: boolean }) {
+  const { gl } = useThree();
+  useEffect(() => {
+    gl.outputColorSpace = SRGBColorSpace;
+    gl.toneMapping = ACESFilmicToneMapping;
+    gl.toneMappingExposure = realistic ? 1.08 : 1;
+    gl.shadowMap.type = PCFSoftShadowMap;
+  }, [gl, realistic]);
+  return null;
 }
 
 function skinColorForMesh(baseTone: string, meshName: string) {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { organRealismProfile } from "./organRealism";
+import { organRealismProfile, organTissueVertexColors } from "./organRealism";
 
 describe("organRealismProfile", () => {
   it("uses tissue-specific macroscopic palettes", () => {
@@ -26,6 +26,10 @@ describe("organRealismProfile", () => {
       expect(profile.clearcoat).toBeLessThanOrEqual(1);
       expect(profile.sheen).toBeGreaterThanOrEqual(0);
       expect(profile.sheen).toBeLessThanOrEqual(1);
+      expect(profile.transmission).toBeGreaterThanOrEqual(0);
+      expect(profile.transmission).toBeLessThanOrEqual(1);
+      expect(profile.variation).toBeGreaterThan(0);
+      expect(profile.vascularColor).toMatch(/^#[0-9a-f]{6}$/i);
     }
   });
 
@@ -33,5 +37,17 @@ describe("organRealismProfile", () => {
     const fallback = organRealismProfile("Estrutura visceral desconhecida");
     expect(fallback.tissue).toBe("Tecido visceral");
     expect(fallback.color).toBeTruthy();
+  });
+
+  it("creates deterministic non-uniform macroscopic tissue colors", () => {
+    const positions = new Float32Array([
+      0, 0, 0, .2, .1, .4, .4, .6, .1, .8, .7, .9, 1, 1, 1,
+    ]);
+    const first = organTissueVertexColors("Coração", positions);
+    const second = organTissueVertexColors("Coração", positions);
+
+    expect(Array.from(first)).toEqual(Array.from(second));
+    expect(new Set(Array.from(first).map((value) => value.toFixed(4))).size).toBeGreaterThan(5);
+    expect(Array.from(first).every((value) => value >= 0 && value <= 1)).toBe(true);
   });
 });
