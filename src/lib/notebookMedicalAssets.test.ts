@@ -4,10 +4,11 @@ import { describe, expect, it } from "vitest";
 import { notebookMedicalAssets, prepareMedicalNotebookHtml } from "./notebookMedicalAssets";
 
 describe("notebookMedicalAssets", () => {
-  it("oferece atlas, sistemas, patologia e desenvolvimento sem ids repetidos", () => {
-    expect(notebookMedicalAssets.length).toBeGreaterThanOrEqual(33);
+  it("oferece atlas, órgãos, sistemas, patologia e desenvolvimento sem ids repetidos", () => {
+    expect(notebookMedicalAssets.length).toBeGreaterThanOrEqual(44);
     expect(new Set(notebookMedicalAssets.map((asset) => asset.id)).size).toBe(notebookMedicalAssets.length);
-    expect(new Set(notebookMedicalAssets.map((asset) => asset.category))).toEqual(new Set(["Camadas", "Sistemas", "Patologia", "Desenvolvimento"]));
+    expect(new Set(notebookMedicalAssets.map((asset) => asset.category))).toEqual(new Set(["Camadas", "Órgãos", "Sistemas", "Patologia", "Desenvolvimento"]));
+    expect(notebookMedicalAssets.filter((asset) => asset.category === "Órgãos")).toHaveLength(6);
   });
 
   it("mantém todas as imagens disponíveis no pacote público", () => {
@@ -25,5 +26,7 @@ describe("notebookMedicalAssets", () => {
     expect(decorated).toContain('data-transparent="true"');
     expect(decorated).toContain('data-wrap="true"');
     expect(decorated).toContain('width="430"');
+    const organ = prepareMedicalNotebookHtml('<img src="/medicine/organs/heart-anterior-v1.png" alt="Coração">');
+    expect(organ).toContain('data-medical-asset="template"');
   });
 });

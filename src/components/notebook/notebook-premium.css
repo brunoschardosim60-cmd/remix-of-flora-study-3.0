@@ -1237,7 +1237,7 @@
 .nb-medical-picker-header > span svg { width: 20px; }
 .nb-medical-picker-header h2 { font-family: Georgia, serif; font-size: 23px; font-weight: 500; }
 .nb-medical-picker-header p { margin-top: 4px; color: #75857f; font-size: 10px; }
-.nb-medical-picker-controls { display: flex; align-items: center; gap: 12px; padding: 15px 22px; border-bottom: 1px solid rgba(42,75,65,.08); background: #fbfcfa; }
+.nb-medical-picker-controls { display: flex; width: 100%; min-width: 0; align-items: center; gap: 12px; padding: 15px 22px; border-bottom: 1px solid rgba(42,75,65,.08); background: #fbfcfa; }
 .nb-medical-picker-controls > label { display: flex; width: min(360px, 42%); height: 40px; align-items: center; gap: 8px; padding: 0 12px; border: 1px solid rgba(42,75,65,.11); border-radius: 12px; background: white; }
 .nb-medical-picker-controls label svg { width: 15px; color: #7b8b85; }
 .nb-medical-picker-controls input { min-width: 0; flex: 1; border: 0; outline: 0; background: transparent; font-size: 10px; }
@@ -1246,9 +1246,11 @@
 .nb-medical-insert-modes button { display: inline-flex; align-items: center; gap: 5px; }
 .nb-medical-insert-modes svg { width: 13px; }
 .nb-medical-picker-controls button { height: 34px; padding: 0 11px; border-radius: 10px; color: #6e7f79; font-size: 9px; font-weight: 750; white-space: nowrap; }
+.nb-medical-picker-controls button > span { display: inline-grid; min-width: 17px; height: 17px; margin-left: 6px; place-items: center; border-radius: 999px; background: rgba(55,104,87,.08); color: #668078; font-size: 7px; }
 .nb-medical-picker-controls button.active { background: #dfede7; color: #326c59; }
-.nb-medical-assets-grid { display: grid; min-height: 0; flex: 1; grid-auto-rows: 240px; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; overflow-y: auto; padding: 18px 22px; align-content: start; }
-.nb-medical-assets-grid > button { overflow: hidden; border: 1px solid rgba(40,72,63,.09); border-radius: 16px; background: white; text-align: left; transition: 160ms ease; }
+.nb-medical-picker-controls button.active > span { background: rgba(48,108,89,.13); color: #326c59; }
+.nb-medical-assets-grid { display: grid; width: 100%; min-width: 0; min-height: 0; flex: 1; grid-auto-rows: 240px; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; overflow-y: auto; padding: 18px 22px; align-content: start; }
+.nb-medical-assets-grid > button { min-width: 0; overflow: hidden; border: 1px solid rgba(40,72,63,.09); border-radius: 16px; background: white; text-align: left; transition: 160ms ease; }
 .nb-medical-assets-grid > button:hover { transform: translateY(-3px); border-color: rgba(48,112,91,.27); box-shadow: 0 15px 30px rgba(35,67,58,.1); }
 .nb-medical-assets-grid > button > span { position: relative; display: block; height: 150px; overflow: hidden; background: radial-gradient(circle,#f8faf8,#e7efeb); }
 .nb-medical-assets-grid > button > span.transparent { background-color: #edf3f0; background-image: linear-gradient(45deg,rgba(61,103,89,.045) 25%,transparent 25%),linear-gradient(-45deg,rgba(61,103,89,.045) 25%,transparent 25%),linear-gradient(45deg,transparent 75%,rgba(61,103,89,.045) 75%),linear-gradient(-45deg,transparent 75%,rgba(61,103,89,.045) 75%); background-position: 0 0,0 8px,8px -8px,-8px 0; background-size: 16px 16px; }

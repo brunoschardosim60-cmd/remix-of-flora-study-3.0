@@ -1,4 +1,4 @@
-export type MedicalAssetCategory = "Camadas" | "Sistemas" | "Patologia" | "Desenvolvimento";
+export type MedicalAssetCategory = "Camadas" | "Órgãos" | "Sistemas" | "Patologia" | "Desenvolvimento";
 
 export interface NotebookMedicalAsset {
   id: string;
@@ -43,6 +43,22 @@ export const notebookMedicalAssets: NotebookMedicalAsset[] = [
   atlasAsset("organs", "Órgãos internos", "Posição aproximada e relações dos principais órgãos.", "organs", "Anterior"),
   atlasAsset("organs", "Órgãos internos", "Relações viscerais observadas posteriormente.", "organs", "Posterior"),
   ...[
+    ["organ-heart", "Coração · vista anterior", "Morfologia externa, vasos coronários e origem dos grandes vasos.", "heart-anterior-v1.png", 390],
+    ["organ-brain", "Encéfalo · vista lateral", "Hemisfério cerebral, cerebelo e tronco encefálico em recorte isolado.", "brain-lateral-v1.png", 520],
+    ["organ-lungs", "Pulmões e vias aéreas", "Traqueia, brônquios principais, lobos pulmonares e relações do hilo.", "lungs-anterior-v1.png", 410],
+    ["organ-liver", "Fígado e vesícula biliar", "Faces hepáticas, vesícula biliar e estruturas vasculares do hilo.", "liver-inferior-v1.png", 540],
+    ["organ-urinary", "Sistema urinário isolado", "Rins, suprarrenais, ureteres e bexiga em continuidade anatômica.", "urinary-system-anterior-v1.png", 390],
+    ["organ-digestive", "Trato digestório isolado", "Esôfago, estômago, fígado, pâncreas e alças intestinais em conjunto.", "digestive-system-anterior-v1.png", 400],
+  ].map(([id, label, description, file, suggestedWidth]) => ({
+    id,
+    label,
+    description,
+    src: `/medicine/organs/${file}`,
+    category: "Órgãos" as const,
+    transparent: true,
+    suggestedWidth: Number(suggestedWidth),
+  })),
+  ...[
     ["cardiovascular", "Sistema cardiovascular", "Coração, grandes vasos e circulação sistêmica.", "cardiovascular-v1.png"],
     ["respiratory", "Sistema respiratório", "Vias aéreas, pulmões e interface de trocas gasosas.", "respiratory-v1.png"],
     ["nervous-system", "Sistema nervoso", "Organização central e periférica do sistema nervoso.", "nervous-v1.png"],
@@ -51,6 +67,8 @@ export const notebookMedicalAssets: NotebookMedicalAsset[] = [
     ["endocrine", "Sistema endócrino", "Glândulas e eixos de regulação hormonal.", "endocrine-v1.png"],
     ["urinary", "Sistema urinário", "Rins, ureteres, bexiga e vias de eliminação.", "urinary-v1.png"],
     ["immune", "Sistema imune e linfático", "Órgãos linfoides e circulação linfática.", "immune-v1.png"],
+    ["integumentary", "Sistema tegumentar", "Pele, anexos cutâneos e funções de proteção e regulação.", "integumentary-v1.png"],
+    ["special-senses", "Órgãos dos sentidos", "Estruturas relacionadas à visão, audição, equilíbrio, olfato e paladar.", "special-senses-v1.png"],
   ].map(([id, label, description, file]) => ({ id, label, description, src: `/medicine/systems/${file}`, category: "Sistemas" as const, transparent: true, suggestedWidth: 460 })),
   ...[
     ["pathology-lungs", "Pulmões · saudável e enfisema", "Prancha comparativa com alterações enfisematosas e pontos para anotação.", "lungs-emphysema-comparison-v1.png"],
@@ -76,7 +94,7 @@ export const notebookMedicalAssets: NotebookMedicalAsset[] = [
 
 /** Adiciona metadados de edição às figuras médicas já existentes nos templates. */
 export function prepareMedicalNotebookHtml(html: string) {
-  return html.replace(/<img\s+([^>]*src=["']\/medicine\/(?:atlas|systems|pathology)\/[^"']+["'][^>]*)>/gi, (match, attributes: string) => {
+  return html.replace(/<img\s+([^>]*src=["']\/medicine\/(?:atlas|organs|systems|pathology)\/[^"']+["'][^>]*)>/gi, (match, attributes: string) => {
     if (/data-medical-asset=/i.test(attributes)) return match;
     return `<img ${attributes} data-medical-asset="template" data-transparent="true" data-wrap="true" data-alignment="left" width="430">`;
   });
