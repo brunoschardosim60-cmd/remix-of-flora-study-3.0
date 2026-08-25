@@ -1,12 +1,14 @@
 import { useMemo, useState, type CSSProperties, type MouseEvent } from "react";
 import {
-  AlertOctagon, ArrowRight, Check, ClipboardCheck, ExternalLink, Eye, EyeOff, ListChecks,
-  RotateCcw, Scissors, ShieldCheck, Sparkles, Wind, Wrench, X,
+  Activity, AlertOctagon, ArrowRight, Bone, Brain, Check, ClipboardCheck, Droplets, ExternalLink,
+  Eye, EyeOff, HeartPulse, ListChecks, LockKeyhole, RotateCcw, Scissors, ShieldCheck, Sparkles,
+  TriangleAlert, Wind, Wrench, X,
   type LucideIcon,
 } from "lucide-react";
 import { medicalInstruments } from "@/lib/medicalInstruments";
 import {
-  surgicalStages, surgicalTools, WHO_SURGICAL_SAFETY_URL,
+  surgicalScenarios, surgicalStages, surgicalTools, WHO_SURGICAL_SAFETY_URL,
+  type SurgicalScenario,
   type SurgicalToolId,
 } from "@/lib/surgicalSimulation";
 import type { MedicineLevel } from "@/lib/medicineData";
@@ -24,6 +26,13 @@ const toolIcons: Record<SurgicalToolId, LucideIcon> = {
   "final-count": ListChecks,
 };
 
+const scenarioIcons: Record<SurgicalScenario["id"], LucideIcon> = {
+  "acute-abdomen": Activity,
+  "thoracic-trauma": HeartPulse,
+  "open-limb-trauma": Bone,
+  "cranial-emergency": Brain,
+};
+
 function ToolVisual({ toolId }: { toolId: SurgicalToolId }) {
   const tool = surgicalTools.find((item) => item.id === toolId)!;
   const instrument = tool.instrumentId ? medicalInstruments.find((item) => item.id === tool.instrumentId) : undefined;
@@ -34,24 +43,29 @@ function ToolVisual({ toolId }: { toolId: SurgicalToolId }) {
 }
 
 export function SurgerySimulator({ level }: { level: MedicineLevel }) {
+  const [scenarioId, setScenarioId] = useState<SurgicalScenario["id"]>("acute-abdomen");
   const [state, setState] = useState<SimulationState>("ready");
   const [stageIndex, setStageIndex] = useState(0);
   const [selectedTool, setSelectedTool] = useState<SurgicalToolId | null>(null);
   const [criticalMessage, setCriticalMessage] = useState("");
   const [hint, setHint] = useState("Selecione um recurso e depois toque somente no alvo marcado.");
   const [showAnatomy, setShowAnatomy] = useState(true);
+  const [sensitiveAccepted, setSensitiveAccepted] = useState(false);
   const [log, setLog] = useState<string[]>([]);
 
+  const scenario = surgicalScenarios.find((item) => item.id === scenarioId) ?? surgicalScenarios[0];
   const stage = surgicalStages[Math.min(stageIndex, surgicalStages.length - 1)];
   const selected = surgicalTools.find((tool) => tool.id === selectedTool);
   const guided = level === "Iniciante" || level === "Ciclo básico";
   const progress = state === "complete" ? 100 : Math.round((stageIndex / surgicalStages.length) * 100);
   const completedLabel = `${Math.min(stageIndex, surgicalStages.length)} de ${surgicalStages.length}`;
-  const imagePath = `/medicine/atlas/${stage.bodyView}-anterior-v2.png`;
+  const bodyView = scenario.bodyViews[stageIndex] ?? stage.bodyView;
+  const target = scenario.targets[stageIndex] ?? stage.target;
+  const imagePath = `/medicine/atlas/${bodyView}-anterior-v2.png`;
   const safeStyle = {
     "--surgery-opening": `${stage.opening}%`,
-    "--surgery-target-x": `${stage.target.x}%`,
-    "--surgery-target-y": `${stage.target.y}%`,
+    "--surgery-target-x": `${target.x}%`,
+    "--surgery-target-y": `${target.y}%`,
   } as CSSProperties;
 
   const reset = () => {
@@ -60,7 +74,24 @@ export function SurgerySimulator({ level }: { level: MedicineLevel }) {
     setSelectedTool(null);
     setCriticalMessage("");
     setHint("Selecione um recurso e depois toque somente no alvo marcado.");
+    setShowAnatomy(true);
+    setSensitiveAccepted(false);
     setLog([]);
+  };
+
+  const selectScenario = (nextScenarioId: SurgicalScenario["id"]) => {
+    if (state === "running") return;
+    setScenarioId(nextScenarioId);
+    reset();
+  };
+
+  const startScenario = (showSensitiveContent: boolean) => {
+    setSensitiveAccepted(showSensitiveContent);
+    setShowAnatomy(showSensitiveContent);
+    setState("running");
+    setHint(showSensitiveContent
+      ? "Conteúdo sensível liberado. Selecione um recurso e interaja somente com o alvo educacional."
+      : "Modo protegido iniciado. A anatomia permanece oculta durante este cenário.");
   };
 
   const fail = (message: string) => {
@@ -117,23 +148,42 @@ export function SurgerySimulator({ level }: { level: MedicineLevel }) {
       <a href={WHO_SURGICAL_SAFETY_URL} target="_blank" rel="noreferrer">Base de segurança da OMS <ExternalLink /></a>
     </section>
 
+    <section className="med-surgery-case-library">
+      <header><div><span className="med-eyebrow">BIBLIOTECA DE CENÁRIOS</span><h2>Escolha a região e o tipo de caso</h2></div><span><LockKeyhole /> Casos ficcionais e não diagnósticos</span></header>
+      <div>{surgicalScenarios.map((item) => {
+        const Icon = scenarioIcons[item.id];
+        const active = item.id === scenario.id;
+        return <button key={item.id} className={active ? "active" : ""} disabled={state === "running"} onClick={() => selectScenario(item.id)}>
+          <span><Icon /></span><div><small>{item.specialty}</small><strong>{item.title}</strong><p>{item.summary}</p><footer><em>{item.region}</em><b className={item.sensitivity === "Intenso" ? "intense" : ""}><TriangleAlert /> {item.sensitivity}</b></footer></div>{active && <Check />}
+        </button>;
+      })}</div>
+    </section>
+
     <div className="med-surgery-dashboard">
       <section className="med-surgery-stage-card">
         <header>
-          <div><span>{stage.eyebrow}</span><strong>{state === "complete" ? "Cenário concluído" : stage.title}</strong></div>
-          <button onClick={() => setShowAnatomy((value) => !value)}>{showAnatomy ? <EyeOff /> : <Eye />}{showAnatomy ? "Ocultar anatomia" : "Mostrar anatomia"}</button>
+          <div><span>{scenario.specialty} · {stage.eyebrow}</span><strong>{state === "complete" ? "Cenário concluído" : scenario.title}</strong></div>
+          <button disabled={!showAnatomy && !sensitiveAccepted} onClick={() => setShowAnatomy((value) => !value)}>{showAnatomy ? <EyeOff /> : <Eye />}{showAnatomy ? "Ocultar anatomia" : "Mostrar anatomia"}</button>
         </header>
 
         <div className={`med-surgery-body ${showAnatomy ? "anatomy-on" : "anatomy-off"}`} style={safeStyle} onClick={missTarget}>
           <img className="med-surgery-surface" src="/medicine/atlas/surface-anterior-v2.png" alt="Vista anterior da superfície corporal em ilustração educacional" />
-          <img className="med-surgery-inner" src={imagePath} alt={`Camada ${stage.bodyView} em ilustração educacional`} />
+          <img className="med-surgery-inner" src={imagePath} alt={`Camada ${bodyView} em ilustração educacional`} />
           <div className="med-surgery-field-ring" />
-          {stage.id === "bleeding-control" && state === "running" && <div className="med-surgery-bleeding"><i /><i /><i /></div>}
+          {state === "running" && showAnatomy && stageIndex >= 2 && stageIndex <= 5 && <div className={`med-surgery-trauma-marker ${scenario.sensitivity === "Intenso" ? "intense" : ""}`}><i /><i /></div>}
+          {stage.id === "bleeding-control" && state === "running" && showAnatomy && <div className="med-surgery-bleeding"><i /><i /><i /></div>}
+          <div className="med-surgery-monitor"><span><Activity /></span><div><small>ESTADO FICTÍCIO</small><strong>{scenario.statusByStage[stageIndex]}</strong></div><b>{scenario.region}</b></div>
           {state === "running" && <button className="med-surgery-target" onClick={applySelectedTool} aria-label={`Aplicar ${selected?.name ?? "recurso selecionado"} somente na área segura`}><span><Sparkles /></span><small>ALVO SEGURO</small></button>}
-          {state === "ready" && <div className="med-surgery-cover"><ShieldCheck /><strong>Ambiente bloqueado</strong><span>Leia os limites e inicie quando estiver pronto.</span><button onClick={(event) => { event.stopPropagation(); setState("running"); }}>Iniciar cenário <ArrowRight /></button></div>}
+          {state === "ready" && <div className="med-surgery-cover sensitive"><TriangleAlert /><small>CONTEÚDO SENSÍVEL · {scenario.sensitivity.toUpperCase()}</small><strong>Antes de entrar no campo</strong><span>Este caso pode mostrar {scenario.contentWarnings.join(", ").toLowerCase()}. Tudo é ilustrado, fictício e estritamente educacional.</span><div><button onClick={(event) => { event.stopPropagation(); startScenario(true); }}><Eye /> Liberar conteúdo sensível</button><button className="secondary" onClick={(event) => { event.stopPropagation(); startScenario(false); }}><EyeOff /> Iniciar com anatomia oculta</button></div></div>}
           {state === "complete" && <div className="med-surgery-cover complete"><Check /><strong>Sign-out concluído</strong><span>Todos os sete pontos de segurança foram registrados.</span><button onClick={(event) => { event.stopPropagation(); reset(); }}>Refazer cenário <RotateCcw /></button></div>}
           {!showAnatomy && <div className="med-surgery-anatomy-mask"><EyeOff /><strong>Conteúdo anatômico oculto</strong><span>O motor continua ativo sem mostrar as camadas.</span></div>}
           <div className="med-surgery-caption">Ilustração educacional · sem parâmetros de técnica real</div>
+        </div>
+
+        <div className="med-surgery-anatomy-brief">
+          <article><span><Activity /></span><div><small>ACHADO DO ESTÁGIO</small><strong>{scenario.anatomyByStage[stageIndex]}</strong></div></article>
+          <article><span><Eye /></span><div><small>ESTRUTURA EM FOCO</small><strong>{scenario.focusStructure}</strong><p>{scenario.nearbyStructures.join(" · ")}</p></div></article>
+          <article className="risk"><span><Droplets /></span><div><small>EVENTOS POSSÍVEIS</small><strong>{scenario.possibleEvents[Math.min(stageIndex, scenario.possibleEvents.length - 1)]}</strong></div></article>
         </div>
       </section>
 
@@ -148,6 +198,7 @@ export function SurgerySimulator({ level }: { level: MedicineLevel }) {
           <span className="med-eyebrow">DECISÃO ATUAL</span>
           <h2>{state === "complete" ? "Revisão liberada" : stage.title}</h2>
           <p>{state === "complete" ? "Compare as decisões registradas e revise os pontos de segurança antes de repetir." : stage.prompt}</p>
+          <div className="med-surgery-patient"><HeartPulse /><span><small>RESUMO DO CASO FICTÍCIO</small><p>{scenario.patientSnapshot}</p></span></div>
           {guided && state === "running" && <div className="med-surgery-guidance"><Sparkles /><span>Treino guiado: procure <strong>{expectedName}</strong>.</span></div>}
           <div className={`med-surgery-hint ${state === "failed" ? "critical" : ""}`}><span>{state === "failed" ? <X /> : <ShieldCheck />}</span><p>{state === "failed" ? criticalMessage : hint}</p></div>
         </article>

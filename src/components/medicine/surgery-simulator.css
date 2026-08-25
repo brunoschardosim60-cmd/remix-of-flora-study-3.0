@@ -51,6 +51,46 @@
 .med-surgery-safety a { display: flex; align-items: center; gap: 6px; color: #7a5b3f; font-size: 8px; font-weight: 900; white-space: nowrap; }
 .med-surgery-safety a svg { width: 12px; }
 
+.med-surgery-case-library {
+  margin-top: 14px;
+  overflow: hidden;
+  border: 1px solid var(--med-line);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, .78);
+  box-shadow: 0 18px 50px rgba(32, 67, 56, .05);
+}
+
+.med-surgery-case-library > header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px 22px 16px;
+  border-bottom: 1px solid var(--med-line);
+  background: linear-gradient(120deg, #f9fbf9, #eef4f1);
+}
+
+.med-surgery-case-library > header h2 { margin-top: 5px; color: #294c42; font-family: Georgia, serif; font-size: 25px; font-weight: 500; }
+.med-surgery-case-library > header > span { display: flex; align-items: center; gap: 6px; color: #6e827b; font-size: 7px; font-weight: 900; }
+.med-surgery-case-library > header > span svg { width: 13px; }
+.med-surgery-case-library > div { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding: 10px; }
+.med-surgery-case-library > div > button { position: relative; display: grid; min-width: 0; min-height: 150px; grid-template-columns: 39px minmax(0, 1fr) 14px; align-items: start; gap: 10px; padding: 14px; border: 1px solid transparent; border-radius: 16px; background: #f7f9f7; text-align: left; transition: .18s ease; }
+.med-surgery-case-library > div > button:hover:not(:disabled) { transform: translateY(-2px); border-color: rgba(64, 116, 98, .2); background: #fff; box-shadow: 0 12px 28px rgba(34, 73, 61, .07); }
+.med-surgery-case-library > div > button.active { border-color: rgba(57, 116, 95, .3); background: #edf5f1; box-shadow: inset 0 -3px #477b6a; }
+.med-surgery-case-library > div > button:disabled { cursor: not-allowed; opacity: .68; }
+.med-surgery-case-library > div > button > span { display: grid; width: 39px; height: 39px; place-items: center; border-radius: 12px; background: #e3ede8; color: #447564; }
+.med-surgery-case-library > div > button > span svg { width: 18px; }
+.med-surgery-case-library > div > button > div { min-width: 0; }
+.med-surgery-case-library button small { color: #71867f; font-size: 6px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
+.med-surgery-case-library button strong { display: block; margin-top: 4px; color: #34574d; font-size: 9px; line-height: 1.3; }
+.med-surgery-case-library button p { display: -webkit-box; overflow: hidden; margin-top: 7px; color: #748780; font-size: 7px; line-height: 1.5; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+.med-surgery-case-library button footer { display: flex; align-items: center; justify-content: space-between; gap: 7px; margin-top: 10px; }
+.med-surgery-case-library button footer em { overflow: hidden; color: #60776f; font-size: 6px; font-style: normal; font-weight: 850; text-overflow: ellipsis; white-space: nowrap; }
+.med-surgery-case-library button footer b { display: flex; flex: 0 0 auto; align-items: center; gap: 3px; padding: 4px 5px; border-radius: 7px; background: #f5eadc; color: #8a673f; font-size: 5.5px; }
+.med-surgery-case-library button footer b.intense { background: #f5dfdc; color: #9b514b; }
+.med-surgery-case-library button footer svg { width: 8px; }
+.med-surgery-case-library > div > button > svg { width: 13px; color: #3f7a66; }
+
 .med-surgery-dashboard {
   display: grid;
   grid-template-columns: minmax(520px, 1.1fr) minmax(430px, .9fr);
@@ -102,6 +142,31 @@
   background-size: 28px 28px;
   content: "";
 }
+
+.med-surgery-monitor {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  left: 15px;
+  z-index: 8;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 11px;
+  border: 1px solid rgba(255, 255, 255, .55);
+  border-radius: 13px;
+  background: rgba(25, 57, 49, .76);
+  color: #fff;
+  pointer-events: none;
+  backdrop-filter: blur(10px);
+}
+.med-surgery-monitor > span { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 10px; background: rgba(255, 255, 255, .12); color: #a8d5c5; }
+.med-surgery-monitor svg { width: 16px; }
+.med-surgery-monitor > div { display: flex; min-width: 0; flex-direction: column; }
+.med-surgery-monitor small { color: #a9c6bc; font-size: 5.5px; font-weight: 950; letter-spacing: .1em; }
+.med-surgery-monitor strong { overflow: hidden; margin-top: 3px; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+.med-surgery-monitor b { padding: 6px 8px; border: 1px solid rgba(255, 255, 255, .13); border-radius: 8px; color: #d9e8e2; font-size: 6px; }
 
 .med-surgery-surface,
 .med-surgery-inner {
@@ -171,6 +236,11 @@
 .med-surgery-bleeding i:nth-child(3) { left: 47px; animation-delay: .55s; }
 @keyframes surgery-drop { from { transform: translateY(-14px) scale(.7); opacity: 0; } 45% { opacity: 1; } to { transform: translateY(44px) scale(1); opacity: 0; } }
 
+.med-surgery-trauma-marker { position: absolute; z-index: 5; top: var(--surgery-target-y); left: var(--surgery-target-x); width: 94px; height: 62px; transform: translate(-50%, -50%) rotate(-5deg); border-radius: 50%; background: radial-gradient(ellipse, rgba(116, 38, 37, .38), rgba(149, 62, 53, .14) 48%, transparent 72%); pointer-events: none; filter: saturate(.82); }
+.med-surgery-trauma-marker i { position: absolute; top: 30px; left: 22px; width: 50px; height: 4px; transform: rotate(-7deg); border-radius: 999px; background: rgba(112, 34, 34, .72); box-shadow: 0 0 0 5px rgba(173, 75, 67, .09); }
+.med-surgery-trauma-marker i:last-child { top: 25px; left: 39px; width: 28px; transform: rotate(58deg); opacity: .58; }
+.med-surgery-trauma-marker.intense { width: 118px; height: 78px; background: radial-gradient(ellipse, rgba(102, 29, 29, .5), rgba(151, 55, 50, .18) 52%, transparent 73%); }
+
 .med-surgery-cover,
 .med-surgery-anatomy-mask {
   position: absolute;
@@ -193,11 +263,30 @@
 .med-surgery-anatomy-mask strong { margin-top: 14px; font-family: Georgia, serif; font-size: 30px; font-weight: 500; }
 .med-surgery-cover span,
 .med-surgery-anatomy-mask span { max-width: 380px; margin-top: 7px; color: #698078; font-size: 9px; line-height: 1.6; }
+.med-surgery-cover.sensitive { background: rgba(39, 47, 44, .9); color: #fff; }
+.med-surgery-cover.sensitive > svg { color: #e3a589; }
+.med-surgery-cover.sensitive > small { margin-top: 13px; color: #e8b79f; font-size: 6px; font-weight: 950; letter-spacing: .13em; }
+.med-surgery-cover.sensitive span { color: #d2dfda; }
+.med-surgery-cover.sensitive > div { display: flex; justify-content: center; gap: 8px; margin-top: 21px; }
 .med-surgery-cover button { display: flex; min-height: 45px; align-items: center; gap: 7px; margin-top: 21px; padding: 0 15px; border-radius: 12px; background: #2f6657; color: #fff; font-size: 8px; font-weight: 900; box-shadow: 0 12px 28px rgba(40, 91, 76, .2); }
+.med-surgery-cover.sensitive > div button { margin-top: 0; }
+.med-surgery-cover.sensitive > div button.secondary { border: 1px solid rgba(255, 255, 255, .2); background: rgba(255, 255, 255, .09); box-shadow: none; }
 .med-surgery-cover button svg { width: 13px; }
 .med-surgery-cover.complete { background: rgba(225, 241, 232, .88); }
-.med-surgery-anatomy-mask { z-index: 9; background: rgba(225, 234, 230, .93); }
+.med-surgery-anatomy-mask { z-index: 9; background: rgba(225, 234, 230, .93); pointer-events: none; }
+.med-surgery-body.anatomy-off .med-surgery-monitor { z-index: 10; }
+.med-surgery-body.anatomy-off .med-surgery-target { z-index: 11; }
 .med-surgery-caption { position: absolute; right: 15px; bottom: 12px; z-index: 12; padding: 6px 9px; border-radius: 999px; background: rgba(27, 59, 50, .68); color: #fff; font-size: 6px; font-weight: 850; backdrop-filter: blur(9px); }
+
+.med-surgery-anatomy-brief { display: grid; grid-template-columns: 1.15fr .95fr .8fr; gap: 1px; border-top: 1px solid var(--med-line); background: var(--med-line); }
+.med-surgery-anatomy-brief article { display: grid; min-width: 0; min-height: 115px; grid-template-columns: 34px 1fr; align-items: start; gap: 10px; padding: 16px; background: #fff; }
+.med-surgery-anatomy-brief article > span { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 10px; background: #e9f1ed; color: #487868; }
+.med-surgery-anatomy-brief article.risk > span { background: #f4e6e2; color: #9a5850; }
+.med-surgery-anatomy-brief svg { width: 15px; }
+.med-surgery-anatomy-brief article > div { min-width: 0; }
+.med-surgery-anatomy-brief small { color: #81918c; font-size: 5.5px; font-weight: 950; letter-spacing: .09em; }
+.med-surgery-anatomy-brief strong { display: block; margin-top: 5px; color: #3c5f55; font-size: 7.5px; line-height: 1.5; }
+.med-surgery-anatomy-brief p { margin-top: 5px; color: #7b8b86; font-size: 6px; line-height: 1.45; }
 
 .med-surgery-console { display: flex; flex-direction: column; }
 .med-surgery-progress { padding: 20px 22px; border-bottom: 1px solid var(--med-line); background: linear-gradient(145deg, #f6faf7, #edf5f1); }
@@ -214,6 +303,11 @@
 .med-surgery-task { padding: 25px 25px 21px; border-bottom: 1px solid var(--med-line); }
 .med-surgery-task h2 { margin-top: 8px; color: #25483e; font-family: Georgia, serif; font-size: 30px; font-weight: 500; line-height: 1.05; }
 .med-surgery-task > p { margin-top: 11px; color: #687e76; font-size: 9px; line-height: 1.65; }
+.med-surgery-patient { display: flex; align-items: flex-start; gap: 9px; margin-top: 14px; padding: 12px; border: 1px solid rgba(65, 112, 97, .13); border-radius: 12px; background: #f2f6f3; color: #477666; }
+.med-surgery-patient > svg { width: 16px; flex: 0 0 auto; }
+.med-surgery-patient > span { min-width: 0; }
+.med-surgery-patient small { display: block; color: #6f857d; font-size: 5.5px; font-weight: 950; letter-spacing: .08em; }
+.med-surgery-patient p { margin-top: 4px; color: #5f756d; font-size: 7px; line-height: 1.55; }
 .med-surgery-guidance { display: flex; align-items: center; gap: 8px; margin-top: 15px; padding: 11px; border-radius: 11px; background: #edf5f1; color: #517367; font-size: 8px; }
 .med-surgery-guidance svg { width: 14px; }
 .med-surgery-hint { display: grid; grid-template-columns: 31px 1fr; align-items: center; gap: 9px; margin-top: 14px; padding: 11px; border: 1px solid rgba(70, 122, 105, .15); border-radius: 12px; background: #f7faf8; }
@@ -278,6 +372,7 @@
 .black .med-surgery-debrief { background: #18211d; }
 
 @media (max-width: 1180px) {
+  .med-surgery-case-library > div { grid-template-columns: 1fr 1fr; }
   .med-surgery-dashboard { grid-template-columns: 1fr; }
   .med-surgery-body { min-height: 620px; }
   .med-surgery-debrief > div { grid-template-columns: repeat(4, 1fr); }
@@ -288,7 +383,12 @@
   .med-surgery-mode { width: 100%; }
   .med-surgery-safety { grid-template-columns: 21px 1fr; }
   .med-surgery-safety a { grid-column: 2; }
+  .med-surgery-case-library > header { align-items: flex-start; flex-direction: column; }
+  .med-surgery-case-library > div { display: flex; overflow-x: auto; }
+  .med-surgery-case-library > div > button { width: 285px; min-width: 285px; }
   .med-surgery-body { min-height: 520px; }
+  .med-surgery-anatomy-brief { grid-template-columns: 1fr; }
+  .med-surgery-anatomy-brief article { min-height: 0; }
   .med-surgery-tray > div { grid-template-columns: 1fr; }
   .med-surgery-debrief > div { grid-template-columns: repeat(2, 1fr); }
 }
@@ -296,6 +396,11 @@
 @media (max-width: 480px) {
   .med-surgery-stage-card > header { align-items: flex-start; flex-direction: column; }
   .med-surgery-body { min-height: 440px; }
+  .med-surgery-monitor { grid-template-columns: 31px minmax(0, 1fr); }
+  .med-surgery-monitor b { display: none; }
+  .med-surgery-cover.sensitive { padding: 24px 17px; }
+  .med-surgery-cover.sensitive > div { width: 100%; flex-direction: column; }
+  .med-surgery-cover.sensitive > div button { width: 100%; justify-content: center; }
   .med-surgery-task,
   .med-surgery-tray,
   .med-surgery-debrief { padding: 19px; }

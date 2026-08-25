@@ -22,12 +22,32 @@ export interface SurgicalStage {
   title: string;
   prompt: string;
   expectedToolId: SurgicalToolId;
-  bodyView: "surface" | "muscular" | "vascular" | "organs";
+  bodyView: SurgicalBodyView;
   opening: number;
   target: { x: number; y: number };
   success: string;
   criticalEvent: string;
   learningPoint: string;
+}
+
+export type SurgicalBodyView = "surface" | "muscular" | "skeletal" | "vascular" | "nervous" | "organs";
+
+export interface SurgicalScenario {
+  id: "acute-abdomen" | "thoracic-trauma" | "open-limb-trauma" | "cranial-emergency";
+  title: string;
+  specialty: string;
+  region: string;
+  sensitivity: "Moderado" | "Intenso";
+  summary: string;
+  patientSnapshot: string;
+  focusStructure: string;
+  nearbyStructures: string[];
+  possibleEvents: string[];
+  contentWarnings: string[];
+  bodyViews: SurgicalBodyView[];
+  targets: Array<{ x: number; y: number }>;
+  anatomyByStage: string[];
+  statusByStage: string[];
 }
 
 export const surgicalTools: SurgicalTool[] = [
@@ -83,6 +103,121 @@ export const surgicalTools: SurgicalTool[] = [
     name: "Quadro de contagem final",
     shortName: "Contagem final",
     purpose: "Confirma instrumentos, compressas, agulhas, amostras e problemas de equipamento antes da saída.",
+  },
+];
+
+export const surgicalScenarios: SurgicalScenario[] = [
+  {
+    id: "acute-abdomen",
+    title: "Abdome agudo complicado",
+    specialty: "Cirurgia geral",
+    region: "Abdome inferior direito",
+    sensitivity: "Moderado",
+    summary: "Caso fictício com inflamação visceral, líquido livre simulado e risco de contaminação da cavidade.",
+    patientSnapshot: "Pessoa adulta fictícia, consciente, com dor abdominal progressiva e sinais simulados de resposta inflamatória.",
+    focusStructure: "Apêndice e ceco",
+    nearbyStructures: ["Íleo terminal", "Peritônio", "Vasos mesentéricos", "Ureter direito"],
+    possibleEvents: ["Sangramento de pequeno vaso", "Contaminação do campo", "Perda de identificação dos planos"],
+    contentWarnings: ["Órgãos abdominais expostos", "Fluido e sangue simulados", "Tecido inflamado fictício"],
+    bodyViews: ["surface", "surface", "muscular", "organs", "vascular", "organs", "surface"],
+    targets: [
+      { x: 54, y: 55 }, { x: 54, y: 55 }, { x: 54, y: 55 }, { x: 54, y: 55 },
+      { x: 53, y: 54 }, { x: 54, y: 55 }, { x: 54, y: 55 },
+    ],
+    anatomyByStage: [
+      "Referências da parede abdominal e localização clínica do quadrante.",
+      "Superfície, limites do campo e barreiras de proteção.",
+      "Parede abdominal representada em camadas, sem ensinar acesso real.",
+      "Ceco, apêndice, íleo terminal e relações peritoneais aproximadas.",
+      "Rede vascular regional destacada apenas para reconhecimento de risco.",
+      "Cavidade abdominal e estruturas vizinhas liberadas para observação.",
+      "Campo novamente coberto e conferência de amostras e materiais.",
+    ],
+    statusByStage: ["Aguardando time-out", "Campo protegido", "Anatomia superficial visível", "Foco visceral identificado", "Alerta vascular", "Campo recuperado", "Pronto para sign-out"],
+  },
+  {
+    id: "thoracic-trauma",
+    title: "Trauma torácico instável",
+    specialty: "Trauma e tórax",
+    region: "Hemitórax esquerdo",
+    sensitivity: "Intenso",
+    summary: "Cenário fictício com trauma penetrante, sangue simulado e proximidade de pulmão, coração e grandes vasos.",
+    patientSnapshot: "Pessoa adulta fictícia após trauma, com desconforto respiratório e deterioração hemodinâmica simulada.",
+    focusStructure: "Pulmão esquerdo e pleura",
+    nearbyStructures: ["Coração", "Aorta", "Artéria pulmonar", "Nervos intercostais"],
+    possibleEvents: ["Sangramento intratorácico", "Perda de ventilação simulada", "Lesão de estrutura mediastinal"],
+    contentWarnings: ["Trauma penetrante fictício", "Pulmão e coração expostos", "Sangramento animado"],
+    bodyViews: ["surface", "surface", "muscular", "skeletal", "vascular", "organs", "surface"],
+    targets: [
+      { x: 45, y: 34 }, { x: 45, y: 34 }, { x: 45, y: 34 }, { x: 45, y: 34 },
+      { x: 47, y: 35 }, { x: 45, y: 35 }, { x: 45, y: 34 },
+    ],
+    anatomyByStage: [
+      "Mecanismo fictício, lateralidade e prioridades de comunicação.",
+      "Parede torácica e delimitação visual do campo.",
+      "Planos musculares da parede do tórax.",
+      "Costelas e espaços intercostais em relação aproximada.",
+      "Grandes vasos do tórax destacados como zona crítica.",
+      "Pulmões, coração e mediastino visíveis sem parâmetros operatórios.",
+      "Revisão de eventos, materiais e necessidades de recuperação.",
+    ],
+    statusByStage: ["Instabilidade simulada", "Campo protegido", "Parede torácica visível", "Arcabouço ósseo em foco", "Alerta de hemorragia", "Órgãos torácicos visíveis", "Equipe em sign-out"],
+  },
+  {
+    id: "open-limb-trauma",
+    title: "Trauma aberto de membro",
+    specialty: "Ortopedia e trauma",
+    region: "Coxa e joelho esquerdos",
+    sensitivity: "Intenso",
+    summary: "Caso fictício de alta energia com osso exposto, tecido lesionado e risco neurovascular representado.",
+    patientSnapshot: "Pessoa adulta fictícia, responsiva após trauma de alta energia, com ferida contaminada e perfusão distal sob observação.",
+    focusStructure: "Fêmur distal e joelho",
+    nearbyStructures: ["Artéria femoral", "Nervo ciático", "Patela", "Músculos da coxa"],
+    possibleEvents: ["Deterioração vascular", "Contaminação do campo", "Comprometimento nervoso simulado"],
+    contentWarnings: ["Ferida aberta fictícia", "Osso e músculo expostos", "Sangue simulado"],
+    bodyViews: ["surface", "surface", "muscular", "skeletal", "vascular", "nervous", "surface"],
+    targets: [
+      { x: 44, y: 69 }, { x: 44, y: 69 }, { x: 44, y: 69 }, { x: 44, y: 69 },
+      { x: 44, y: 68 }, { x: 44, y: 69 }, { x: 44, y: 69 },
+    ],
+    anatomyByStage: [
+      "Membro, lateralidade, mecanismo e situação neurovascular fictícia.",
+      "Limites da ferida e campo de proteção representado.",
+      "Compartimentos musculares da coxa em visão educacional.",
+      "Fêmur distal, patela e articulação do joelho.",
+      "Vasos do membro inferior destacados como estruturas de risco.",
+      "Nervos principais e relações regionais aproximadas.",
+      "Contagens, documentação e comunicação de recuperação.",
+    ],
+    statusByStage: ["Perfusão sob observação", "Campo protegido", "Músculo exposto", "Osso identificado", "Alerta neurovascular", "Nervos em observação", "Pronto para transferência"],
+  },
+  {
+    id: "cranial-emergency",
+    title: "Emergência neurocirúrgica",
+    specialty: "Neurocirurgia",
+    region: "Crânio e encéfalo",
+    sensitivity: "Intenso",
+    summary: "Cenário fictício com trauma craniano, coleção sanguínea simulada e estruturas intracranianas expostas.",
+    patientSnapshot: "Pessoa adulta fictícia com rebaixamento neurológico progressivo após trauma e imagem simulada sugestiva de compressão intracraniana.",
+    focusStructure: "Crânio, meninges e encéfalo",
+    nearbyStructures: ["Seios venosos", "Córtex cerebral", "Artérias meníngeas", "Nervos cranianos"],
+    possibleEvents: ["Sangramento intracraniano", "Perda de referência anatômica", "Deterioração neurológica simulada"],
+    contentWarnings: ["Crânio e encéfalo expostos", "Coleção sanguínea fictícia", "Trauma neurológico"],
+    bodyViews: ["surface", "surface", "muscular", "skeletal", "vascular", "organs", "surface"],
+    targets: [
+      { x: 50, y: 13 }, { x: 50, y: 13 }, { x: 50, y: 13 }, { x: 50, y: 13 },
+      { x: 50, y: 14 }, { x: 50, y: 13 }, { x: 50, y: 13 },
+    ],
+    anatomyByStage: [
+      "Trauma fictício, lateralidade e estado neurológico comunicado à equipe.",
+      "Couro cabeludo e delimitação do campo virtual.",
+      "Planos superficiais da cabeça em representação esquemática.",
+      "Calota craniana e relações ósseas externas.",
+      "Vasos cranianos destacados como área de risco.",
+      "Encéfalo e cavidade craniana liberados apenas para estudo visual.",
+      "Documentação de eventos e transição segura do cuidado.",
+    ],
+    statusByStage: ["Alerta neurológico", "Campo protegido", "Planos superficiais visíveis", "Crânio em foco", "Alerta vascular", "Encéfalo visível", "Transição de cuidado"],
   },
 ];
 
