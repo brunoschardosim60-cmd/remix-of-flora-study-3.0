@@ -76,6 +76,10 @@ const SUPPLEMENTAL_ORGAN_PATHS = {
 } as const;
 const STANDARD_SKIN_TONE = "#ad7152";
 const BODY_PARTS_SOURCE_BOUNDS = new Box3(new Vector3(-1.33905, -3.534865, -0.187946), new Vector3(1.33396, 3.18329, 0.971386));
+// Todos os subconjuntos Z-Anatomy compartilham o mesmo sistema de coordenadas.
+// Usar o limite de cada arquivo separadamente fazia o conjunto parcial de órgãos
+// ser ampliado até a altura de um corpo inteiro, deformando a composição integrada.
+const ZANATOMY_REFERENCE_BOUNDS = new Box3(new Vector3(-0.33375, 0.00346, -0.11269), new Vector3(0.33375, 1.70145, 0.13625));
 const anatomyLevelOrder: MedicineLevel[] = ["Iniciante", "Ciclo básico", "Ciclo clínico", "Internato", "Residência"];
 const anatomyLevelLimits: Record<MedicineLevel, number> = { Iniciante: 24, "Ciclo básico": 90, "Ciclo clínico": 240, Internato: 600, Residência: Number.POSITIVE_INFINITY };
 const anatomyLevelGuidance: Record<MedicineLevel, string> = {
@@ -293,7 +297,7 @@ export function Anatomy3DStudio({ level, initialStructureId }: Anatomy3DStudioPr
       </header>
 
       <div className="med-3d-system-strip" aria-label="Sistemas anatômicos">
-        {anatomy3DSystemMeta.filter((item) => item.id !== "all").map((item) => (
+        {anatomy3DSystemMeta.map((item) => (
           <button key={item.id} className={system === item.id && !realistic ? "active" : ""} style={{ "--system-color": item.color } as React.CSSProperties} onClick={() => changeSystem(item.id)}>
             <span style={{ background: item.color }}>{system === item.id && !realistic ? <Check /> : item.id === "nervous" ? <Brain /> : item.id === "all" ? <Box /> : <PersonStanding />}</span>
             <div><strong>{item.label}</strong><small>{item.description}</small></div>
@@ -598,13 +602,7 @@ function RealMusculoskeletalModel({ system, selectedId, onSelect }: { system: An
   const gltf = useGLTF(REAL_MODEL_PATH, "/medicine/models/draco/");
   const model = useMemo(() => {
     const clone = gltf.scene.clone(true);
-    clone.updateMatrixWorld(true);
-    const bounds = new Box3().setFromObject(clone);
-    const size = bounds.getSize(new Vector3());
-    const center = bounds.getCenter(new Vector3());
-    const scale = 8.55 / Math.max(size.y, 0.001);
-    clone.scale.setScalar(scale);
-    clone.position.set(-center.x * scale, -center.y * scale - 0.08, -center.z * scale);
+    alignZAnatomyRoot(clone);
     clone.traverse((object) => {
       if (!(object instanceof Mesh)) return;
       const original = Array.isArray(object.material) ? object.material[0] : object.material;
@@ -791,10 +789,11 @@ function DetailedOrgansModel({ integrated = false, realistic, selectedId, organV
     prepared.meshes.forEach((mesh, index) => {
       const active = selectedIndexes.includes(index);
       const rawName = String(mesh.userData.rawAnatomyName ?? mesh.name);
-      mesh.visible = !isolates || active;
+      const visibleInOverview = !integrated || active || isIntegratedOverviewOrgan(rawName);
+      mesh.visible = (!isolates || active) && visibleInOverview;
       const material = mesh.material as MeshPhysicalMaterial;
       applyOrganAppearance(mesh, rawName, realistic, active, String(mesh.userData.didacticColor ?? "#a86c79"));
-      material.opacity = organView === "transparent" && active ? .34 : integrated ? .86 : 1;
+      material.opacity = organView === "transparent" && active ? .34 : integrated ? .8 : 1;
       material.transparent = material.opacity < 1;
       material.depthWrite = material.opacity > .7;
       material.clippingPlanes = organView === "section" && active && sectionPlane ? [sectionPlane] : [];
@@ -1136,15 +1135,17 @@ function skinColorForMesh(baseTone: string, meshName: string) {
 
 function normalizeAnatomyRoot(source: Object3D) {
   const clone = source.clone(true);
-  clone.updateMatrixWorld(true);
-  const bounds = new Box3().setFromObject(clone);
-  const size = bounds.getSize(new Vector3());
-  const center = bounds.getCenter(new Vector3());
-  const scale = 8.55 / Math.max(size.y, .001);
-  clone.scale.setScalar(scale);
-  clone.position.set(-center.x * scale, -center.y * scale - .08, -center.z * scale);
-  clone.updateMatrixWorld(true);
+  alignZAnatomyRoot(clone);
   return clone;
+}
+
+function alignZAnatomyRoot(root: Object3D) {
+  const size = ZANATOMY_REFERENCE_BOUNDS.getSize(new Vector3());
+  const center = ZANATOMY_REFERENCE_BOUNDS.getCenter(new Vector3());
+  const scale = 8.55 / Math.max(size.y, .001);
+  root.scale.setScalar(scale);
+  root.position.set(-center.x * scale, -center.y * scale - .08, -center.z * scale);
+  root.updateMatrixWorld(true);
 }
 
 function catalogStructureFromBounds(rawName: string, layer: Exclude<Anatomy3DSystemId, "all" | "surface" | "muscular" | "skeletal">, index: number, bounds: Box3, color: string): Anatomy3DStructure {
@@ -1205,6 +1206,11 @@ function anatomyColorForRawName(layer: DenseAnatomyLayer | "organs", rawName: st
   if (/testis|prostate|seminal|uterus|ovary|vagina/.test(name)) return "#a96b88";
   if (/pleura|peritone|fascia|capsule/.test(name)) return "#b9a3ad";
   return "#a86c79";
+}
+
+function isIntegratedOverviewOrgan(rawName: string) {
+  const name = normalize(rawName);
+  return !/(omentum|mesocolon|taenia|mucosa|segment|pleura|peritone|fascia|capsule|ligament|duct|corpus)/.test(name);
 }
 
 const anatomyNameDictionary: Record<string, string> = {
