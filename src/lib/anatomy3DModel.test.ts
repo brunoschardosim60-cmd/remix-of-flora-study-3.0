@@ -6,7 +6,7 @@ import { bodyLayers, medicalSources } from "./medicineData";
 
 describe("anatomy3DModel", () => {
   it("mantém estruturas tridimensionais únicas, referenciadas e renderizáveis", () => {
-    expect(anatomy3DStructures.length).toBeGreaterThanOrEqual(40);
+    expect(anatomy3DStructures.length).toBeGreaterThanOrEqual(53);
     expect(new Set(anatomy3DStructures.map((item) => item.id)).size).toBe(anatomy3DStructures.length);
 
     for (const structure of anatomy3DStructures) {
@@ -33,6 +33,10 @@ describe("anatomy3DModel", () => {
   it("oferece cérebro, órgãos, músculos, nervos e ossos como seleções 3D", () => {
     expect(structuresFor3D("nervous", "head").some((item) => item.id === "nerve-brain")).toBe(true);
     expect(structuresFor3D("organs", "whole").some((item) => item.id === "organ-heart")).toBe(true);
+    expect(structuresFor3D("organs", "whole").map((item) => item.id)).toEqual(expect.arrayContaining([
+      "organ-eyes", "organ-inner-ear", "organ-thyroid", "organ-pancreas",
+      "organ-uterus", "organ-ovaries", "organ-prostate", "organ-testes",
+    ]));
     expect(structuresFor3D("muscular", "whole").length).toBeGreaterThanOrEqual(8);
     expect(structuresFor3D("skeletal", "whole").length).toBeGreaterThanOrEqual(8);
     expect(structuresFor3D("vascular", "whole").length).toBeGreaterThanOrEqual(7);
@@ -57,6 +61,8 @@ describe("anatomy3DModel", () => {
     expect(organ3DStructureForAtlasId("heart")).toBe("organ-heart");
     expect(organ3DStructureForAtlasId("brain")).toBe("organ-brain");
     expect(organ3DStructureForAtlasId("jejunum")).toBe("organ-intestines");
-    expect(organ3DStructureForAtlasId("pancreas")).toBeNull();
+    expect(organ3DStructureForAtlasId("pancreas")).toBe("organ-pancreas");
+    expect(organ3DStructureForAtlasId("uterus")).toBe("organ-uterus");
+    expect(organ3DStructureForAtlasId("cochlea")).toBe("organ-inner-ear");
   });
 });

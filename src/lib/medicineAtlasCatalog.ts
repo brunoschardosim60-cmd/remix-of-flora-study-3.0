@@ -96,6 +96,13 @@ const surfaceStructures = makeGroup("surface", "openstaxSkin", [
   ["crural-region", "Região crural", "perna anterior", "Área superficial anterior entre joelho e tornozelo.", anterior(44, 84)],
   ["sural-region", "Região sural", "panturrilha", "Área superficial posterior da perna.", posterior(56, 84)],
   ["plantar-region", "Região plantar", "pé", "Superfície inferior do pé.", posterior(55, 96)],
+  ["epidermis", "Epiderme", "revestimento corporal", "Forma a camada epitelial mais superficial da pele e contribui para a barreira contra o meio externo.", both(31, 31, 69, 31), "Epidermis", undefined, "openstaxSkinLayers"],
+  ["dermis", "Derme", "pele", "Fornece resistência e elasticidade e abriga vasos, terminações nervosas e anexos cutâneos.", both(29, 34, 71, 34), "Dermis", undefined, "openstaxSkinLayers"],
+  ["hypodermis", "Hipoderme", "tecido subcutâneo", "Conecta a pele a planos profundos, armazena tecido adiposo e auxilia isolamento e proteção mecânica.", both(42, 58, 58, 58), "Tela subcutanea", ["tecido subcutâneo"], "openstaxSkinLayers"],
+  ["hair-follicle", "Folículo piloso", "pele pilosa", "Produz e ancora o pelo e se relaciona com glândulas sebáceas e músculo eretor do pelo.", both(43, 7, 57, 7), "Folliculus pili", undefined, "openstaxSkinAccessories"],
+  ["sebaceous-gland", "Glândula sebácea", "anexo cutâneo", "Produz sebo que lubrifica a pele e os pelos.", both(35, 24, 65, 24), "Glandula sebacea", undefined, "openstaxSkinAccessories"],
+  ["sweat-gland", "Glândula sudorípara", "anexo cutâneo", "Produz suor e participa da termorregulação e da excreção de pequenas quantidades de solutos.", both(27, 43, 73, 43), "Glandula sudorifera", undefined, "openstaxSkinAccessories"],
+  ["nails", "Unhas", "extremidades dos dedos", "Protegem as falanges distais e oferecem apoio mecânico para manipulação fina.", both(15, 53, 85, 53), "Ungues", undefined, "openstaxSkinAccessories"],
 ]);
 
 const muscularStructures = makeGroup("muscular", "openstaxMuscle", [
@@ -137,6 +144,20 @@ const muscularStructures = makeGroup("muscular", "openstaxMuscle", [
   ["gastrocnemius", "Gastrocnêmio", "panturrilha", "Realiza flexão plantar do tornozelo e auxilia a flexão do joelho.", posterior(56, 83), "Musculus gastrocnemius"],
   ["soleus", "Músculo sóleo", "panturrilha profunda", "Realiza flexão plantar e contribui para a postura em pé.", posterior(58, 87), "Musculus soleus"],
   ["calcaneal-tendon", "Tendão calcâneo", "tornozelo posterior", "Transmite ao calcâneo a força do tríceps sural para a flexão plantar.", posterior(55, 93), "Tendo calcaneus", ["tendão de aquiles"]],
+  ["occipitalis", "Músculo occipital", "couro cabeludo posterior", "Retrai o couro cabeludo e integra o músculo occipitofrontal.", posterior(50, 6), "Venter occipitalis musculi occipitofrontalis"],
+  ["splenius-capitis", "Esplênio da cabeça", "nuca", "Estende a cabeça bilateralmente e participa de rotação e flexão lateral unilateral.", posterior(54, 15), "Musculus splenius capitis"],
+  ["levator-scapulae", "Levantador da escápula", "pescoço posterior e escápula", "Eleva a escápula e participa de sua rotação inferior.", posterior(58, 20), "Musculus levator scapulae"],
+  ["rhomboid-minor", "Romboide menor", "dorso superior", "Retrai e estabiliza a escápula contra a parede torácica.", posterior(55, 23), "Musculus rhomboideus minor"],
+  ["rhomboid-major", "Romboide maior", "dorso superior", "Retrai a escápula e participa de sua rotação inferior.", posterior(56, 27), "Musculus rhomboideus major"],
+  ["supraspinatus", "Supraespinal", "fossa supraespinal da escápula", "Inicia a abdução do braço e contribui para estabilizar a cabeça do úmero.", posterior(61, 22), "Musculus supraspinatus"],
+  ["infraspinatus", "Infraespinal", "fossa infraespinal da escápula", "Roda lateralmente o braço e estabiliza a articulação glenoumeral.", posterior(62, 25), "Musculus infraspinatus"],
+  ["teres-minor", "Redondo menor", "ombro posterior", "Roda lateralmente o braço e integra o manguito rotador.", posterior(64, 27), "Musculus teres minor"],
+  ["teres-major", "Redondo maior", "axila posterior", "Aduz, estende e roda medialmente o braço.", posterior(63, 29), "Musculus teres major"],
+  ["quadratus-lumborum", "Quadrado lombar", "parede abdominal posterior", "Auxilia a flexão lateral do tronco e estabiliza a décima segunda costela.", posterior(56, 42), "Musculus quadratus lumborum"],
+  ["gluteus-minimus", "Glúteo mínimo", "quadril posterolateral profundo", "Abduz e roda medialmente a coxa e ajuda a estabilizar a pelve.", posterior(60, 51), "Musculus gluteus minimus"],
+  ["popliteus", "Músculo poplíteo", "joelho posterior", "Auxilia o desbloqueio do joelho no início da flexão e estabiliza sua face posterior.", posterior(55, 77), "Musculus popliteus"],
+  ["tibialis-posterior", "Tibial posterior", "perna posterior profunda", "Realiza flexão plantar e inversão e participa da sustentação do arco medial do pé.", posterior(54, 86), "Musculus tibialis posterior"],
+  ["plantaris", "Músculo plantar", "joelho e perna posterior", "Auxilia discretamente a flexão plantar e a flexão do joelho.", posterior(58, 81), "Musculus plantaris"],
 ]);
 
 const individualVertebraRows: CatalogRow[] = [
@@ -417,6 +438,13 @@ const nervousStructures = makeGroup("nervous", "openstaxPns", [
 
 const organStructures = makeGroup("organs", "openstax", [
   ["eyes", "Olhos", "órbitas", "Recebem estímulos luminosos e iniciam o processamento visual.", anterior(47, 8), "Oculi", undefined, "openstaxCns"],
+  ["retina", "Retina", "parede interna do olho", "Contém fotorreceptores que convertem energia luminosa em sinais neurais.", anterior(46.5, 8), "Retina", undefined, "openstaxSenses"],
+  ["lens-eye", "Cristalino", "segmento anterior do olho", "Modifica sua curvatura para ajudar a focalizar a imagem sobre a retina.", anterior(47.4, 8.2), "Lens", ["lente do olho"], "openstaxSenses"],
+  ["cochlea", "Cóclea", "orelha interna", "Abriga o órgão sensorial da audição e participa da transdução de vibrações sonoras.", both(42.4, 9, 57.6, 9), "Cochlea", undefined, "openstaxSenses"],
+  ["semicircular-canals", "Canais semicirculares", "orelha interna", "Detectam acelerações angulares da cabeça e participam do equilíbrio.", both(42, 8.4, 58, 8.4), "Canales semicirculares", undefined, "openstaxSenses"],
+  ["olfactory-epithelium", "Epitélio olfatório", "cavidade nasal superior", "Contém receptores que iniciam a transdução de moléculas odoríferas.", anterior(50, 8.7), "Epithelium olfactorium", undefined, "openstaxSenses"],
+  ["tongue", "Língua", "cavidade oral", "Participa da gustação, manipulação do alimento, deglutição e articulação da fala.", anterior(50, 11.2), "Lingua", undefined, "openstaxSenses"],
+  ["taste-buds", "Botões gustativos", "língua e cavidade oral", "Reúnem células receptoras envolvidas na percepção dos sabores.", anterior(49.5, 11.4), "Caliculi gustatorii", ["papilas gustativas"], "openstaxSenses"],
   ["nasal-cavity", "Cavidade nasal", "nariz", "Filtra, aquece e umidifica o ar e participa do olfato.", anterior(50, 9), "Cavitas nasi", undefined, "openstaxRespiratory"],
   ["oral-cavity", "Cavidade oral", "face inferior", "Inicia digestão mecânica e química e participa de fala e deglutição.", anterior(50, 11), "Cavitas oris", undefined, "openstaxDigestive"],
   ["parotid-gland", "Glândula parótida", "face lateral", "Produz secreção salivar serosa conduzida à cavidade oral.", anterior(43, 11), "Glandula parotidea", undefined, "openstaxDigestive"],
@@ -447,6 +475,18 @@ const organStructures = makeGroup("organs", "openstax", [
   ["ureters", "Ureteres", "retroperitônio e pelve", "Conduzem urina dos rins à bexiga.", anterior(55, 44), "Ureteres", undefined, "openstaxKidney"],
   ["urinary-bladder", "Bexiga urinária", "pelve anterior", "Armazena urina até a micção.", anterior(50, 53), "Vesica urinaria", ["bexiga"], "openstaxKidney"],
   ["urethra", "Uretra", "pelve e períneo", "Conduz urina da bexiga ao exterior.", anterior(50, 56), "Urethra", undefined, "openstaxKidney"],
+  ["ovaries", "Ovários", "pelve", "Produzem oócitos e hormônios que participam da função reprodutiva.", anterior(43, 52), "Ovaria", ["ovário"], "openstaxReproductive"],
+  ["uterine-tubes", "Tubas uterinas", "pelve", "Conduzem o oócito em direção ao útero e são o local mais comum de fecundação.", anterior(46, 51), "Tubae uterinae", ["trompas uterinas", "trompas de falópio"], "openstaxReproductive"],
+  ["uterus", "Útero", "pelve menor", "Órgão muscular que recebe o embrião implantado e sustenta o desenvolvimento durante a gestação.", anterior(50, 52), "Uterus", undefined, "openstaxReproductive"],
+  ["cervix", "Colo do útero", "pelve menor", "Forma a porção inferior do útero e se projeta no canal vaginal.", anterior(50, 54), "Cervix uteri", ["cérvix"], "openstaxReproductive"],
+  ["vagina", "Vagina", "pelve e períneo", "Canal fibromuscular que se estende do colo do útero ao vestíbulo.", anterior(50, 56), "Vagina", undefined, "openstaxReproductive"],
+  ["vulva", "Vulva", "períneo anterior", "Conjunto das estruturas genitais externas típicas da anatomia ovariana.", anterior(50, 57), "Pudendum femininum", undefined, "openstaxReproductive"],
+  ["testes", "Testículos", "escroto", "Produzem espermatozoides nos túbulos seminíferos e secretam hormônios androgênicos.", anterior(48, 58), "Testes", ["testículo"], "openstaxReproductive"],
+  ["epididymis", "Epidídimo", "escroto", "Recebe espermatozoides do testículo e participa de sua maturação e armazenamento.", anterior(47, 57.5), "Epididymis", undefined, "openstaxReproductive"],
+  ["ductus-deferens", "Ducto deferente", "escroto, canal inguinal e pelve", "Conduz espermatozoides do epidídimo em direção ao ducto ejaculatório.", anterior(47, 54), "Ductus deferens", ["canal deferente"], "openstaxReproductive"],
+  ["seminal-vesicles", "Vesículas seminais", "pelve posterior à bexiga", "Produzem parte importante do fluido seminal.", anterior(53, 52.5), "Glandulae vesiculosae", undefined, "openstaxReproductive"],
+  ["prostate", "Próstata", "pelve inferior à bexiga", "Produz secreção que contribui para o sêmen e circunda a uretra prostática.", anterior(50, 54.5), "Prostata", undefined, "openstaxReproductive"],
+  ["penis", "Pênis", "períneo anterior", "Contém tecidos eréteis e conduz a uretra em seu segmento distal.", anterior(50, 58), "Penis", undefined, "openstaxReproductive"],
   ["pituitary-gland", "Hipófise", "base do crânio", "Secreta hormônios que regulam múltiplos eixos endócrinos.", anterior(50, 8), "Hypophysis", ["glândula pituitária"], "openstaxEndocrine"],
   ["pineal-gland", "Glândula pineal", "encéfalo", "Secreta melatonina e participa da regulação circadiana.", posterior(50, 7), "Glandula pinealis", undefined, "openstaxEndocrine"],
   ["palatine-tonsils", "Tonsilas palatinas", "orofaringe", "Participam da vigilância imune na entrada dos tratos respiratório e digestório.", anterior(48, 12), "Tonsillae palatinae", ["amígdalas"], "openstaxImmune"],
@@ -455,6 +495,8 @@ const organStructures = makeGroup("organs", "openstax", [
   ["inguinal-lymph-nodes", "Linfonodos inguinais", "virilha", "Filtram linfa de territórios superficiais do membro inferior e regiões adjacentes.", anterior(43, 53), "Nodi lymphoidei inguinales", undefined, "openstaxImmune"],
 ]);
 
+const deepLayerWithPosteriorContext = new Set<BodyLayer>(["vascular", "nervous", "organs"]);
+
 export const medicineAtlasCatalog: AtlasCatalogSeed[] = [
   ...surfaceStructures,
   ...muscularStructures,
@@ -462,4 +504,14 @@ export const medicineAtlasCatalog: AtlasCatalogSeed[] = [
   ...vascularStructures,
   ...nervousStructures,
   ...organStructures,
-];
+].map((structure) => {
+  if (structure.positions.posterior || !structure.positions.anterior || !deepLayerWithPosteriorContext.has(structure.layer)) return structure;
+  const front = structure.positions.anterior;
+  return {
+    ...structure,
+    positions: {
+      ...structure.positions,
+      posterior: point(100 - front.x, front.y),
+    },
+  };
+});

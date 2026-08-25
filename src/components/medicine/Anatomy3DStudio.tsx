@@ -58,6 +58,10 @@ const REAL_MODEL_PATH = "/medicine/models/zanatomy-musculoskeletal-v1.glb";
 const REAL_SKIN_PATH = "/medicine/models/bodyparts3d-skin-v1.glb";
 const REAL_ORGANS_PATH = "/medicine/models/bodyparts3d-organs-v1.glb";
 const BODY_PARTS_SOURCE_BOUNDS = new Box3(new Vector3(-1.33905, -3.534865, -0.187946), new Vector3(1.33396, 3.18329, 0.971386));
+const SUPPLEMENTAL_ORGAN_IDS = new Set([
+  "organ-eyes", "organ-inner-ear", "organ-thyroid", "organ-pancreas",
+  "organ-uterus", "organ-ovaries", "organ-prostate", "organ-testes",
+]);
 
 export function Anatomy3DStudio({ level, initialStructureId }: Anatomy3DStudioProps) {
   const initialStructure = anatomy3DStructures.find((item) => item.id === initialStructureId);
@@ -285,10 +289,14 @@ export function Anatomy3DStudio({ level, initialStructureId }: Anatomy3DStudioPr
 
 function AnatomyModel({ system, region, selectedId, skinOpacity, onSelect }: { system: Anatomy3DSystemId; region: Anatomy3DRegionId; selectedId: string | null; skinOpacity: number; onSelect: (structure: Anatomy3DStructure) => void }) {
   const structures = useMemo(() => structuresFor3D(system, region).filter((structure) => {
-    if (system === "all") return structure.layer === "vascular" || structure.layer === "nervous";
+    if (system === "all") return structure.layer === "vascular" || structure.layer === "nervous" || SUPPLEMENTAL_ORGAN_IDS.has(structure.id);
+    if (system === "organs") {
+      if (selectedId && SUPPLEMENTAL_ORGAN_IDS.has(selectedId)) return structure.id === selectedId;
+      return SUPPLEMENTAL_ORGAN_IDS.has(structure.id);
+    }
     if (system === "nervous" && structure.id === "nerve-brain") return false;
     return system === "vascular" || system === "nervous";
-  }), [system, region]);
+  }), [system, region, selectedId]);
   return <group position={[0, 0.05, 0]}>{structures.map((structure) => (
     <StructureMesh key={structure.id} structure={structure} selected={selectedId === structure.id} opacity={system === "all" ? (structure.layer === "surface" ? skinOpacity : layerOpacity[structure.layer]) : 1} onSelect={onSelect} />
   ))}</group>;
@@ -340,7 +348,8 @@ function RealBodyPartsModel({ system, selectedId, skinOpacity, organView, sectio
       if (!(object instanceof Mesh)) return;
       const semantic = organSemantic(object.name);
       const isolateOrgan = system === "organs" && organView !== "context" && Boolean(selectedSemantic);
-      object.visible = (system !== "nervous" || semantic === "brain") && (!isolateOrgan || semantic === selectedSemantic);
+      const supplementalSelected = Boolean(selectedId && SUPPLEMENTAL_ORGAN_IDS.has(selectedId));
+      object.visible = !supplementalSelected && (system !== "nervous" || semantic === "brain") && (!isolateOrgan || semantic === selectedSemantic);
       const material = object.material as MeshStandardMaterial;
       const guidedId = system === "nervous" && semantic === "brain" ? "nerve-brain" : `organ-${semantic}`;
       const active = selectedId === guidedId || selectedId === `model:${system === "nervous" ? "nerve" : "organ"}:${semantic}`;

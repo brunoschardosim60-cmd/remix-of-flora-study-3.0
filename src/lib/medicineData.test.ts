@@ -105,7 +105,7 @@ describe("medicine content integrity", () => {
   it("covers every declared learning level", () => {
     const levels: MedicineLevel[] = ["Iniciante", "Ciclo básico", "Ciclo clínico", "Internato", "Residência"];
     for (const level of levels) {
-      expect(medicalQuestions.some((question) => question.level === level), level).toBe(true);
+      expect(medicalQuestions.filter((question) => question.level === level).length, level).toBeGreaterThanOrEqual(5);
       expect(medicineLevelProfiles[level].title.length, `${level} title`).toBeGreaterThan(5);
       expect(medicineLevelProfiles[level].focus.length, `${level} focus`).toBeGreaterThan(5);
       expect(medicineLevelProfiles[level].cycle.length, `${level} cycle`).toBeGreaterThanOrEqual(5);
@@ -123,6 +123,9 @@ describe("medicine content integrity", () => {
   });
 
   it("keeps every system connected to atlas structures, questions and a reviewed source", () => {
+    expect(medicalSystems.length).toBeGreaterThanOrEqual(11);
+    expect(medicalSystems.map((system) => system.id)).toEqual(expect.arrayContaining(["integumentary", "special-senses", "reproductive"]));
+
     for (const system of medicalSystems) {
       expect(medicalSources[system.sourceId], `source for system ${system.id}`).toBeDefined();
       expect(system.atlasStructureIds.length, `atlas links for ${system.id}`).toBeGreaterThanOrEqual(4);
@@ -197,6 +200,22 @@ describe("medicine content integrity", () => {
       expect(anatomyStructures.some((item) => item.id === `hand-phalanx-${digit}-proximal`), `hand phalanx ${digit}`).toBe(true);
       expect(anatomyStructures.some((item) => item.id === `foot-phalanx-${digit}-proximal`), `foot phalanx ${digit}`).toBe(true);
     }
+  });
+
+  it("keeps deep anatomical layers fully explorable from the posterior view", () => {
+    for (const layer of ["vascular", "nervous", "organs"] as const) {
+      const structures = anatomyStructures.filter((item) => item.layer === layer);
+      expect(structures.length, layer).toBeGreaterThanOrEqual(30);
+      for (const structure of structures) {
+        expect(anatomyPositionFor(structure, "posterior"), `${layer}/${structure.id}`).not.toBeNull();
+      }
+    }
+
+    const newlyDetailed = [
+      "epidermis", "dermis", "hypodermis", "cochlea", "semicircular-canals",
+      "ovaries", "uterine-tubes", "uterus", "testes", "epididymis", "prostate",
+    ];
+    for (const id of newlyDetailed) expect(anatomyStructures.some((item) => item.id === id), id).toBe(true);
   });
 
   it("keeps every medical illustration available in the public bundle", () => {

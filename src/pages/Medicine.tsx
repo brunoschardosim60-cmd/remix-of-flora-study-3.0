@@ -341,7 +341,7 @@ function SystemsSection({ level, onOpenAtlas }: { level: MedicineLevel; onOpenAt
     <PageHeading eyebrow={`Anatomia por sistemas · ${level}`} title="Veja o organismo funcionando em conjunto" description="Explore o mapa anatômico, siga os mecanismos em sequência e teste o entendimento sem sair do sistema escolhido." />
     <div className="med-systems-layout med-systems-workspace">
       <nav className="med-system-list" aria-label="Sistemas do corpo">
-        <div className="med-system-list-heading"><span>8 sistemas</span><strong>Escolha uma área</strong></div>
+        <div className="med-system-list-heading"><span>{medicalSystems.length} sistemas</span><strong>Escolha uma área</strong></div>
         {medicalSystems.map((system) => <button key={system.id} onClick={() => setSelectedId(system.id)} className={selected.id === system.id ? "active" : ""} style={{ "--system": system.color } as CSSProperties}><span>{system.name.slice(0, 2)}</span><div><strong>{system.name}</strong><small>{system.description}</small></div><ChevronRight /></button>)}
       </nav>
 

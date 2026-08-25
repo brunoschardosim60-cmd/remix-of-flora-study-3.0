@@ -293,6 +293,46 @@ export const anatomy3DStructures: Anatomy3DStructure[] = [
     summary: "Órgão muscular oco da pelve que recebe urina dos ureteres.", function: "Armazena urina até a micção.", sourceId: "openstaxKidney", focus: [0, -0.68, 0.18], focusDistance: 1.9, color: "#9b6b88",
     parts: [sphere([0, -0.68, 0.15], [0.27, 0.3, 0.25])],
   },
+  {
+    id: "organ-eyes", name: "Olhos", latin: "Oculi", layer: "organs", regionId: "head", region: "Órbitas", system: "Sentidos especiais",
+    summary: "Órgãos pares da visão posicionados nas órbitas e conectados ao encéfalo pelas vias ópticas.", function: "Recebem luz, formam uma imagem sobre a retina e iniciam a transdução visual.", sourceId: "openstaxSenses", focus: [0, 3.48, 0.5], focusDistance: 1.5, color: "#7b96ac",
+    parts: [sphere([0.26, 3.48, 0.5], [0.2, 0.2, 0.2]), sphere([-0.26, 3.48, 0.5], [0.2, 0.2, 0.2])],
+  },
+  {
+    id: "organ-inner-ear", name: "Orelha interna", latin: "Auris interna", layer: "organs", regionId: "head", region: "Osso temporal", system: "Sentidos especiais",
+    summary: "Conjunto sensorial profundo que reúne cóclea, vestíbulo e canais semicirculares.", function: "Participa da audição e da detecção de movimentos e posição da cabeça.", sourceId: "openstaxSenses", focus: [0.52, 3.3, 0.02], focusDistance: 1.55, color: "#8f77a8",
+    parts: [torus([0.51, 3.3, 0.04], [0.24, 0.2, 0.18], [Math.PI / 2, 0, 0]), torus([-0.51, 3.3, 0.04], [0.24, 0.2, 0.18], [Math.PI / 2, 0, 0])],
+  },
+  {
+    id: "organ-thyroid", name: "Glândula tireoide", latin: "Glandula thyroidea", layer: "organs", regionId: "head", region: "Pescoço anterior", system: "Endócrino",
+    summary: "Glândula endócrina bilobada situada anteriormente à traqueia no pescoço inferior.", function: "Produz hormônios tireoidianos e calcitonina, participando da regulação metabólica e da homeostase do cálcio.", sourceId: "openstaxEndocrine", focus: [0, 2.56, 0.3], focusDistance: 1.65, color: "#9a6f91",
+    parts: [sphere([0.18, 2.56, 0.3], [0.2, 0.3, 0.13]), sphere([-0.18, 2.56, 0.3], [0.2, 0.3, 0.13]), cylinder([0, 2.56, 0.3], [0.16, 0.07, 0.08])],
+  },
+  {
+    id: "organ-pancreas", name: "Pâncreas", latin: "Pancreas", layer: "organs", regionId: "abdomen", region: "Abdome superior", system: "Digestório e endócrino",
+    summary: "Órgão glandular alongado situado posteriormente ao estômago e relacionado ao duodeno.", function: "Produz enzimas digestivas e hormônios envolvidos no controle do metabolismo energético.", sourceId: "openstaxDigestive", focus: [0, 0.25, 0.02], focusDistance: 2.0, color: "#c99663",
+    parts: [capsule([0, 0.25, 0.02], [0.2, 0.62, 0.16], [0, 0, Math.PI / 2])],
+  },
+  {
+    id: "organ-uterus", name: "Útero", latin: "Uterus", layer: "organs", regionId: "pelvis", region: "Pelve menor", system: "Reprodutor",
+    summary: "Órgão muscular mediano da pelve, conectado às tubas uterinas e ao canal vaginal pelo colo.", function: "Recebe o embrião implantado e sustenta o desenvolvimento durante a gestação.", sourceId: "openstaxReproductive", focus: [0, -0.66, 0.17], focusDistance: 1.55, color: "#aa6f82",
+    parts: [sphere([0, -0.62, 0.17], [0.3, 0.34, 0.22]), cylinder([0, -0.92, 0.17], [0.1, 0.2, 0.1])],
+  },
+  {
+    id: "organ-ovaries", name: "Ovários", latin: "Ovaria", layer: "organs", regionId: "pelvis", region: "Pelve", system: "Reprodutor",
+    summary: "Gônadas pares posicionadas lateralmente ao útero e conectadas por ligamentos.", function: "Produzem oócitos e secretam hormônios que participam da regulação reprodutiva.", sourceId: "openstaxReproductive", focus: [0.48, -0.58, 0.13], focusDistance: 1.65, color: "#b98487",
+    parts: [sphere([0.48, -0.58, 0.13], [0.15, 0.11, 0.1]), sphere([-0.48, -0.58, 0.13], [0.15, 0.11, 0.1]), tube([[-0.4, -0.56, 0.13], [-0.22, -0.48, 0.16], [0, -0.5, 0.17], [0.22, -0.48, 0.16], [0.4, -0.56, 0.13]], 0.035)],
+  },
+  {
+    id: "organ-prostate", name: "Próstata", latin: "Prostata", layer: "organs", regionId: "pelvis", region: "Inferior à bexiga", system: "Reprodutor",
+    summary: "Glândula posicionada inferiormente à bexiga e ao redor do segmento inicial da uretra.", function: "Produz secreção que integra o fluido seminal.", sourceId: "openstaxReproductive", focus: [0, -0.88, 0.2], focusDistance: 1.45, color: "#8c6a83",
+    parts: [sphere([0, -0.88, 0.2], [0.24, 0.18, 0.2])],
+  },
+  {
+    id: "organ-testes", name: "Testículos", latin: "Testes", layer: "organs", regionId: "pelvis", region: "Escroto", system: "Reprodutor",
+    summary: "Gônadas pares localizadas no escroto e conectadas às vias espermáticas.", function: "Produzem espermatozoides e secretam hormônios androgênicos.", sourceId: "openstaxReproductive", focus: [0, -1.18, 0.22], focusDistance: 1.45, color: "#a98779",
+    parts: [sphere([0.17, -1.18, 0.22], [0.14, 0.2, 0.13]), sphere([-0.17, -1.18, 0.22], [0.14, 0.2, 0.13])],
+  },
 ];
 
 export function structuresFor3D(system: Anatomy3DSystemId, region: Anatomy3DRegionId) {
@@ -320,6 +360,18 @@ const atlasOrgan3DMap: Record<string, string> = {
   "descending-colon": "organ-intestines",
   "sigmoid-colon": "organ-intestines",
   rectum: "organ-intestines",
+  eyes: "organ-eyes",
+  retina: "organ-eyes",
+  "lens-eye": "organ-eyes",
+  cochlea: "organ-inner-ear",
+  "semicircular-canals": "organ-inner-ear",
+  "thyroid-gland": "organ-thyroid",
+  pancreas: "organ-pancreas",
+  uterus: "organ-uterus",
+  ovaries: "organ-ovaries",
+  "uterine-tubes": "organ-ovaries",
+  prostate: "organ-prostate",
+  testes: "organ-testes",
 };
 
 /** Relaciona apenas estruturas cobertas por uma malha 3D anatômica disponível. */

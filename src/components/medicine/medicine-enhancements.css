@@ -907,6 +907,7 @@
   top: 88px;
   max-height: calc(100dvh - 108px);
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 10px;
   border: 1px solid var(--med-line);
   border-radius: 22px;
@@ -922,7 +923,8 @@
 
 .med-system-list-heading span { color: #7c918a; font-size: 8px; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
 .med-system-list-heading strong { margin-top: 3px; color: #26473e; font-family: Georgia, serif; font-size: 18px; font-weight: 500; }
-.med-systems-workspace .med-system-list button { padding: 10px; border-radius: 13px; }
+.med-systems-workspace .med-system-list button { min-width: 0; padding: 10px; border-radius: 13px; }
+.med-systems-workspace .med-system-list button > div { min-width: 0; }
 .med-systems-workspace .med-system-list button > span { width: 36px; height: 36px; border-radius: 11px; font-size: 9px; }
 .med-systems-workspace .med-system-list strong { font-size: 10px; }
 .med-systems-workspace .med-system-list small { overflow: hidden; font-size: 8px; line-height: 1.4; text-overflow: ellipsis; white-space: nowrap; }
