@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { medicalSources } from "./medicineData";
 import { instrumentQuizOptions, medicalInstrumentCategories, medicalInstruments } from "./medicalInstruments";
@@ -31,13 +33,14 @@ describe("medical instruments catalog", () => {
     }
   });
 
-  it("keeps the reviewed high-definition instrument renders unique and addressable", () => {
+  it("gives every instrument a unique high-definition render", () => {
     const rendered = medicalInstruments.filter((instrument) => instrument.image);
-    expect(rendered).toHaveLength(12);
+    expect(rendered).toHaveLength(medicalInstruments.length);
     expect(new Set(rendered.map((instrument) => instrument.image)).size).toBe(rendered.length);
 
     for (const instrument of rendered) {
       expect(instrument.image, instrument.id).toMatch(/^\/medicine\/instruments\/[a-z0-9-]+-v\d+\.png$/);
+      expect(existsSync(resolve(process.cwd(), `public${instrument.image}`)), instrument.id).toBe(true);
     }
   });
 });
