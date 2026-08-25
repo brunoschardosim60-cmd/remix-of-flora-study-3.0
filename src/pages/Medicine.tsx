@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { BodyAtlas } from "@/components/medicine/BodyAtlas";
+import { AnamnesisSimulator } from "@/components/medicine/AnamnesisSimulator";
 import { InstrumentsStudio } from "@/components/medicine/InstrumentsStudio";
 import { SurgerySimulator } from "@/components/medicine/SurgerySimulator";
 import { useAuth } from "@/hooks/useAuth";
@@ -22,10 +23,11 @@ import "@/components/medicine/medicine-enhancements.css";
 import "@/components/medicine/instruments.css";
 import "@/components/medicine/anatomy-3d.css";
 import "@/components/medicine/surgery-simulator.css";
+import "@/components/medicine/anamnesis-simulator.css";
 
 const Anatomy3DStudio = lazy(() => import("@/components/medicine/Anatomy3DStudio").then((module) => ({ default: module.Anatomy3DStudio })));
 
-type MedicineSection = "home" | "atlas" | "atlas3d" | "instruments" | "surgery" | "systems" | "development" | "practice" | "questions" | "clinic" | "plan" | "notebook" | "sources";
+type MedicineSection = "home" | "atlas" | "atlas3d" | "instruments" | "surgery" | "systems" | "development" | "practice" | "questions" | "anamnesis" | "clinic" | "plan" | "notebook" | "sources";
 
 const NAV: Array<{ id: MedicineSection; label: string; Icon: typeof Activity }> = [
   { id: "home", label: "Visão geral", Icon: Activity },
@@ -37,6 +39,7 @@ const NAV: Array<{ id: MedicineSection; label: string; Icon: typeof Activity }> 
   { id: "development", label: "Desenvolvimento", Icon: Baby },
   { id: "practice", label: "Identificação", Icon: Target },
   { id: "questions", label: "Questões", Icon: ClipboardCheck },
+  { id: "anamnesis", label: "Anamnese", Icon: FileHeart },
   { id: "clinic", label: "Clínica", Icon: Stethoscope },
   { id: "plan", label: "Plano", Icon: Timer },
   { id: "notebook", label: "Caderno médico", Icon: NotebookPen },
@@ -222,9 +225,9 @@ export default function Medicine() {
       <div className="med-shell">
         <aside className={`med-sidebar ${mobileNav ? "open" : ""}`}>
           <div className="med-sidebar-label">ESTUDAR</div>
-          {NAV.slice(0, 11).map(({ id, label, Icon }) => <button key={id} onClick={() => go(id)} className={section === id ? "active" : ""}><Icon /><span>{label}</span>{id === "questions" && wrongIds.length > 0 && <b>{wrongIds.length}</b>}</button>)}
+          {NAV.slice(0, 12).map(({ id, label, Icon }) => <button key={id} onClick={() => go(id)} className={section === id ? "active" : ""}><Icon /><span>{label}</span>{id === "questions" && wrongIds.length > 0 && <b>{wrongIds.length}</b>}</button>)}
           <div className="med-sidebar-label">FERRAMENTAS</div>
-          {NAV.slice(11).map(({ id, label, Icon }) => <button key={id} onClick={() => go(id)} className={section === id ? "active" : ""}><Icon /><span>{label}</span></button>)}
+          {NAV.slice(12).map(({ id, label, Icon }) => <button key={id} onClick={() => go(id)} className={section === id ? "active" : ""}><Icon /><span>{label}</span></button>)}
           <div className="med-safety-mini"><ShieldCheck /><div><strong>Uso educacional</strong><span>Não substitui supervisão, avaliação ou atendimento profissional.</span></div></div>
         </aside>
 
@@ -244,6 +247,7 @@ export default function Medicine() {
             if (!correct) { const next = Array.from(new Set([...wrongIds, `structure:${practiceStructure.id}`])); setWrongIds(next); saveMedicineState("wrong", next); }
           }} onNext={() => { const currentIndex = practicePool.findIndex((structure) => structure.id === practiceStructure.id); const nextIndex = (Math.max(currentIndex, 0) + 1) % practicePool.length; setPracticeStructure(practicePool[nextIndex]); setPracticeInput(""); setPracticeResult(null); }} />}
           {section === "questions" && <QuestionsSection level={level} question={currentQuestion} index={questionIndex % sessionQuestions.length} total={sessionQuestions.length} answer={answer} wrongCount={reviewQuestions.length} reviewOnly={activeReview} onToggleReview={() => { if (!reviewQuestions.length) { toast.info("Quando você errar uma questão deste nível, ela aparecerá aqui para revisão."); return; } setReviewOnly((value) => !value); setQuestionIndex(0); setAnswer(null); }} onAnswer={submitAnswer} onNext={() => { setQuestionIndex((value) => value + 1); setAnswer(null); }} />}
+          {section === "anamnesis" && <AnamnesisSimulator level={level} />}
           {section === "clinic" && <ClinicalSection level={level} clinicalCase={activeClinicalCase} cases={medicalClinicalCases} sensitiveContentEnabled={sensitiveContentEnabled} step={caseStep} reflection={caseReflection} answer={caseAnswer} onSelectCase={selectClinicalCase} onToggleSensitive={() => setSensitiveContentEnabled((value) => !value)} onReflection={setCaseReflection} onAnswer={setCaseAnswer} onNext={() => {
             if (caseAnswer === null) { toast.info("Escolha uma resposta antes de avançar."); return; }
             if (caseReflection.trim().length < 40) { toast.info("Desenvolva a justificativa em pelo menos 40 caracteres."); return; }
