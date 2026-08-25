@@ -2,7 +2,7 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "rea
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { ContactShadows, Environment, Grid, Lightformer, OrbitControls, useGLTF } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
-import { ACESFilmicToneMapping, Box3, BufferAttribute, CatmullRomCurve3, Color, DoubleSide, Mesh, MeshPhysicalMaterial, MeshStandardMaterial, Object3D, PCFSoftShadowMap, Plane, SRGBColorSpace, Vector2, Vector3 } from "three";
+import { ACESFilmicToneMapping, Box3, BufferAttribute, Color, DoubleSide, Mesh, MeshPhysicalMaterial, MeshStandardMaterial, Object3D, PCFSoftShadowMap, Plane, SRGBColorSpace, Vector2, Vector3 } from "three";
 import { mergeGeometries, mergeVertices } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import {
   Box,
@@ -35,9 +35,7 @@ import {
   detailedStructuresFor3DSystem,
   isSupplemental3DOrganId,
   mergeGuidedAndDetailedStructures,
-  proceduralStructuresFor3D,
   structuresFor3D,
-  type Anatomy3DPart,
   type Anatomy3DRegionId,
   type Anatomy3DStructure,
   type Anatomy3DSystemId,
@@ -80,8 +78,9 @@ const STANDARD_SKIN_TONE = "#ad7152";
 const BODY_PARTS_SOURCE_BOUNDS = new Box3(new Vector3(-1.33905, -3.534865, -0.187946), new Vector3(1.33396, 3.18329, 0.971386));
 export function Anatomy3DStudio({ level, initialStructureId }: Anatomy3DStudioProps) {
   const initialStructure = anatomy3DStructures.find((item) => item.id === initialStructureId);
-  const startsWithOrgan = initialStructure?.layer === "organs";
-  const [system, setSystem] = useState<Anatomy3DSystemId>(startsWithOrgan ? "organs" : "all");
+  const initialSystem: Anatomy3DSystemId = initialStructure?.layer ?? "surface";
+  const startsWithOrgan = initialSystem === "organs";
+  const [system, setSystem] = useState<Anatomy3DSystemId>(initialSystem);
   const [appearance, setAppearance] = useState<AnatomyAppearance>("educational");
   const [region, setRegion] = useState<Anatomy3DRegionId>(initialStructure?.regionId ?? "whole");
   const [selectedId, setSelectedId] = useState(initialStructure?.id ?? "organ-heart");
@@ -188,10 +187,10 @@ export function Anatomy3DStudio({ level, initialStructureId }: Anatomy3DStudioPr
     setSelectedId(resolved.id);
     setModelSelection(resolved.id.startsWith("model:") ? resolved : null);
     setCameraView("perspective");
-    setFocusSelected(true);
-    if (resolved.layer === "organs") setOrganView("isolated");
+    setFocusSelected(system !== "all");
+    if (resolved.layer === "organs" && system === "organs") setOrganView("isolated");
     setFocusKey((value) => value + 1);
-  }, [detailedCatalogs, realistic]);
+  }, [detailedCatalogs, realistic, system]);
 
   useEffect(() => {
     const guided = anatomy3DStructures.find((item) => item.id === selectedId);
@@ -279,7 +278,7 @@ export function Anatomy3DStudio({ level, initialStructureId }: Anatomy3DStudioPr
       </header>
 
       <div className="med-3d-system-strip" aria-label="Sistemas anatômicos">
-        {anatomy3DSystemMeta.map((item) => (
+        {anatomy3DSystemMeta.filter((item) => item.id !== "all").map((item) => (
           <button key={item.id} className={system === item.id && !realistic ? "active" : ""} style={{ "--system-color": item.color } as React.CSSProperties} onClick={() => changeSystem(item.id)}>
             <span style={{ background: item.color }}>{system === item.id && !realistic ? <Check /> : item.id === "nervous" ? <Brain /> : item.id === "all" ? <Box /> : <PersonStanding />}</span>
             <div><strong>{item.label}</strong><small>{item.description}</small></div>
@@ -369,7 +368,6 @@ export function Anatomy3DStudio({ level, initialStructureId }: Anatomy3DStudioPr
                   {(system === "all" || system === "vascular") && <DenseAnatomySystemModel integrated={system === "all"} path={DETAILED_CIRCULATORY_PATH} layer="vascular" selectedId={selected?.id ?? null} onSelect={selectStructure} onCatalogReady={registerDetailedCatalog} />}
                   {(system === "all" || system === "nervous") && <DenseAnatomySystemModel integrated={system === "all"} path={DETAILED_NERVOUS_PATH} layer="nervous" selectedId={selected?.id ?? null} onSelect={selectStructure} onCatalogReady={registerDetailedCatalog} />}
                   {(system === "all" || system === "organs") && <DetailedOrgansModel integrated={system === "all"} realistic={realistic} selectedId={selected?.id ?? null} organView={organView} sectionAxis={sectionAxis} sectionOffset={sectionOffset} onSelect={selectStructure} onCatalogReady={registerDetailedCatalog} />}
-                  <AnatomyModel system={system} region={region} selectedId={selected?.id ?? null} skinOpacity={skinOpacity} onSelect={selectStructure} />
                 </group>
                 <ContactShadows position={[0, -4.46, 0]} opacity={realistic ? .52 : .34} scale={8} blur={realistic ? 1.8 : 2.6} far={5} />
                 <Grid position={[0, -4.45, 0]} args={[16, 16]} cellSize={0.5} cellThickness={0.45} cellColor={realistic ? "#4b3936" : "#a7bbb4"} sectionSize={2} sectionThickness={0.8} sectionColor={realistic ? "#725049" : "#7e9990"} fadeDistance={14} fadeStrength={1.2} infiniteGrid />
@@ -404,14 +402,6 @@ export function Anatomy3DStudio({ level, initialStructureId }: Anatomy3DStudioPr
       </div>
     </section>
   );
-}
-
-function AnatomyModel({ system, region, selectedId, skinOpacity, onSelect }: { system: Anatomy3DSystemId; region: Anatomy3DRegionId; selectedId: string | null; skinOpacity: number; onSelect: (structure: Anatomy3DStructure) => void }) {
-  const structures = useMemo(() => proceduralStructuresFor3D(system, region, selectedId), [system, region, selectedId]);
-  if (system === "vascular" || system === "nervous" || system === "organs") return null;
-  return <group position={[0, 0.05, 0]}>{structures.map((structure) => (
-    <StructureMesh key={structure.id} structure={structure} selected={selectedId === structure.id} opacity={system === "all" ? (structure.layer === "surface" ? skinOpacity : layerOpacity[structure.layer]) : 1} onSelect={onSelect} />
-  ))}</group>;
 }
 
 function RealBodyPartsModel({ system, selectedId, skinOpacity, skinTone, organView, sectionAxis, sectionOffset, onSelect }: {
@@ -899,33 +889,6 @@ function NativeMeshPicker({ active, root, onPick }: { active: boolean; root: Obj
     };
   }, [active, camera, gl, onPick, raycaster, root]);
   return null;
-}
-
-function StructureMesh({ structure, selected, opacity, onSelect }: { structure: Anatomy3DStructure; selected: boolean; opacity: number; onSelect: (structure: Anatomy3DStructure) => void }) {
-  const [hovered, setHovered] = useState(false);
-  useEffect(() => () => { document.body.style.cursor = ""; }, []);
-  const interaction = {
-    onClick: (event: { stopPropagation: () => void }) => { event.stopPropagation(); onSelect(structure); },
-    onPointerOver: (event: { stopPropagation: () => void }) => { event.stopPropagation(); setHovered(true); document.body.style.cursor = "pointer"; },
-    onPointerOut: () => { setHovered(false); document.body.style.cursor = ""; },
-  };
-  return <group {...interaction}>{structure.parts.map((part, index) => <PartMesh key={`${structure.id}-${index}`} part={part} baseColor={structure.color} opacity={opacity} active={selected || hovered} />)}</group>;
-}
-
-function PartMesh({ part, baseColor, opacity, active }: { part: Anatomy3DPart; baseColor: string; opacity: number; active: boolean }) {
-  const color = part.color ?? baseColor;
-  const material = <meshStandardMaterial color={color} roughness={0.58} metalness={0.02} transparent={opacity < 1} opacity={active ? Math.max(opacity, 0.96) : opacity} depthWrite={opacity > 0.55} emissive={active ? new Color(color) : new Color("#000000")} emissiveIntensity={active ? 0.24 : 0} />;
-  if (part.kind === "tube") return <TubePart part={part} material={material} />;
-  if (part.kind === "sphere") return <mesh position={part.position} scale={part.scale} rotation={part.rotation} castShadow receiveShadow><sphereGeometry args={[1, 34, 26]} />{material}</mesh>;
-  if (part.kind === "capsule") return <mesh position={part.position} scale={part.scale} rotation={part.rotation} castShadow receiveShadow><capsuleGeometry args={[0.55, 1, 10, 20]} />{material}</mesh>;
-  if (part.kind === "cylinder") return <mesh position={part.position} scale={part.scale} rotation={part.rotation} castShadow receiveShadow><cylinderGeometry args={[0.5, 0.5, 1, 22]} />{material}</mesh>;
-  if (part.kind === "box") return <mesh position={part.position} scale={part.scale} rotation={part.rotation} castShadow receiveShadow><boxGeometry args={[1, 1, 1, 2, 2, 2]} />{material}</mesh>;
-  return <mesh position={part.position} scale={part.scale} rotation={part.rotation} castShadow receiveShadow><torusGeometry args={[0.5, 0.075, 16, 48]} />{material}</mesh>;
-}
-
-function TubePart({ part, material }: { part: Extract<Anatomy3DPart, { kind: "tube" }>; material: React.ReactElement }) {
-  const curve = useMemo(() => new CatmullRomCurve3(part.points.map((point) => new Vector3(...point))), [part.points]);
-  return <mesh castShadow receiveShadow><tubeGeometry args={[curve, Math.max(24, part.points.length * 12), part.radius, 12, false]} />{material}</mesh>;
 }
 
 function CameraRig({ focus, distance, focusKey, view, autoRotate }: { focus: [number, number, number]; distance: number; focusKey: number; view: CameraView; autoRotate: boolean }) {

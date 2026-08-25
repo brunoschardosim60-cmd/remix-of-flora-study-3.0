@@ -2387,3 +2387,49 @@
 @media (max-width: 560px) {
   .med-atlas-profile-options{display:flex;overflow-x:auto;padding-bottom:2px}.med-atlas-profile-options>button{min-width:112px}.med-atlas-profile-strip{padding:10px}.med-atlas-profile-strip>p{font-size:6.5px}
 }
+
+.med-practice-clue {
+  display: flex;
+  min-height: 52px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 11px 13px;
+  border: 1px solid var(--med-line);
+  border-radius: 13px;
+  background: #f3f7f5;
+  color: var(--med-muted);
+  text-align: left;
+}
+
+.med-practice-clue > span {
+  font-size: 12px;
+  line-height: 1.6;
+  transition: filter .2s ease, opacity .2s ease;
+}
+
+.med-practice-clue:not(.revealed) > span {
+  filter: blur(5px);
+  opacity: .6;
+  user-select: none;
+}
+
+.med-practice-clue > b {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+  color: #477668;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+.med-practice-clue > b svg {
+  width: 14px;
+}
+
+.med-practice-clue.revealed {
+  border-color: rgba(71, 118, 104, .28);
+  background: #eaf2ee;
+}

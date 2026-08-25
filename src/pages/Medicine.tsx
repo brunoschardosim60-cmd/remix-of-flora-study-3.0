@@ -54,14 +54,6 @@ const NAV: Array<{ id: MedicineSection; label: string; Icon: typeof Activity }> 
 ];
 
 const levelOrder: MedicineLevel[] = ["Iniciante", "Ciclo básico", "Ciclo clínico", "Internato", "Residência"];
-const levelStartStructure: Record<MedicineLevel, string> = {
-  Iniciante: "heart",
-  "Ciclo básico": "deltoid",
-  "Ciclo clínico": "aorta",
-  Internato: "sciatic",
-  Residência: "brainstem",
-};
-
 const beginnerPracticeIds = new Set([
   "heart", "lungs", "brain", "liver", "kidneys", "skin", "deltoid", "femur", "aorta", "scalp",
   "frontal-region", "oral-region", "cervical-vertebrae", "clavicle", "sternum", "ribs", "humerus",
@@ -75,6 +67,13 @@ function practiceStructuresForLevel(level: MedicineLevel) {
   if (level === "Ciclo básico") return anatomyStructures.filter((structure) => ["surface", "muscular", "skeletal", "organs"].includes(structure.layer));
   if (level === "Residência") return [...anatomyStructures].sort((a, b) => Number(Boolean(b.latin)) - Number(Boolean(a.latin)) || a.name.localeCompare(b.name, "pt-BR"));
   return anatomyStructures;
+}
+
+function randomPracticeStructure(pool: AnatomyStructure[], currentId?: string) {
+  if (!pool.length) return null;
+  const alternatives = pool.filter((structure) => structure.id !== currentId);
+  const candidates = alternatives.length ? alternatives : pool;
+  return candidates[Math.floor(Math.random() * candidates.length)];
 }
 
 function loadMedicineState<T>(key: string, fallback: T): T {
@@ -134,8 +133,8 @@ export default function Medicine() {
     setReviewOnly(false);
     setPracticeInput("");
     setPracticeResult(null);
-    const recommended = practicePool.find((structure) => structure.id === levelStartStructure[level]) ?? practicePool[0];
-    if (recommended) setPracticeStructure(recommended);
+    const randomStructure = randomPracticeStructure(practicePool);
+    if (randomStructure) setPracticeStructure(randomStructure);
   }, [level, practicePool]);
 
   useEffect(() => {
@@ -184,7 +183,15 @@ export default function Medicine() {
     saveMedicineState("case_steps", { ...progress, [activeClinicalCase.id]: caseStep });
   }, [activeClinicalCase.id, caseStep]);
 
-  const go = (next: MedicineSection) => { setSection(next); setMobileNav(false); window.scrollTo({ top: 0, behavior: "smooth" }); };
+  const go = (next: MedicineSection) => {
+    if (next === "practice" && section !== "practice") {
+      const randomStructure = randomPracticeStructure(practicePool, practiceStructure.id);
+      if (randomStructure) setPracticeStructure(randomStructure);
+      setPracticeInput("");
+      setPracticeResult(null);
+    }
+    setSection(next); setMobileNav(false); window.scrollTo({ top: 0, behavior: "smooth" });
+  };
   const updateLevel = (next: MedicineLevel) => {
     if (next === level) return;
     setLevel(next);
@@ -253,7 +260,7 @@ export default function Medicine() {
             const correct = acceptedNames.includes(normalized);
             setPracticeResult(correct ? "correct" : "wrong");
             if (!correct) { const next = Array.from(new Set([...wrongIds, `structure:${practiceStructure.id}`])); setWrongIds(next); saveMedicineState("wrong", next); }
-          }} onNext={() => { const currentIndex = practicePool.findIndex((structure) => structure.id === practiceStructure.id); const nextIndex = (Math.max(currentIndex, 0) + 1) % practicePool.length; setPracticeStructure(practicePool[nextIndex]); setPracticeInput(""); setPracticeResult(null); }} />}
+          }} onNext={() => { const randomStructure = randomPracticeStructure(practicePool, practiceStructure.id); if (randomStructure) setPracticeStructure(randomStructure); setPracticeInput(""); setPracticeResult(null); }} />}
           {section === "questions" && <QuestionsSection level={level} question={currentQuestion} index={questionIndex % sessionQuestions.length} total={sessionQuestions.length} answer={answer} wrongCount={reviewQuestions.length} reviewOnly={activeReview} onToggleReview={() => { if (!reviewQuestions.length) { toast.info("Quando você errar uma questão deste nível, ela aparecerá aqui para revisão."); return; } setReviewOnly((value) => !value); setQuestionIndex(0); setAnswer(null); }} onAnswer={submitAnswer} onNext={() => { setQuestionIndex((value) => value + 1); setAnswer(null); }} />}
           {section === "semiology" && <SemiologyAcademy level={level} onNavigate={go} />}
           {section === "anamnesis" && <AnamnesisSimulator level={level} />}
@@ -664,6 +671,7 @@ function PracticeSection({ level, structure, input, result, onInput, onSubmit, o
   const [visualZoom, setVisualZoom] = useState(2.2);
   const [visualPan, setVisualPan] = useState({ x: 0, y: 0 });
   const [panning, setPanning] = useState(false);
+  const [clueRevealed, setClueRevealed] = useState(false);
   const modelRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{ pointerId: number; x: number; y: number } | null>(null);
   const rank = levelOrder.indexOf(level);
@@ -690,6 +698,7 @@ function PracticeSection({ level, structure, input, result, onInput, onSubmit, o
   };
 
   useEffect(() => {
+    setClueRevealed(false);
     const frame = window.requestAnimationFrame(() => {
       const width = modelRef.current?.clientWidth ?? 293;
       const height = modelRef.current?.clientHeight ?? 520;
@@ -748,7 +757,7 @@ function PracticeSection({ level, structure, input, result, onInput, onSubmit, o
       >
         <div ref={modelRef} className="med-practice-model" style={{ transform: `translate3d(${visualPan.x}px, ${visualPan.y}px, 0) scale(${visualZoom})` }}><img key={`${structure.layer}-${modelView}`} src={`/medicine/atlas/${structure.layer}-${modelView}-v2.png`} alt={`Modelo anatômico educacional em vista ${modelView}`} draggable={false} /><i style={{ left: `${markerPosition.x}%`, top: `${markerPosition.y}%` } as CSSProperties}/></div>
       </div>
-      <div className="med-practice-drag-help">Arraste para navegar · roda para aproximar</div><span>MODELO ANATÔMICO EM ALTA DEFINIÇÃO</span><small>Ilustração educacional · não diagnóstica</small></div><div className="med-practice-prompt"><span className="med-eyebrow">{eyebrow}</span><h2>Qual é esta estrutura?</h2><p>{result ? structure.summary : clue}</p><div className="med-answer-box"><input value={input} onChange={(event) => onInput(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") onSubmit(); }} placeholder="Digite o nome da estrutura" disabled={result !== null}/>{result === null ? <button onClick={onSubmit}>Responder</button> : <button onClick={onNext}>Próxima <ArrowRight /></button>}</div>{result && <div className={`med-feedback ${result}`}><span>{result === "correct" ? <Check /> : <X />}</span><div><strong>{result === "correct" ? "Resposta correta" : `Resposta: ${structure.name}`}</strong><p><b>Função:</b> {structure.function}</p><p><b>Próximas:</b> {structure.nearby.length ? structure.nearby.join(", ") : "consulte a fonte anatômica"}</p></div></div>}</div></div>
+      <div className="med-practice-drag-help">Arraste para navegar · roda para aproximar</div><span>MODELO ANATÔMICO EM ALTA DEFINIÇÃO</span><small>Ilustração educacional · não diagnóstica</small></div><div className="med-practice-prompt"><span className="med-eyebrow">{eyebrow}</span><h2>Qual é esta estrutura?</h2>{result ? <p>{structure.summary}</p> : <button type="button" className={`med-practice-clue ${clueRevealed ? "revealed" : ""}`} onClick={() => setClueRevealed(true)} aria-expanded={clueRevealed}><span>{clue}</span><b>{clueRevealed ? <><EyeOff /> Dica revelada</> : <><Eye /> Revelar dica</>}</b></button>}<div className="med-answer-box"><input value={input} onChange={(event) => onInput(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") onSubmit(); }} placeholder="Digite o nome da estrutura" disabled={result !== null}/>{result === null ? <button onClick={onSubmit}>Responder</button> : <button onClick={onNext}>Próxima <ArrowRight /></button>}</div>{result && <div className={`med-feedback ${result}`}><span>{result === "correct" ? <Check /> : <X />}</span><div><strong>{result === "correct" ? "Resposta correta" : `Resposta: ${structure.name}`}</strong><p><b>Função:</b> {structure.function}</p><p><b>Próximas:</b> {structure.nearby.length ? structure.nearby.join(", ") : "consulte a fonte anatômica"}</p></div></div>}</div></div>
   </div>;
 }
 
