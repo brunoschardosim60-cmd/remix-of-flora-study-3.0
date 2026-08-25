@@ -296,17 +296,24 @@ export const anatomy3DStructures: Anatomy3DStructure[] = [
   {
     id: "organ-eyes", name: "Olhos", latin: "Oculi", layer: "organs", regionId: "head", region: "Órbitas", system: "Sentidos especiais",
     summary: "Órgãos pares da visão posicionados nas órbitas e conectados ao encéfalo pelas vias ópticas.", function: "Recebem luz, formam uma imagem sobre a retina e iniciam a transdução visual.", sourceId: "openstaxSenses", focus: [0, 3.48, 0.5], focusDistance: 1.5, color: "#7b96ac",
-    parts: [sphere([0.26, 3.48, 0.5], [0.2, 0.2, 0.2]), sphere([-0.26, 3.48, 0.5], [0.2, 0.2, 0.2])],
+    parts: [
+      sphere([0.15, 3.48, 0.5], [0.085, 0.085, 0.085], "#eceae3"),
+      sphere([-0.15, 3.48, 0.5], [0.085, 0.085, 0.085], "#eceae3"),
+      sphere([0.15, 3.48, 0.578], [0.038, 0.038, 0.014], "#7096a0"),
+      sphere([-0.15, 3.48, 0.578], [0.038, 0.038, 0.014], "#7096a0"),
+      sphere([0.15, 3.48, 0.591], [0.016, 0.016, 0.008], "#243b3a"),
+      sphere([-0.15, 3.48, 0.591], [0.016, 0.016, 0.008], "#243b3a"),
+    ],
   },
   {
     id: "organ-inner-ear", name: "Orelha interna", latin: "Auris interna", layer: "organs", regionId: "head", region: "Osso temporal", system: "Sentidos especiais",
     summary: "Conjunto sensorial profundo que reúne cóclea, vestíbulo e canais semicirculares.", function: "Participa da audição e da detecção de movimentos e posição da cabeça.", sourceId: "openstaxSenses", focus: [0.52, 3.3, 0.02], focusDistance: 1.55, color: "#8f77a8",
-    parts: [torus([0.51, 3.3, 0.04], [0.24, 0.2, 0.18], [Math.PI / 2, 0, 0]), torus([-0.51, 3.3, 0.04], [0.24, 0.2, 0.18], [Math.PI / 2, 0, 0])],
+    parts: [torus([0.29, 3.32, 0.02], [0.075, 0.065, 0.06], [Math.PI / 2, 0, 0]), torus([-0.29, 3.32, 0.02], [0.075, 0.065, 0.06], [Math.PI / 2, 0, 0])],
   },
   {
     id: "organ-thyroid", name: "Glândula tireoide", latin: "Glandula thyroidea", layer: "organs", regionId: "head", region: "Pescoço anterior", system: "Endócrino",
     summary: "Glândula endócrina bilobada situada anteriormente à traqueia no pescoço inferior.", function: "Produz hormônios tireoidianos e calcitonina, participando da regulação metabólica e da homeostase do cálcio.", sourceId: "openstaxEndocrine", focus: [0, 2.56, 0.3], focusDistance: 1.65, color: "#9a6f91",
-    parts: [sphere([0.18, 2.56, 0.3], [0.2, 0.3, 0.13]), sphere([-0.18, 2.56, 0.3], [0.2, 0.3, 0.13]), cylinder([0, 2.56, 0.3], [0.16, 0.07, 0.08])],
+    parts: [sphere([0.1, 2.56, 0.3], [0.1, 0.18, 0.08]), sphere([-0.1, 2.56, 0.3], [0.1, 0.18, 0.08]), cylinder([0, 2.56, 0.3], [0.1, 0.045, 0.06])],
   },
   {
     id: "organ-pancreas", name: "Pâncreas", latin: "Pancreas", layer: "organs", regionId: "abdomen", region: "Abdome superior", system: "Digestório e endócrino",
@@ -321,12 +328,12 @@ export const anatomy3DStructures: Anatomy3DStructure[] = [
   {
     id: "organ-ovaries", name: "Ovários", latin: "Ovaria", layer: "organs", regionId: "pelvis", region: "Pelve", system: "Reprodutor",
     summary: "Gônadas pares posicionadas lateralmente ao útero e conectadas por ligamentos.", function: "Produzem oócitos e secretam hormônios que participam da regulação reprodutiva.", sourceId: "openstaxReproductive", focus: [0.48, -0.58, 0.13], focusDistance: 1.65, color: "#b98487",
-    parts: [sphere([0.48, -0.58, 0.13], [0.15, 0.11, 0.1]), sphere([-0.48, -0.58, 0.13], [0.15, 0.11, 0.1]), tube([[-0.4, -0.56, 0.13], [-0.22, -0.48, 0.16], [0, -0.5, 0.17], [0.22, -0.48, 0.16], [0.4, -0.56, 0.13]], 0.035)],
+    parts: [sphere([0.42, -0.58, 0.13], [0.08, 0.055, 0.05]), sphere([-0.42, -0.58, 0.13], [0.08, 0.055, 0.05]), tube([[-0.38, -0.56, 0.13], [-0.22, -0.48, 0.16], [0, -0.5, 0.17], [0.22, -0.48, 0.16], [0.38, -0.56, 0.13]], 0.022)],
   },
   {
     id: "organ-prostate", name: "Próstata", latin: "Prostata", layer: "organs", regionId: "pelvis", region: "Inferior à bexiga", system: "Reprodutor",
     summary: "Glândula posicionada inferiormente à bexiga e ao redor do segmento inicial da uretra.", function: "Produz secreção que integra o fluido seminal.", sourceId: "openstaxReproductive", focus: [0, -0.88, 0.2], focusDistance: 1.45, color: "#8c6a83",
-    parts: [sphere([0, -0.88, 0.2], [0.24, 0.18, 0.2])],
+    parts: [sphere([0, -0.88, 0.2], [0.11, 0.09, 0.1])],
   },
   {
     id: "organ-testes", name: "Testículos", latin: "Testes", layer: "organs", regionId: "pelvis", region: "Escroto", system: "Reprodutor",
@@ -340,6 +347,32 @@ export function structuresFor3D(system: Anatomy3DSystemId, region: Anatomy3DRegi
     const systemMatches = system === "all" || structure.layer === system;
     const regionMatches = region === "whole" || structure.regionId === region || structure.regionId === "whole";
     return systemMatches && regionMatches;
+  });
+}
+
+const supplemental3DOrganIds = new Set([
+  "organ-eyes", "organ-inner-ear", "organ-thyroid", "organ-pancreas",
+  "organ-uterus", "organ-ovaries", "organ-prostate", "organ-testes",
+]);
+const realBrainReplacementIds = new Set(["nerve-brain", "nerve-cerebellum", "nerve-brainstem"]);
+
+export function isSupplemental3DOrganId(id: string | null | undefined) {
+  return Boolean(id && supplemental3DOrganIds.has(id));
+}
+
+export function proceduralStructuresFor3D(system: Anatomy3DSystemId, region: Anatomy3DRegionId, selectedId: string | null) {
+  return structuresFor3D(system, region).filter((structure) => {
+    if (system === "all") {
+      // Licensed GLBs already supply the brain and main organs. Procedural
+      // substitutes appear only when explicitly selected, avoiding duplicate
+      // balloon-like volumes in the combined view.
+      if (realBrainReplacementIds.has(structure.id)) return false;
+      if (supplemental3DOrganIds.has(structure.id)) return selectedId === structure.id;
+      return structure.layer === "vascular" || structure.layer === "nervous";
+    }
+    if (system === "organs") return Boolean(selectedId && supplemental3DOrganIds.has(selectedId) && structure.id === selectedId);
+    if (system === "nervous" && realBrainReplacementIds.has(structure.id)) return false;
+    return system === "vascular" || system === "nervous";
   });
 }
 

@@ -1,7 +1,7 @@
 import { statSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { anatomy3DRegions, anatomy3DStructures, anatomy3DSystemMeta, organ3DStructureForAtlasId, structuresFor3D } from "./anatomy3DModel";
+import { anatomy3DRegions, anatomy3DStructures, anatomy3DSystemMeta, organ3DStructureForAtlasId, proceduralStructuresFor3D, structuresFor3D } from "./anatomy3DModel";
 import { bodyLayers, medicalSources } from "./medicineData";
 
 describe("anatomy3DModel", () => {
@@ -40,6 +40,16 @@ describe("anatomy3DModel", () => {
     expect(structuresFor3D("muscular", "whole").length).toBeGreaterThanOrEqual(8);
     expect(structuresFor3D("skeletal", "whole").length).toBeGreaterThanOrEqual(8);
     expect(structuresFor3D("vascular", "whole").length).toBeGreaterThanOrEqual(7);
+  });
+
+  it("não sobrepõe substitutos procedurais ao cérebro e aos órgãos reais", () => {
+    const combined = proceduralStructuresFor3D("all", "whole", "organ-heart").map((item) => item.id);
+    expect(combined).not.toEqual(expect.arrayContaining(["nerve-brain", "nerve-cerebellum", "nerve-brainstem", "organ-eyes", "organ-inner-ear"]));
+    expect(combined).toEqual(expect.arrayContaining(["nerve-spinal-cord", "vessel-aorta"]));
+
+    expect(proceduralStructuresFor3D("organs", "whole", "organ-brain")).toHaveLength(0);
+    expect(proceduralStructuresFor3D("organs", "head", "organ-eyes").map((item) => item.id)).toEqual(["organ-eyes"]);
+    expect(proceduralStructuresFor3D("nervous", "head", "nerve-brain").map((item) => item.id)).not.toContain("nerve-brain");
   });
 
   it("mantém as malhas anatômicas licenciadas disponíveis no pacote público", () => {

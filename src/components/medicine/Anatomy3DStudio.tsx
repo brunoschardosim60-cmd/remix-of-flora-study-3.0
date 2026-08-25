@@ -1,5 +1,5 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { ContactShadows, Grid, OrbitControls, useGLTF } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import { Box3, CatmullRomCurve3, Color, DoubleSide, Mesh, MeshStandardMaterial, Object3D, Plane, Vector2, Vector3 } from "three";
@@ -28,6 +28,8 @@ import {
   anatomy3DRegions,
   anatomy3DStructures,
   anatomy3DSystemMeta,
+  isSupplemental3DOrganId,
+  proceduralStructuresFor3D,
   structuresFor3D,
   type Anatomy3DPart,
   type Anatomy3DRegionId,
@@ -58,11 +60,6 @@ const REAL_MODEL_PATH = "/medicine/models/zanatomy-musculoskeletal-v1.glb";
 const REAL_SKIN_PATH = "/medicine/models/bodyparts3d-skin-v1.glb";
 const REAL_ORGANS_PATH = "/medicine/models/bodyparts3d-organs-v1.glb";
 const BODY_PARTS_SOURCE_BOUNDS = new Box3(new Vector3(-1.33905, -3.534865, -0.187946), new Vector3(1.33396, 3.18329, 0.971386));
-const SUPPLEMENTAL_ORGAN_IDS = new Set([
-  "organ-eyes", "organ-inner-ear", "organ-thyroid", "organ-pancreas",
-  "organ-uterus", "organ-ovaries", "organ-prostate", "organ-testes",
-]);
-
 export function Anatomy3DStudio({ level, initialStructureId }: Anatomy3DStudioProps) {
   const initialStructure = anatomy3DStructures.find((item) => item.id === initialStructureId);
   const startsWithOrgan = initialStructure?.layer === "organs";
@@ -288,15 +285,7 @@ export function Anatomy3DStudio({ level, initialStructureId }: Anatomy3DStudioPr
 }
 
 function AnatomyModel({ system, region, selectedId, skinOpacity, onSelect }: { system: Anatomy3DSystemId; region: Anatomy3DRegionId; selectedId: string | null; skinOpacity: number; onSelect: (structure: Anatomy3DStructure) => void }) {
-  const structures = useMemo(() => structuresFor3D(system, region).filter((structure) => {
-    if (system === "all") return structure.layer === "vascular" || structure.layer === "nervous" || SUPPLEMENTAL_ORGAN_IDS.has(structure.id);
-    if (system === "organs") {
-      if (selectedId && SUPPLEMENTAL_ORGAN_IDS.has(selectedId)) return structure.id === selectedId;
-      return SUPPLEMENTAL_ORGAN_IDS.has(structure.id);
-    }
-    if (system === "nervous" && structure.id === "nerve-brain") return false;
-    return system === "vascular" || system === "nervous";
-  }), [system, region, selectedId]);
+  const structures = useMemo(() => proceduralStructuresFor3D(system, region, selectedId), [system, region, selectedId]);
   return <group position={[0, 0.05, 0]}>{structures.map((structure) => (
     <StructureMesh key={structure.id} structure={structure} selected={selectedId === structure.id} opacity={system === "all" ? (structure.layer === "surface" ? skinOpacity : layerOpacity[structure.layer]) : 1} onSelect={onSelect} />
   ))}</group>;
@@ -348,7 +337,7 @@ function RealBodyPartsModel({ system, selectedId, skinOpacity, organView, sectio
       if (!(object instanceof Mesh)) return;
       const semantic = organSemantic(object.name);
       const isolateOrgan = system === "organs" && organView !== "context" && Boolean(selectedSemantic);
-      const supplementalSelected = Boolean(selectedId && SUPPLEMENTAL_ORGAN_IDS.has(selectedId));
+      const supplementalSelected = isSupplemental3DOrganId(selectedId);
       object.visible = !supplementalSelected && (system !== "nervous" || semantic === "brain") && (!isolateOrgan || semantic === selectedSemantic);
       const material = object.material as MeshStandardMaterial;
       const guidedId = system === "nervous" && semantic === "brain" ? "nerve-brain" : `organ-${semantic}`;
@@ -356,9 +345,9 @@ function RealBodyPartsModel({ system, selectedId, skinOpacity, organView, sectio
       material.emissive.copy(material.color);
       material.emissiveIntensity = active ? 0.34 : 0.12;
       const transparentInterior = system === "organs" && organView === "transparent" && semantic === selectedSemantic;
-      material.opacity = transparentInterior ? .32 : 1;
-      material.transparent = transparentInterior;
-      material.depthWrite = !transparentInterior;
+      material.opacity = transparentInterior ? .32 : system === "all" ? layerOpacity.organs : 1;
+      material.transparent = material.opacity < 1;
+      material.depthWrite = material.opacity > .72;
       material.clippingPlanes = system === "organs" && organView === "section" && semantic === selectedSemantic && sectionPlane ? [sectionPlane] : [];
       material.clipShadows = Boolean(material.clippingPlanes.length);
       material.side = DoubleSide;
@@ -389,8 +378,8 @@ function RealBodyPartsModel({ system, selectedId, skinOpacity, organView, sectio
   if (system !== "all" && system !== "surface" && system !== "organs" && system !== "nervous") return null;
 
   return <group>
-    <primitive object={skinModel} onClick={system === "surface" ? (event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); selectSkinModel(); } : undefined} />
-    <primitive object={organsModel} onClick={system === "organs" || system === "nervous" ? (event: ThreeEvent<MouseEvent>) => { const hit = meshFromEvent(event); if (!hit) return; event.stopPropagation(); selectOrganMesh(hit); } : undefined} />
+    <primitive object={skinModel} />
+    <primitive object={organsModel} />
     <NativeMeshPicker active={system === "surface"} root={skinModel} onPick={selectSkinModel} />
     <NativeMeshPicker active={system === "organs" || system === "nervous"} root={organsModel} onPick={selectOrganMesh} />
   </group>;
@@ -458,8 +447,13 @@ function RealMusculoskeletalModel({ system, selectedId, onSelect }: { system: An
       object.visible = system === "all" || (system === "muscular" && type === "muscle") || (system === "skeletal" && type === "bone");
       const material = object.material as MeshStandardMaterial;
       const active = selectedId === `model:${object.uuid}`;
-      material.emissive.set(active ? material.color : "#000000");
-      material.emissiveIntensity = active ? 0.34 : 0;
+      const guidedActive = guidedModelMeshMatches(selectedId, object);
+      material.emissive.set(active || guidedActive ? material.color : "#000000");
+      material.emissiveIntensity = active || guidedActive ? 0.34 : 0;
+      material.opacity = system === "all" ? (type === "bone" ? layerOpacity.skeletal : layerOpacity.muscular) : 1;
+      material.transparent = material.opacity < 1;
+      material.depthWrite = material.opacity > .52;
+      material.needsUpdate = true;
     });
   }, [model, selectedId, system]);
 
@@ -489,25 +483,39 @@ function RealMusculoskeletalModel({ system, selectedId, onSelect }: { system: An
 
   if (system !== "all" && system !== "muscular" && system !== "skeletal") return null;
 
-  return <group><primitive object={model} onClick={system === "muscular" || system === "skeletal" ? (event: ThreeEvent<MouseEvent>) => { const hit = meshFromEvent(event); if (!hit) return; event.stopPropagation(); selectRealMesh(hit); } : undefined} /><NativeMeshPicker active={system === "muscular" || system === "skeletal"} root={model} onPick={selectRealMesh} /></group>;
+  return <group><primitive object={model} /><NativeMeshPicker active={system === "muscular" || system === "skeletal"} root={model} onPick={selectRealMesh} /></group>;
 }
 
 function NativeMeshPicker({ active, root, onPick }: { active: boolean; root: Object3D; onPick: (mesh: Mesh) => void }) {
   const { camera, gl, raycaster } = useThree();
+  const pointerStart = useRef<{ id: number; x: number; y: number } | null>(null);
   useEffect(() => {
     if (!active) return;
     const canvas = gl.domElement;
     const pointer = new Vector2();
     const handlePointerDown = (event: PointerEvent) => {
       if (event.button !== 0) return;
+      pointerStart.current = { id: event.pointerId, x: event.clientX, y: event.clientY };
+    };
+    const handlePointerUp = (event: PointerEvent) => {
+      const start = pointerStart.current;
+      pointerStart.current = null;
+      if (!start || start.id !== event.pointerId || Math.hypot(event.clientX - start.x, event.clientY - start.y) > 5) return;
       const bounds = canvas.getBoundingClientRect();
       pointer.set(((event.clientX - bounds.left) / bounds.width) * 2 - 1, -((event.clientY - bounds.top) / bounds.height) * 2 + 1);
       raycaster.setFromCamera(pointer, camera);
-      const hit = raycaster.intersectObject(root, true).find((intersection) => intersection.object instanceof Mesh && intersection.object.visible);
+      const hit = raycaster.intersectObject(root, true).find((intersection) => intersection.object instanceof Mesh && meshIsEffectivelyVisible(intersection.object, root));
       if (hit?.object instanceof Mesh) onPick(hit.object);
     };
+    const cancelPointer = () => { pointerStart.current = null; };
     canvas.addEventListener("pointerdown", handlePointerDown);
-    return () => canvas.removeEventListener("pointerdown", handlePointerDown);
+    canvas.addEventListener("pointerup", handlePointerUp);
+    canvas.addEventListener("pointercancel", cancelPointer);
+    return () => {
+      canvas.removeEventListener("pointerdown", handlePointerDown);
+      canvas.removeEventListener("pointerup", handlePointerUp);
+      canvas.removeEventListener("pointercancel", cancelPointer);
+    };
   }, [active, camera, gl, onPick, raycaster, root]);
   return null;
 }
@@ -577,6 +585,44 @@ function normalize(value: string) {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR").trim();
 }
 
+const guidedModelPatterns: Record<string, string[]> = {
+  "muscle-deltoid": ["deltoid"],
+  "muscle-pectoralis": ["pectoralis major"],
+  "muscle-biceps": ["biceps brachii"],
+  "muscle-rectus": ["rectus abdominis"],
+  "muscle-quadriceps": ["rectus femoris", "vastus lateralis", "vastus medialis", "vastus intermedius"],
+  "muscle-calf": ["gastrocnemius"],
+  "muscle-trapezius": ["trapezius"],
+  "muscle-gluteus": ["gluteus maximus"],
+  "bone-skull": ["parietal bone", "frontal bone", "occipital bone", "sphenoid bone", "temporal bone", "ethmoid bone", "mandible", "maxilla", "zygomatic bone"],
+  "bone-spine": ["vertebra", "atlas (c1)", "axis (c2)", "sacrum", "coccyx"],
+  "bone-ribs": [" rib", "sternum"],
+  "bone-pelvis": ["hip bone", "sacrum"],
+  "bone-humerus": ["humerus"],
+  "bone-forearm": ["radius", "ulna"],
+  "bone-femur": ["femur"],
+  "bone-lower-leg": ["tibia", "fibula"],
+};
+
+function guidedModelMeshMatches(selectedId: string | null, mesh: Mesh) {
+  if (!selectedId || selectedId.startsWith("model:")) return false;
+  const patterns = guidedModelPatterns[selectedId];
+  if (!patterns) return false;
+  const modelName = normalize(`${mesh.userData.nameDetail ?? ""} ${mesh.userData.name ?? ""} ${mesh.name}`);
+  return patterns.some((pattern) => modelName.includes(pattern));
+}
+
+function meshIsEffectivelyVisible(mesh: Mesh, root: Object3D) {
+  let current: Object3D | null = mesh;
+  while (current) {
+    if (!current.visible) return false;
+    if (current === root) break;
+    current = current.parent;
+  }
+  const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+  return materials.some((material) => material.visible && material.opacity > .025);
+}
+
 function viewLabel(view: CameraView) {
   if (view === "front") return "Frente";
   if (view === "back") return "Costas";
@@ -595,11 +641,6 @@ function regionFromPoint(point: Vector3): Anatomy3DRegionId {
   if (point.y > -0.25) return "abdomen";
   if (point.y > -1.05) return "pelvis";
   return "lower-limb";
-}
-
-function meshFromEvent(event: ThreeEvent<MouseEvent>) {
-  const hit = event.intersections.find((intersection) => intersection.object instanceof Mesh && intersection.object.visible)?.object;
-  return hit instanceof Mesh ? hit : event.object instanceof Mesh ? event.object : null;
 }
 
 function organSemantic(name: string) {
