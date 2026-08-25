@@ -10,7 +10,7 @@ interface MedicalAssetPickerProps {
   onInsert: (asset: NotebookMedicalAsset, mode: "cutout" | "study") => void;
 }
 
-const categories: Array<"Todas" | MedicalAssetCategory> = ["Todas", "Camadas", "Sistemas", "Desenvolvimento"];
+const categories: Array<"Todas" | MedicalAssetCategory> = ["Todas", "Camadas", "Sistemas", "Patologia", "Desenvolvimento"];
 
 export function MedicalAssetPicker({ open, onOpenChange, onInsert }: MedicalAssetPickerProps) {
   const [category, setCategory] = useState<(typeof categories)[number]>("Todas");
@@ -28,11 +28,11 @@ export function MedicalAssetPicker({ open, onOpenChange, onInsert }: MedicalAsse
     <DialogContent className="nb-medical-picker max-w-5xl overflow-hidden p-0">
       <DialogHeader className="nb-medical-picker-header">
         <span><Images /></span>
-        <div><DialogTitle>Biblioteca anatômica</DialogTitle><DialogDescription>Insira uma imagem educacional no ponto atual da página e desenhe setas, rótulos e relações sobre ela.</DialogDescription></div>
+        <div><DialogTitle>Biblioteca médica</DialogTitle><DialogDescription>Insira anatomia, sistemas, desenvolvimento ou comparações patológicas e desenhe setas, rótulos e relações sobre a figura.</DialogDescription></div>
       </DialogHeader>
 
       <div className="nb-medical-picker-controls">
-        <label><Search /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar sistema, camada ou fase…" autoFocus /></label>
+        <label><Search /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar órgão, sistema, alteração ou fase…" autoFocus /></label>
         <div>{categories.map((item) => <button key={item} type="button" className={category === item ? "active" : ""} onClick={() => setCategory(item)}>{item}</button>)}</div>
         <div className="nb-medical-insert-modes" role="group" aria-label="Modo de inserção"><button type="button" className={insertMode === "cutout" ? "active" : ""} onClick={() => setInsertMode("cutout")}><Layers />Figura livre</button><button type="button" className={insertMode === "study" ? "active" : ""} onClick={() => setInsertMode("study")}>Figura + ficha</button></div>
       </div>

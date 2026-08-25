@@ -1,0 +1,937 @@
+.med-command-grid > button:nth-child(4) {
+  grid-column: 2 / 4;
+}
+
+.pathology-page {
+  width: min(1500px, 100%);
+  margin: auto;
+  padding: 28px 32px 72px;
+  color: #18342f;
+}
+.pathology-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 28px;
+  padding: 18px 0 30px;
+}
+.pathology-heading > div > span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #568275;
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+.pathology-heading > div > span svg {
+  width: 15px;
+}
+.pathology-heading h1 {
+  margin: 9px 0 10px;
+  font-family: Georgia, serif;
+  font-size: clamp(38px, 5vw, 66px);
+  font-weight: 500;
+  letter-spacing: -0.045em;
+}
+.pathology-heading > div > p {
+  max-width: 760px;
+  color: #647872;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.pathology-heading > aside {
+  display: flex;
+  max-width: 360px;
+  gap: 12px;
+  padding: 15px 17px;
+  border: 1px solid rgba(52, 91, 80, 0.12);
+  border-radius: 16px;
+  background: #edf4f1;
+}
+.pathology-heading > aside svg {
+  width: 20px;
+  flex-shrink: 0;
+  color: #4b7f6e;
+}
+.pathology-heading > aside div {
+  display: flex;
+  flex-direction: column;
+}
+.pathology-heading > aside strong {
+  font-size: 10px;
+}
+.pathology-heading > aside span {
+  margin-top: 3px;
+  color: #687c75;
+  font-size: 9px;
+  line-height: 1.45;
+}
+.pathology-organ-nav {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.pathology-organ-nav > button {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid rgba(39, 73, 65, 0.1);
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.75);
+  text-align: left;
+  transition: 180ms ease;
+}
+.pathology-organ-nav > button:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--organ-accent) 45%, transparent);
+  box-shadow: 0 12px 25px rgba(33, 65, 56, 0.07);
+}
+.pathology-organ-nav > button.active {
+  border-color: color-mix(in srgb, var(--organ-accent) 55%, transparent);
+  background: #fff;
+  box-shadow:
+    inset 0 -3px var(--organ-accent),
+    0 12px 30px rgba(33, 65, 56, 0.08);
+}
+.pathology-organ-nav > button > span {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--organ-accent) 15%, white);
+  color: var(--organ-accent);
+  font-size: 9px;
+  font-weight: 900;
+}
+.pathology-organ-nav > button > div {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+.pathology-organ-nav small {
+  color: #80918b;
+  font-size: 7px;
+  text-transform: uppercase;
+}
+.pathology-organ-nav strong {
+  margin-top: 2px;
+  font-size: 10px;
+}
+.pathology-organ-nav em {
+  overflow: hidden;
+  margin-top: 2px;
+  color: #74847f;
+  font-size: 7px;
+  font-style: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pathology-organ-nav svg {
+  width: 13px;
+  color: #9ba9a4;
+}
+.pathology-studio {
+  display: grid;
+  grid-template-columns: minmax(520px, 1fr) 370px;
+  overflow: hidden;
+  border: 1px solid rgba(39, 73, 65, 0.12);
+  border-radius: 26px;
+  background: #fff;
+  box-shadow: 0 25px 70px rgba(31, 63, 55, 0.09);
+}
+.pathology-visual-column {
+  min-width: 0;
+  padding: 18px;
+  background: linear-gradient(145deg, #f0f5f2, #e7eeea);
+}
+.pathology-visual-column > header {
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 5px 13px;
+}
+.pathology-visual-column > header > div {
+  display: flex;
+  flex-direction: column;
+}
+.pathology-visual-column > header small {
+  color: #758983;
+  font-size: 7px;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+}
+.pathology-visual-column > header strong {
+  margin-top: 3px;
+  font-family: Georgia, serif;
+  font-size: 16px;
+  font-weight: 500;
+}
+.pathology-visual-column > header button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid rgba(39, 73, 65, 0.12);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.75);
+  color: #54746b;
+  font-size: 8px;
+  font-weight: 750;
+}
+.pathology-visual-column > header svg {
+  width: 13px;
+}
+.pathology-compare {
+  position: relative;
+  width: min(100%, 560px);
+  aspect-ratio: 3/4;
+  margin: auto;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-radius: 24px;
+  background: radial-gradient(circle at 50% 42%, #f9fbfa, #dbe7e2);
+  box-shadow: 0 22px 55px rgba(35, 68, 58, 0.15);
+  isolation: isolate;
+}
+.pathology-image {
+  position: absolute;
+  inset: 0;
+  background-repeat: no-repeat;
+  background-size: 200% 100%;
+}
+.pathology-image.healthy {
+  background-position: left center;
+}
+.pathology-image.affected {
+  z-index: 2;
+  background-position: right center;
+  filter: saturate(0.96) contrast(1.02);
+}
+.pathology-image-shade {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.06),
+    transparent 25%,
+    transparent 78%,
+    rgba(18, 42, 35, 0.12)
+  );
+  pointer-events: none;
+}
+.pathology-side-label {
+  position: absolute;
+  top: 16px;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 999px;
+  background: rgba(250, 252, 250, 0.83);
+  box-shadow: 0 7px 20px rgba(30, 58, 50, 0.08);
+  backdrop-filter: blur(10px);
+}
+.pathology-side-label.healthy {
+  left: 16px;
+}
+.pathology-side-label.affected {
+  right: 16px;
+}
+.pathology-side-label i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #669888;
+}
+.pathology-side-label.affected i {
+  background: var(--path-accent);
+}
+.pathology-side-label span {
+  display: flex;
+  flex-direction: column;
+}
+.pathology-side-label small {
+  color: #84928e;
+  font-size: 6px;
+  font-weight: 850;
+  letter-spacing: 0.09em;
+}
+.pathology-side-label strong {
+  max-width: 150px;
+  overflow: hidden;
+  font-size: 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pathology-divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 10;
+  width: 2px;
+  transform: translateX(-1px);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow:
+    0 0 0 1px rgba(42, 77, 67, 0.18),
+    0 0 22px rgba(25, 57, 48, 0.2);
+  pointer-events: none;
+}
+.pathology-divider > span {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  transform: translate(-50%, -50%);
+  border: 1px solid rgba(45, 81, 70, 0.15);
+  border-radius: 50%;
+  background: white;
+  color: #52796e;
+  box-shadow: 0 8px 20px rgba(34, 68, 58, 0.17);
+}
+.pathology-divider svg {
+  width: 14px;
+}
+.pathology-compare > input {
+  position: absolute;
+  z-index: 15;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  cursor: ew-resize;
+  opacity: 0;
+}
+.pathology-hotspot {
+  position: absolute;
+  z-index: 12;
+  display: grid;
+  width: 25px;
+  height: 25px;
+  place-items: center;
+  transform: translate(-50%, -50%);
+  border: 1px solid white;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--path-accent) 74%, white);
+  box-shadow:
+    0 0 0 6px color-mix(in srgb, var(--path-accent) 18%, transparent),
+    0 6px 13px rgba(40, 54, 50, 0.2);
+  color: white;
+  transition: 180ms ease;
+}
+.pathology-hotspot span {
+  font-size: 7px;
+  font-weight: 900;
+}
+.pathology-hotspot.active {
+  width: 31px;
+  height: 31px;
+  background: white;
+  color: var(--path-accent);
+  box-shadow:
+    0 0 0 8px color-mix(in srgb, var(--path-accent) 23%, transparent),
+    0 8px 18px rgba(40, 54, 50, 0.24);
+}
+.pathology-comparison-copy {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 12px;
+}
+.pathology-comparison-copy article {
+  padding: 13px 15px;
+  border: 1px solid rgba(39, 73, 65, 0.09);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.72);
+}
+.pathology-comparison-copy span {
+  color: #5e8277;
+  font-size: 7px;
+  font-weight: 850;
+  letter-spacing: 0.1em;
+}
+.pathology-comparison-copy article:last-child span {
+  color: var(--path-accent);
+}
+.pathology-comparison-copy p {
+  margin-top: 5px;
+  color: #5f746e;
+  font-size: 8px;
+  line-height: 1.5;
+}
+.pathology-stage-track {
+  margin-top: 10px;
+  padding: 16px;
+  border: 1px solid rgba(39, 73, 65, 0.1);
+  border-radius: 17px;
+  background: rgba(255, 255, 255, 0.76);
+}
+.pathology-stage-track > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.pathology-stage-track header > div {
+  display: flex;
+  flex-direction: column;
+}
+.pathology-stage-track small {
+  color: #758983;
+  font-size: 7px;
+  font-weight: 850;
+  letter-spacing: 0.1em;
+}
+.pathology-stage-track header strong {
+  margin-top: 3px;
+  font-size: 10px;
+}
+.pathology-stage-track header > span {
+  color: #81908b;
+  font-size: 8px;
+}
+.pathology-stage-track > div {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+  margin-top: 13px;
+}
+.pathology-stage-track > div:before {
+  position: absolute;
+  top: 14px;
+  right: 14%;
+  left: 14%;
+  height: 2px;
+  background: #d5dfdb;
+  content: "";
+}
+.pathology-stage-track button {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 5px;
+  color: #899691;
+  font-size: 7px;
+}
+.pathology-stage-track button > span {
+  display: grid;
+  width: 29px;
+  height: 29px;
+  place-items: center;
+  border: 2px solid #d6e0dc;
+  border-radius: 50%;
+  background: #f8faf8;
+  font-size: 8px;
+  font-weight: 900;
+}
+.pathology-stage-track button svg {
+  width: 12px;
+}
+.pathology-stage-track button.active,
+.pathology-stage-track button.done {
+  color: #426f62;
+}
+.pathology-stage-track button.active > span {
+  border-color: var(--path-accent);
+  background: var(--path-accent);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--path-accent) 14%, transparent);
+  color: white;
+}
+.pathology-stage-track button.done > span {
+  border-color: #6c988a;
+  background: #6c988a;
+  color: white;
+}
+.pathology-stage-track > p {
+  margin-top: 13px;
+  padding-top: 11px;
+  border-top: 1px solid rgba(39, 73, 65, 0.09);
+  color: #5d716b;
+  font-size: 8px;
+  line-height: 1.55;
+}
+.pathology-inspector {
+  min-width: 0;
+  padding: 26px 24px;
+  border-left: 1px solid rgba(39, 73, 65, 0.1);
+  background: #fff;
+}
+.pathology-inspector > header > span {
+  color: #6b8c82;
+  font-size: 7px;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+}
+.pathology-inspector > header h2 {
+  margin: 7px 0 1px;
+  font-family: Georgia, serif;
+  font-size: 31px;
+  font-weight: 500;
+}
+.pathology-inspector > header p {
+  color: var(--path-accent);
+  font-family: Georgia, serif;
+  font-size: 12px;
+  font-style: italic;
+}
+.pathology-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  margin: 21px 0 17px;
+  padding: 4px;
+  border-radius: 11px;
+  background: #eef3f1;
+}
+.pathology-tabs button {
+  height: 32px;
+  border-radius: 8px;
+  color: #778a83;
+  font-size: 8px;
+  font-weight: 750;
+}
+.pathology-tabs button.active {
+  background: white;
+  color: #355f54;
+  box-shadow: 0 3px 10px rgba(40, 72, 63, 0.08);
+}
+.pathology-tab-panel {
+  min-height: 360px;
+}
+.pathology-hotspot-card {
+  display: flex;
+  gap: 11px;
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--path-accent) 20%, #dce5e1);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--path-accent) 7%, white);
+}
+.pathology-hotspot-card > span {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--path-accent);
+  color: white;
+  font-size: 8px;
+  font-weight: 900;
+}
+.pathology-hotspot-card > div {
+  display: flex;
+  flex-direction: column;
+}
+.pathology-hotspot-card small {
+  color: #7b8c87;
+  font-size: 6px;
+  font-weight: 850;
+  letter-spacing: 0.1em;
+}
+.pathology-hotspot-card strong {
+  margin-top: 2px;
+  font-size: 10px;
+}
+.pathology-hotspot-card p {
+  margin-top: 4px;
+  color: #5d706a;
+  font-size: 8px;
+  line-height: 1.5;
+}
+.pathology-hotspot-list {
+  display: flex;
+  gap: 5px;
+  margin: 9px 0 17px;
+}
+.pathology-hotspot-list button {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 5px;
+  padding: 7px;
+  border: 1px solid rgba(39, 73, 65, 0.09);
+  border-radius: 9px;
+  color: #6f817b;
+  text-align: left;
+}
+.pathology-hotspot-list b {
+  display: grid;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 6px;
+  background: #eef3f1;
+  font-size: 6px;
+}
+.pathology-hotspot-list span {
+  overflow: hidden;
+  font-size: 6px;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pathology-hotspot-list button.active {
+  border-color: color-mix(in srgb, var(--path-accent) 30%, transparent);
+  color: var(--path-accent);
+}
+.pathology-hotspot-list button.active b {
+  background: var(--path-accent);
+  color: white;
+}
+.pathology-info-group {
+  padding: 11px 0;
+  border-top: 1px solid rgba(39, 73, 65, 0.1);
+}
+.pathology-info-group h4 {
+  margin-bottom: 7px;
+  color: #71837d;
+  font-size: 7px;
+  font-weight: 850;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+.pathology-info-group > div {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 3px 0;
+  color: #536a63;
+  font-size: 7px;
+  line-height: 1.45;
+}
+.pathology-info-group svg {
+  width: 10px;
+  flex-shrink: 0;
+  color: #5e8b7d;
+}
+.pathology-tab-panel.progression > button {
+  display: flex;
+  width: 100%;
+  gap: 10px;
+  padding: 10px 4px;
+  border-bottom: 1px solid rgba(39, 73, 65, 0.09);
+  text-align: left;
+}
+.pathology-tab-panel.progression > button > span {
+  display: grid;
+  width: 27px;
+  height: 27px;
+  flex-shrink: 0;
+  place-items: center;
+  border: 1px solid #d4dfdb;
+  border-radius: 50%;
+  font-size: 7px;
+  font-weight: 850;
+}
+.pathology-tab-panel.progression > button > div {
+  display: flex;
+  flex-direction: column;
+}
+.pathology-tab-panel.progression strong {
+  font-size: 9px;
+}
+.pathology-tab-panel.progression p {
+  margin-top: 3px;
+  color: #687a74;
+  font-size: 7px;
+  line-height: 1.5;
+}
+.pathology-tab-panel.progression > button.active > span {
+  border-color: var(--path-accent);
+  background: var(--path-accent);
+  color: white;
+}
+.pathology-tab-panel.progression > aside,
+.pathology-tab-panel.practice > aside {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 11px;
+  border-radius: 11px;
+  background: #f4eee9;
+  color: #755e54;
+}
+.pathology-tab-panel.progression > aside svg,
+.pathology-tab-panel.practice > aside svg {
+  width: 15px;
+  flex-shrink: 0;
+}
+.pathology-tab-panel.progression > aside p,
+.pathology-tab-panel.practice > aside p {
+  font-size: 7px;
+  line-height: 1.5;
+}
+.pathology-tab-panel.progression > aside strong,
+.pathology-tab-panel.practice > aside strong {
+  display: block;
+  margin-bottom: 2px;
+}
+.pathology-tab-panel.practice > span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #60877b;
+  font-size: 7px;
+  font-weight: 850;
+  letter-spacing: 0.1em;
+}
+.pathology-tab-panel.practice > span svg {
+  width: 13px;
+}
+.pathology-tab-panel.practice h3 {
+  margin: 10px 0 15px;
+  font-family: Georgia, serif;
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+.pathology-tab-panel.practice > div {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pathology-tab-panel.practice > div > button {
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  gap: 8px;
+  padding: 7px;
+  border: 1px solid rgba(39, 73, 65, 0.11);
+  border-radius: 10px;
+  text-align: left;
+}
+.pathology-tab-panel.practice button b {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 8px;
+  background: #eef3f1;
+  font-size: 7px;
+}
+.pathology-tab-panel.practice button span {
+  flex: 1;
+  font-size: 8px;
+}
+.pathology-tab-panel.practice button svg {
+  width: 13px;
+}
+.pathology-tab-panel.practice button.correct {
+  border-color: #88b99d;
+  background: #edf7f1;
+  color: #35664f;
+}
+.pathology-tab-panel.practice button.wrong {
+  border-color: #d5a199;
+  background: #faefed;
+  color: #934f47;
+}
+.pathology-tab-panel.practice button.muted {
+  opacity: 0.47;
+}
+.pathology-tab-panel.practice > aside.correct {
+  background: #eaf5ef;
+  color: #426b58;
+}
+.pathology-limit {
+  display: flex;
+  gap: 8px;
+  margin-top: 15px;
+  padding: 11px;
+  border: 1px solid #dbe6e1;
+  border-radius: 12px;
+  background: #f3f7f5;
+}
+.pathology-limit svg {
+  width: 15px;
+  flex-shrink: 0;
+  color: #5a897a;
+}
+.pathology-limit p {
+  color: #63756f;
+  font-size: 7px;
+  line-height: 1.5;
+}
+.pathology-limit strong {
+  display: block;
+  color: #395f55;
+}
+.pathology-source {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 9px;
+  padding: 10px;
+  border: 1px solid rgba(39, 73, 65, 0.1);
+  border-radius: 11px;
+  color: #4b7468;
+}
+.pathology-source > svg {
+  width: 15px;
+}
+.pathology-source span {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+.pathology-source small {
+  font-size: 6px;
+  font-weight: 850;
+  letter-spacing: 0.09em;
+}
+.pathology-source strong {
+  overflow: hidden;
+  margin-top: 1px;
+  font-size: 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pathology-source > svg:last-child {
+  width: 11px;
+}
+.pathology-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-top: 9px;
+}
+.pathology-actions button {
+  display: flex;
+  height: 39px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 10px;
+  background: #edf3f0;
+  color: #456f63;
+  font-size: 7px;
+  font-weight: 800;
+}
+.pathology-actions button:first-child {
+  background: #47796b;
+  color: white;
+}
+.pathology-actions svg {
+  width: 13px;
+}
+@media (max-width: 1180px) {
+  .med-command-grid > button:nth-child(4) {
+    grid-column: auto;
+  }
+
+  .pathology-organ-nav {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .pathology-studio {
+    grid-template-columns: minmax(450px, 1fr) 330px;
+  }
+}
+@media (max-width: 900px) {
+  .pathology-page {
+    padding: 20px 16px 56px;
+  }
+  .pathology-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .pathology-heading > aside {
+    max-width: none;
+  }
+  .pathology-organ-nav {
+    display: flex;
+    overflow-x: auto;
+    padding-bottom: 5px;
+  }
+  .pathology-organ-nav > button {
+    min-width: 210px;
+  }
+  .pathology-studio {
+    grid-template-columns: 1fr;
+  }
+  .pathology-inspector {
+    border-top: 1px solid rgba(39, 73, 65, 0.1);
+    border-left: 0;
+  }
+  .pathology-tab-panel {
+    min-height: 0;
+  }
+  .pathology-compare {
+    width: min(100%, 520px);
+  }
+}
+@media (max-width: 560px) {
+  .pathology-page {
+    padding: 14px 10px 45px;
+  }
+  .pathology-heading h1 {
+    font-size: 39px;
+  }
+  .pathology-heading > div > p {
+    font-size: 11px;
+  }
+  .pathology-visual-column {
+    padding: 9px;
+  }
+  .pathology-visual-column > header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+    padding: 5px 3px 12px;
+  }
+  .pathology-compare {
+    width: 100%;
+    border-radius: 18px;
+  }
+  .pathology-side-label {
+    top: 9px;
+    padding: 6px 8px;
+  }
+  .pathology-side-label.healthy {
+    left: 8px;
+  }
+  .pathology-side-label.affected {
+    right: 8px;
+  }
+  .pathology-side-label strong {
+    max-width: 100px;
+  }
+  .pathology-comparison-copy {
+    grid-template-columns: 1fr;
+  }
+  .pathology-stage-track {
+    padding: 12px;
+  }
+  .pathology-stage-track button strong {
+    font-size: 6px;
+  }
+  .pathology-inspector {
+    padding: 22px 17px;
+  }
+  .pathology-hotspot-list {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .pathology-actions {
+    grid-template-columns: 1fr;
+  }
+}

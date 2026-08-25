@@ -1,4 +1,4 @@
-export type MedicalAssetCategory = "Camadas" | "Sistemas" | "Desenvolvimento";
+export type MedicalAssetCategory = "Camadas" | "Sistemas" | "Patologia" | "Desenvolvimento";
 
 export interface NotebookMedicalAsset {
   id: string;
@@ -53,6 +53,13 @@ export const notebookMedicalAssets: NotebookMedicalAsset[] = [
     ["immune", "Sistema imune e linfático", "Órgãos linfoides e circulação linfática.", "immune-v1.png"],
   ].map(([id, label, description, file]) => ({ id, label, description, src: `/medicine/systems/${file}`, category: "Sistemas" as const, transparent: true, suggestedWidth: 460 })),
   ...[
+    ["pathology-lungs", "Pulmões · saudável e enfisema", "Prancha comparativa com alterações enfisematosas e pontos para anotação.", "lungs-emphysema-comparison-v1.png"],
+    ["pathology-heart", "Coração · saudável e pós-infarto", "Corte comparativo com cicatriz miocárdica e remodelamento ventricular.", "heart-infarction-comparison-v1.png"],
+    ["pathology-liver", "Fígado · saudável e cirrose", "Comparação macroscópica entre superfície hepática lisa e arquitetura cirrótica.", "liver-cirrhosis-comparison-v1.png"],
+    ["pathology-kidney", "Rim · saudável e hidronefrose", "Corte renal comparativo com dilatação da pelve, cálices e compressão do parênquima.", "kidney-hydronephrosis-comparison-v1.png"],
+    ["pathology-brain", "Cérebro · saudável e AVC isquêmico", "Corte comparativo com território focal ilustrativo de lesão isquêmica.", "brain-stroke-comparison-v1.png"],
+  ].map(([id, label, description, file]) => ({ id, label, description, src: `/medicine/pathology/${file}`, category: "Patologia" as const, transparent: true, suggestedWidth: 620 })),
+  ...[
     ["week-1", "Primeira semana", "Fecundação, clivagem e formação inicial do blastocisto.", "week-1-v1.png"],
     ["weeks-2-3", "Semanas 2 e 3", "Implantação, disco embrionário e gastrulação.", "weeks-2-3-v1.png"],
     ["weeks-3-8", "Semanas 3 a 8", "Dobramentos, diferenciação e organogênese inicial.", "weeks-3-8-v2.png"],
@@ -69,7 +76,7 @@ export const notebookMedicalAssets: NotebookMedicalAsset[] = [
 
 /** Adiciona metadados de edição às figuras médicas já existentes nos templates. */
 export function prepareMedicalNotebookHtml(html: string) {
-  return html.replace(/<img\s+([^>]*src=["']\/medicine\/(?:atlas|systems)\/[^"']+["'][^>]*)>/gi, (match, attributes: string) => {
+  return html.replace(/<img\s+([^>]*src=["']\/medicine\/(?:atlas|systems|pathology)\/[^"']+["'][^>]*)>/gi, (match, attributes: string) => {
     if (/data-medical-asset=/i.test(attributes)) return match;
     return `<img ${attributes} data-medical-asset="template" data-transparent="true" data-wrap="true" data-alignment="left" width="430">`;
   });

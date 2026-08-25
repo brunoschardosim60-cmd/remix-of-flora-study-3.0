@@ -4,10 +4,10 @@ import { describe, expect, it } from "vitest";
 import { notebookMedicalAssets, prepareMedicalNotebookHtml } from "./notebookMedicalAssets";
 
 describe("notebookMedicalAssets", () => {
-  it("oferece atlas, sistemas e desenvolvimento sem ids repetidos", () => {
-    expect(notebookMedicalAssets.length).toBeGreaterThanOrEqual(28);
+  it("oferece atlas, sistemas, patologia e desenvolvimento sem ids repetidos", () => {
+    expect(notebookMedicalAssets.length).toBeGreaterThanOrEqual(33);
     expect(new Set(notebookMedicalAssets.map((asset) => asset.id)).size).toBe(notebookMedicalAssets.length);
-    expect(new Set(notebookMedicalAssets.map((asset) => asset.category))).toEqual(new Set(["Camadas", "Sistemas", "Desenvolvimento"]));
+    expect(new Set(notebookMedicalAssets.map((asset) => asset.category))).toEqual(new Set(["Camadas", "Sistemas", "Patologia", "Desenvolvimento"]));
   });
 
   it("mantém todas as imagens disponíveis no pacote público", () => {

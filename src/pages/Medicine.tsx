@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   Activity, ArrowLeft, ArrowRight, Baby, BookOpen, Brain, Check, ChevronRight, ClipboardCheck,
   AlertTriangle, CircleDot, ExternalLink, Eye, EyeOff, FileHeart, HeartPulse, Layers, ListChecks, MapPin, Menu, NotebookPen,
-  Focus, Maximize2, Minimize2, PanelLeftClose, Pause, Play, Rotate3D, RotateCcw, Scissors, Search, ShieldCheck, Sparkles, Stethoscope, Target, Timer, Wrench, X, ZoomIn, ZoomOut,
+  Focus, Maximize2, Microscope, Minimize2, PanelLeftClose, Pause, Play, Rotate3D, RotateCcw, Scissors, Search, ShieldCheck, Sparkles, Stethoscope, Target, Timer, Wrench, X, ZoomIn, ZoomOut,
 } from "lucide-react";
 import { toast } from "sonner";
 import { BodyAtlas } from "@/components/medicine/BodyAtlas";
@@ -11,6 +11,7 @@ import { AnamnesisSimulator } from "@/components/medicine/AnamnesisSimulator";
 import { SemiologyAcademy } from "@/components/medicine/SemiologyAcademy";
 import { InstrumentsStudio } from "@/components/medicine/InstrumentsStudio";
 import { SurgerySimulator } from "@/components/medicine/SurgerySimulator";
+import { MedicalPathologyLab } from "@/components/medicine/MedicalPathologyLab";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -27,10 +28,11 @@ import "@/components/medicine/anatomy-3d.css";
 import "@/components/medicine/surgery-simulator.css";
 import "@/components/medicine/anamnesis-simulator.css";
 import "@/components/medicine/semiology-academy.css";
+import "@/components/medicine/pathology-lab.css";
 
 const Anatomy3DStudio = lazy(() => import("@/components/medicine/Anatomy3DStudio").then((module) => ({ default: module.Anatomy3DStudio })));
 
-type MedicineSection = "home" | "atlas" | "atlas3d" | "instruments" | "surgery" | "systems" | "development" | "practice" | "questions" | "semiology" | "anamnesis" | "clinic" | "plan" | "notebook" | "sources";
+type MedicineSection = "home" | "atlas" | "atlas3d" | "instruments" | "surgery" | "systems" | "pathology" | "development" | "practice" | "questions" | "semiology" | "anamnesis" | "clinic" | "plan" | "notebook" | "sources";
 
 const NAV: Array<{ id: MedicineSection; label: string; Icon: typeof Activity }> = [
   { id: "home", label: "Visão geral", Icon: Activity },
@@ -39,6 +41,7 @@ const NAV: Array<{ id: MedicineSection; label: string; Icon: typeof Activity }> 
   { id: "instruments", label: "Instrumentos", Icon: Wrench },
   { id: "surgery", label: "Cirurgia virtual", Icon: Scissors },
   { id: "systems", label: "Sistemas", Icon: HeartPulse },
+  { id: "pathology", label: "Patologia", Icon: Microscope },
   { id: "development", label: "Desenvolvimento", Icon: Baby },
   { id: "practice", label: "Identificação", Icon: Target },
   { id: "questions", label: "Questões", Icon: ClipboardCheck },
@@ -229,9 +232,9 @@ export default function Medicine() {
       <div className="med-shell">
         <aside className={`med-sidebar ${mobileNav ? "open" : ""}`}>
           <div className="med-sidebar-label">ESTUDAR</div>
-          {NAV.slice(0, 13).map(({ id, label, Icon }) => <button key={id} onClick={() => go(id)} className={section === id ? "active" : ""}><Icon /><span>{label}</span>{id === "questions" && wrongIds.length > 0 && <b>{wrongIds.length}</b>}</button>)}
+          {NAV.slice(0, 14).map(({ id, label, Icon }) => <button key={id} onClick={() => go(id)} className={section === id ? "active" : ""}><Icon /><span>{label}</span>{id === "questions" && wrongIds.length > 0 && <b>{wrongIds.length}</b>}</button>)}
           <div className="med-sidebar-label">FERRAMENTAS</div>
-          {NAV.slice(13).map(({ id, label, Icon }) => <button key={id} onClick={() => go(id)} className={section === id ? "active" : ""}><Icon /><span>{label}</span></button>)}
+          {NAV.slice(14).map(({ id, label, Icon }) => <button key={id} onClick={() => go(id)} className={section === id ? "active" : ""}><Icon /><span>{label}</span></button>)}
           <div className="med-safety-mini"><ShieldCheck /><div><strong>Uso educacional</strong><span>Não substitui supervisão, avaliação ou atendimento profissional.</span></div></div>
         </aside>
 
@@ -242,6 +245,7 @@ export default function Medicine() {
           {section === "instruments" && <InstrumentsStudio level={level} />}
           {section === "surgery" && <SurgerySimulator level={level} />}
           {section === "systems" && <SystemsSection level={level} onOpenAtlas={(layer, structure) => { setActiveLayer(layer); if (structure) setSelectedStructure(structure); go("atlas"); }} />}
+          {section === "pathology" && <MedicalPathologyLab onOpenNotebook={() => go("notebook")} />}
           {section === "development" && <DevelopmentSection />}
           {section === "practice" && <PracticeSection level={level} structure={practiceStructure} input={practiceInput} result={practiceResult} onInput={setPracticeInput} onSubmit={() => {
             const normalized = normalizeAnswer(practiceInput);
@@ -279,6 +283,7 @@ function MedicineHome({ level, progress, wrongCount, onGo }: { level: MedicineLe
       <button className="primary" onClick={() => onGo("atlas")}><span><Search /></span><div><small>EXPLORAR</small><h3>Atlas por camadas</h3><p>Pele, músculos, esqueleto, vasos, nervos e órgãos.</p></div><ChevronRight /></button>
       <button onClick={() => onGo("practice")}><span><Target /></span><div><small>PRATICAR</small><h3>Identificação ativa</h3><p>Nomeie estruturas e transforme erros em revisão.</p></div><ChevronRight /></button>
       <button onClick={() => onGo("semiology")}><span><Stethoscope /></span><div><small>COMEÇAR MEDICINA</small><h3>Semiologia guiada</h3><p>Conversa, exame, sinais vitais, raciocínio e SOAP.</p></div><ChevronRight /></button>
+      <button onClick={() => onGo("pathology")}><span><Microscope /></span><div><small>COMPARAR</small><h3>Anatomia e patologia</h3><p>Veja o saudável, explore a alteração e teste o mecanismo.</p></div><ChevronRight /></button>
     </section>
     <section className="med-progress-row"><div><span className="med-eyebrow">Seu percurso</span><h2>Aprendizado longitudinal</h2></div><div className="med-progress-card"><div className="ring" style={{ "--progress": `${progress * 3.6}deg` } as CSSProperties}><strong>{progress}%</strong></div><div><strong>Domínio em {level}</strong><span>{wrongCount ? `${wrongCount} item(ns) aguardando revisão` : "Nenhum erro pendente"}</span></div></div><div className="med-progress-card"><Brain /><div><strong>{profile.title}</strong><span>{profile.cycle.slice(0, 4).join(" → ")}</span></div></div></section>
     <section className="med-systems-preview"><div className="med-section-heading"><div><span className="med-eyebrow">Anatomia e fisiologia</span><h2>Sistemas do corpo</h2></div><button onClick={() => onGo("systems")}>Ver todos <ArrowRight /></button></div><div className="med-system-mini-grid">{medicalSystems.slice(0, 4).map((system) => <button key={system.id} onClick={() => onGo("systems")} style={{ "--system": system.color } as CSSProperties}><span>{system.name.slice(0, 2).toUpperCase()}</span><strong>{system.name}</strong><small>{system.description}</small></button>)}</div></section>
