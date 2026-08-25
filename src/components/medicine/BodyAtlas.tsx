@@ -192,7 +192,7 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
         <div>
           <span className="med-eyebrow">Atlas imersivo 2D</span>
           <h2>Explore por camadas</h2>
-          <p>Ilustrações anatômicas em alta definição. Toque em qualquer marcador ou nome para abrir a estrutura de perto.</p>
+          <p>Ilustrações anatômicas em alta definição. Toque em um marcador ou nome para selecionar; a ampliação abre somente pelo botão “Abrir em detalhe”.</p>
           <div className="med-atlas-level-context" aria-live="polite"><span>{level}</span><strong>{levelProfile.title}</strong><small>{levelProfile.atlasDescription}</small></div>
         </div>
         <div className="med-atlas-controls">
@@ -224,7 +224,7 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
             <div className="med-atlas-index-meta"><strong>{filteredStructures.length}</strong><span>na vista {view}</span></div>
             <div className="med-atlas-structure-list">
               {filteredStructures.map((structure) => (
-                <button key={structure.id} className={selected?.id === structure.id ? "active" : ""} onClick={() => openDetail(structure)}>
+                <button key={structure.id} className={selected?.id === structure.id ? "active" : ""} onClick={() => onSelect(structure)}>
                   <span>{structure.name}</span><small>{structure.region}</small>
                 </button>
               ))}
@@ -250,8 +250,8 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
                 key={structure.id}
                 className={`med-anatomy-pin ${selected?.id === structure.id ? "active" : ""}`}
                 style={{ left: `${position.x}%`, top: `${position.y}%` }}
-                onClick={() => openDetail(structure)}
-                aria-label={`Abrir ${structure.name} em detalhe`}
+                onClick={() => onSelect(structure)}
+                aria-label={`Selecionar ${structure.name}`}
                 data-label={structure.name}
               ><span /></button>;
             })}
