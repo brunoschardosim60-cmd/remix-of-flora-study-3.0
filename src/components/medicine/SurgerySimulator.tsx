@@ -43,7 +43,11 @@ function ToolVisual({ toolId }: { toolId: SurgicalToolId }) {
     : <span><Icon /></span>;
 }
 
-export function SurgerySimulator({ level }: { level: MedicineLevel }) {
+export function SurgerySimulator({ level, onLearningEvent, onOpenInstruments }: {
+  level: MedicineLevel;
+  onLearningEvent?: (event: { id: string; label: string; correct: boolean }) => void;
+  onOpenInstruments?: () => void;
+}) {
   const [scenarioId, setScenarioId] = useState<SurgicalScenario["id"]>("acute-abdomen");
   const [state, setState] = useState<SimulationState>("ready");
   const [stageIndex, setStageIndex] = useState(0);
@@ -95,6 +99,7 @@ export function SurgerySimulator({ level }: { level: MedicineLevel }) {
   };
 
   const fail = (message: string) => {
+    onLearningEvent?.({ id: `surgery:${scenario.id}:${stage.id}`, label: `${scenario.title} · ${stage.title}`, correct: false });
     setCriticalMessage(message);
     setState("failed");
     setSelectedTool(null);
@@ -113,6 +118,7 @@ export function SurgerySimulator({ level }: { level: MedicineLevel }) {
     }
 
     const nextLog = [...log, stage.success];
+    onLearningEvent?.({ id: `surgery:${scenario.id}:${stage.id}`, label: `${scenario.title} · ${stage.title}`, correct: true });
     setLog(nextLog);
     setSelectedTool(null);
     setHint(stage.learningPoint);
@@ -214,7 +220,7 @@ export function SurgerySimulator({ level }: { level: MedicineLevel }) {
     </div>
 
     <section className="med-surgery-debrief">
-      <header><div><span className="med-eyebrow">REGISTRO DA EQUIPE</span><h2>Debriefing de segurança</h2></div><strong>{log.length} decisões seguras</strong></header>
+      <header><div><span className="med-eyebrow">REGISTRO DA EQUIPE</span><h2>Debriefing de segurança</h2></div><div>{onOpenInstruments && <button onClick={onOpenInstruments}><Wrench /> Revisar instrumentos</button>}<strong>{log.length} decisões seguras</strong></div></header>
       <div>{surgicalStages.map((item, index) => <article key={item.id} className={index < log.length ? "done" : "pending"}><span>{index < log.length ? <Check /> : index + 1}</span><div><small>{item.eyebrow}</small><strong>{item.title}</strong><p>{index < log.length ? log[index] : "Aguardando conclusão desta etapa."}</p></div></article>)}</div>
     </section>
 

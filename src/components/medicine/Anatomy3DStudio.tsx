@@ -76,6 +76,15 @@ const SUPPLEMENTAL_ORGAN_PATHS = {
 } as const;
 const STANDARD_SKIN_TONE = "#ad7152";
 const BODY_PARTS_SOURCE_BOUNDS = new Box3(new Vector3(-1.33905, -3.534865, -0.187946), new Vector3(1.33396, 3.18329, 0.971386));
+const anatomyLevelOrder: MedicineLevel[] = ["Iniciante", "Ciclo básico", "Ciclo clínico", "Internato", "Residência"];
+const anatomyLevelLimits: Record<MedicineLevel, number> = { Iniciante: 24, "Ciclo básico": 90, "Ciclo clínico": 240, Internato: 600, Residência: Number.POSITIVE_INFINITY };
+const anatomyLevelGuidance: Record<MedicineLevel, string> = {
+  Iniciante: "Estruturas essenciais, nomes em português e orientação espacial guiada.",
+  "Ciclo básico": "Mais estruturas, termos anatômicos e relações fundamentais.",
+  "Ciclo clínico": "Catálogo ampliado para conectar anatomia, função e localização clínica.",
+  Internato: "Detalhamento regional extenso para revisão aplicada e correlação por sistemas.",
+  Residência: "Catálogo tridimensional completo, incluindo as malhas anatômicas detalhadas disponíveis.",
+};
 export function Anatomy3DStudio({ level, initialStructureId }: Anatomy3DStudioProps) {
   const initialStructure = anatomy3DStructures.find((item) => item.id === initialStructureId);
   const initialSystem: Anatomy3DSystemId = initialStructure?.layer ?? "surface";
@@ -109,15 +118,21 @@ export function Anatomy3DStudio({ level, initialStructureId }: Anatomy3DStudioPr
     const detailedForRegion = detailed.filter((item) => region === "whole" || item.regionId === region || item.regionId === "whole");
     return mergeGuidedAndDetailedStructures(guidedStructures, detailedForRegion);
   }, [detailedCatalogs, guidedStructures, region, system]);
+  const levelVisibleStructures = useMemo(() => {
+    if (level === "Iniciante") return guidedStructures.slice(0, anatomyLevelLimits[level]);
+    const limit = anatomyLevelLimits[level];
+    if (!Number.isFinite(limit) || visibleStructures.length <= limit) return visibleStructures;
+    const guidedIds = new Set(guidedStructures.map((item) => item.id));
+    const additional = visibleStructures.filter((item) => !guidedIds.has(item.id));
+    return [...guidedStructures, ...additional].slice(0, limit);
+  }, [guidedStructures, level, visibleStructures]);
   const filteredStructures = useMemo(() => {
     const normalized = normalize(query);
-    // Em "Todas as camadas", o índice inicial continua didático e legível;
-    // a busca consulta o catálogo detalhado completo com mais de mil malhas.
-    if (!normalized) return system === "all" ? guidedStructures : visibleStructures;
-    return visibleStructures.filter((item) => normalize(`${item.name} ${item.latin ?? ""} ${item.region} ${item.system} ${item.function}`).includes(normalized));
-  }, [guidedStructures, query, system, visibleStructures]);
+    if (!normalized) return system === "all" ? guidedStructures.slice(0, anatomyLevelLimits[level]) : levelVisibleStructures;
+    return levelVisibleStructures.filter((item) => normalize(`${item.name} ${item.latin ?? ""} ${item.region} ${item.system} ${item.function}`).includes(normalized));
+  }, [guidedStructures, level, levelVisibleStructures, query, system]);
   const selected = anatomy3DStructures.find((item) => item.id === selectedId) ?? modelSelection;
-  const selectedIsVisible = Boolean(selected && (selected.id.startsWith("model:") || visibleStructures.some((item) => item.id === selected.id)));
+  const selectedIsVisible = Boolean(selected && levelVisibleStructures.some((item) => item.id === selected.id));
   const baseCameraFocus = focusSelected && selected && selectedIsVisible ? selected.focus : regionMeta.focus;
   const baseCameraDistance = focusSelected && selected && selectedIsVisible ? selected.focusDistance : regionMeta.distance;
   const cameraFocus = baseCameraFocus;
@@ -131,13 +146,13 @@ export function Anatomy3DStudio({ level, initialStructureId }: Anatomy3DStudioPr
   })) as Record<Anatomy3DRegionId, boolean>, [detailedCatalogs, system]);
 
   useEffect(() => {
-    if (visibleStructures.some((item) => item.id === selectedId) || modelSelection?.id === selectedId) return;
-    const next = visibleStructures.find((item) => item.regionId !== "whole") ?? visibleStructures[0];
+    if (levelVisibleStructures.some((item) => item.id === selectedId) || modelSelection?.id === selectedId) return;
+    const next = levelVisibleStructures.find((item) => item.regionId !== "whole") ?? levelVisibleStructures[0];
     if (next) {
       setSelectedId(next.id);
       setModelSelection(next.id.startsWith("model:") ? next : null);
     }
-  }, [modelSelection?.id, selectedId, visibleStructures]);
+  }, [levelVisibleStructures, modelSelection?.id, selectedId]);
 
   const changeSystem = (nextSystem: Anatomy3DSystemId) => {
     const nextRegion = structuresFor3D(nextSystem, region).length ? region : "whole";
@@ -293,6 +308,7 @@ export function Anatomy3DStudio({ level, initialStructureId }: Anatomy3DStudioPr
         <span>FOCAR REGIÃO</span>
         {anatomy3DRegions.map((item) => <button key={item.id} className={region === item.id ? "active" : ""} disabled={!regionAvailability[item.id]} title={!regionAvailability[item.id] ? `Sem estruturas de ${anatomy3DSystemMeta.find((meta) => meta.id === system)?.label.toLocaleLowerCase("pt-BR")} nesta região` : undefined} onClick={() => changeRegion(item.id)}>{item.shortLabel}</button>)}
       </div>
+      <div className="med-3d-level-scope"><Sparkles /><span><strong>{level}</strong>{anatomyLevelGuidance[level]}</span><b>{levelVisibleStructures.length} disponíveis neste nível</b></div>
 
       <div className="med-3d-workspace">
         <aside className="med-3d-index">
@@ -385,7 +401,7 @@ export function Anatomy3DStudio({ level, initialStructureId }: Anatomy3DStudioPr
             <div className="med-3d-detail-orbit"><div className="med-3d-orbit-ring"><span style={{ background: selected.color }}><PersonStanding /></span></div><small>ESTRUTURA SELECIONADA</small></div>
             <span className="med-eyebrow">{selected.region}</span>
             <h2>{selected.name}</h2>
-            {selected.latin && <em>{selected.latin}</em>}
+            {selected.latin && anatomyLevelOrder.indexOf(level) > 0 && <em>{selected.latin}</em>}
             <div className="med-3d-tags"><span style={{ borderColor: selected.color, color: selected.color }}>{anatomy3DSystemMeta.find((item) => item.id === selected.layer)?.label}</span><span>{selected.system}</span>{realistic && <span className="realistic">Realista</span>}</div>
             <p>{selected.summary}</p>
             <dl><div><dt>Função</dt><dd>{selected.function}</dd></div><div><dt>Localização espacial</dt><dd>Centro do modelo em {formatCoordinates(selected.focus)}. Use a rotação para conferir relações anteriores, posteriores e laterais.</dd></div></dl>

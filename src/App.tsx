@@ -234,7 +234,7 @@ const App = () => (
                 <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                 <Route path="/metas" element={<ProtectedRoute><Metas /></ProtectedRoute>} />
                 <Route path="/flora" element={<ProtectedRoute><Flora /></ProtectedRoute>} />
-                <Route path="/medicina" element={<ProtectedRoute><Medicine /></ProtectedRoute>} />
+                <Route path="/medicina/*" element={<ProtectedRoute><Medicine /></ProtectedRoute>} />
                 <Route path="/shared/notebook/:token" element={<Suspense fallback={<RouteFallback />}><SharedNotebook /></Suspense>} />
                 {/* Caminhos antigos das áreas de cursos foram descontinuados. */}
                 <Route path="/aulao" element={<Navigate to="/" replace />} />

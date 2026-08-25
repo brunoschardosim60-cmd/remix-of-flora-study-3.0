@@ -36,7 +36,10 @@ function scoreForSession(clinicalCase: AnamnesisCase, askedIds: string[], decisi
   return Math.min(100, Math.max(0, historyScore + communicationScore + (decision ? decisionValueScore[decision.value] : 0)));
 }
 
-export function AnamnesisSimulator({ level }: { level: MedicineLevel }) {
+export function AnamnesisSimulator({ level, onLearningEvent }: {
+  level: MedicineLevel;
+  onLearningEvent?: (event: { id: string; label: string; correct: boolean }) => void;
+}) {
   const [caseId, setCaseId] = useState(anamnesisCases[0].id);
   const [askedIds, setAskedIds] = useState<string[]>([]);
   const [decisionId, setDecisionId] = useState<string | null>(null);
@@ -132,7 +135,10 @@ export function AnamnesisSimulator({ level }: { level: MedicineLevel }) {
             <header><span className="med-eyebrow">DECISÃO CLÍNICA EDUCACIONAL</span><h3>Qual é a próxima decisão mais segura?</h3><p>Você pode decidir após quatro perguntas, mas uma história incompleta reduz a pontuação.</p></header>
             <div>{clinicalCase.decisions.map((decision) => <button key={decision.id} className={decision.id === decisionId ? "active" : ""} disabled={askedIds.length < 4} onClick={() => setDecisionId(decision.id)}><span>{decision.id === decisionId ? <Check /> : <ArrowRight />}</span><strong>{decision.label}</strong></button>)}</div>
             {selectedDecision && <aside className={selectedDecision.value}>{(() => { const Icon = decisionCopy[selectedDecision.value].icon; return <Icon />; })()}<div><strong>{decisionCopy[selectedDecision.value].label}</strong><p>{selectedDecision.feedback}</p></div></aside>}
-            <footer><span>{askedIds.length < 4 ? `Faça mais ${4 - askedIds.length} pergunta(s) para liberar as decisões.` : summary.trim().length < 40 ? "Escreva uma síntese de pelo menos 40 caracteres." : "Pronto para receber o relatório."}</span><button disabled={!canEvaluate} onClick={() => setEvaluated(true)}><ClipboardCheck /> Encerrar e avaliar</button></footer>
+            <footer><span>{askedIds.length < 4 ? `Faça mais ${4 - askedIds.length} pergunta(s) para liberar as decisões.` : summary.trim().length < 40 ? "Escreva uma síntese de pelo menos 40 caracteres." : "Pronto para receber o relatório."}</span><button disabled={!canEvaluate} onClick={() => {
+              setEvaluated(true);
+              onLearningEvent?.({ id: `anamnesis:${clinicalCase.id}`, label: clinicalCase.title, correct: selectedDecision?.value === "best" && missedCritical.length === 0 });
+            }}><ClipboardCheck /> Encerrar e avaliar</button></footer>
           </section>
         </>}
       </main>

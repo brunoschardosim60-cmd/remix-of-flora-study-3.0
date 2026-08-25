@@ -52,7 +52,11 @@ function InstrumentGlyph({ instrument, concealed = false }: { instrument: Medica
   </div>;
 }
 
-export function InstrumentsStudio({ level }: { level: MedicineLevel }) {
+export function InstrumentsStudio({ level, onLearningEvent, onOpenSurgery }: {
+  level: MedicineLevel;
+  onLearningEvent?: (event: { id: string; label: string; correct: boolean }) => void;
+  onOpenSurgery?: (instrumentId: string) => void;
+}) {
   const [mode, setMode] = useState<"catalog" | "quiz">("catalog");
   const [category, setCategory] = useState<MedicalInstrumentCategory | "Todos">("Todos");
   const [query, setQuery] = useState("");
@@ -96,6 +100,7 @@ export function InstrumentsStudio({ level }: { level: MedicineLevel }) {
       setQuizStreak(0);
       setReviewIds((ids) => Array.from(new Set([...ids, quizInstrument.id])));
     }
+    onLearningEvent?.({ id: `instrument:${quizInstrument.id}`, label: quizInstrument.name, correct: id === quizInstrument.id });
   };
 
   const nextQuiz = () => {
@@ -130,7 +135,7 @@ export function InstrumentsStudio({ level }: { level: MedicineLevel }) {
           <div className="med-instrument-detail-copy"><span className="med-eyebrow">{selected.category} · {selected.level}</span><h2>{selected.name}</h2><p>{selected.function}</p>
             <section><h3>Como reconhecer</h3>{selected.recognition.map((clue) => <div key={clue}><CircleDot/><span>{clue}</span></div>)}</section>
             <aside><ShieldCheck/><div><strong>Cuidado essencial</strong><p>{selected.safety}</p></div></aside>
-            <footer><div><small>TAMBÉM CHAMADO</small><strong>{selected.aliases.join(" · ")}</strong></div><a href={medicalSources[selected.sourceId].url} target="_blank" rel="noreferrer">Conferir fonte <ExternalLink/></a></footer>
+            <footer><div><small>TAMBÉM CHAMADO</small><strong>{selected.aliases.join(" · ")}</strong></div><a href={medicalSources[selected.sourceId].url} target="_blank" rel="noreferrer">Conferir fonte <ExternalLink/></a>{onOpenSurgery && <button onClick={() => onOpenSurgery(selected.id)}><Scissors /> Ver em simulações</button>}</footer>
           </div>
         </article>
       </div>

@@ -46,7 +46,11 @@ function sourceTitle(id: string) {
   return medicalSources[id]?.title ?? id;
 }
 
-export function SemiologyAcademy({ level, onNavigate }: { level: MedicineLevel; onNavigate: (destination: Destination) => void }) {
+export function SemiologyAcademy({ level, onNavigate, onLearningEvent }: {
+  level: MedicineLevel;
+  onNavigate: (destination: Destination) => void;
+  onLearningEvent?: (event: { id: string; label: string; correct: boolean }) => void;
+}) {
   const [tab, setTab] = useState<AcademyTab>("trail");
   const [completed, setCompleted] = useState<string[]>(loadCompleted);
   const [activeId, setActiveId] = useState(() => semiologyModules.find((module) => !completed.includes(module.id))?.id ?? semiologyModules[0].id);
@@ -72,9 +76,10 @@ export function SemiologyAcademy({ level, onNavigate }: { level: MedicineLevel; 
 
   const answerModule = (module: SemiologyModule, option: number) => {
     setAnswers((current) => ({ ...current, [module.id]: option }));
+    onLearningEvent?.({ id: `semiology:${module.id}`, label: module.title, correct: option === module.question.answer });
     if (option === module.question.answer && !completed.includes(module.id)) {
       persistCompletion([...completed, module.id]);
-      toast.success("Módulo concluído", { description: "O progresso foi salvo neste dispositivo." });
+      toast.success("Módulo concluído", { description: "O progresso foi registrado na sua trilha médica." });
     }
   };
 
