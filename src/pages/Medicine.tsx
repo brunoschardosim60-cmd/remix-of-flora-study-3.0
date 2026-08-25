@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   Activity, ArrowLeft, ArrowRight, Baby, BookOpen, Brain, Check, ChevronRight, ClipboardCheck,
   AlertTriangle, CircleDot, ExternalLink, Eye, EyeOff, FileHeart, HeartPulse, Layers, ListChecks, MapPin, Menu, NotebookPen,
-  Focus, PanelLeftClose, Play, Rotate3D, RotateCcw, Scissors, Search, ShieldCheck, Sparkles, Stethoscope, Target, Timer, Wrench, X, ZoomIn, ZoomOut,
+  Focus, Maximize2, Minimize2, PanelLeftClose, Pause, Play, Rotate3D, RotateCcw, Scissors, Search, ShieldCheck, Sparkles, Stethoscope, Target, Timer, Volume2, Wrench, X, ZoomIn, ZoomOut,
 } from "lucide-react";
 import { toast } from "sonner";
 import { BodyAtlas } from "@/components/medicine/BodyAtlas";
@@ -432,12 +432,81 @@ function SystemsSection({ level, onOpenAtlas }: { level: MedicineLevel; onOpenAt
 
 function DevelopmentSection() {
   const [active, setActive] = useState(0);
+  const [activeMilestone, setActiveMilestone] = useState(0);
+  const [immersive, setImmersive] = useState(false);
+  const [autoPlay, setAutoPlay] = useState(false);
+  const [compare, setCompare] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
+  const [visualZoom, setVisualZoom] = useState(1);
+  const [visualPan, setVisualPan] = useState({ x: 0, y: 0 });
+  const [dragging, setDragging] = useState(false);
+  const dragRef = useRef<{ pointerId: number; x: number; y: number } | null>(null);
   const stage = embryologyTimeline[active];
+  const previousStage = embryologyTimeline[Math.max(0, active - 1)];
   const source = medicalSources[stage.sourceId];
+  const progress = ((active + 1) / embryologyTimeline.length) * 100;
   const selectStage = (index: number) => setActive(Math.min(Math.max(index, 0), embryologyTimeline.length - 1));
 
+  useEffect(() => {
+    setActiveMilestone(0);
+    setVisualZoom(1);
+    setVisualPan({ x: 0, y: 0 });
+    setCompare(false);
+    if (typeof window !== "undefined") window.speechSynthesis?.cancel();
+    setSpeaking(false);
+  }, [active]);
+
+  useEffect(() => {
+    if (!autoPlay) return;
+    const timer = window.setInterval(() => {
+      setActive((current) => current === embryologyTimeline.length - 1 ? 0 : current + 1);
+    }, 6500);
+    return () => window.clearInterval(timer);
+  }, [autoPlay]);
+
+  useEffect(() => {
+    if (!immersive) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.target as HTMLElement)?.closest("input, textarea, select")) return;
+      if (event.key === "Escape") setImmersive(false);
+      if (event.key === "ArrowRight") { event.preventDefault(); selectStage(active + 1); }
+      if (event.key === "ArrowLeft") { event.preventDefault(); selectStage(active - 1); }
+      if (event.code === "Space") { event.preventDefault(); setAutoPlay((value) => !value); }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [active, immersive]);
+
+  useEffect(() => () => {
+    if (typeof window !== "undefined") window.speechSynthesis?.cancel();
+  }, []);
+
+  const changeZoom = (delta: number) => setVisualZoom((current) => Math.min(2.6, Math.max(1, Number((current + delta).toFixed(1)))));
+  const resetView = () => { setVisualZoom(1); setVisualPan({ x: 0, y: 0 }); };
+  const toggleNarration = () => {
+    if (!("speechSynthesis" in window)) return;
+    if (speaking) {
+      window.speechSynthesis.cancel();
+      setSpeaking(false);
+      return;
+    }
+    const narration = new SpeechSynthesisUtterance(`${stage.period}. ${stage.title}. ${stage.detail} Marcos desta fase: ${stage.milestones.join(". ")}`);
+    narration.lang = "pt-BR";
+    narration.rate = .94;
+    narration.onend = () => setSpeaking(false);
+    narration.onerror = () => setSpeaking(false);
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(narration);
+    setSpeaking(true);
+  };
+
   return <div className="med-page med-development-page">
-    <PageHeading eyebrow="Embriologia e desenvolvimento humano" title="Do começo da vida à fase adulta" description="Uma jornada visual para entender o que muda em cada fase, quais sistemas estão em foco e o que revisar antes de avançar." />
+    <PageHeading eyebrow="Embriologia e desenvolvimento humano" title="Do começo da vida à fase adulta" description="Entre em cada fase, aproxime a imagem, acompanhe os marcos e compare as transformações em uma jornada visual contínua." />
 
     <div className="med-development-safety"><ShieldCheck /><div><strong>Guia educacional com fontes por etapa</strong><span>Faixas etárias são didáticas e o desenvolvimento apresenta variações individuais. As imagens ajudam na orientação visual, mas não são fonte anatômica nem material diagnóstico.</span></div></div>
 
@@ -448,16 +517,65 @@ function DevelopmentSection() {
       </button>)}
     </nav>
 
-    <article className="med-development-hero">
-      <div className="med-development-hero-image">
-        <img key={stage.image} src={stage.image} alt={stage.imageAlt} />
+    <article className={`med-development-hero ${immersive ? "immersive" : ""}`} aria-label={`Exploração imersiva: ${stage.title}`}>
+      {immersive && <header className="med-development-immersive-header">
+        <div><Baby /><span><small>JORNADA IMERSIVA</small><strong>Desenvolvimento humano</strong></span></div>
+        <div><span>← → mudar fase</span><span>espaço reproduzir</span><button onClick={() => setImmersive(false)} aria-label="Sair do modo imersivo"><Minimize2 /></button></div>
+      </header>}
+      <div
+        className={`med-development-hero-image ${dragging ? "dragging" : ""} ${compare ? "comparing" : ""}`}
+        onPointerDown={(event) => {
+          if (compare || (event.target as HTMLElement).closest("button")) return;
+          dragRef.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY };
+          event.currentTarget.setPointerCapture(event.pointerId);
+          setDragging(true);
+        }}
+        onPointerMove={(event) => {
+          if (!dragRef.current || dragRef.current.pointerId !== event.pointerId) return;
+          const dx = event.clientX - dragRef.current.x;
+          const dy = event.clientY - dragRef.current.y;
+          dragRef.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY };
+          setVisualPan((current) => ({ x: current.x + dx, y: current.y + dy }));
+        }}
+        onPointerUp={(event) => {
+          if (dragRef.current?.pointerId === event.pointerId) dragRef.current = null;
+          setDragging(false);
+        }}
+        onPointerCancel={() => { dragRef.current = null; setDragging(false); }}
+        onWheel={(event) => { if (!compare) changeZoom(event.deltaY < 0 ? .1 : -.1); }}
+      >
+        {compare ? <div className="med-development-compare">
+          <figure><img src={previousStage.image} alt={previousStage.imageAlt} /><figcaption><small>ANTES</small><strong>{previousStage.period}</strong><span>{previousStage.title}</span></figcaption></figure>
+          <i><ArrowRight /></i>
+          <figure><img src={stage.image} alt={stage.imageAlt} /><figcaption><small>AGORA</small><strong>{stage.period}</strong><span>{stage.title}</span></figcaption></figure>
+        </div> : <div className="med-development-image-canvas" style={{ transform: `translate3d(${visualPan.x}px, ${visualPan.y}px, 0) scale(${visualZoom})` }}>
+          <img key={stage.image} src={stage.image} alt={stage.imageAlt} draggable={false} />
+        </div>}
+        <div className="med-development-visual-controls">
+          <button onClick={() => changeZoom(-.2)} disabled={compare || visualZoom <= 1} aria-label="Afastar"><ZoomOut /></button>
+          <span>{Math.round(visualZoom * 100)}%</span>
+          <button onClick={() => changeZoom(.2)} disabled={compare || visualZoom >= 2.6} aria-label="Aproximar"><ZoomIn /></button>
+          <button onClick={resetView} disabled={compare || (visualZoom === 1 && visualPan.x === 0 && visualPan.y === 0)} aria-label="Centralizar"><RotateCcw /></button>
+          <button onClick={() => setImmersive((value) => !value)} aria-label={immersive ? "Sair da tela imersiva" : "Abrir tela imersiva"}>{immersive ? <Minimize2 /> : <Maximize2 />}</button>
+        </div>
         <span>Imagem educacional · não diagnóstica</span>
         <div className="med-development-image-index">ETAPA {active + 1} / {embryologyTimeline.length}</div>
+        <div className="med-development-discovery">
+          <div><small>MARCO {activeMilestone + 1} DE {stage.milestones.length}</small><strong>{stage.milestones[activeMilestone]}</strong></div>
+          <nav aria-label="Marcos desta fase">{stage.milestones.map((milestone, index) => <button key={milestone} className={activeMilestone === index ? "active" : ""} onClick={() => setActiveMilestone(index)} aria-label={`Mostrar marco ${index + 1}`} />)}</nav>
+        </div>
       </div>
       <div className="med-development-hero-copy">
+        <div className="med-development-journey-progress"><i style={{ width: `${progress}%` }} /></div>
         <div className="med-development-phase"><Baby /><span>{stage.phase}</span><i /> <span>{stage.period}</span></div>
         <h2>{stage.title}</h2>
         <p>{stage.detail}</p>
+        <div className="med-development-experience-actions">
+          <button className={speaking ? "active" : ""} onClick={toggleNarration}><Volume2 />{speaking ? "Parar narração" : "Ouvir esta fase"}</button>
+          <button className={autoPlay ? "active" : ""} onClick={() => setAutoPlay((value) => !value)}>{autoPlay ? <Pause /> : <Play />}{autoPlay ? "Pausar jornada" : "Reproduzir jornada"}</button>
+          <button className={compare ? "active" : ""} disabled={active === 0} onClick={() => setCompare((value) => !value)}><Layers />{compare ? "Voltar à imagem" : "Comparar anterior"}</button>
+          <button onClick={() => setImmersive((value) => !value)}>{immersive ? <Minimize2 /> : <Maximize2 />}{immersive ? "Sair do modo imersivo" : "Modo imersivo"}</button>
+        </div>
         <div className="med-development-source-mini"><BookOpen /><div><small>FONTE DESTA ETAPA</small><strong>{source.title}</strong><span>{source.organization} · revisada em {source.reviewedAt.split("-").reverse().join("/")}</span></div></div>
         <div className="med-development-hero-actions">
           <button onClick={() => selectStage(active - 1)} disabled={active === 0}><ArrowLeft /> Anterior</button>

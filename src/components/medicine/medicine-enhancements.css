@@ -2081,3 +2081,234 @@
   .med-template-grid-rich { grid-template-columns: 1fr; }
   .med-template-preview { height: 210px; }
 }
+
+/* Immersive human-development journey */
+.med-development-hero-image {
+  cursor: grab;
+  isolation: isolate;
+  touch-action: none;
+  user-select: none;
+}
+
+.med-development-hero-image.dragging { cursor: grabbing; }
+
+.med-development-image-canvas {
+  position: absolute;
+  inset: 0;
+  transform-origin: center;
+  transition: transform .22s cubic-bezier(.2, .75, .2, 1);
+  will-change: transform;
+}
+
+.med-development-hero-image.dragging .med-development-image-canvas { transition: none; }
+
+.med-development-image-canvas img {
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+
+.med-development-visual-controls {
+  position: absolute;
+  top: 17px;
+  right: 18px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px;
+  border: 1px solid rgba(255,255,255,.45);
+  border-radius: 13px;
+  background: rgba(247,250,247,.82);
+  box-shadow: 0 10px 30px rgba(24,50,43,.13);
+  backdrop-filter: blur(16px) saturate(1.2);
+}
+
+.med-development-visual-controls button {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 9px;
+  color: #3f665b;
+  transition: .16s ease;
+}
+
+.med-development-visual-controls button:hover:not(:disabled) { background: #e2ece8; }
+.med-development-visual-controls button:disabled { opacity: .3; }
+.med-development-visual-controls button:last-child { background: #3f7163; color: white; }
+.med-development-visual-controls svg { width: 14px; }
+.med-development-visual-controls > span { min-width: 36px; color: #55736a; font-size: 8px; font-weight: 900; text-align: center; }
+
+.med-development-hero-image > span { bottom: 120px; }
+
+.med-development-discovery {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  left: 18px;
+  z-index: 5;
+  display: flex;
+  min-height: 82px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 15px 17px;
+  border: 1px solid rgba(255,255,255,.24);
+  border-radius: 17px;
+  background: linear-gradient(110deg,rgba(22,48,41,.82),rgba(33,65,56,.67));
+  color: white;
+  box-shadow: 0 18px 44px rgba(17,38,32,.24);
+  backdrop-filter: blur(18px) saturate(1.2);
+}
+
+.med-development-discovery > div { display: flex; min-width: 0; flex-direction: column; gap: 5px; }
+.med-development-discovery small { color: #bcd5cc; font-size: 7px; font-weight: 900; letter-spacing: .1em; }
+.med-development-discovery strong { max-width: 560px; font-family: Georgia,serif; font-size: 14px; font-weight: 500; line-height: 1.35; }
+.med-development-discovery nav { display: flex; flex: 0 0 auto; gap: 7px; }
+.med-development-discovery nav button { width: 8px; height: 8px; border: 1px solid rgba(255,255,255,.58); border-radius: 50%; transition: .2s ease; }
+.med-development-discovery nav button.active { width: 26px; border-color: #d3e8e0; border-radius: 999px; background: #d3e8e0; }
+
+.med-development-journey-progress {
+  width: 100%;
+  height: 3px;
+  overflow: hidden;
+  margin-bottom: 28px;
+  border-radius: 99px;
+  background: #e3ebe7;
+}
+
+.med-development-journey-progress i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg,#77a495,#3f7667);
+  transition: width .45s ease;
+}
+
+.med-development-experience-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+  margin-top: 23px;
+}
+
+.med-development-experience-actions button {
+  display: flex;
+  min-height: 41px;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 0 11px;
+  border: 1px solid var(--med-line);
+  border-radius: 11px;
+  background: #f7f9f7;
+  color: #526f66;
+  font-size: 8px;
+  font-weight: 850;
+  text-align: left;
+}
+
+.med-development-experience-actions button:hover:not(:disabled),
+.med-development-experience-actions button.active { border-color: rgba(69,119,104,.32); background: #e4efea; color: #315f52; }
+.med-development-experience-actions button:disabled { opacity: .38; }
+.med-development-experience-actions svg { width: 14px; flex: 0 0 auto; }
+
+.med-development-compare {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  background: #d8e2dd;
+}
+
+.med-development-compare figure { position: relative; min-width: 0; overflow: hidden; }
+.med-development-compare figure img { width: 100%; height: 100%; object-fit: cover; }
+.med-development-compare figcaption {
+  position: absolute;
+  bottom: 118px;
+  left: 18px;
+  display: flex;
+  max-width: calc(100% - 36px);
+  flex-direction: column;
+  padding: 11px 13px;
+  border-radius: 12px;
+  background: rgba(250,252,249,.85);
+  color: #264d42;
+  backdrop-filter: blur(12px);
+}
+.med-development-compare figcaption small { font-size: 6px; font-weight: 900; letter-spacing: .1em; }
+.med-development-compare figcaption strong { margin-top: 3px; font-size: 10px; }
+.med-development-compare figcaption span { margin-top: 2px; overflow: hidden; font-size: 7px; text-overflow: ellipsis; white-space: nowrap; }
+.med-development-compare > i { position: absolute; top: 50%; left: 50%; z-index: 4; display: grid; width: 40px; height: 40px; place-items: center; transform: translate(-50%,-50%); border: 4px solid rgba(255,255,255,.75); border-radius: 50%; background: #3f7163; color: white; box-shadow: 0 12px 30px rgba(21,49,41,.24); }
+.med-development-compare > i svg { width: 15px; }
+
+.med-development-immersive-header { display: none; }
+
+.med-development-hero.immersive {
+  position: fixed;
+  inset: 10px;
+  z-index: 1000;
+  grid-template-rows: 66px minmax(0,1fr);
+  width: auto;
+  min-height: 0;
+  border-color: rgba(255,255,255,.17);
+  border-radius: 27px;
+  background: #101b17;
+  box-shadow: 0 0 0 12px rgba(9,22,17,.88),0 35px 100px rgba(0,0,0,.45);
+}
+
+.med-development-hero.immersive .med-development-immersive-header {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 22px;
+  border-bottom: 1px solid rgba(255,255,255,.1);
+  color: #e8f1ed;
+}
+.med-development-immersive-header > div { display: flex; align-items: center; gap: 10px; }
+.med-development-immersive-header > div:first-child > svg { width: 22px; color: #8eb5a8; }
+.med-development-immersive-header > div:first-child > span { display: flex; flex-direction: column; }
+.med-development-immersive-header small { color: #80a396; font-size: 6px; font-weight: 900; letter-spacing: .12em; }
+.med-development-immersive-header strong { margin-top: 2px; font-family: Georgia,serif; font-size: 15px; font-weight: 500; }
+.med-development-immersive-header > div:last-child > span { color: #88a097; font-size: 7px; }
+.med-development-immersive-header button { display: grid; width: 36px; height: 36px; place-items: center; border-radius: 10px; background: rgba(255,255,255,.08); }
+.med-development-immersive-header button svg { width: 15px; }
+.med-development-hero.immersive .med-development-hero-image { min-height: 0; }
+.med-development-hero.immersive .med-development-hero-copy { overflow-y: auto; background: #f8faf7; }
+.med-development-hero.immersive .med-development-discovery strong { font-size: 16px; }
+
+.dark .med-development-experience-actions button,
+.black .med-development-experience-actions button { background: #202d27; color: #b7cbc4; }
+.dark .med-development-journey-progress,
+.black .med-development-journey-progress { background: #293831; }
+
+@media (max-width: 900px) {
+  .med-development-experience-actions { grid-template-columns: 1fr 1fr; }
+  .med-development-hero.immersive { grid-template-columns: 1fr; overflow-y: auto; }
+  .med-development-hero.immersive .med-development-immersive-header { position: sticky; top: 0; z-index: 10; background: #101b17; }
+  .med-development-hero.immersive .med-development-hero-image { min-height: 56vh; }
+  .med-development-hero.immersive .med-development-hero-copy { overflow: visible; }
+}
+
+@media (max-width: 560px) {
+  .med-development-visual-controls { top: 12px; right: 12px; }
+  .med-development-visual-controls button { width: 29px; height: 29px; }
+  .med-development-visual-controls > span { display: none; }
+  .med-development-image-index { display: none; }
+  .med-development-hero-image > span { bottom: 111px; left: 13px; }
+  .med-development-discovery { right: 11px; bottom: 11px; left: 11px; min-height: 86px; padding: 13px; }
+  .med-development-discovery strong { font-size: 12px; }
+  .med-development-experience-actions { grid-template-columns: 1fr; }
+  .med-development-compare figcaption { bottom: 111px; left: 10px; max-width: calc(100% - 20px); padding: 8px; }
+  .med-development-compare figcaption span { display: none; }
+  .med-development-immersive-header > div:last-child > span { display: none; }
+  .med-development-hero.immersive { inset: 4px; border-radius: 20px; box-shadow: 0 0 0 5px rgba(9,22,17,.9); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .med-development-image-canvas,
+  .med-development-journey-progress i { transition: none; }
+}
