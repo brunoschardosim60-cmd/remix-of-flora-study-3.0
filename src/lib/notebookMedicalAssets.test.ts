@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { notebookMedicalAssets } from "./notebookMedicalAssets";
+import { notebookMedicalAssets, prepareMedicalNotebookHtml } from "./notebookMedicalAssets";
 
 describe("notebookMedicalAssets", () => {
   it("oferece atlas, sistemas e desenvolvimento sem ids repetidos", () => {
@@ -17,5 +17,13 @@ describe("notebookMedicalAssets", () => {
       expect(existsSync(resolve(process.cwd(), "public", asset.src.replace(/^\//, "")))).toBe(true);
     }
   });
-});
 
+  it("identifica recortes transparentes e prepara imagens médicas dos templates", () => {
+    expect(notebookMedicalAssets.filter((asset) => asset.category !== "Desenvolvimento").every((asset) => asset.transparent)).toBe(true);
+    expect(notebookMedicalAssets.filter((asset) => asset.category === "Desenvolvimento").every((asset) => !asset.transparent)).toBe(true);
+    const decorated = prepareMedicalNotebookHtml('<p>Antes</p><img src="/medicine/atlas/organs-anterior-v2.png" alt="Órgãos"><p>Depois</p>');
+    expect(decorated).toContain('data-transparent="true"');
+    expect(decorated).toContain('data-wrap="true"');
+    expect(decorated).toContain('width="430"');
+  });
+});

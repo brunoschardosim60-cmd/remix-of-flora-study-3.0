@@ -1,6 +1,6 @@
 import { NodeViewWrapper, type NodeViewProps } from "@tiptap/react";
 import { useRef, useState, useCallback, useEffect } from "react";
-import { AlignCenter, AlignLeft, AlignRight, Trash2 } from "lucide-react";
+import { AlignCenter, AlignLeft, AlignRight, RotateCcw, RotateCw, Trash2, WrapText } from "lucide-react";
 
 /**
  * Imagem do caderno: arrastável (drag nativo do ProseMirror) e
@@ -15,6 +15,9 @@ export function ResizableImageView({ node, updateAttributes, deleteNode, selecte
 
   const width = (node.attrs.width as number | string | null) ?? null;
   const alignment = (node.attrs.alignment as "left" | "center" | "right" | null) ?? "center";
+  const transparent = Boolean(node.attrs.transparent);
+  const wrap = Boolean(node.attrs.wrap);
+  const rotation = Number(node.attrs.rotation || 0);
 
   const onPointerDown = useCallback(
     (e: React.PointerEvent) => {
@@ -55,13 +58,20 @@ export function ResizableImageView({ node, updateAttributes, deleteNode, selecte
   }, [resizing]);
 
   const align = alignment === "left" ? "flex-start" : alignment === "right" ? "flex-end" : "center";
+  const floating = wrap && alignment !== "center";
 
   return (
     <NodeViewWrapper
       ref={wrapperRef}
       as="div"
-      className="nb-img-wrap"
-      style={{ display: "flex", justifyContent: align, margin: "12px 0" }}
+      className={`nb-img-wrap ${transparent ? "is-transparent" : ""} ${floating ? "is-wrapped" : ""}`}
+      style={floating ? {
+        display: "block",
+        float: alignment,
+        width: width ? `${typeof width === "number" ? width + "px" : width}` : "44%",
+        maxWidth: "58%",
+        margin: alignment === "left" ? "10px 22px 14px 0" : "10px 0 14px 22px",
+      } : { display: "flex", justifyContent: align, clear: "both", margin: "14px 0" }}
       data-drag-handle
     >
       <div
@@ -78,6 +88,10 @@ export function ResizableImageView({ node, updateAttributes, deleteNode, selecte
           <button type="button" className={alignment === "center" ? "active" : ""} onClick={() => updateAttributes({ alignment: "center" })} title="Centralizar imagem" aria-label="Centralizar imagem"><AlignCenter /></button>
           <button type="button" className={alignment === "right" ? "active" : ""} onClick={() => updateAttributes({ alignment: "right" })} title="Alinhar imagem à direita" aria-label="Alinhar imagem à direita"><AlignRight /></button>
           <span />
+          <button type="button" className={wrap ? "active" : ""} onClick={() => updateAttributes({ wrap: !wrap, alignment: alignment === "center" ? "left" : alignment })} title="Fazer o texto contornar a imagem" aria-label="Alternar texto ao redor da imagem"><WrapText /></button>
+          <button type="button" onClick={() => updateAttributes({ rotation: rotation - 90 })} title="Girar à esquerda" aria-label="Girar imagem à esquerda"><RotateCcw /></button>
+          <button type="button" onClick={() => updateAttributes({ rotation: rotation + 90 })} title="Girar à direita" aria-label="Girar imagem à direita"><RotateCw /></button>
+          <span />
           <button type="button" className="danger" onClick={deleteNode} title="Remover imagem" aria-label="Remover imagem"><Trash2 /></button>
         </div>}
         <img
@@ -88,10 +102,13 @@ export function ResizableImageView({ node, updateAttributes, deleteNode, selecte
           draggable={false}
           style={{
             display: "block",
-            width: width ? `${typeof width === "number" ? width + "px" : width}` : "auto",
+            width: floating ? "100%" : width ? `${typeof width === "number" ? width + "px" : width}` : "auto",
             maxWidth: "100%",
             height: "auto",
-            borderRadius: 8,
+            borderRadius: transparent ? 0 : 8,
+            background: "transparent",
+            transform: `rotate(${rotation}deg)`,
+            transformOrigin: "center",
             cursor: "grab",
             userSelect: "none",
             WebkitUserDrag: "element",

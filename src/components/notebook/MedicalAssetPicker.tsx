@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Images, Search, ShieldCheck } from "lucide-react";
+import { Images, Layers, Search, ShieldCheck } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { notebookMedicalAssets, type MedicalAssetCategory, type NotebookMedicalAsset } from "@/lib/notebookMedicalAssets";
 import "./notebook-premium.css";
@@ -7,7 +7,7 @@ import "./notebook-premium.css";
 interface MedicalAssetPickerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onInsert: (asset: NotebookMedicalAsset) => void;
+  onInsert: (asset: NotebookMedicalAsset, mode: "cutout" | "study") => void;
 }
 
 const categories: Array<"Todas" | MedicalAssetCategory> = ["Todas", "Camadas", "Sistemas", "Desenvolvimento"];
@@ -15,6 +15,7 @@ const categories: Array<"Todas" | MedicalAssetCategory> = ["Todas", "Camadas", "
 export function MedicalAssetPicker({ open, onOpenChange, onInsert }: MedicalAssetPickerProps) {
   const [category, setCategory] = useState<(typeof categories)[number]>("Todas");
   const [query, setQuery] = useState("");
+  const [insertMode, setInsertMode] = useState<"cutout" | "study">("cutout");
   const filtered = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase("pt-BR");
     return notebookMedicalAssets.filter((asset) => {
@@ -33,11 +34,12 @@ export function MedicalAssetPicker({ open, onOpenChange, onInsert }: MedicalAsse
       <div className="nb-medical-picker-controls">
         <label><Search /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar sistema, camada ou fase…" autoFocus /></label>
         <div>{categories.map((item) => <button key={item} type="button" className={category === item ? "active" : ""} onClick={() => setCategory(item)}>{item}</button>)}</div>
+        <div className="nb-medical-insert-modes" role="group" aria-label="Modo de inserção"><button type="button" className={insertMode === "cutout" ? "active" : ""} onClick={() => setInsertMode("cutout")}><Layers />Figura livre</button><button type="button" className={insertMode === "study" ? "active" : ""} onClick={() => setInsertMode("study")}>Figura + ficha</button></div>
       </div>
 
       <div className="nb-medical-assets-grid">
-        {filtered.map((asset) => <button key={asset.id} type="button" onClick={() => { onInsert(asset); onOpenChange(false); }}>
-          <span><img src={asset.src} alt="" loading="lazy" /></span>
+        {filtered.map((asset) => <button key={asset.id} type="button" onClick={() => { onInsert(asset, insertMode); onOpenChange(false); }}>
+          <span className={asset.transparent ? "transparent" : "scene"}><img src={asset.src} alt="" loading="lazy" />{asset.transparent && <i>PNG SEM FUNDO</i>}</span>
           <div><small>{asset.category}{asset.orientation ? ` · ${asset.orientation}` : ""}</small><strong>{asset.label}</strong><p>{asset.description}</p></div>
         </button>)}
         {filtered.length === 0 && <div className="nb-medical-assets-empty"><Search /><strong>Nenhuma imagem encontrada</strong><p>Tente um termo mais amplo ou escolha outra categoria.</p></div>}
@@ -47,4 +49,3 @@ export function MedicalAssetPicker({ open, onOpenChange, onInsert }: MedicalAsse
     </DialogContent>
   </Dialog>;
 }
-

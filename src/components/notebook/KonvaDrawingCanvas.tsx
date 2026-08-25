@@ -201,15 +201,17 @@ function drawRichStroke(ctx: CanvasRenderingContext2D, stroke: Stroke) {
 }
 
 /** Renderização compartilhada para exportar páginas sem precisar trocar a página visível. */
-export function renderStrokesToDataUrl(strokes: Stroke[], width = 794, height = 1123): string {
+export function renderStrokesToDataUrl(strokes: Stroke[], width = 794, height = 1123, backgroundColor: string | null = "#ffffff"): string {
   const canvas = document.createElement("canvas");
   const dpr = 2;
   canvas.width = width * dpr;
   canvas.height = height * dpr;
   const ctx = canvas.getContext("2d");
   if (!ctx) return "";
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  if (backgroundColor) {
+    ctx.fillStyle = backgroundColor;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   strokes.forEach((stroke) => drawRichStroke(ctx, stroke));
   return canvas.toDataURL("image/png");

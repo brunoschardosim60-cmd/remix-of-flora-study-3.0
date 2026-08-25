@@ -61,6 +61,7 @@ import { NotebookStudioToolbar } from "@/components/notebook/NotebookStudioToolb
 import { AudioSummaryButton } from "@/components/notebook/AudioSummaryButton";
 import { PageSidebarGrid } from "@/components/notebook/PageSidebarGrid";
 import { MedicalAssetPicker } from "@/components/notebook/MedicalAssetPicker";
+import { NotebookExportDialog, type NotebookExportAction } from "@/components/notebook/NotebookExportDialog";
 import { FloraNotebookSidebar } from "@/components/notebook/FloraNotebookSidebar";
 import { GHOST_ENABLED_KEY } from "@/components/notebook/GhostTextExtension";
 import "@/components/notebook/notebook-premium.css";
@@ -77,6 +78,15 @@ import type { Json } from "@/integrations/supabase/types";
 import { enqueuePageUpdate, flushQueue, pendingCount } from "@/lib/notebookOfflineQueue";
 import { getTemplatesForSubject, suggestTagsFromText } from "@/lib/notebookTemplates";
 import type { NotebookMedicalAsset } from "@/lib/notebookMedicalAssets";
+import {
+  buildStandaloneNotebookHtml,
+  downloadNotebookBlob,
+  embedNotebookImages,
+  notebookExportFilename,
+  notebookToMarkdown,
+  notebookToPlainText,
+} from "@/lib/notebookExport";
+import DOMPurify from "dompurify";
 
 type PageTemplate = "blank" | "lined" | "grid" | "dotted" | "physics" | "chemistry" | "essay";
 const PAGE_TEMPLATES: PageTemplate[] = ["blank", "lined", "grid", "dotted", "physics", "chemistry", "essay"];
@@ -303,6 +313,8 @@ export default function NotebookEditor() {
   const [focusModeActive, setFocusModeActive] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [medicalAssetPickerOpen, setMedicalAssetPickerOpen] = useState(false);
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [exporting, setExporting] = useState<NotebookExportAction | null>(null);
   const [editorInsertion, setEditorInsertion] = useState<{ id: number; html: string } | null>(null);
   const [zoom, setZoom] = useState(1);
   const editorContainerRef = useRef<HTMLDivElement>(null);
@@ -1124,10 +1136,14 @@ export default function NotebookEditor() {
     setSaveStatus("saved");
   };
 
-  const insertMedicalAsset = (asset: NotebookMedicalAsset) => {
-    const html = `<h2>${asset.label}</h2><img src="${asset.src}" alt="${asset.label}" title="${asset.description}"/><blockquote><strong>Orientação:</strong> ${asset.description}</blockquote><p><strong>Estrutura ou etapa em foco:</strong> ______________________________</p><p><strong>Relação anatômica ou sequência:</strong> __________________ → __________________</p>`;
+  const insertMedicalAsset = (asset: NotebookMedicalAsset, insertMode: "cutout" | "study") => {
+    const metadata = `data-medical-asset="${asset.id}" data-transparent="${asset.transparent}" data-wrap="${asset.transparent}" data-alignment="${asset.transparent ? "left" : "center"}" width="${asset.suggestedWidth ?? 460}"`;
+    const image = `<img src="${asset.src}" alt="${asset.label}" title="${asset.description}" ${metadata}/>`;
+    const html = insertMode === "study"
+      ? `<h2>${asset.label}</h2>${image}<blockquote><strong>Orientação:</strong> ${asset.description}</blockquote><p><strong>Estrutura ou etapa em foco:</strong> ______________________________</p><p><strong>Relação anatômica ou sequência:</strong> __________________ → __________________</p><p><br></p>`
+      : `${image}<p><br></p>`;
     setEditorInsertion({ id: Date.now(), html });
-    toast.success(`${asset.label} inserido. Use Desenhar para adicionar setas e rótulos.`);
+    toast.success(asset.transparent ? `${asset.label} inserido sem fundo. Arraste, gire, redimensione ou escreva ao redor.` : `${asset.label} inserido. Use Desenhar para adicionar setas e rótulos.`);
   };
 
   const handleInsertionHandled = useCallback((handledId: number) => {
@@ -1856,40 +1872,107 @@ export default function NotebookEditor() {
     toast.success(next ? "Autocomplete Flora ativado (Tab aceita, Esc descarta)" : "Autocomplete Flora desativado");
   }
 
-  async function exportNotebookPdf() {
-    if (!pages.length) return;
-    const loadingId = toast.loading("Preparando o PDF do caderno...");
+  async function renderNotebookPage(item: NotebookPage, pageIndex: number) {
+    const [{ default: html2canvas }, { renderStrokesToDataUrl }] = await Promise.all([
+      import("html2canvas"),
+      import("@/components/notebook/KonvaDrawingCanvas"),
+    ]);
+    const root = document.createElement("article");
+    root.className = `nb-export-page notebook-${item.template}`;
+    root.innerHTML = `<div class="nb-export-page-content">${DOMPurify.sanitize(item.content || "<p></p>")}</div><small class="nb-export-page-number">${notebook?.title || "Caderno"} · ${pageIndex + 1}/${pages.length}</small>`;
+    root.querySelectorAll<HTMLImageElement>("img[data-rotation]").forEach((image) => {
+      image.style.transform = `rotate(${Number(image.dataset.rotation || 0)}deg)`;
+      image.style.transformOrigin = "center";
+    });
+    const drawing = item.drawing_data;
+    if (drawing?.backgroundImage) {
+      const background = document.createElement("img");
+      background.className = "nb-export-background";
+      background.src = drawing.backgroundImage;
+      root.prepend(background);
+    }
+    if (drawing?.strokes?.length) {
+      const overlay = document.createElement("img");
+      overlay.className = "nb-export-drawing";
+      overlay.src = renderStrokesToDataUrl(drawing.strokes, 794, 1123, null);
+      root.appendChild(overlay);
+    }
+    drawing?.stickyNotes?.forEach((note) => {
+      const sticky = document.createElement("div");
+      sticky.className = "nb-export-sticky";
+      sticky.textContent = note.text;
+      Object.assign(sticky.style, { left: `${note.x}px`, top: `${note.y}px`, width: `${note.width}px`, minHeight: `${note.height}px`, background: note.color });
+      root.appendChild(sticky);
+    });
+    document.body.appendChild(root);
     try {
-      const [{ jsPDF }, { renderStrokesToDataUrl }] = await Promise.all([
-        import("jspdf"),
-        import("@/components/notebook/KonvaDrawingCanvas"),
-      ]);
-      const pdf = new jsPDF({ unit: "pt", format: "a4", orientation: "portrait" });
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      pages.forEach((item, index) => {
-        if (index > 0) pdf.addPage();
-        const image = renderStrokesToDataUrl(item.drawing_data?.strokes ?? []);
-        if (image) pdf.addImage(image, "PNG", 0, 0, pageWidth, pageHeight, undefined, "FAST");
-        const parsed = new DOMParser().parseFromString(item.content || "", "text/html");
-        const text = (parsed.body.textContent || "").replace(/\s+/g, " ").trim();
-        if (text) {
-          pdf.setFont("helvetica", "normal");
-          pdf.setFontSize(11);
-          pdf.setTextColor(25, 25, 25);
-          const lines = pdf.splitTextToSize(text, pageWidth - 96);
-          pdf.text(lines, 48, 64, { maxWidth: pageWidth - 96 });
-        }
-        pdf.setFontSize(8);
-        pdf.setTextColor(120, 120, 120);
-        pdf.text(`${notebook?.title || "Caderno"} · ${index + 1}/${pages.length}`, 48, pageHeight - 24);
-      });
-      pdf.save(`${(notebook?.title || "caderno").replace(/[^a-z0-9á-ú_-]+/gi, "-")}.pdf`);
-      toast.dismiss(loadingId);
-      toast.success("Caderno exportado em PDF.");
+      await Promise.all(Array.from(root.querySelectorAll("img")).map((image) => image.complete ? Promise.resolve() : new Promise<void>((resolve) => {
+        image.addEventListener("load", () => resolve(), { once: true });
+        image.addEventListener("error", () => resolve(), { once: true });
+      })));
+      return await html2canvas(root, { scale: 2, useCORS: true, backgroundColor: "#ffffff", logging: false, width: 794, height: 1123 });
+    } finally {
+      root.remove();
+    }
+  }
+
+  async function exportNotebookPdf(target: "samsung" | "pdf") {
+    if (!pages.length) return;
+    const [{ jsPDF }] = await Promise.all([import("jspdf")]);
+    const pdf = new jsPDF({ unit: "pt", format: "a4", orientation: "portrait" });
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    for (let index = 0; index < pages.length; index += 1) {
+      if (index > 0) pdf.addPage();
+      const canvas = await renderNotebookPage(pages[index], index);
+      pdf.addImage(canvas.toDataURL("image/jpeg", 0.94), "JPEG", 0, 0, pageWidth, pageHeight, undefined, "FAST");
+    }
+    pdf.save(notebookExportFilename(notebook?.title || "caderno", target === "samsung" ? "samsung-notes" : "", "pdf"));
+    toast.success(target === "samsung" ? "PDF A4 pronto para importar no Samsung Notes." : "Caderno completo exportado em PDF.");
+  }
+
+  const portablePages = () => pages.map((item) => ({ pageNumber: item.page_number, content: item.content || "" }));
+
+  async function handleNotebookExport(action: NotebookExportAction) {
+    if (!pages.length || exporting) return;
+    setExporting(action);
+    try {
+      const title = notebook?.title || "Caderno";
+      if (action === "samsung" || action === "pdf") await exportNotebookPdf(action);
+      if (action === "png") {
+        const canvas = await renderNotebookPage(pages[currentPage], currentPage);
+        const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob((value) => value ? resolve(value) : reject(new Error("Não foi possível preparar a imagem.")), "image/png"));
+        downloadNotebookBlob(blob, "image/png", notebookExportFilename(title, `pagina-${currentPage + 1}`, "png"));
+        toast.success("Página atual exportada em PNG.");
+      }
+      if (action === "html") {
+        const html = await embedNotebookImages(buildStandaloneNotebookHtml(title, portablePages()));
+        downloadNotebookBlob(html, "text/html;charset=utf-8", notebookExportFilename(title, "editavel", "html"));
+        toast.success("Caderno editável exportado em HTML.");
+      }
+      if (action === "markdown") {
+        downloadNotebookBlob(notebookToMarkdown(title, portablePages()), "text/markdown;charset=utf-8", notebookExportFilename(title, "", "md"));
+        toast.success("Caderno exportado em Markdown.");
+      }
+      if (action === "text") {
+        downloadNotebookBlob(notebookToPlainText(title, portablePages()), "text/plain;charset=utf-8", notebookExportFilename(title, "", "txt"));
+        toast.success("Caderno exportado como texto.");
+      }
+      if (action === "copy") {
+        const html = pages[currentPage]?.content || "<p></p>";
+        const text = notebookToPlainText(title, [{ pageNumber: currentPage + 1, content: html }]);
+        const embeddedDocument = await embedNotebookImages(`<!doctype html><html><body>${html}</body></html>`);
+        const embeddedHtml = new DOMParser().parseFromString(embeddedDocument, "text/html").body.innerHTML;
+        if (typeof ClipboardItem !== "undefined" && navigator.clipboard?.write) {
+          await navigator.clipboard.write([new ClipboardItem({ "text/html": new Blob([embeddedHtml], { type: "text/html" }), "text/plain": new Blob([text], { type: "text/plain" }) })]);
+        } else await navigator.clipboard.writeText(text);
+        toast.success("Página copiada com formatação.");
+      }
+      setExportDialogOpen(false);
     } catch (error: unknown) {
-      toast.dismiss(loadingId);
-      toast.error(error instanceof Error ? error.message : "Não foi possível exportar o PDF.");
+      toast.error(error instanceof Error ? error.message : "Não foi possível exportar o caderno.");
+    } finally {
+      setExporting(null);
     }
   }
 
@@ -1999,7 +2082,7 @@ export default function NotebookEditor() {
                   ] as const).map(([value, label]) => <Button key={value} type="button" variant={pageTemplate === value ? "secondary" : "ghost"} size="sm" className="h-8 justify-start text-xs" onClick={() => changePageTemplate(value)}><LayoutTemplate className="mr-1.5 h-3.5 w-3.5" />{label}</Button>)}</div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => setExpandedEditor((value) => !value)}>{expandedEditor ? <Minimize2 className="mr-2 h-4 w-4" /> : <Maximize2 className="mr-2 h-4 w-4" />}{expandedEditor ? "Sair da tela cheia" : "Abrir tela cheia"}</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => void exportNotebookPdf()}><Download className="mr-2 h-4 w-4" />Exportar em PDF</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setExportDialogOpen(true)}><Download className="mr-2 h-4 w-4" />Exportar / abrir em outro app</DropdownMenuItem>
                   <DropdownMenuItem disabled={pdfImporting} onClick={() => pdfInputRef.current?.click()}>{pdfImporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileUp className="mr-2 h-4 w-4" />}{pdfImporting ? "Importando PDF…" : "Importar PDF para anotar"}</DropdownMenuItem>
                   <input ref={pdfInputRef} type="file" accept="application/pdf,.pdf" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) void importPdfAsPages(file); }} />
                   <DropdownMenuItem onClick={restorePreviousVersion}><History className="mr-2 h-4 w-4" />Restaurar versão anterior</DropdownMenuItem>
@@ -2100,6 +2183,7 @@ export default function NotebookEditor() {
       />
 
       <MedicalAssetPicker open={medicalAssetPickerOpen} onOpenChange={setMedicalAssetPickerOpen} onInsert={insertMedicalAsset} />
+      <NotebookExportDialog open={exportDialogOpen} onOpenChange={setExportDialogOpen} exporting={exporting} onExport={(action) => void handleNotebookExport(action)} />
 
       {/* Editor */}
       {focusModeActive ? (

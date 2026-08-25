@@ -1228,6 +1228,8 @@
 .nb-image-controls button.danger:hover { background: #f8e6e3; color: #a14c45; }
 .nb-image-controls svg { width: 14px; }
 .nb-image-controls > span { width: 1px; height: 20px; margin: 0 2px; background: #e1e7e4; }
+.nb-img-wrap.is-transparent img { filter: drop-shadow(0 10px 14px rgba(34,66,56,.12)); }
+.nb-img-wrap.is-wrapped { position: relative; z-index: 2; }
 
 .nb-medical-picker { display: flex; height: min(820px, 90dvh); flex-direction: column; border: 1px solid rgba(42,75,65,.12); border-radius: 24px; background: #f7f9f6; }
 .nb-medical-picker-header { display: flex; min-height: 96px; flex-direction: row; align-items: center; gap: 14px; padding: 22px 28px; border-bottom: 1px solid rgba(42,75,65,.09); background: white; text-align: left; }
@@ -1240,13 +1242,19 @@
 .nb-medical-picker-controls label svg { width: 15px; color: #7b8b85; }
 .nb-medical-picker-controls input { min-width: 0; flex: 1; border: 0; outline: 0; background: transparent; font-size: 10px; }
 .nb-medical-picker-controls > div { display: flex; gap: 5px; overflow-x: auto; }
+.nb-medical-picker-controls .nb-medical-insert-modes { margin-left: auto; padding-left: 10px; border-left: 1px solid rgba(42,75,65,.1); }
+.nb-medical-insert-modes button { display: inline-flex; align-items: center; gap: 5px; }
+.nb-medical-insert-modes svg { width: 13px; }
 .nb-medical-picker-controls button { height: 34px; padding: 0 11px; border-radius: 10px; color: #6e7f79; font-size: 9px; font-weight: 750; white-space: nowrap; }
 .nb-medical-picker-controls button.active { background: #dfede7; color: #326c59; }
 .nb-medical-assets-grid { display: grid; min-height: 0; flex: 1; grid-auto-rows: 240px; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; overflow-y: auto; padding: 18px 22px; align-content: start; }
 .nb-medical-assets-grid > button { overflow: hidden; border: 1px solid rgba(40,72,63,.09); border-radius: 16px; background: white; text-align: left; transition: 160ms ease; }
 .nb-medical-assets-grid > button:hover { transform: translateY(-3px); border-color: rgba(48,112,91,.27); box-shadow: 0 15px 30px rgba(35,67,58,.1); }
-.nb-medical-assets-grid > button > span { display: block; height: 150px; overflow: hidden; background: radial-gradient(circle,#f8faf8,#e7efeb); }
-.nb-medical-assets-grid img { width: 100%; height: 100%; object-fit: cover; object-position: center 22%; transition: transform 220ms ease; }
+.nb-medical-assets-grid > button > span { position: relative; display: block; height: 150px; overflow: hidden; background: radial-gradient(circle,#f8faf8,#e7efeb); }
+.nb-medical-assets-grid > button > span.transparent { background-color: #edf3f0; background-image: linear-gradient(45deg,rgba(61,103,89,.045) 25%,transparent 25%),linear-gradient(-45deg,rgba(61,103,89,.045) 25%,transparent 25%),linear-gradient(45deg,transparent 75%,rgba(61,103,89,.045) 75%),linear-gradient(-45deg,transparent 75%,rgba(61,103,89,.045) 75%); background-position: 0 0,0 8px,8px -8px,-8px 0; background-size: 16px 16px; }
+.nb-medical-assets-grid img { width: 100%; height: 100%; padding: 8px; object-fit: contain; object-position: center; transition: transform 220ms ease; }
+.nb-medical-assets-grid > button > span.scene img { padding: 0; object-fit: cover; }
+.nb-medical-assets-grid > button > span i { position: absolute; right: 7px; bottom: 7px; padding: 4px 6px; border: 1px solid rgba(42,75,65,.1); border-radius: 999px; background: rgba(255,255,255,.88); color: #39715f; font-size: 6px; font-style: normal; font-weight: 850; letter-spacing: .08em; backdrop-filter: blur(8px); }
 .nb-medical-assets-grid > button:hover img { transform: scale(1.035); }
 .nb-medical-assets-grid > button > div { padding: 13px; }
 .nb-medical-assets-grid small { color: #598173; font-size: 7px; font-weight: 850; letter-spacing: .09em; text-transform: uppercase; }
@@ -1257,6 +1265,47 @@
 .nb-medical-assets-empty p { margin-top: 4px; font-size: 9px; }
 .nb-medical-picker > footer { display: flex; min-height: 52px; align-items: center; gap: 9px; padding: 10px 22px; border-top: 1px solid rgba(42,75,65,.08); background: #edf4f1; color: #61756e; font-size: 8px; line-height: 1.45; }
 .nb-medical-picker > footer svg { width: 16px; flex: 0 0 16px; color: #4d7e6e; }
+
+.nb-export-dialog { border: 1px solid rgba(34,67,57,.12); border-radius: 24px; background: #f6f8f6; box-shadow: 0 32px 90px rgba(18,43,35,.2); }
+.nb-export-header { display: flex; flex-direction: row; align-items: center; gap: 14px; padding: 24px 28px 20px; border-bottom: 1px solid rgba(42,75,65,.09); background: white; text-align: left; }
+.nb-export-header > span { display: grid; width: 46px; height: 46px; flex: 0 0 46px; place-items: center; border-radius: 15px; background: #dfeee8; color: #34705c; }
+.nb-export-header > span svg { width: 21px; }
+.nb-export-header h2 { color: #1c3e34; font-family: Georgia,serif; font-size: 23px; font-weight: 500; }
+.nb-export-header p { margin-top: 4px; color: #71817b; font-size: 10px; }
+.nb-export-samsung-note { display: flex; gap: 11px; margin: 16px 20px 0; padding: 13px 15px; border: 1px solid rgba(44,112,89,.12); border-radius: 14px; background: #e7f2ed; color: #416c5e; font-size: 9px; line-height: 1.5; }
+.nb-export-samsung-note > svg { width: 17px; flex: 0 0 17px; }
+.nb-export-samsung-note span { display: flex; flex-direction: column; }
+.nb-export-samsung-note strong { color: #285847; font-size: 10px; }
+.nb-export-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 9px; padding: 16px 20px 20px; }
+.nb-export-grid > button { display: flex; min-height: 88px; align-items: center; gap: 12px; padding: 14px; border: 1px solid rgba(37,69,59,.09); border-radius: 15px; background: white; text-align: left; transition: 160ms ease; }
+.nb-export-grid > button:hover:not(:disabled) { transform: translateY(-2px); border-color: rgba(47,118,94,.3); box-shadow: 0 12px 25px rgba(32,70,57,.08); }
+.nb-export-grid > button:disabled { opacity: .6; }
+.nb-export-grid > button > span:first-child { display: grid; width: 38px; height: 38px; flex: 0 0 38px; place-items: center; border-radius: 12px; background: #edf3f0; color: #477967; }
+.nb-export-grid svg { width: 17px; }
+.nb-export-grid > button > div { min-width: 0; flex: 1; }
+.nb-export-grid small { display: block; margin-bottom: 3px; color: #3c7a65; font-size: 6px; font-weight: 900; letter-spacing: .1em; }
+.nb-export-grid strong { display: block; color: #284a3f; font-size: 11px; }
+.nb-export-grid p { margin-top: 3px; color: #75847f; font-size: 8px; line-height: 1.4; }
+.nb-export-grid .arrow { color: #8a9994; font-size: 17px; }
+.nb-export-dialog > footer { padding: 11px 20px 15px; border-top: 1px solid rgba(42,75,65,.08); color: #74827d; font-size: 8px; text-align: center; }
+
+.nb-export-page { position: fixed; z-index: -9999; top: 0; left: -10000px; box-sizing: border-box; width: 794px; height: 1123px; overflow: hidden; padding: 72px 68px 54px; background-color: #fff; color: #17251f; font-family: Arial,sans-serif; }
+.nb-export-page-content { position: relative; z-index: 2; height: 100%; font-size: 16px; line-height: 1.55; }
+.nb-export-page-content::after { display: block; clear: both; content: ""; }
+.nb-export-page-content h1,.nb-export-page-content h2,.nb-export-page-content h3 { color: #173e33; font-family: Georgia,serif; }
+.nb-export-page-content img { display: block; max-width: 100%; max-height: 660px; object-fit: contain; background: transparent; }
+.nb-export-page-content img[data-alignment="center"] { margin: 20px auto; }
+.nb-export-page-content img[data-alignment="left"] { margin: 14px 22px 14px 0; }
+.nb-export-page-content img[data-alignment="right"] { margin: 14px 0 14px 22px; }
+.nb-export-page-content img[data-wrap="true"][data-alignment="left"] { float: left; }
+.nb-export-page-content img[data-wrap="true"][data-alignment="right"] { float: right; }
+.nb-export-background,.nb-export-drawing { position: absolute; z-index: 0; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.nb-export-drawing { z-index: 4; pointer-events: none; }
+.nb-export-sticky { position: absolute; z-index: 5; box-sizing: border-box; overflow: hidden; padding: 22px 12px 12px; border: 1px solid rgba(0,0,0,.08); border-radius: 8px; box-shadow: 0 7px 16px rgba(20,40,33,.14); font-size: 13px; white-space: pre-wrap; }
+.nb-export-page-number { position: absolute; z-index: 6; right: 34px; bottom: 22px; color: #81908b; font-size: 9px; }
+.nb-export-page.notebook-lined { background-image: repeating-linear-gradient(transparent 0,transparent 27px,rgba(95,145,181,.18) 28px); }
+.nb-export-page.notebook-grid,.nb-export-page.notebook-physics { background-image: linear-gradient(rgba(105,145,166,.13) 1px,transparent 1px),linear-gradient(90deg,rgba(105,145,166,.13) 1px,transparent 1px); background-size: 28px 28px; }
+.nb-export-page.notebook-dotted { background-image: radial-gradient(rgba(83,112,102,.22) 1px,transparent 1px); background-size: 22px 22px; }
 
 @media (max-width: 900px) {
   .nb-medical-assets-grid { grid-template-columns: repeat(3, minmax(0,1fr)); }
@@ -1274,7 +1323,13 @@
   .nb-medical-picker-header h2 { font-size: 20px; }
   .nb-medical-picker-controls { align-items: stretch; flex-direction: column; padding: 12px; }
   .nb-medical-picker-controls > label { width: 100%; }
+  .nb-medical-picker-controls .nb-medical-insert-modes { margin-left: 0; padding-top: 7px; padding-left: 0; border-top: 1px solid rgba(42,75,65,.1); border-left: 0; }
   .nb-medical-assets-grid { grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; padding: 12px; }
   .nb-medical-assets-grid { grid-auto-rows: 218px; }
   .nb-medical-assets-grid > button > span { height: 125px; }
+  .nb-export-dialog { max-width: calc(100vw - 12px); border-radius: 18px; }
+  .nb-export-header { padding: 18px; }
+  .nb-export-header > span { display: none; }
+  .nb-export-grid { grid-template-columns: 1fr; max-height: 58dvh; overflow-y: auto; padding: 12px; }
+  .nb-export-samsung-note { margin: 12px 12px 0; }
 }

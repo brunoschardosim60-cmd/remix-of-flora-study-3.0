@@ -7,6 +7,9 @@ export interface NotebookMedicalAsset {
   src: string;
   category: MedicalAssetCategory;
   orientation?: "Anterior" | "Posterior";
+  /** O arquivo contém canal alfa real e entra no papel como recorte. */
+  transparent: boolean;
+  suggestedWidth?: number;
 }
 
 const atlasAsset = (
@@ -22,6 +25,8 @@ const atlasAsset = (
   src: `/medicine/atlas/${layer}-${orientation.toLocaleLowerCase("pt-BR")}-v2.png`,
   category: "Camadas",
   orientation,
+  transparent: true,
+  suggestedWidth: 430,
 });
 
 export const notebookMedicalAssets: NotebookMedicalAsset[] = [
@@ -37,23 +42,35 @@ export const notebookMedicalAssets: NotebookMedicalAsset[] = [
   atlasAsset("nervous", "Sistema nervoso", "Medula, trajetos nervosos e relações posteriores.", "nervous", "Posterior"),
   atlasAsset("organs", "Órgãos internos", "Posição aproximada e relações dos principais órgãos.", "organs", "Anterior"),
   atlasAsset("organs", "Órgãos internos", "Relações viscerais observadas posteriormente.", "organs", "Posterior"),
-  { id: "cardiovascular", label: "Sistema cardiovascular", description: "Coração, grandes vasos e circulação sistêmica.", src: "/medicine/systems/cardiovascular-v1.png", category: "Sistemas" },
-  { id: "respiratory", label: "Sistema respiratório", description: "Vias aéreas, pulmões e interface de trocas gasosas.", src: "/medicine/systems/respiratory-v1.png", category: "Sistemas" },
-  { id: "nervous-system", label: "Sistema nervoso", description: "Organização central e periférica do sistema nervoso.", src: "/medicine/systems/nervous-v1.png", category: "Sistemas" },
-  { id: "digestive", label: "Sistema digestório", description: "Trajeto gastrointestinal e órgãos associados.", src: "/medicine/systems/digestive-v1.png", category: "Sistemas" },
-  { id: "musculoskeletal", label: "Sistema musculoesquelético", description: "Integração entre ossos, articulações e músculos.", src: "/medicine/systems/musculoskeletal-v1.png", category: "Sistemas" },
-  { id: "endocrine", label: "Sistema endócrino", description: "Glândulas e eixos de regulação hormonal.", src: "/medicine/systems/endocrine-v1.png", category: "Sistemas" },
-  { id: "urinary", label: "Sistema urinário", description: "Rins, ureteres, bexiga e vias de eliminação.", src: "/medicine/systems/urinary-v1.png", category: "Sistemas" },
-  { id: "immune", label: "Sistema imune e linfático", description: "Órgãos linfoides e circulação linfática.", src: "/medicine/systems/immune-v1.png", category: "Sistemas" },
-  { id: "week-1", label: "Primeira semana", description: "Fecundação, clivagem e formação inicial do blastocisto.", src: "/medicine/development/week-1-v1.png", category: "Desenvolvimento" },
-  { id: "weeks-2-3", label: "Semanas 2 e 3", description: "Implantação, disco embrionário e gastrulação.", src: "/medicine/development/weeks-2-3-v1.png", category: "Desenvolvimento" },
-  { id: "weeks-3-8", label: "Semanas 3 a 8", description: "Dobramentos, diferenciação e organogênese inicial.", src: "/medicine/development/weeks-3-8-v2.png", category: "Desenvolvimento" },
-  { id: "fetal-period", label: "Período fetal", description: "Crescimento corporal e maturação progressiva dos sistemas.", src: "/medicine/development/fetal-period-v1.png", category: "Desenvolvimento" },
-  { id: "neonatal", label: "Transição neonatal", description: "Adaptações funcionais relacionadas ao nascimento.", src: "/medicine/development/neonatal-transition-v1.png", category: "Desenvolvimento" },
-  { id: "infancy", label: "Lactente e primeira infância", description: "Crescimento e aquisição progressiva de funções.", src: "/medicine/development/infancy-toddler-v1.png", category: "Desenvolvimento" },
-  { id: "childhood", label: "Infância", description: "Desenvolvimento corporal e funcional durante a infância.", src: "/medicine/development/childhood-v1.png", category: "Desenvolvimento" },
-  { id: "adolescence", label: "Adolescência", description: "Maturação puberal e transição para a vida adulta.", src: "/medicine/development/adolescence-v1.png", category: "Desenvolvimento" },
-  { id: "adult", label: "Adulto jovem", description: "Organização corporal no início da vida adulta.", src: "/medicine/development/early-adulthood-v1.png", category: "Desenvolvimento" },
-  { id: "middle-adulthood", label: "Meia-idade", description: "Adaptações graduais durante a vida adulta intermediária.", src: "/medicine/development/middle-adulthood-v1.png", category: "Desenvolvimento" },
-  { id: "late-adulthood", label: "Envelhecimento", description: "Mudanças heterogêneas, longevidade, função e autonomia.", src: "/medicine/development/late-adulthood-v1.png", category: "Desenvolvimento" },
+  ...[
+    ["cardiovascular", "Sistema cardiovascular", "Coração, grandes vasos e circulação sistêmica.", "cardiovascular-v1.png"],
+    ["respiratory", "Sistema respiratório", "Vias aéreas, pulmões e interface de trocas gasosas.", "respiratory-v1.png"],
+    ["nervous-system", "Sistema nervoso", "Organização central e periférica do sistema nervoso.", "nervous-v1.png"],
+    ["digestive", "Sistema digestório", "Trajeto gastrointestinal e órgãos associados.", "digestive-v1.png"],
+    ["musculoskeletal", "Sistema musculoesquelético", "Integração entre ossos, articulações e músculos.", "musculoskeletal-v1.png"],
+    ["endocrine", "Sistema endócrino", "Glândulas e eixos de regulação hormonal.", "endocrine-v1.png"],
+    ["urinary", "Sistema urinário", "Rins, ureteres, bexiga e vias de eliminação.", "urinary-v1.png"],
+    ["immune", "Sistema imune e linfático", "Órgãos linfoides e circulação linfática.", "immune-v1.png"],
+  ].map(([id, label, description, file]) => ({ id, label, description, src: `/medicine/systems/${file}`, category: "Sistemas" as const, transparent: true, suggestedWidth: 460 })),
+  ...[
+    ["week-1", "Primeira semana", "Fecundação, clivagem e formação inicial do blastocisto.", "week-1-v1.png"],
+    ["weeks-2-3", "Semanas 2 e 3", "Implantação, disco embrionário e gastrulação.", "weeks-2-3-v1.png"],
+    ["weeks-3-8", "Semanas 3 a 8", "Dobramentos, diferenciação e organogênese inicial.", "weeks-3-8-v2.png"],
+    ["fetal-period", "Período fetal", "Crescimento corporal e maturação progressiva dos sistemas.", "fetal-period-v1.png"],
+    ["neonatal", "Transição neonatal", "Adaptações funcionais relacionadas ao nascimento.", "neonatal-transition-v1.png"],
+    ["infancy", "Lactente e primeira infância", "Crescimento e aquisição progressiva de funções.", "infancy-toddler-v1.png"],
+    ["childhood", "Infância", "Desenvolvimento corporal e funcional durante a infância.", "childhood-v1.png"],
+    ["adolescence", "Adolescência", "Maturação puberal e transição para a vida adulta.", "adolescence-v1.png"],
+    ["adult", "Adulto jovem", "Organização corporal no início da vida adulta.", "early-adulthood-v1.png"],
+    ["middle-adulthood", "Meia-idade", "Adaptações graduais durante a vida adulta intermediária.", "middle-adulthood-v1.png"],
+    ["late-adulthood", "Envelhecimento", "Mudanças heterogêneas, longevidade, função e autonomia.", "late-adulthood-v1.png"],
+  ].map(([id, label, description, file]) => ({ id, label, description, src: `/medicine/development/${file}`, category: "Desenvolvimento" as const, transparent: false, suggestedWidth: 600 })),
 ];
+
+/** Adiciona metadados de edição às figuras médicas já existentes nos templates. */
+export function prepareMedicalNotebookHtml(html: string) {
+  return html.replace(/<img\s+([^>]*src=["']\/medicine\/(?:atlas|systems)\/[^"']+["'][^>]*)>/gi, (match, attributes: string) => {
+    if (/data-medical-asset=/i.test(attributes)) return match;
+    return `<img ${attributes} data-medical-asset="template" data-transparent="true" data-wrap="true" data-alignment="left" width="430">`;
+  });
+}

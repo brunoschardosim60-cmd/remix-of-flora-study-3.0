@@ -83,6 +83,26 @@ export function RichEditor({ content, onChange, userId, notebookId, darkMode, on
               renderHTML: (attrs) =>
                 attrs.alignment ? { "data-alignment": attrs.alignment } : {},
             },
+            medicalAsset: {
+              default: null,
+              parseHTML: (el) => el.getAttribute("data-medical-asset"),
+              renderHTML: (attrs) => attrs.medicalAsset ? { "data-medical-asset": attrs.medicalAsset } : {},
+            },
+            transparent: {
+              default: false,
+              parseHTML: (el) => el.getAttribute("data-transparent") === "true",
+              renderHTML: (attrs) => attrs.transparent ? { "data-transparent": "true" } : {},
+            },
+            wrap: {
+              default: false,
+              parseHTML: (el) => el.getAttribute("data-wrap") === "true",
+              renderHTML: (attrs) => attrs.wrap ? { "data-wrap": "true" } : {},
+            },
+            rotation: {
+              default: 0,
+              parseHTML: (el) => Number(el.getAttribute("data-rotation") || 0),
+              renderHTML: (attrs) => attrs.rotation ? { "data-rotation": String(attrs.rotation) } : {},
+            },
           };
         },
         addNodeView() {

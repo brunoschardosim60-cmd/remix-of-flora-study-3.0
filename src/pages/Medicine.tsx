@@ -19,6 +19,7 @@ import {
   preferredAnatomyView,
 } from "@/lib/medicineData";
 import { medicalNotebookTemplates, type MedicalNotebookTemplate } from "@/lib/medicalNotebookTemplates";
+import { prepareMedicalNotebookHtml } from "@/lib/notebookMedicalAssets";
 import "@/components/medicine/medicine.css";
 import "@/components/medicine/medicine-enhancements.css";
 import "@/components/medicine/instruments.css";
@@ -877,7 +878,7 @@ function NotebookSection({ navigate }: { navigate: ReturnType<typeof useNavigate
         notebook_id: notebook.id,
         user_id: user.id,
         page_number: index + 1,
-        content: page.html,
+        content: prepareMedicalNotebookHtml(page.html),
         template: page.paper ?? "blank",
         tags: ["medicina", template.id, page.title.toLocaleLowerCase("pt-BR")],
       })),
@@ -892,7 +893,7 @@ function NotebookSection({ navigate }: { navigate: ReturnType<typeof useNavigate
     navigate(`/notebooks/${notebook.id}`);
   };
   return <div className="med-page">
-    <PageHeading eyebrow="Caderno médico" title="Aprenda desenhando relações" description="Cadernos multipágina com imagens, explicações, fluxos e exercícios. Não inclua dados identificáveis de pacientes reais." />
+    <PageHeading eyebrow="Caderno médico" title="Aprenda desenhando relações" description="Cadernos multipágina com figuras sem fundo, explicações, fluxos e exercícios. Exporte para Samsung Notes, PDF, PNG, HTML ou Markdown. Não inclua dados identificáveis de pacientes reais." />
     <div className="med-notebook-banner">
       <NotebookPen />
       <div><strong>Flora Canvas para medicina</strong><span>Escrita e desenho no mesmo papel, imagens anatômicas, setas, PDFs, questões e revisão ativa.</span></div>
