@@ -1,7 +1,7 @@
 import { statSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { anatomy3DRegions, anatomy3DStructures, anatomy3DSystemMeta, mergeGuidedAndDetailedStructures, organ3DStructureForAtlasId, proceduralStructuresFor3D, structuresFor3D } from "./anatomy3DModel";
+import { anatomy3DRegions, anatomy3DStructures, anatomy3DSystemMeta, detailedStructureForGuided, detailedStructuresFor3DSystem, mergeGuidedAndDetailedStructures, organ3DStructureForAtlasId, proceduralStructuresFor3D, structuresFor3D } from "./anatomy3DModel";
 import { bodyLayers, medicalSources } from "./medicineData";
 
 describe("anatomy3DModel", () => {
@@ -46,6 +46,7 @@ describe("anatomy3DModel", () => {
     const combined = proceduralStructuresFor3D("all", "whole", "organ-heart").map((item) => item.id);
     expect(combined).not.toEqual(expect.arrayContaining(["nerve-brain", "nerve-cerebellum", "nerve-brainstem", "organ-eyes", "organ-inner-ear"]));
     expect(combined).not.toEqual(expect.arrayContaining(["nerve-spinal-cord", "vessel-aorta"]));
+    expect(proceduralStructuresFor3D("all", "whole", "organ-eyes")).toHaveLength(0);
 
     expect(proceduralStructuresFor3D("organs", "whole", "organ-brain")).toHaveLength(0);
     expect(proceduralStructuresFor3D("organs", "head", "organ-eyes").map((item) => item.id)).toEqual(["organ-eyes"]);
@@ -95,5 +96,28 @@ describe("anatomy3DModel", () => {
     expect(merged[0]).toBe(guided[0]);
     expect(merged.filter((item) => item.name === "Coração")).toHaveLength(1);
     expect(merged).toContainEqual(detailedValve);
+  });
+
+  it("compõe os catálogos detalhados em Todas as camadas", () => {
+    const template = anatomy3DStructures.find((item) => item.id === "organ-heart")!;
+    const vascular = { ...template, id: "model:vascular:2", layer: "vascular" as const, name: "Aorta" };
+    const nervous = { ...template, id: "model:nervous:4", layer: "nervous" as const, name: "Medula espinal" };
+    const organ = { ...template, id: "model:organs:8", name: "Coração" };
+    const catalogs = { vascular: [vascular], nervous: [nervous], organs: [organ] };
+
+    expect(detailedStructuresFor3DSystem("all", catalogs).map((item) => item.id)).toEqual([
+      vascular.id, nervous.id, organ.id,
+    ]);
+    expect(detailedStructuresFor3DSystem("vascular", catalogs)).toEqual([vascular]);
+  });
+
+  it("liga a seleção guiada à malha detalhada sem perder o conteúdo revisado", () => {
+    const guidedHeart = anatomy3DStructures.find((item) => item.id === "organ-heart")!;
+    const detailedHeart = { ...guidedHeart, id: "model:organs:12", name: "Coração", focus: [1, 2, 3] as [number, number, number] };
+    const resolved = detailedStructureForGuided(guidedHeart, { organs: [detailedHeart] });
+
+    expect(resolved.id).toBe(detailedHeart.id);
+    expect(resolved.focus).toEqual(detailedHeart.focus);
+    expect(resolved.summary).toBe(guidedHeart.summary);
   });
 });

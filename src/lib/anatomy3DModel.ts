@@ -2,6 +2,7 @@ import type { BodyLayer } from "./medicineData";
 
 export type Anatomy3DRegionId = "whole" | "head" | "thorax" | "abdomen" | "pelvis" | "upper-limb" | "lower-limb";
 export type Anatomy3DSystemId = "all" | BodyLayer;
+export type Anatomy3DCatalogs = Partial<Record<Anatomy3DSystemId, Anatomy3DStructure[]>>;
 
 export type Anatomy3DPart =
   | { kind: "sphere"; position: [number, number, number]; scale: [number, number, number]; rotation?: [number, number, number]; color?: string }
@@ -359,6 +360,83 @@ export function mergeGuidedAndDetailedStructures(guided: Anatomy3DStructure[], d
   return [...guided, ...detailed.filter((structure) => !guidedNames.has(normalizedStructureName(structure.name)))];
 }
 
+/**
+ * A visão integrada recebe catálogos separados de vasos, nervos e órgãos.
+ * Centralizar essa composição evita que "Todas as camadas" volte ao índice
+ * guiado antigo enquanto as malhas detalhadas já estão visíveis no canvas.
+ */
+export function detailedStructuresFor3DSystem(system: Anatomy3DSystemId, catalogs: Anatomy3DCatalogs) {
+  if (system !== "all") return catalogs[system] ?? [];
+  return (["vascular", "nervous", "organs"] as const).flatMap((layer) => catalogs[layer] ?? []);
+}
+
+const detailedPatternByGuidedId: Record<string, RegExp> = {
+  "vessel-heart": /\bcoracao\b|\bheart\b/,
+  "vessel-aorta": /\baorta\b/,
+  "vessel-vena-cava": /veia cava|vena cava/,
+  "vessel-carotids": /carotid/,
+  "vessel-subclavian": /subclavi|braqui/,
+  "vessel-iliac": /iliac/,
+  "vessel-femoral": /femoral/,
+  "nerve-brain": /\bcerebro\b|\bcerebrum\b|\bencefalo\b|\bbrain\b/,
+  "nerve-cerebellum": /cerebel/,
+  "nerve-brainstem": /tronco encefalico|brainstem|brain stem/,
+  "nerve-spinal-cord": /medula espinal|spinal cord/,
+  "nerve-brachial-plexus": /plexo braquial|brachial plexus/,
+  "nerve-arm": /nervo.*(braco|antebraco|mao)|median nerve|ulnar nerve|radial nerve/,
+  "nerve-sciatic": /isquiatic|sciatic/,
+  "nerve-leg": /nervo.*(perna|pe)|tibial nerve|fibular nerve|peroneal nerve/,
+  "organ-brain": /\bencefalo\b|\bbrain\b|\bcerebrum\b/,
+  "organ-lungs": /\bpulmao|\blung/,
+  "organ-heart": /\bcoracao\b|\bheart\b/,
+  "organ-liver": /\bfigado\b|\bliver\b/,
+  "organ-stomach": /estomago|stomach/,
+  "organ-kidneys": /\brim\b|\brins\b|kidney/,
+  "organ-intestines": /intestin|colon|duoden|jejun|ileum/,
+  "organ-bladder": /bexiga|urinary bladder/,
+  "organ-eyes": /\bolho\b|\bolhos\b|eyeball|ocular bulb/,
+  "organ-inner-ear": /orelha interna|inner ear|cochlea|semicircular canal/,
+  "organ-thyroid": /tireoide|thyroid/,
+  "organ-pancreas": /pancreas/,
+  "organ-uterus": /\butero\b|\buterus\b/,
+  "organ-ovaries": /ovari|ovary/,
+  "organ-prostate": /prostat/,
+  "organ-testes": /testicul|testis/,
+};
+
+const supplementalModelByGuidedId: Partial<Record<string, string>> = {
+  "organ-brain": "model:organs:supplement:brain",
+  "organ-heart": "model:organs:supplement:heart",
+  "organ-eyes": "model:organs:supplement:eye",
+};
+
+/** Resolve um item didático para a malha detalhada equivalente sem perder o texto revisado. */
+export function detailedStructureForGuided(
+  structure: Anatomy3DStructure,
+  catalogs: Anatomy3DCatalogs,
+  preferSupplement = false,
+) {
+  if (structure.id.startsWith("model:")) return structure;
+  const catalog = catalogs[structure.layer] ?? [];
+  if (!catalog.length) return structure;
+  const supplementalId = supplementalModelByGuidedId[structure.id];
+  const supplemental = supplementalId ? catalog.find((item) => item.id === supplementalId) : undefined;
+  const normalizedName = normalizedStructureName(structure.name);
+  const exact = catalog.find((item) => normalizedStructureName(item.name) === normalizedName);
+  const pattern = detailedPatternByGuidedId[structure.id];
+  const patterned = pattern ? catalog.find((item) => pattern.test(normalizedStructureName(item.name))) : undefined;
+  const match = (preferSupplement ? supplemental : undefined) ?? exact ?? patterned ?? supplemental;
+  if (!match) return structure;
+  return {
+    ...structure,
+    id: match.id,
+    focus: match.focus,
+    focusDistance: match.focusDistance,
+    color: match.color,
+    parts: [],
+  };
+}
+
 function normalizedStructureName(value: string) {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR").trim();
 }
@@ -376,10 +454,8 @@ export function isSupplemental3DOrganId(id: string | null | undefined) {
 export function proceduralStructuresFor3D(system: Anatomy3DSystemId, region: Anatomy3DRegionId, selectedId: string | null) {
   return structuresFor3D(system, region).filter((structure) => {
     if (system === "all") {
-      // A visão integrada usa as mesmas malhas licenciadas e detalhadas das
-      // camadas dedicadas. Só complementos sem equivalente no GLB permanecem
-      // procedurais quando são selecionados explicitamente.
-      if (supplemental3DOrganIds.has(structure.id)) return selectedId === structure.id;
+      // A visão integrada usa apenas as malhas licenciadas detalhadas. Os
+      // antigos substitutos geométricos não devem reaparecer ao selecionar.
       return false;
     }
     if (system === "organs") return Boolean(selectedId && supplemental3DOrganIds.has(selectedId) && structure.id === selectedId);

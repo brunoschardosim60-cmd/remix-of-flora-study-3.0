@@ -1,5 +1,5 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { ContactShadows, Environment, Grid, Lightformer, OrbitControls, useGLTF } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import { ACESFilmicToneMapping, Box3, BufferAttribute, CatmullRomCurve3, Color, DoubleSide, Mesh, MeshPhysicalMaterial, MeshStandardMaterial, Object3D, PCFSoftShadowMap, Plane, SRGBColorSpace, Vector2, Vector3 } from "three";
@@ -44,6 +44,8 @@ import {
   anatomy3DRegions,
   anatomy3DStructures,
   anatomy3DSystemMeta,
+  detailedStructureForGuided,
+  detailedStructuresFor3DSystem,
   isSupplemental3DOrganId,
   mergeGuidedAndDetailedStructures,
   proceduralStructuresFor3D,
@@ -88,18 +90,6 @@ const SUPPLEMENTAL_ORGAN_PATHS = {
   spleen: "/medicine/models/zanatomy-organ-spleen-v1.glb",
   eye: "/medicine/models/zanatomy-organ-eye-v1.glb",
 } as const;
-const realisticSupplementByGuidedId: Partial<Record<string, string>> = {
-  "organ-brain": "model:organs:supplement:brain",
-  "organ-heart": "model:organs:supplement:heart",
-  "organ-eyes": "model:organs:supplement:eye",
-};
-function resolveRealisticStructure(structure: Anatomy3DStructure, catalog: Anatomy3DStructure[] | undefined) {
-  if (!catalog?.length) return structure;
-  const supplementalId = realisticSupplementByGuidedId[structure.id];
-  if (supplementalId) return catalog.find((item) => item.id === supplementalId) ?? structure;
-  const targetName = normalize(structure.name);
-  return catalog.find((item) => normalize(item.name) === targetName) ?? structure;
-}
 const BODY_PARTS_SOURCE_BOUNDS = new Box3(new Vector3(-1.33905, -3.534865, -0.187946), new Vector3(1.33396, 3.18329, 0.971386));
 export function Anatomy3DStudio({ level, initialStructureId, onOpenDevelopment }: Anatomy3DStudioProps) {
   const initialStructure = anatomy3DStructures.find((item) => item.id === initialStructureId);
@@ -140,18 +130,21 @@ export function Anatomy3DStudio({ level, initialStructureId, onOpenDevelopment }
   const registerDetailedCatalog = useCallback((catalogSystem: Anatomy3DSystemId, catalog: Anatomy3DStructure[]) => {
     setDetailedCatalogs((current) => current[catalogSystem]?.length === catalog.length ? current : { ...current, [catalogSystem]: catalog });
   }, []);
+  const guidedStructures = useMemo(() => structuresFor3D(system, region)
+    .filter((structure) => anatomyStructureVisibleForProfile(structure, bodyProfileId)), [bodyProfileId, region, system]);
   const visibleStructures = useMemo(() => {
-    const detailed = detailedCatalogs[system];
-    const guided = structuresFor3D(system, region);
-    if (!detailed?.length) return guided.filter((structure) => anatomyStructureVisibleForProfile(structure, bodyProfileId));
+    const detailed = detailedStructuresFor3DSystem(system, detailedCatalogs);
+    if (!detailed.length) return guidedStructures;
     const detailedForRegion = detailed.filter((item) => region === "whole" || item.regionId === region || item.regionId === "whole");
-    return mergeGuidedAndDetailedStructures(guided, detailedForRegion).filter((structure) => anatomyStructureVisibleForProfile(structure, bodyProfileId));
-  }, [bodyProfileId, detailedCatalogs, region, system]);
+    return mergeGuidedAndDetailedStructures(guidedStructures, detailedForRegion).filter((structure) => anatomyStructureVisibleForProfile(structure, bodyProfileId));
+  }, [bodyProfileId, detailedCatalogs, guidedStructures, region, system]);
   const filteredStructures = useMemo(() => {
     const normalized = normalize(query);
-    if (!normalized) return visibleStructures;
+    // Em "Todas as camadas", o índice inicial continua didático e legível;
+    // a busca consulta o catálogo detalhado completo com mais de mil malhas.
+    if (!normalized) return system === "all" ? guidedStructures : visibleStructures;
     return visibleStructures.filter((item) => normalize(`${item.name} ${item.latin ?? ""} ${item.region} ${item.system} ${item.function}`).includes(normalized));
-  }, [query, visibleStructures]);
+  }, [guidedStructures, query, system, visibleStructures]);
   const selected = anatomy3DStructures.find((item) => item.id === selectedId) ?? modelSelection;
   const selectedIsVisible = Boolean(selected && (selected.id.startsWith("model:") || visibleStructures.some((item) => item.id === selected.id)));
   const baseCameraFocus = focusSelected && selected && selectedIsVisible ? selected.focus : regionMeta.focus;
@@ -235,37 +228,36 @@ export function Anatomy3DStudio({ level, initialStructureId, onOpenDevelopment }
   };
 
   const selectStructure = useCallback((structure: Anatomy3DStructure) => {
-    const resolved = realistic ? resolveRealisticStructure(structure, detailedCatalogs.organs) : structure;
+    const resolved = detailedStructureForGuided(structure, detailedCatalogs, realistic);
     setSelectedId(resolved.id);
     setModelSelection(resolved.id.startsWith("model:") ? resolved : null);
     setCameraView("perspective");
     setFocusSelected(true);
     if (resolved.layer === "organs") setOrganView("isolated");
     setFocusKey((value) => value + 1);
-  }, [detailedCatalogs.organs, realistic]);
+  }, [detailedCatalogs, realistic]);
 
   useEffect(() => {
-    if (!realistic) return;
     const guided = anatomy3DStructures.find((item) => item.id === selectedId);
     if (!guided) return;
-    const replacement = resolveRealisticStructure(guided, detailedCatalogs.organs);
+    const replacement = detailedStructureForGuided(guided, detailedCatalogs, realistic);
     if (replacement.id === guided.id) return;
     setSelectedId(replacement.id);
     setModelSelection(replacement);
-    setOrganView("isolated");
-    setFocusSelected(true);
+    if (realistic && replacement.layer === "organs") setOrganView("isolated");
+    setFocusSelected(system !== "all");
     setFocusKey((value) => value + 1);
-  }, [detailedCatalogs.organs, realistic, selectedId]);
+  }, [detailedCatalogs, realistic, selectedId, system]);
 
-  const selectedPosition = filteredStructures.findIndex((structure) => structure.id === selected?.id);
+  const selectedPosition = filteredStructures.findIndex((structure) => structure.id === selected?.id || normalize(structure.name) === normalize(selected?.name ?? ""));
   const navigateStructure = useCallback((direction: -1 | 1) => {
     if (!filteredStructures.length) return;
-    const current = filteredStructures.findIndex((structure) => structure.id === selected?.id);
+    const current = filteredStructures.findIndex((structure) => structure.id === selected?.id || normalize(structure.name) === normalize(selected?.name ?? ""));
     const nextIndex = current < 0
       ? 0
       : (current + direction + filteredStructures.length) % filteredStructures.length;
     selectStructure(filteredStructures[nextIndex]);
-  }, [filteredStructures, selectStructure, selected?.id]);
+  }, [filteredStructures, selectStructure, selected?.id, selected?.name]);
 
   useEffect(() => {
     const handleKeyboardNavigation = (event: KeyboardEvent) => {
@@ -369,7 +361,7 @@ export function Anatomy3DStudio({ level, initialStructureId, onOpenDevelopment }
           <label><Search /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar órgão, osso, nervo…" aria-label="Buscar estrutura 3D" /></label>
           <div className="med-3d-structure-list">
             {filteredStructures.map((structure) => (
-              <button key={structure.id} className={selected?.id === structure.id ? "active" : ""} style={{ "--part-color": structure.color } as React.CSSProperties} onClick={() => selectStructure(structure)}>
+              <button key={structure.id} className={selected?.id === structure.id || normalize(selected?.name ?? "") === normalize(structure.name) ? "active" : ""} style={{ "--part-color": structure.color } as React.CSSProperties} onClick={() => selectStructure(structure)}>
                 <i /><span><strong>{structure.name}</strong><small>{structure.region}</small></span><ChevronRight />
               </button>
             ))}
@@ -724,9 +716,18 @@ function RealMusculoskeletalModel({ system, selectedId, onSelect }: { system: An
     });
   }, [onSelect]);
 
+  const selectIntegratedMesh = useCallback((event: ThreeEvent<MouseEvent>) => {
+    if (!(event.object instanceof Mesh)) return;
+    event.stopPropagation();
+    selectRealMesh(event.object);
+  }, [selectRealMesh]);
+
   if (system !== "all" && system !== "muscular" && system !== "skeletal") return null;
 
-  return <group><primitive object={model} /><NativeMeshPicker active={system === "muscular" || system === "skeletal"} root={model} onPick={selectRealMesh} /></group>;
+  return <group>
+    <primitive object={model} onClick={system === "all" ? selectIntegratedMesh : undefined} />
+    <NativeMeshPicker active={system === "muscular" || system === "skeletal"} root={model} onPick={selectRealMesh} />
+  </group>;
 }
 
 type DenseAnatomyLayer = "vascular" | "nervous";
@@ -747,7 +748,11 @@ function DenseAnatomySystemModel({ integrated = false, path, layer, selectedId, 
   }, [layer, onCatalogReady, prepared.catalog]);
 
   useEffect(() => {
-    const selectedIndex = prepared.catalog.findIndex((item) => item.id === selectedId);
+    const guidedSelection = anatomy3DStructures.find((item) => item.id === selectedId);
+    const resolvedSelection = guidedSelection
+      ? detailedStructureForGuided(guidedSelection, { [layer]: prepared.catalog })
+      : null;
+    const selectedIndex = prepared.catalog.findIndex((item) => item.id === (resolvedSelection?.id ?? selectedId));
     const attribute = prepared.mesh.geometry.getAttribute("color") as BufferAttribute;
     const colors = attribute.array as Float32Array;
     const ids = prepared.mesh.geometry.getAttribute("anatomyStructureId") as BufferAttribute;
@@ -771,7 +776,17 @@ function DenseAnatomySystemModel({ integrated = false, path, layer, selectedId, 
     if (structure) onSelect(structure);
   }, [onSelect, prepared.catalog]);
 
-  return <group><primitive object={prepared.mesh} /><DenseSystemPicker mesh={prepared.mesh} onPick={selectByIndex} /></group>;
+  const selectIntegratedStructure = useCallback((event: ThreeEvent<MouseEvent>) => {
+    if (!event.face) return;
+    const ids = prepared.mesh.geometry.getAttribute("anatomyStructureId") as BufferAttribute;
+    event.stopPropagation();
+    selectByIndex(Math.round(ids.getX(event.face.a)));
+  }, [prepared.mesh.geometry, selectByIndex]);
+
+  return <group>
+    <primitive object={prepared.mesh} onClick={integrated ? selectIntegratedStructure : undefined} />
+    <DenseSystemPicker active={!integrated} mesh={prepared.mesh} onPick={selectByIndex} />
+  </group>;
 }
 
 function DetailedOrgansModel({ profileId, integrated = false, realistic, selectedId, organView, sectionAxis, sectionOffset, onSelect, onCatalogReady }: {
@@ -844,7 +859,9 @@ function DetailedOrgansModel({ profileId, integrated = false, realistic, selecte
     });
     supplements.forEach((supplement) => {
       const active = supplement === selectedSupplement && organView !== "context";
-      supplement.root.visible = active;
+      // Na composição integrada, complementos de alta definição selecionados
+      // substituem a antiga geometria simplificada mesmo no modo contextual.
+      supplement.root.visible = active || (integrated && supplement === selectedSupplement);
       supplement.root.traverse((object) => {
         if (!(object instanceof Mesh)) return;
         const material = object.material as MeshPhysicalMaterial;
@@ -864,17 +881,24 @@ function DetailedOrgansModel({ profileId, integrated = false, realistic, selecte
     if (structure) onSelect(structure);
   }, [onSelect, prepared.catalog]);
 
+  const selectIntegratedOrgan = useCallback((event: ThreeEvent<MouseEvent>) => {
+    if (!(event.object instanceof Mesh)) return;
+    event.stopPropagation();
+    selectOrgan(event.object);
+  }, [selectOrgan]);
+
   return <group>
-    <primitive object={prepared.root} />
+    <primitive object={prepared.root} onClick={integrated ? selectIntegratedOrgan : undefined} />
     {supplements.map((supplement) => <primitive key={supplement.structure.id} object={supplement.root} />)}
-    <NativeMeshPicker active={!selectedSupplement} root={prepared.root} onPick={selectOrgan} />
+    <NativeMeshPicker active={!integrated && !selectedSupplement} root={prepared.root} onPick={selectOrgan} />
   </group>;
 }
 
-function DenseSystemPicker({ mesh, onPick }: { mesh: Mesh; onPick: (index: number) => void }) {
+function DenseSystemPicker({ active, mesh, onPick }: { active: boolean; mesh: Mesh; onPick: (index: number) => void }) {
   const { camera, gl, raycaster } = useThree();
   const pointerStart = useRef<{ id: number; x: number; y: number } | null>(null);
   useEffect(() => {
+    if (!active) return;
     const canvas = gl.domElement;
     const pointer = new Vector2();
     const handlePointerDown = (event: PointerEvent) => {
@@ -901,7 +925,7 @@ function DenseSystemPicker({ mesh, onPick }: { mesh: Mesh; onPick: (index: numbe
       canvas.removeEventListener("pointerup", handlePointerUp);
       canvas.removeEventListener("pointercancel", cancelPointer);
     };
-  }, [camera, gl, mesh, onPick, raycaster]);
+  }, [active, camera, gl, mesh, onPick, raycaster]);
   return null;
 }
 
