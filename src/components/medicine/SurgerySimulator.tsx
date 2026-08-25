@@ -11,6 +11,7 @@ import {
   type SurgicalScenario,
   type SurgicalToolId,
 } from "@/lib/surgicalSimulation";
+import { surgicalScenarioVisuals } from "@/lib/surgicalVisuals";
 import type { MedicineLevel } from "@/lib/medicineData";
 
 type SimulationState = "ready" | "running" | "failed" | "complete";
@@ -59,9 +60,8 @@ export function SurgerySimulator({ level }: { level: MedicineLevel }) {
   const guided = level === "Iniciante" || level === "Ciclo básico";
   const progress = state === "complete" ? 100 : Math.round((stageIndex / surgicalStages.length) * 100);
   const completedLabel = `${Math.min(stageIndex, surgicalStages.length)} de ${surgicalStages.length}`;
-  const bodyView = scenario.bodyViews[stageIndex] ?? stage.bodyView;
-  const target = scenario.targets[stageIndex] ?? stage.target;
-  const imagePath = `/medicine/atlas/${bodyView}-anterior-v2.png`;
+  const visual = surgicalScenarioVisuals[scenario.id];
+  const target = visual.target;
   const safeStyle = {
     "--surgery-opening": `${stage.opening}%`,
     "--surgery-target-x": `${target.x}%`,
@@ -166,9 +166,9 @@ export function SurgerySimulator({ level }: { level: MedicineLevel }) {
           <button disabled={!showAnatomy && !sensitiveAccepted} onClick={() => setShowAnatomy((value) => !value)}>{showAnatomy ? <EyeOff /> : <Eye />}{showAnatomy ? "Ocultar anatomia" : "Mostrar anatomia"}</button>
         </header>
 
-        <div className={`med-surgery-body ${showAnatomy ? "anatomy-on" : "anatomy-off"}`} style={safeStyle} onClick={missTarget}>
-          <img className="med-surgery-surface" src="/medicine/atlas/surface-anterior-v2.png" alt="Vista anterior da superfície corporal em ilustração educacional" />
-          <img className="med-surgery-inner" src={imagePath} alt={`Camada ${bodyView} em ilustração educacional`} />
+        <div className={`med-surgery-body ${showAnatomy ? "anatomy-on" : "anatomy-off"}`} data-scenario={scenario.id} style={safeStyle} onClick={missTarget}>
+          <img className="med-surgery-surface" src={visual.surfaceImage} alt={visual.surfaceAlt} />
+          <img className="med-surgery-inner" src={visual.anatomyImage} alt={visual.anatomyAlt} />
           <div className="med-surgery-field-ring" />
           {state === "running" && showAnatomy && stageIndex >= 2 && stageIndex <= 5 && <div className={`med-surgery-trauma-marker ${scenario.sensitivity === "Intenso" ? "intense" : ""}`}><i /><i /></div>}
           {stage.id === "bleeding-control" && state === "running" && showAnatomy && <div className="med-surgery-bleeding"><i /><i /><i /></div>}
@@ -177,7 +177,8 @@ export function SurgerySimulator({ level }: { level: MedicineLevel }) {
           {state === "ready" && <div className="med-surgery-cover sensitive"><TriangleAlert /><small>CONTEÚDO SENSÍVEL · {scenario.sensitivity.toUpperCase()}</small><strong>Antes de entrar no campo</strong><span>Este caso pode mostrar {scenario.contentWarnings.join(", ").toLowerCase()}. Tudo é ilustrado, fictício e estritamente educacional.</span><div><button onClick={(event) => { event.stopPropagation(); startScenario(true); }}><Eye /> Liberar conteúdo sensível</button><button className="secondary" onClick={(event) => { event.stopPropagation(); startScenario(false); }}><EyeOff /> Iniciar com anatomia oculta</button></div></div>}
           {state === "complete" && <div className="med-surgery-cover complete"><Check /><strong>Sign-out concluído</strong><span>Todos os sete pontos de segurança foram registrados.</span><button onClick={(event) => { event.stopPropagation(); reset(); }}>Refazer cenário <RotateCcw /></button></div>}
           {!showAnatomy && <div className="med-surgery-anatomy-mask"><EyeOff /><strong>Conteúdo anatômico oculto</strong><span>O motor continua ativo sem mostrar as camadas.</span></div>}
-          <div className="med-surgery-caption">Ilustração educacional · sem parâmetros de técnica real</div>
+          <div className="med-surgery-realism"><Sparkles /><span><small>CAMPO VISUAL REALISTA</small><strong>{visual.visualLabel}</strong></span></div>
+          <div className="med-surgery-caption">Simulador sintético · anatomia educacional · sem parâmetros de técnica real</div>
         </div>
 
         <div className="med-surgery-anatomy-brief">

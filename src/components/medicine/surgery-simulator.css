@@ -171,16 +171,18 @@
 .med-surgery-surface,
 .med-surgery-inner {
   position: absolute;
-  inset: 20px 0 30px;
+  inset: 0;
   width: 100%;
-  height: calc(100% - 50px);
-  object-fit: contain;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
   pointer-events: none;
   user-select: none;
 }
 
-.med-surgery-surface { z-index: 1; filter: saturate(.75) contrast(.96); }
-.med-surgery-inner { z-index: 2; clip-path: ellipse(var(--surgery-opening) var(--surgery-opening) at var(--surgery-target-x) var(--surgery-target-y)); filter: saturate(.9) contrast(1.03); transition: clip-path .65s cubic-bezier(.2, .8, .2, 1); }
+.med-surgery-surface { z-index: 1; filter: saturate(.92) contrast(1.01); }
+.med-surgery-inner { z-index: 2; clip-path: ellipse(var(--surgery-opening) var(--surgery-opening) at var(--surgery-target-x) var(--surgery-target-y)); filter: saturate(.92) contrast(1.02); transition: clip-path .65s cubic-bezier(.2, .8, .2, 1); }
+.med-surgery-body::after { position: absolute; inset: 0; z-index: 4; background: linear-gradient(180deg, rgba(13, 38, 32, .1), transparent 17%, transparent 79%, rgba(11, 34, 28, .12)); content: ""; pointer-events: none; }
 
 .med-surgery-field-ring {
   position: absolute;
@@ -276,6 +278,11 @@
 .med-surgery-anatomy-mask { z-index: 9; background: rgba(225, 234, 230, .93); pointer-events: none; }
 .med-surgery-body.anatomy-off .med-surgery-monitor { z-index: 10; }
 .med-surgery-body.anatomy-off .med-surgery-target { z-index: 11; }
+.med-surgery-realism { position: absolute; bottom: 12px; left: 15px; z-index: 12; display: flex; align-items: center; gap: 8px; padding: 7px 10px; border: 1px solid rgba(255, 255, 255, .34); border-radius: 12px; background: rgba(24, 55, 47, .72); color: #fff; pointer-events: none; backdrop-filter: blur(10px); }
+.med-surgery-realism > svg { width: 14px; color: #bce2d5; }
+.med-surgery-realism > span { display: flex; flex-direction: column; }
+.med-surgery-realism small { color: #b6d7cc; font-size: 5px; font-weight: 950; letter-spacing: .09em; }
+.med-surgery-realism strong { margin-top: 2px; font-size: 6.5px; }
 .med-surgery-caption { position: absolute; right: 15px; bottom: 12px; z-index: 12; padding: 6px 9px; border-radius: 999px; background: rgba(27, 59, 50, .68); color: #fff; font-size: 6px; font-weight: 850; backdrop-filter: blur(9px); }
 
 .med-surgery-anatomy-brief { display: grid; grid-template-columns: 1.15fr .95fr .8fr; gap: 1px; border-top: 1px solid var(--med-line); background: var(--med-line); }
