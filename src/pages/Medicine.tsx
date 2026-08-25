@@ -7,11 +7,6 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { BodyAtlas } from "@/components/medicine/BodyAtlas";
-import { AnamnesisSimulator } from "@/components/medicine/AnamnesisSimulator";
-import { SemiologyAcademy } from "@/components/medicine/SemiologyAcademy";
-import { InstrumentsStudio } from "@/components/medicine/InstrumentsStudio";
-import { SurgerySimulator } from "@/components/medicine/SurgerySimulator";
-import { MedicalPathologyLab } from "@/components/medicine/MedicalPathologyLab";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -44,6 +39,11 @@ import "@/components/medicine/pathology-lab.css";
 import "@/components/medicine/medicine-enhancements.css";
 
 const Anatomy3DStudio = lazy(() => import("@/components/medicine/Anatomy3DStudio").then((module) => ({ default: module.Anatomy3DStudio })));
+const AnamnesisSimulator = lazy(() => import("@/components/medicine/AnamnesisSimulator").then((module) => ({ default: module.AnamnesisSimulator })));
+const SemiologyAcademy = lazy(() => import("@/components/medicine/SemiologyAcademy").then((module) => ({ default: module.SemiologyAcademy })));
+const InstrumentsStudio = lazy(() => import("@/components/medicine/InstrumentsStudio").then((module) => ({ default: module.InstrumentsStudio })));
+const SurgerySimulator = lazy(() => import("@/components/medicine/SurgerySimulator").then((module) => ({ default: module.SurgerySimulator })));
+const MedicalPathologyLab = lazy(() => import("@/components/medicine/MedicalPathologyLab").then((module) => ({ default: module.MedicalPathologyLab })));
 
 type MedicineSection = "home" | "atlas" | "atlas3d" | "instruments" | "surgery" | "systems" | "pathology" | "development" | "practice" | "questions" | "review" | "semiology" | "anamnesis" | "clinic" | "plan" | "notebook" | "sources";
 
@@ -139,6 +139,10 @@ function saveMedicineState(key: string, value: unknown) {
   try { localStorage.setItem(`flora.medicine.${key}`, JSON.stringify(value)); } catch { /* progresso local opcional */ }
 }
 
+function escapeNotebookText(value: string) {
+  return value.replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[character] ?? character);
+}
+
 function normalizeAnswer(value: string) {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR").trim();
 }
@@ -173,6 +177,8 @@ export default function Medicine() {
   const [studyHours, setStudyHours] = useState(8);
   const [studyGoal, setStudyGoal] = useState("Dominar anatomia e fisiologia");
   const [cloudReady, setCloudReady] = useState(false);
+  const [cloudSyncError, setCloudSyncError] = useState(false);
+  const [resumeSection, setResumeSection] = useState<MedicineSection>(() => loadMedicineState("last_section", "home"));
   const [initial3DStructureId, setInitial3DStructureId] = useState<string | null>(null);
 
   const levelProfile = medicineLevelProfiles[level];
@@ -230,6 +236,7 @@ export default function Medicine() {
         );
         setLearningState(mergedLearning);
         saveMedicineState("learning", mergedLearning);
+        if (typeof data.last_section === "string" && NAV.some((item) => item.id === data.last_section)) setResumeSection(data.last_section as MedicineSection);
         const locallySelectedCase = loadMedicineState("case_id", medicalClinicalCase.id);
         const cloudCaseSteps = data.case_progress && typeof data.case_progress === "object" && !Array.isArray(data.case_progress) ? data.case_progress as Record<string, number> : {};
         const localCaseSteps = loadMedicineState<Record<string, number>>("case_steps", {});
@@ -258,12 +265,12 @@ export default function Medicine() {
         case_step: caseStep,
         learning_state: learningState,
         case_progress: caseProgress,
-        last_section: section,
+        last_section: section === "home" ? resumeSection : section,
         content_version: "MED-2026.08.25",
-      }, { onConflict: "user_id" });
+      }, { onConflict: "user_id" }).then(({ error }) => setCloudSyncError(Boolean(error)));
     }, 650);
     return () => window.clearTimeout(timeout);
-  }, [answered, caseProgress, caseStep, cloudReady, favoriteIds, learningState, level, section, studyGoal, studyHours, user, wrongIds]);
+  }, [answered, caseProgress, caseStep, cloudReady, favoriteIds, learningState, level, resumeSection, section, studyGoal, studyHours, user, wrongIds]);
 
   useEffect(() => {
     setCaseProgress((current) => {
@@ -272,6 +279,31 @@ export default function Medicine() {
       return next;
     });
   }, [activeClinicalCase.id, caseStep]);
+
+  useEffect(() => {
+    if (!wrongIds.length) return;
+    setLearningState((current) => {
+      let next = current;
+      wrongIds.forEach((legacyId) => {
+        const isStructure = legacyId.startsWith("structure:");
+        const structureId = isStructure ? legacyId.slice("structure:".length) : "";
+        const reviewId = isStructure ? legacyId : `question:${legacyId}`;
+        if (next.items[reviewId]) return;
+        const structure = anatomyStructures.find((item) => item.id === structureId);
+        const question = medicalQuestions.find((item) => item.id === legacyId);
+        next = registerMedicineAttempt(next, {
+          id: reviewId,
+          label: structure?.name ?? question?.prompt ?? "Atividade anterior",
+          category: isStructure ? "anatomia" : "questoes",
+          competency: isStructure ? "anatomia" : "fisiologia",
+          sourceSection: isStructure ? "practice" : "questions",
+          correct: false,
+        });
+      });
+      if (next !== current) saveMedicineState("learning", next);
+      return next;
+    });
+  }, [wrongIds]);
 
   const recordLearning = (input: { id: string; label: string; category: MedicineReviewCategory; competency: MedicineCompetency; sourceSection: MedicineSection; correct: boolean }) => {
     setLearningState((current) => {
@@ -289,6 +321,7 @@ export default function Medicine() {
       setPracticeResult(null);
     }
     setSection(next);
+    if (next !== "home") { setResumeSection(next); saveMedicineState("last_section", next); }
     setOpenNavGroup(navGroupForSection(next));
     setMobileNav(false);
     navigate(SECTION_PATHS[next]);
@@ -334,7 +367,7 @@ export default function Medicine() {
           <button className={`med-focus-toggle ${focusMode ? "active" : ""}`} onClick={() => setFocusMode((value) => !value)} aria-label={focusMode ? "Sair do modo foco" : "Entrar no modo foco"}><PanelLeftClose /></button>
           {section !== "notebook" && <button className="med-send-notebook" onClick={() => { saveMedicineState("notebook_context", { section, label: NAV.find((item) => item.id === section)?.label, savedAt: Date.now() }); go("notebook"); }}><NotebookPen /> Enviar ao Caderno</button>}
           <div className="med-level-chip" title={levelProfile.focus}><span>Nível</span><select aria-label="Nível de estudo" value={level} onChange={(event) => updateLevel(event.target.value as MedicineLevel)}>{levelOrder.map((item) => <option key={item}>{item}</option>)}</select></div>
-          <button className="med-source-status" onClick={() => go("sources")}><ShieldCheck /> {cloudReady ? "Progresso protegido" : "Conteúdo rastreável"}</button>
+          <button className={`med-source-status ${cloudSyncError ? "sync-error" : ""}`} onClick={() => go("sources")} title={cloudSyncError ? "O progresso continua salvo neste dispositivo e será reenviado na próxima alteração." : undefined}><ShieldCheck /> {cloudSyncError ? "Sincronização pendente" : cloudReady ? "Progresso protegido" : "Conteúdo rastreável"}</button>
           <button className="med-menu-button" onClick={() => setMobileNav((value) => !value)} aria-label={mobileNav ? "Fechar navegação" : "Abrir navegação"} aria-expanded={mobileNav} aria-controls="medicine-navigation">{mobileNav ? <X /> : <Menu />}</button>
         </div>
       </header>
@@ -366,11 +399,12 @@ export default function Medicine() {
         </aside>
 
         <main className="med-main">
-          {section === "home" && <MedicineHome level={level} progress={progress} competencies={competencyProgress} wrongCount={pendingReviews.length} onGo={go} />}
+          <Suspense fallback={<div className="med-3d-route-loading"><Sparkles /><strong>Preparando o módulo…</strong><span>Carregando apenas os recursos necessários para esta atividade.</span></div>}>
+          {section === "home" && <MedicineHome level={level} progress={progress} competencies={competencyProgress} wrongCount={pendingReviews.length} resumeSection={resumeSection} onGo={go} />}
           {section === "atlas" && <div className="med-section-wrap"><BodyAtlas level={level} activeLayer={activeLayer} onLayerChange={setActiveLayer} selected={selectedStructure} onSelect={setSelectedStructure} onOpen3D={(structureId) => { setInitial3DStructureId(structureId); go("atlas3d"); }} />{selectedStructure && <div className="med-atlas-actions"><button onClick={() => toggleFavorite(selectedStructure.id)}>{favoriteIds.includes(selectedStructure.id) ? <Check /> : <BookOpen />}{favoriteIds.includes(selectedStructure.id) ? "Salva para revisão" : "Salvar para revisão"}</button><button onClick={() => go("questions")}><ListChecks /> Questões relacionadas</button><button onClick={() => go("pathology")}><Microscope /> Comparar alterações</button><button onClick={() => { saveMedicineState("notebook_context", { section: "atlas", label: selectedStructure.name, structureId: selectedStructure.id }); go("notebook"); }}><NotebookPen /> Enviar ao Caderno</button><button onClick={() => toast.info("A Flora deve explicar apenas com base nas fontes exibidas nesta estrutura.")}><Sparkles /> Explicar com a Flora</button></div>}</div>}
           {section === "atlas3d" && <Suspense fallback={<div className="med-3d-route-loading"><Rotate3D /><strong>Carregando o ambiente tridimensional…</strong><span>Preparando iluminação, câmera e estruturas.</span></div>}><Anatomy3DStudio level={level} initialStructureId={initial3DStructureId} /></Suspense>}
           {section === "instruments" && <InstrumentsStudio level={level} onLearningEvent={(event) => recordLearning({ ...event, category: "instrumentos", competency: "instrumentos", sourceSection: "instruments" })} onOpenSurgery={(instrumentId) => { saveMedicineState("surgery_instrument", instrumentId); go("surgery"); }} />}
-          {section === "surgery" && <SurgerySimulator level={level} onLearningEvent={(event) => recordLearning({ ...event, category: "cirurgia", competency: "seguranca", sourceSection: "surgery" })} onOpenInstruments={() => go("instruments")} />}
+          {section === "surgery" && <SurgerySimulator level={level} initialInstrumentId={loadMedicineState("surgery_instrument", null)} onLearningEvent={(event) => recordLearning({ ...event, category: "cirurgia", competency: "seguranca", sourceSection: "surgery" })} onOpenInstruments={() => go("instruments")} />}
           {section === "systems" && <SystemsSection level={level} onOpenAtlas={(layer, structure) => { setActiveLayer(layer); if (structure) setSelectedStructure(structure); go("atlas"); }} onOpen3D={(structure) => { setInitial3DStructureId(structure.id); go("atlas3d"); }} onOpenQuestions={() => go("questions")} onOpenNotebook={(label) => { saveMedicineState("notebook_context", { section: "systems", label }); go("notebook"); }} onLearningEvent={(event) => recordLearning({ ...event, category: "questoes", competency: "fisiologia", sourceSection: "systems" })} />}
           {section === "pathology" && <MedicalPathologyLab onOpenNotebook={() => go("notebook")} />}
           {section === "development" && <DevelopmentSection />}
@@ -402,16 +436,17 @@ export default function Medicine() {
           {section === "plan" && <StudyPlanSection level={level} hours={studyHours} goal={studyGoal} onHours={setStudyHours} onGoal={setStudyGoal} onStart={() => { saveMedicineState("plan", { level, studyHours, studyGoal, createdAt: Date.now() }); toast.success("Plano médico salvo neste dispositivo."); }} />}
           {section === "notebook" && <NotebookSection navigate={navigate} />}
           {section === "sources" && <SourcesSection />}
+          </Suspense>
         </main>
       </div>
     </div>
   );
 }
 
-function MedicineHome({ level, progress, competencies, wrongCount, onGo }: { level: MedicineLevel; progress: number; competencies: ReturnType<typeof medicineCompetencyProgress>; wrongCount: number; onGo: (id: MedicineSection) => void }) {
+function MedicineHome({ level, progress, competencies, wrongCount, resumeSection, onGo }: { level: MedicineLevel; progress: number; competencies: ReturnType<typeof medicineCompetencyProgress>; wrongCount: number; resumeSection: MedicineSection; onGo: (id: MedicineSection) => void }) {
   const profile = medicineLevelProfiles[level];
   return <div className="med-home">
-    <section className="med-hero"><img src="/medicine/medicine-hero-v2.png" alt="Modelo anatômico educacional translúcido com coração, cérebro, vasos e nervos" /><div className="med-hero-overlay"/><div className="med-hero-content"><span className="med-kicker"><ShieldCheck /> Conteúdo educacional com fontes</span><div className="med-home-level"><span>{level}</span><strong>{profile.title}</strong></div><h1>Entenda o corpo.<br/><em>Construa raciocínio.</em></h1><p>{profile.homeDescription}</p><div className="med-hero-actions"><button onClick={() => onGo("atlas")}><Play /> Explorar o corpo</button><button onClick={() => onGo("plan")}>Montar meu plano <ArrowRight /></button></div><small>Foco deste nível: {profile.focus}</small></div></section>
+    <section className="med-hero"><img src="/medicine/medicine-hero-v2.png" alt="Modelo anatômico educacional translúcido com coração, cérebro, vasos e nervos" /><div className="med-hero-overlay"/><div className="med-hero-content"><span className="med-kicker"><ShieldCheck /> Conteúdo educacional com fontes</span><div className="med-home-level"><span>{level}</span><strong>{profile.title}</strong></div><h1>Entenda o corpo.<br/><em>Construa raciocínio.</em></h1><p>{profile.homeDescription}</p><div className="med-hero-actions"><button onClick={() => onGo("atlas")}><Play /> Explorar o corpo</button>{resumeSection !== "home" && <button onClick={() => onGo(resumeSection)}>Continuar em {NAV.find((item) => item.id === resumeSection)?.label} <ArrowRight /></button>}<button onClick={() => onGo("plan")}>Montar meu plano <ArrowRight /></button></div><small>Foco deste nível: {profile.focus}</small></div></section>
     <section className="med-command-grid">
       <button className="primary" onClick={() => onGo("atlas")}><span><Search /></span><div><small>EXPLORAR</small><h3>Atlas por camadas</h3><p>Pele, músculos, esqueleto, vasos, nervos e órgãos.</p></div><ChevronRight /></button>
       <button onClick={() => onGo("practice")}><span><Target /></span><div><small>PRATICAR</small><h3>Identificação ativa</h3><p>Nomeie estruturas e transforme erros em revisão.</p></div><ChevronRight /></button>
@@ -1019,7 +1054,7 @@ function StudyPlanSection({ level, hours, goal, onHours, onGoal, onStart }: { le
 function NotebookSection({ navigate }: { navigate: ReturnType<typeof useNavigate> }) {
   const { user } = useAuth();
   const [creatingId, setCreatingId] = useState<string | null>(null);
-  const [incomingContext, setIncomingContext] = useState(() => loadMedicineState<{ section: string; label: string } | null>("notebook_context", null));
+  const [incomingContext, setIncomingContext] = useState(() => loadMedicineState<{ section: string; label: string; structureId?: string } | null>("notebook_context", null));
   const createFromTemplate = async (template: MedicalNotebookTemplate) => {
     if (!user || creatingId) return;
     setCreatingId(template.id);
@@ -1036,8 +1071,34 @@ function NotebookSection({ navigate }: { navigate: ReturnType<typeof useNavigate
       toast.error("Não foi possível criar o caderno médico.");
       return;
     }
+    const contextStructure = incomingContext?.structureId ? anatomyStructures.find((item) => item.id === incomingContext.structureId) : undefined;
+    const contextSource = contextStructure ? medicalSources[contextStructure.sourceId] : undefined;
+    const contextPage = incomingContext ? [{
+      title: incomingContext.label,
+      purpose: "Conteúdo selecionado na academia médica",
+      paper: "blank" as const,
+      html: contextStructure ? `
+        <h1>${escapeNotebookText(contextStructure.name)}</h1>
+        ${contextStructure.latin ? `<p><em>${escapeNotebookText(contextStructure.latin)}</em></p>` : ""}
+        <p><strong>Região:</strong> ${escapeNotebookText(contextStructure.region)} · <strong>Sistema:</strong> ${escapeNotebookText(contextStructure.system)}</p>
+        <img src="/medicine/atlas/${contextStructure.layer}-${preferredAnatomyView(contextStructure)}-v2.png" alt="Localização anatômica de ${escapeNotebookText(contextStructure.name)}" />
+        <h2>Visão geral</h2><p>${escapeNotebookText(contextStructure.summary)}</p>
+        <h2>Função</h2><p>${escapeNotebookText(contextStructure.function)}</p>
+        <h2>Relações anatômicas</h2><p>${escapeNotebookText(contextStructure.relations)}</p>
+        <h2>Estruturas próximas</h2><ul>${contextStructure.nearby.map((item) => `<li>${escapeNotebookText(item)}</li>`).join("")}</ul>
+        ${contextSource ? `<blockquote><strong>Fonte para conferência:</strong> ${escapeNotebookText(contextSource.title)} — ${escapeNotebookText(contextSource.organization)}</blockquote>` : ""}
+        <h2>Minhas anotações</h2><p><br><br><br></p>
+      ` : `
+        <h1>${escapeNotebookText(incomingContext.label)}</h1>
+        <p>Conteúdo trazido da área ${escapeNotebookText(NAV.find((item) => item.id === incomingContext.section)?.label ?? incomingContext.section)}.</p>
+        <h2>O que preciso compreender?</h2><p><br><br></p>
+        <h2>Conexões com anatomia, fisiologia e clínica</h2><p><br><br><br></p>
+        <h2>Pontos para revisão</h2><ul><li></li><li></li><li></li></ul>
+      `,
+    }] : [];
+    const pagesToCreate = [...contextPage, ...template.pages];
     const { error: pageError } = await supabase.from("notebook_pages").insert(
-      template.pages.map((page, index) => ({
+      pagesToCreate.map((page, index) => ({
         notebook_id: notebook.id,
         user_id: user.id,
         page_number: index + 1,
@@ -1052,7 +1113,9 @@ function NotebookSection({ navigate }: { navigate: ReturnType<typeof useNavigate
       toast.error("O template não pôde ser preparado. Nenhum caderno incompleto foi mantido.");
       return;
     }
-    toast.success(`${template.pages.length} páginas médicas preparadas no seu Caderno.`);
+    saveMedicineState("notebook_context", null);
+    setIncomingContext(null);
+    toast.success(`${pagesToCreate.length} páginas médicas preparadas no seu Caderno.`);
     navigate(`/notebooks/${notebook.id}`);
   };
   return <div className="med-page">

@@ -43,8 +43,9 @@ function ToolVisual({ toolId }: { toolId: SurgicalToolId }) {
     : <span><Icon /></span>;
 }
 
-export function SurgerySimulator({ level, onLearningEvent, onOpenInstruments }: {
+export function SurgerySimulator({ level, initialInstrumentId, onLearningEvent, onOpenInstruments }: {
   level: MedicineLevel;
+  initialInstrumentId?: string | null;
   onLearningEvent?: (event: { id: string; label: string; correct: boolean }) => void;
   onOpenInstruments?: () => void;
 }) {
@@ -61,6 +62,7 @@ export function SurgerySimulator({ level, onLearningEvent, onOpenInstruments }: 
   const scenario = surgicalScenarios.find((item) => item.id === scenarioId) ?? surgicalScenarios[0];
   const stage = surgicalStages[Math.min(stageIndex, surgicalStages.length - 1)];
   const selected = surgicalTools.find((tool) => tool.id === selectedTool);
+  const linkedTool = surgicalTools.find((tool) => tool.instrumentId === initialInstrumentId);
   const guided = level === "Iniciante" || level === "Ciclo básico";
   const progress = state === "complete" ? 100 : Math.round((stageIndex / surgicalStages.length) * 100);
   const completedLabel = `${Math.min(stageIndex, surgicalStages.length)} de ${surgicalStages.length}`;
@@ -93,9 +95,11 @@ export function SurgerySimulator({ level, onLearningEvent, onOpenInstruments }: 
     setSensitiveAccepted(showSensitiveContent);
     setShowAnatomy(showSensitiveContent);
     setState("running");
-    setHint(showSensitiveContent
-      ? "Conteúdo sensível liberado. Selecione um recurso e interaja somente com o alvo educacional."
-      : "Modo protegido iniciado. A anatomia permanece oculta durante este cenário.");
+    setHint(linkedTool
+      ? `${linkedTool.name} veio selecionado do catálogo. Localize-o na bandeja quando ele for uma decisão segura.`
+      : showSensitiveContent
+        ? "Conteúdo sensível liberado. Selecione um recurso e interaja somente com o alvo educacional."
+        : "Modo protegido iniciado. A anatomia permanece oculta durante este cenário.");
   };
 
   const fail = (message: string) => {
@@ -153,6 +157,7 @@ export function SurgerySimulator({ level, onLearningEvent, onOpenInstruments }: 
       <AlertOctagon /><div><strong>Isto não é treinamento para operar pessoas</strong><span>A sequência é simplificada e não fornece medidas, profundidade, força, ângulo, dose, técnica de incisão, sutura ou resposta clínica real. “Falha crítica” é uma regra do simulador e não significa que todo erro real seja fatal.</span></div>
       <a href={WHO_SURGICAL_SAFETY_URL} target="_blank" rel="noreferrer">Base de segurança da OMS <ExternalLink /></a>
     </section>
+    {linkedTool && <section className="med-surgery-linked-instrument"><Wrench /><div><span className="med-eyebrow">VINDO DO CATÁLOGO</span><strong>{linkedTool.name}</strong><p>{linkedTool.purpose} O simulador não seleciona automaticamente: reconheça quando o uso é apropriado.</p></div>{onOpenInstruments && <button onClick={onOpenInstruments}>Voltar ao catálogo <ArrowRight /></button>}</section>}
 
     <section className="med-surgery-case-library">
       <header><div><span className="med-eyebrow">BIBLIOTECA DE CENÁRIOS</span><h2>Escolha a região e o tipo de caso</h2></div><span><LockKeyhole /> Casos ficcionais e não diagnósticos</span></header>
