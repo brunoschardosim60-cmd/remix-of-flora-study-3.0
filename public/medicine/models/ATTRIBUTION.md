@@ -12,6 +12,24 @@ O ativo derivado permanece disponibilizado sob CC BY-SA 4.0. A licença do model
 
 Os arquivos em `draco/` são os decodificadores distribuídos com Three.js e usados apenas para abrir a malha comprimida no navegador.
 
+## `zanatomy-circulatory-v1.glb`, `zanatomy-nervous-v1.glb` e `zanatomy-organs-v1.glb`
+
+- Fonte imediata e conversão para GLB: [Anatomi Simülatörü](https://github.com/DrMuratAltun/anatomi-simulatoru), de Dr. Murat Altun.
+- Dados anatômicos originais: [Z-Anatomy](https://www.z-anatomy.com/) e [BodyParts3D](https://dbarchive.biosciencedbc.jp/en/bodyparts3d/).
+- Licença dos dados 3D: [Creative Commons Attribution-ShareAlike 4.0 International](https://creativecommons.org/licenses/by-sa/4.0/).
+- Cópia local da licença: `CC-BY-SA-4.0.txt`.
+- Conteúdo incorporado: 676 estruturas circulatórias, 582 estruturas nervosas e 120 estruturas de órgãos internos, preservadas como malhas individualmente identificáveis.
+- Alterações neste projeto: renomeação dos arquivos, centralização e escala, combinação das malhas densas de vasos e nervos para reduzir chamadas de desenho, atributo de identificação por vértice, materiais e cores próprios, catálogo pesquisável com tradução auxiliar para português, seleção, isolamento, corte e transparência aplicados em tempo de execução. A geometria anatômica não foi remodelada neste repositório.
+
+Esses três ativos e adaptações das próprias malhas permanecem sob CC BY-SA 4.0. Os nomes traduzidos são auxiliares; a nomenclatura original é preservada nos detalhes da estrutura.
+
+## `zanatomy-organ-heart-v1.glb`, `zanatomy-organ-brain-v1.glb`, `zanatomy-organ-spleen-v1.glb` e `zanatomy-organ-eye-v1.glb`
+
+- Fonte imediata e otimização GLB: [FSichi/anatomy-atlas](https://github.com/FSichi/anatomy-atlas).
+- Dados anatômicos originais: Z-Anatomy / BodyParts3D.
+- Licença dos dados 3D: Creative Commons Attribution-ShareAlike 4.0 International.
+- Alterações neste projeto: arquivos renomeados e usados como ampliações isoladas; rotação de eixo, escala, posição, materiais, corte, transparência, seleção e câmera aplicados em tempo de execução. A geometria não foi remodelada neste repositório.
+
 ## `bodyparts3d-skin-v1.glb` e `bodyparts3d-organs-v1.glb`
 
 - Fonte imediata e conversão para GLB: [human-body-simulator](https://github.com/yamz8/human-body-simulator), de yamz8.

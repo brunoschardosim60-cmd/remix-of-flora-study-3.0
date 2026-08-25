@@ -392,6 +392,22 @@ export const medicalSources: Record<string, MedicalSource> = {
     license: "CC BY-SA 4.0",
     attribution: "Modelo derivado de Z-Anatomy/BodyParts3D, otimizado por hpfrei. Alterações de integração e materiais indicadas no arquivo de atribuição do projeto.",
   },
+  zAnatomySystems3D: {
+    title: "Z-Anatomy / BodyParts3D — sistemas anatômicos completos para web",
+    organization: "Z-Anatomy, BodyParts3D e Dr. Murat Altun",
+    url: "https://github.com/DrMuratAltun/anatomi-simulatoru",
+    reviewedAt: "2026-08-24",
+    license: "CC BY-SA 4.0",
+    attribution: "Malhas derivadas de Z-Anatomy/BodyParts3D e convertidas em sistemas web pelo projeto Anatomi Simülatörü. Alterações de integração, catálogo em português, materiais e seleção são documentadas no arquivo de atribuição local.",
+  },
+  zAnatomyOrgan3D: {
+    title: "Z-Anatomy / BodyParts3D — modelos isolados de órgãos",
+    organization: "Z-Anatomy, BodyParts3D e FSichi anatomy-atlas",
+    url: "https://github.com/FSichi/anatomy-atlas",
+    reviewedAt: "2026-08-24",
+    license: "CC BY-SA 4.0",
+    attribution: "Malhas de órgãos derivadas de Z-Anatomy/BodyParts3D e otimizadas para web pelo projeto anatomy-atlas. Integração e alterações visuais estão descritas na atribuição local.",
+  },
   bodyParts3D: {
     title: "BodyParts3D 3.0 — superfície corporal e órgãos",
     organization: "Database Center for Life Science (DBCLS)",

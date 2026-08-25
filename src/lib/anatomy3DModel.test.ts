@@ -55,6 +55,13 @@ describe("anatomy3DModel", () => {
   it("mantém as malhas anatômicas licenciadas disponíveis no pacote público", () => {
     const assets = [
       ["zanatomy-musculoskeletal-v1.glb", 8_000_000],
+      ["zanatomy-circulatory-v1.glb", 7_800_000],
+      ["zanatomy-nervous-v1.glb", 8_000_000],
+      ["zanatomy-organs-v1.glb", 4_700_000],
+      ["zanatomy-organ-heart-v1.glb", 1_600_000],
+      ["zanatomy-organ-brain-v1.glb", 1_300_000],
+      ["zanatomy-organ-spleen-v1.glb", 90_000],
+      ["zanatomy-organ-eye-v1.glb", 125_000],
       ["bodyparts3d-organs-v1.glb", 300_000],
       ["bodyparts3d-skin-v1.glb", 170_000],
     ] as const;
@@ -64,6 +71,8 @@ describe("anatomy3DModel", () => {
       expect(statSync(asset).size, filename).toBeGreaterThan(minimumBytes);
     }
     expect(medicalSources.zAnatomy3D?.url).toContain("body-anatomy-3d-viewer");
+    expect(medicalSources.zAnatomySystems3D?.url).toContain("anatomi-simulatoru");
+    expect(medicalSources.zAnatomyOrgan3D?.url).toContain("anatomy-atlas");
     expect(medicalSources.bodyParts3D?.url).toContain("bodyparts3d");
   });
 
