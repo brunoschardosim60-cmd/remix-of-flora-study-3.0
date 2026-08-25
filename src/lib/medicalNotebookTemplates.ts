@@ -256,7 +256,7 @@ export const medicalNotebookTemplates: MedicalNotebookTemplate[] = [
           <h1>Desenvolvimento humano</h1>
           <img src="/medicine/development/weeks-3-8-v2.png" alt="Ilustração educacional do período embrionário entre as semanas 3 e 8" />
           <h2>Mapa temporal</h2>
-          <p><strong>Fecundação → clivagem → blastocisto → implantação → gastrulação → neurulação e organogênese → período fetal → nascimento → infância → adolescência → vida adulta.</strong></p>
+          <p><strong>Fecundação → clivagem → blastocisto → implantação → gastrulação → neurulação e organogênese → período fetal → nascimento → infância → adolescência → vida adulta → meia-idade → envelhecimento.</strong></p>
           <p>Os processos se sobrepõem. As idades e marcos devem ser estudados com a convenção usada na disciplina, distinguindo idade gestacional e idade pós-fecundação quando necessário.</p>
           ${safetyNote}
         `,

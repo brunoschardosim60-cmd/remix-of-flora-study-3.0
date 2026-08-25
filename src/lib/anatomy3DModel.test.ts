@@ -1,7 +1,7 @@
 import { statSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { anatomy3DRegions, anatomy3DStructures, anatomy3DSystemMeta, organ3DStructureForAtlasId, proceduralStructuresFor3D, structuresFor3D } from "./anatomy3DModel";
+import { anatomy3DRegions, anatomy3DStructures, anatomy3DSystemMeta, mergeGuidedAndDetailedStructures, organ3DStructureForAtlasId, proceduralStructuresFor3D, structuresFor3D } from "./anatomy3DModel";
 import { bodyLayers, medicalSources } from "./medicineData";
 
 describe("anatomy3DModel", () => {
@@ -45,7 +45,7 @@ describe("anatomy3DModel", () => {
   it("não sobrepõe substitutos procedurais ao cérebro e aos órgãos reais", () => {
     const combined = proceduralStructuresFor3D("all", "whole", "organ-heart").map((item) => item.id);
     expect(combined).not.toEqual(expect.arrayContaining(["nerve-brain", "nerve-cerebellum", "nerve-brainstem", "organ-eyes", "organ-inner-ear"]));
-    expect(combined).toEqual(expect.arrayContaining(["nerve-spinal-cord", "vessel-aorta"]));
+    expect(combined).not.toEqual(expect.arrayContaining(["nerve-spinal-cord", "vessel-aorta"]));
 
     expect(proceduralStructuresFor3D("organs", "whole", "organ-brain")).toHaveLength(0);
     expect(proceduralStructuresFor3D("organs", "head", "organ-eyes").map((item) => item.id)).toEqual(["organ-eyes"]);
@@ -83,5 +83,17 @@ describe("anatomy3DModel", () => {
     expect(organ3DStructureForAtlasId("pancreas")).toBe("organ-pancreas");
     expect(organ3DStructureForAtlasId("uterus")).toBe("organ-uterus");
     expect(organ3DStructureForAtlasId("cochlea")).toBe("organ-inner-ear");
+  });
+
+  it("preserva estruturas guiadas ao incorporar o catálogo detalhado", () => {
+    const guided = structuresFor3D("organs", "whole");
+    const heart = guided.find((item) => item.id === "organ-heart")!;
+    const detailedHeart = { ...heart, id: "model:organs:12", name: "Coração" };
+    const detailedValve = { ...heart, id: "model:organs:13", name: "Valva mitral" };
+    const merged = mergeGuidedAndDetailedStructures(guided, [detailedHeart, detailedValve]);
+
+    expect(merged[0]).toBe(guided[0]);
+    expect(merged.filter((item) => item.name === "Coração")).toHaveLength(1);
+    expect(merged).toContainEqual(detailedValve);
   });
 });

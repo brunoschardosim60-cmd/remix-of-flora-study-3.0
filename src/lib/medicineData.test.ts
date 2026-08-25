@@ -44,9 +44,11 @@ describe("medicine content integrity", () => {
   });
 
   it("covers the complete development journey with study-ready content", () => {
-    expect(embryologyTimeline.length).toBeGreaterThanOrEqual(9);
+    expect(embryologyTimeline.length).toBeGreaterThanOrEqual(11);
     expect(embryologyTimeline[0].phase).toBe("Pré-natal");
     expect(embryologyTimeline.at(-1)?.phase).toBe("Pós-natal");
+    expect(embryologyTimeline.at(-1)?.id).toBe("late-adulthood");
+    expect(embryologyTimeline.at(-1)?.title).toContain("Envelhecimento");
     expect(new Set(embryologyTimeline.map((stage) => stage.id)).size).toBe(embryologyTimeline.length);
 
     for (const stage of embryologyTimeline) {

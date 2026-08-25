@@ -54,5 +54,6 @@ export const notebookMedicalAssets: NotebookMedicalAsset[] = [
   { id: "childhood", label: "Infância", description: "Desenvolvimento corporal e funcional durante a infância.", src: "/medicine/development/childhood-v1.png", category: "Desenvolvimento" },
   { id: "adolescence", label: "Adolescência", description: "Maturação puberal e transição para a vida adulta.", src: "/medicine/development/adolescence-v1.png", category: "Desenvolvimento" },
   { id: "adult", label: "Adulto jovem", description: "Organização corporal no início da vida adulta.", src: "/medicine/development/early-adulthood-v1.png", category: "Desenvolvimento" },
+  { id: "middle-adulthood", label: "Meia-idade", description: "Adaptações graduais durante a vida adulta intermediária.", src: "/medicine/development/middle-adulthood-v1.png", category: "Desenvolvimento" },
+  { id: "late-adulthood", label: "Envelhecimento", description: "Mudanças heterogêneas, longevidade, função e autonomia.", src: "/medicine/development/late-adulthood-v1.png", category: "Desenvolvimento" },
 ];
-

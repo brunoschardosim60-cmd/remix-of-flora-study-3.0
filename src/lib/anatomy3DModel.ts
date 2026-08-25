@@ -350,6 +350,19 @@ export function structuresFor3D(system: Anatomy3DSystemId, region: Anatomy3DRegi
   });
 }
 
+/**
+ * Mantém as estruturas guiadas (com texto médico revisado) no topo do índice
+ * e acrescenta as malhas detalhadas carregadas do GLB sem duplicar nomes.
+ */
+export function mergeGuidedAndDetailedStructures(guided: Anatomy3DStructure[], detailed: Anatomy3DStructure[]) {
+  const guidedNames = new Set(guided.map((structure) => normalizedStructureName(structure.name)));
+  return [...guided, ...detailed.filter((structure) => !guidedNames.has(normalizedStructureName(structure.name)))];
+}
+
+function normalizedStructureName(value: string) {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR").trim();
+}
+
 const supplemental3DOrganIds = new Set([
   "organ-eyes", "organ-inner-ear", "organ-thyroid", "organ-pancreas",
   "organ-uterus", "organ-ovaries", "organ-prostate", "organ-testes",
@@ -363,12 +376,11 @@ export function isSupplemental3DOrganId(id: string | null | undefined) {
 export function proceduralStructuresFor3D(system: Anatomy3DSystemId, region: Anatomy3DRegionId, selectedId: string | null) {
   return structuresFor3D(system, region).filter((structure) => {
     if (system === "all") {
-      // Licensed GLBs already supply the brain and main organs. Procedural
-      // substitutes appear only when explicitly selected, avoiding duplicate
-      // balloon-like volumes in the combined view.
-      if (realBrainReplacementIds.has(structure.id)) return false;
+      // A visão integrada usa as mesmas malhas licenciadas e detalhadas das
+      // camadas dedicadas. Só complementos sem equivalente no GLB permanecem
+      // procedurais quando são selecionados explicitamente.
       if (supplemental3DOrganIds.has(structure.id)) return selectedId === structure.id;
-      return structure.layer === "vascular" || structure.layer === "nervous";
+      return false;
     }
     if (system === "organs") return Boolean(selectedId && supplemental3DOrganIds.has(selectedId) && structure.id === selectedId);
     if (system === "nervous" && realBrainReplacementIds.has(structure.id)) return false;
