@@ -1,5 +1,6 @@
 import { medicineAtlasCatalog } from "./medicineAtlasCatalog";
 import { additionalMedicalClinicalCases } from "./additionalMedicalClinicalCases";
+import { histologySources } from "./histologyData";
 
 export type MedicineLevel = "Iniciante" | "Ciclo básico" | "Ciclo clínico" | "Internato" | "Residência";
 export type BodyLayer = "surface" | "muscular" | "skeletal" | "vascular" | "nervous" | "organs";
@@ -146,6 +147,7 @@ export interface MedicalClinicalCase {
 }
 
 export const medicalSources: Record<string, MedicalSource> = {
+  ...histologySources,
   openstax: {
     title: "Anatomia e Fisiologia 2e",
     organization: "OpenStax, Rice University",

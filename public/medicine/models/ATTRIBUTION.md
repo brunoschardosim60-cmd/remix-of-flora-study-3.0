@@ -1,5 +1,7 @@
 # Atribuição dos modelos anatômicos 3D
 
+> O modelo `zanatomy-organ-eye-v1.glb` também é reutilizado no módulo **Histologia e Sentidos**. A aparência do globo ocular usa o mesmo perfil `eye` de `src/lib/organRealism.ts`; nenhuma segunda malha artificial foi criada.
+
 ## `zanatomy-musculoskeletal-v1.glb`
 
 - Fonte imediata: [Body Anatomy 3D Viewer](https://github.com/hpfrei/body-anatomy-3d-viewer), de hpfrei.
