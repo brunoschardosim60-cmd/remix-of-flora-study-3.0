@@ -2,6 +2,7 @@ import type { BodyLayer } from "./medicineData";
 
 export type Anatomy3DRegionId = "whole" | "head" | "thorax" | "abdomen" | "pelvis" | "upper-limb" | "lower-limb";
 export type Anatomy3DSystemId = "all" | BodyLayer;
+export type AnatomyBodyProfile = "male" | "female";
 export type Anatomy3DCatalogs = Partial<Record<Anatomy3DSystemId, Anatomy3DStructure[]>>;
 
 export type Anatomy3DPart =
@@ -349,6 +350,28 @@ export function structuresFor3D(system: Anatomy3DSystemId, region: Anatomy3DRegi
     const regionMatches = region === "whole" || structure.regionId === region || structure.regionId === "whole";
     return systemMatches && regionMatches;
   });
+}
+
+const femaleReproductivePattern = /uter|ovari|vagin|clitor|fallopian|tuba uterina|labia|vulva/;
+const maleReproductivePattern = /prostat|testi|testicul|seminal|deferen|epidid|penis|scrot/;
+
+function normalizedBodyProfileText(value: string) {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR");
+}
+
+/**
+ * Evita combinar estruturas reprodutivas masculinas e femininas no mesmo
+ * perfil corporal. Demais estruturas permanecem comuns aos dois perfis.
+ */
+export function structureMatchesBodyProfile(structure: Pick<Anatomy3DStructure, "id" | "name" | "latin">, profile: AnatomyBodyProfile) {
+  const searchable = normalizedBodyProfileText(`${structure.id} ${structure.name} ${structure.latin ?? ""}`);
+  return profile === "male" ? !femaleReproductivePattern.test(searchable) : !maleReproductivePattern.test(searchable);
+}
+
+/** Aplica o mesmo filtro aos nomes originais das malhas 3D licenciadas. */
+export function raw3DNameMatchesBodyProfile(rawName: string, profile: AnatomyBodyProfile) {
+  const searchable = normalizedBodyProfileText(rawName);
+  return profile === "male" ? !femaleReproductivePattern.test(searchable) : !maleReproductivePattern.test(searchable);
 }
 
 /**

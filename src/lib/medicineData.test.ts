@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import {
   anatomyPositionFor,
@@ -41,6 +41,35 @@ describe("medicine content integrity", () => {
       expect(source.url.startsWith("https://")).toBe(true);
       expect(source.reviewedAt).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     }
+  });
+
+  it("mantém os títulos exibidos em português e as referências OpenStax na edição atual", () => {
+    const untranslatedTitleWords = /\b(anatomy|physiology|functions|development|assessment|clinical|patient|safe|signs|symptoms|diagnosis|interview|examination|perception|pathways)\b/i;
+    const sourcesWithEnglishBrandNames = new Set(["openAnatomy", "zAnatomy3D", "zAnatomySystems3D", "zAnatomyOrgan3D"]);
+    for (const [id, source] of Object.entries(medicalSources)) {
+      if (sourcesWithEnglishBrandNames.has(id)) continue;
+      expect(source.title, `${id} title`).not.toMatch(untranslatedTitleWords);
+    }
+    expect(medicalSources.openstaxPns.url).toContain("anatomy-and-physiology-2e");
+    expect(medicalSources.openstaxSenses.url).toContain("anatomy-and-physiology-2e");
+  });
+
+  it("não confunde botões gustativos com papilas gustativas", () => {
+    const tasteBuds = anatomyStructures.find((structure) => structure.id === "taste-buds");
+    expect(tasteBuds).toBeDefined();
+    expect(tasteBuds?.synonyms.map((item) => item.toLocaleLowerCase("pt-BR"))).not.toContain("papilas gustativas");
+    expect(tasteBuds?.synonyms.map((item) => item.toLocaleLowerCase("pt-BR"))).toContain("calículos gustatórios");
+  });
+
+  it("classifica cada órgão no sistema correspondente e evita fontes genéricas", () => {
+    const cataloguedOrgans = anatomyStructures.filter((structure) => structure.layer === "organs" && !["brain", "heart", "lungs", "liver", "kidneys"].includes(structure.id));
+    for (const structure of cataloguedOrgans) {
+      expect(structure.system, `${structure.id} system`).not.toBe("Anatomia de órgãos e sentidos");
+      expect(structure.sourceId, `${structure.id} source`).not.toBe("openstax");
+    }
+    expect(anatomyStructures.find((item) => item.id === "eyes")?.system).toBe("Sentidos especiais");
+    expect(anatomyStructures.find((item) => item.id === "pancreas")?.system).toBe("Digestório e endócrino");
+    expect(anatomyStructures.find((item) => item.id === "urethra")?.system).toBe("Urinário");
   });
 
   it("covers the complete development journey with study-ready content", () => {
@@ -238,6 +267,21 @@ describe("medicine content integrity", () => {
 
     for (const clinicalCase of medicalClinicalCases) {
       if (clinicalCase.visual) expect(publicAssetExists(clinicalCase.visual.image), clinicalCase.visual.image).toBe(true);
+    }
+  });
+
+  it("mantém todas as imagens médicas íntegras e em alta resolução", () => {
+    const root = resolve(process.cwd(), "public", "medicine");
+    const files = readdirSync(root, { recursive: true, withFileTypes: true })
+      .filter((entry) => entry.isFile() && entry.name.toLocaleLowerCase("pt-BR").endsWith(".png"))
+      .map((entry) => resolve(entry.parentPath, entry.name));
+
+    expect(files.length).toBeGreaterThanOrEqual(90);
+    for (const file of files) {
+      const bytes = readFileSync(file);
+      expect(bytes.subarray(0, 8).toString("hex"), file).toBe("89504e470d0a1a0a");
+      expect(bytes.readUInt32BE(16), `${file} width`).toBeGreaterThanOrEqual(600);
+      expect(bytes.readUInt32BE(20), `${file} height`).toBeGreaterThanOrEqual(400);
     }
   });
 });

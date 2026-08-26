@@ -41,8 +41,23 @@ const layerMeta: Record<BodyLayer, { system: string; noun: string }> = {
   skeletal: { system: "Esquelético", noun: "estrutura óssea" },
   vascular: { system: "Cardiovascular", noun: "estrutura vascular" },
   nervous: { system: "Nervoso", noun: "estrutura nervosa" },
-  organs: { system: "Anatomia visceral", noun: "estrutura visceral ou glandular" },
+  organs: { system: "Anatomia de órgãos e sentidos", noun: "estrutura anatômica" },
 };
+
+const organSystemIds: Record<string, Set<string>> = {
+  "Sentidos especiais": new Set(["eyes", "retina", "lens-eye", "cochlea", "semicircular-canals", "olfactory-epithelium", "tongue", "taste-buds"]),
+  Respiratório: new Set(["nasal-cavity", "pharynx", "larynx", "trachea", "main-bronchi", "diaphragm"]),
+  Digestório: new Set(["oral-cavity", "parotid-gland", "esophagus", "stomach", "gallbladder", "duodenum", "jejunum", "ileum", "cecum", "vermiform-appendix", "ascending-colon", "transverse-colon", "descending-colon", "sigmoid-colon", "rectum"]),
+  "Digestório e endócrino": new Set(["pancreas"]),
+  Endócrino: new Set(["thyroid-gland", "parathyroid-glands", "adrenal-glands", "pituitary-gland", "pineal-gland"]),
+  "Linfático e imune": new Set(["thymus", "spleen", "palatine-tonsils", "cervical-lymph-nodes", "axillary-lymph-nodes", "inguinal-lymph-nodes"]),
+  Urinário: new Set(["ureters", "urinary-bladder", "urethra"]),
+  Reprodutor: new Set(["ovaries", "uterine-tubes", "uterus", "cervix", "vagina", "vulva", "testes", "epididymis", "ductus-deferens", "seminal-vesicles", "prostate", "penis"]),
+};
+
+function organSystemFor(id: string) {
+  return Object.entries(organSystemIds).find(([, ids]) => ids.has(id))?.[0] ?? layerMeta.organs.system;
+}
 
 function makeGroup(layer: BodyLayer, defaultSourceId: string, rows: CatalogRow[]): AtlasCatalogSeed[] {
   const meta = layerMeta[layer];
@@ -51,7 +66,7 @@ function makeGroup(layer: BodyLayer, defaultSourceId: string, rows: CatalogRow[]
     name,
     latin,
     layer,
-    system: meta.system,
+    system: layer === "organs" ? organSystemFor(id) : meta.system,
     region,
     summary: `${name} é uma ${meta.noun} identificável na região ${region.toLocaleLowerCase("pt-BR")}.`,
     function: functionText,
@@ -437,14 +452,14 @@ const nervousStructures = makeGroup("nervous", "openstaxPns", [
 ]);
 
 const organStructures = makeGroup("organs", "openstax", [
-  ["eyes", "Olhos", "órbitas", "Recebem estímulos luminosos e iniciam o processamento visual.", anterior(47, 8), "Oculi", undefined, "openstaxCns"],
+  ["eyes", "Olhos", "órbitas", "Recebem estímulos luminosos e iniciam o processamento visual.", anterior(47, 8), "Oculi", undefined, "openstaxSenses"],
   ["retina", "Retina", "parede interna do olho", "Contém fotorreceptores que convertem energia luminosa em sinais neurais.", anterior(46.5, 8), "Retina", undefined, "openstaxSenses"],
   ["lens-eye", "Cristalino", "segmento anterior do olho", "Modifica sua curvatura para ajudar a focalizar a imagem sobre a retina.", anterior(47.4, 8.2), "Lens", ["lente do olho"], "openstaxSenses"],
   ["cochlea", "Cóclea", "orelha interna", "Abriga o órgão sensorial da audição e participa da transdução de vibrações sonoras.", both(42.4, 9, 57.6, 9), "Cochlea", undefined, "openstaxSenses"],
   ["semicircular-canals", "Canais semicirculares", "orelha interna", "Detectam acelerações angulares da cabeça e participam do equilíbrio.", both(42, 8.4, 58, 8.4), "Canales semicirculares", undefined, "openstaxSenses"],
   ["olfactory-epithelium", "Epitélio olfatório", "cavidade nasal superior", "Contém receptores que iniciam a transdução de moléculas odoríferas.", anterior(50, 8.7), "Epithelium olfactorium", undefined, "openstaxSenses"],
   ["tongue", "Língua", "cavidade oral", "Participa da gustação, manipulação do alimento, deglutição e articulação da fala.", anterior(50, 11.2), "Lingua", undefined, "openstaxSenses"],
-  ["taste-buds", "Botões gustativos", "língua e cavidade oral", "Reúnem células receptoras envolvidas na percepção dos sabores.", anterior(49.5, 11.4), "Caliculi gustatorii", ["papilas gustativas"], "openstaxSenses"],
+  ["taste-buds", "Botões gustativos", "língua e cavidade oral", "Reúnem células receptoras envolvidas na percepção dos sabores.", anterior(49.5, 11.4), "Caliculi gustatorii", ["calículos gustatórios"], "openstaxSenses"],
   ["nasal-cavity", "Cavidade nasal", "nariz", "Filtra, aquece e umidifica o ar e participa do olfato.", anterior(50, 9), "Cavitas nasi", undefined, "openstaxRespiratory"],
   ["oral-cavity", "Cavidade oral", "face inferior", "Inicia digestão mecânica e química e participa de fala e deglutição.", anterior(50, 11), "Cavitas oris", undefined, "openstaxDigestive"],
   ["parotid-gland", "Glândula parótida", "face lateral", "Produz secreção salivar serosa conduzida à cavidade oral.", anterior(43, 11), "Glandula parotidea", undefined, "openstaxDigestive"],

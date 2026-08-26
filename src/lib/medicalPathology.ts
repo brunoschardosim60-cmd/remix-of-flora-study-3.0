@@ -72,7 +72,7 @@ export const medicalPathologies: MedicalPathology[] = [
       answer: 0,
       explanation: "O enfisema envolve aumento permanente dos espaços aéreos distais associado à destruição de suas paredes, com perda de superfície e elasticidade.",
     },
-    source: { title: "COPD — Causes and Risk Factors", organization: "NHLBI · NIH", url: "https://www.nhlbi.nih.gov/health/copd/causes" },
+    source: { title: "DPOC — causas e fatores de risco", organization: "NHLBI · NIH", url: "https://www.nhlbi.nih.gov/health/copd/causes" },
   },
   {
     id: "heart",
@@ -104,7 +104,7 @@ export const medicalPathologies: MedicalPathology[] = [
       answer: 0,
       explanation: "O tecido fibroso dá sustentação à área curada, mas não possui a capacidade contrátil do miocárdio que substituiu.",
     },
-    source: { title: "What is a Heart Attack?", organization: "American Heart Association", url: "https://www.heart.org/en/health-topics/heart-attack/about-heart-attacks" },
+    source: { title: "O que é um infarto do miocárdio?", organization: "American Heart Association", url: "https://www.heart.org/en/health-topics/heart-attack/about-heart-attacks" },
   },
   {
     id: "liver",
@@ -136,7 +136,7 @@ export const medicalPathologies: MedicalPathology[] = [
       answer: 0,
       explanation: "A cirrose é caracterizada por cicatrização difusa e nódulos regenerativos que reorganizam de forma anormal o parênquima hepático.",
     },
-    source: { title: "Cirrhosis", organization: "NIDDK · NIH", url: "https://www.niddk.nih.gov/health-information/liver-disease/cirrhosis" },
+    source: { title: "Cirrose", organization: "NIDDK · NIH", url: "https://www.niddk.nih.gov/health-information/liver-disease/cirrhosis" },
   },
   {
     id: "kidney",
@@ -168,7 +168,7 @@ export const medicalPathologies: MedicalPathology[] = [
       answer: 0,
       explanation: "A hidronefrose corresponde à dilatação do sistema coletor renal, especialmente pelve e cálices, geralmente associada à dificuldade de drenagem.",
     },
-    source: { title: "Hydronephrosis of one kidney", organization: "MedlinePlus · U.S. National Library of Medicine", url: "https://medlineplus.gov/ency/article/000506.htm" },
+    source: { title: "Hidronefrose unilateral", organization: "MedlinePlus · U.S. National Library of Medicine", url: "https://medlineplus.gov/ency/article/000506.htm" },
   },
   {
     id: "brain",
@@ -200,6 +200,6 @@ export const medicalPathologies: MedicalPathology[] = [
       answer: 0,
       explanation: "No AVC isquêmico, um vaso que fornece sangue ao cérebro é obstruído, reduzindo o fluxo para o tecido dependente daquele território.",
     },
-    source: { title: "Ischemic Stroke (Clots)", organization: "American Stroke Association", url: "https://www.stroke.org/en/about-stroke/types-of-stroke/ischemic-stroke-clots" },
+    source: { title: "Acidente vascular cerebral isquêmico", organization: "American Stroke Association", url: "https://www.stroke.org/en/about-stroke/types-of-stroke/ischemic-stroke-clots" },
   },
 ];

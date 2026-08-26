@@ -1,7 +1,7 @@
 import { statSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { anatomy3DRegions, anatomy3DStructures, anatomy3DSystemMeta, detailedStructureForGuided, detailedStructuresFor3DSystem, mergeGuidedAndDetailedStructures, organ3DStructureForAtlasId, proceduralStructuresFor3D, structuresFor3D } from "./anatomy3DModel";
+import { anatomy3DRegions, anatomy3DStructures, anatomy3DSystemMeta, detailedStructureForGuided, detailedStructuresFor3DSystem, mergeGuidedAndDetailedStructures, organ3DStructureForAtlasId, proceduralStructuresFor3D, raw3DNameMatchesBodyProfile, structureMatchesBodyProfile, structuresFor3D } from "./anatomy3DModel";
 import { bodyLayers, medicalSources } from "./medicineData";
 
 describe("anatomy3DModel", () => {
@@ -40,6 +40,21 @@ describe("anatomy3DModel", () => {
     expect(structuresFor3D("muscular", "whole").length).toBeGreaterThanOrEqual(8);
     expect(structuresFor3D("skeletal", "whole").length).toBeGreaterThanOrEqual(8);
     expect(structuresFor3D("vascular", "whole").length).toBeGreaterThanOrEqual(7);
+  });
+
+  it("mantém perfis reprodutivos coerentes e o masculino como opção segura padrão", () => {
+    const organs = structuresFor3D("organs", "whole");
+    const male = organs.filter((item) => structureMatchesBodyProfile(item, "male")).map((item) => item.id);
+    const female = organs.filter((item) => structureMatchesBodyProfile(item, "female")).map((item) => item.id);
+
+    expect(male).toEqual(expect.arrayContaining(["organ-prostate", "organ-testes", "organ-heart"]));
+    expect(male).not.toEqual(expect.arrayContaining(["organ-uterus", "organ-ovaries"]));
+    expect(female).toEqual(expect.arrayContaining(["organ-uterus", "organ-ovaries", "organ-heart"]));
+    expect(female).not.toEqual(expect.arrayContaining(["organ-prostate", "organ-testes"]));
+    expect(raw3DNameMatchesBodyProfile("Uterus", "male")).toBe(false);
+    expect(raw3DNameMatchesBodyProfile("Prostate gland", "female")).toBe(false);
+    expect(raw3DNameMatchesBodyProfile("Heart", "male")).toBe(true);
+    expect(raw3DNameMatchesBodyProfile("Heart", "female")).toBe(true);
   });
 
   it("não sobrepõe substitutos procedurais ao cérebro e aos órgãos reais", () => {

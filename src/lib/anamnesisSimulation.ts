@@ -55,22 +55,22 @@ export interface AnamnesisCase {
 export const anamnesisSources = [
   {
     id: "openstax-interview",
-    title: "Comprehensive Interview Practices — Clinical Nursing Skills",
+    title: "Práticas de entrevista abrangente — habilidades clínicas de enfermagem",
     url: "https://openstax.org/books/clinical-nursing-skills/pages/3-2-comprehensive-interview-practices",
   },
   {
     id: "openstax-history",
-    title: "Data Collection and Documentation — Clinical Nursing Skills",
+    title: "Coleta e documentação de dados — habilidades clínicas de enfermagem",
     url: "https://openstax.org/books/clinical-nursing-skills/pages/4-2-data-collection-and-documentation",
   },
   {
     id: "cdc-stroke",
-    title: "Signs and Symptoms of Stroke — CDC",
+    title: "Sinais e sintomas de acidente vascular cerebral — CDC",
     url: "https://www.cdc.gov/stroke/signs-symptoms/index.html",
   },
   {
     id: "who-mhgap",
-    title: "mhGAP Intervention Guide — WHO",
+    title: "Guia de intervenção mhGAP — OMS",
     url: "https://iris.who.int/bitstream/handle/10665/250239/9789241549790-eng.pdf",
   },
 ] as const;
