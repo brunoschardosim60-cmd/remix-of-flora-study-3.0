@@ -40,6 +40,18 @@ describe("BodyAtlas selection flow", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
+  it("keeps the visible marker set stable when a body marker is selected", () => {
+    render(<AtlasHarness />);
+    const markersBefore = screen.getAllByRole("button", { name: /^Selecionar / });
+    const labelsBefore = markersBefore.map((marker) => marker.getAttribute("aria-label"));
+
+    fireEvent.click(markersBefore[1]);
+
+    const labelsAfter = screen.getAllByRole("button", { name: /^Selecionar / })
+      .map((marker) => marker.getAttribute("aria-label"));
+    expect(labelsAfter).toEqual(labelsBefore);
+  });
+
   it("opens the detail dialog only from the explicit button", () => {
     render(<AtlasHarness />);
 
