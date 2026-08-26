@@ -30,6 +30,17 @@ function SurfaceAtlasHarness() {
   />;
 }
 
+function dispatchPointer(target: Element, type: string, values: { pointerId: number; button?: number; clientX?: number; clientY?: number }) {
+  const event = new Event(type, { bubbles: true, cancelable: true });
+  Object.defineProperties(event, {
+    pointerId: { value: values.pointerId },
+    button: { value: values.button ?? 0 },
+    clientX: { value: values.clientX ?? 0 },
+    clientY: { value: values.clientY ?? 0 },
+  });
+  fireEvent(target, event);
+}
+
 describe("BodyAtlas selection flow", () => {
   it("selects a structure without opening the detail dialog", () => {
     render(<AtlasHarness />);
@@ -57,7 +68,7 @@ describe("BodyAtlas selection flow", () => {
     const stage = screen.getByLabelText(/use a roda do mouse para controlar o zoom/i);
     const initialMarkerCount = screen.getAllByRole("button", { name: /^Selecionar / }).length;
 
-    fireEvent.wheel(stage, { deltaY: -100 });
+    expect(fireEvent.wheel(stage, { deltaY: -100 })).toBe(false);
     expect(screen.getByText("110%")).toBeInTheDocument();
 
     fireEvent.wheel(stage, { deltaY: 100 });
@@ -68,6 +79,25 @@ describe("BodyAtlas selection flow", () => {
     fireEvent.wheel(stage, { deltaY: -100 });
     expect(screen.getByText("130%")).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: /^Selecionar / }).length).toBeGreaterThan(initialMarkerCount);
+  });
+
+  it("pans the zoomed atlas while keeping the body inside its limits", () => {
+    render(<AtlasHarness />);
+    const stage = screen.getByLabelText(/arraste para navegar/i);
+    const viewport = stage.querySelector(".med-body-viewport") as HTMLElement;
+
+    fireEvent.wheel(stage, { deltaY: -100 });
+    fireEvent.wheel(stage, { deltaY: -100 });
+    fireEvent.wheel(stage, { deltaY: -100 });
+    dispatchPointer(stage, "pointerdown", { pointerId: 7, button: 0, clientX: 100, clientY: 100 });
+    dispatchPointer(stage, "pointermove", { pointerId: 7, clientX: 1_000, clientY: 1_000 });
+
+    expect(viewport.style.transform).toContain("translate3d(60px, 210px, 0) scale(1.3)");
+
+    dispatchPointer(stage, "pointerup", { pointerId: 7 });
+    dispatchPointer(stage, "pointerdown", { pointerId: 8, button: 0, clientX: 100, clientY: 100 });
+    dispatchPointer(stage, "pointermove", { pointerId: 8, clientX: -1_000, clientY: -1_000 });
+    expect(viewport.style.transform).toContain("translate3d(-60px, 0px, 0) scale(1.3)");
   });
 
   it("opens the detail dialog only from the explicit button", () => {

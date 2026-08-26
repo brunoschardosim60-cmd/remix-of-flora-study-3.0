@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { createPortal } from "react-dom";
 import { Box, ChevronLeft, ChevronRight, ExternalLink, Info, Maximize2, Move, Rotate3D, RotateCcw, Search, Volume2, X, ZoomIn, ZoomOut } from "lucide-react";
 import { organ3DStructureForAtlasId } from "@/lib/anatomy3DModel";
@@ -35,6 +35,8 @@ const levelOrder: MedicineLevel[] = ["Iniciante", "Ciclo básico", "Ciclo clíni
 export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelect, onOpen3D }: BodyAtlasProps) {
   const [bodyProfile, setBodyProfile] = useState<AtlasBodyProfile>("male");
   const [zoom, setZoom] = useState(1);
+  const [atlasPan, setAtlasPan] = useState({ x: 0, y: 0 });
+  const [isAtlasPanning, setIsAtlasPanning] = useState(false);
   const [view, setView] = useState<AtlasView>("anterior");
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState<{ structure: AnatomyStructure; view: AtlasView } | null>(null);
@@ -47,6 +49,10 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
   const detailDragRef = useRef<{ pointerId: number; x: number; y: number } | null>(null);
   const detailPanRef = useRef({ x: 0, y: 0 });
   const detailImageRef = useRef<HTMLImageElement | null>(null);
+  const atlasStageRef = useRef<HTMLDivElement | null>(null);
+  const atlasViewportRef = useRef<HTMLDivElement | null>(null);
+  const atlasPanRef = useRef({ x: 0, y: 0 });
+  const atlasDragRef = useRef<{ pointerId: number; x: number; y: number; panX: number; panY: number } | null>(null);
   const structuresInLayer = useMemo(
     () => anatomyStructures.filter((item) => item.layer === activeLayer && structureMatchesBodyProfile(item, bodyProfile)),
     [activeLayer, bodyProfile],
@@ -87,6 +93,71 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
     ));
   }, [canvasPinLimit, filteredStructures, query, zoom]);
 
+  const constrainAtlasPan = useCallback((candidate: { x: number; y: number }, atZoom: number) => {
+    const viewport = atlasViewportRef.current;
+    const viewportWidth = viewport?.clientWidth || 400;
+    const viewportHeight = viewport?.clientHeight || 700;
+    const maxX = Math.max(0, viewportWidth * (atZoom - 1) / 2);
+    // O Atlas amplia a partir dos pés (transform-origin 50% 100%). Assim,
+    // o eixo vertical vai de 0 até o excedente ampliado, sem expor vazio.
+    const maxY = Math.max(0, viewportHeight * (atZoom - 1));
+    return {
+      x: Math.round(Math.min(maxX, Math.max(-maxX, candidate.x)) * 100) / 100,
+      y: Math.round(Math.min(maxY, Math.max(0, candidate.y)) * 100) / 100,
+    };
+  }, []);
+
+  const applyAtlasPan = useCallback((candidate: { x: number; y: number }, atZoom = zoom) => {
+    const next = constrainAtlasPan(candidate, atZoom);
+    atlasPanRef.current = next;
+    setAtlasPan(next);
+  }, [constrainAtlasPan, zoom]);
+
+  const changeAtlasZoom = useCallback((delta: number) => {
+    setZoom((current) => {
+      const next = Math.min(1.5, Math.max(0.8, Number((current + delta).toFixed(2))));
+      const nextPan = constrainAtlasPan(atlasPanRef.current, next);
+      atlasPanRef.current = nextPan;
+      setAtlasPan(nextPan);
+      return next;
+    });
+  }, [constrainAtlasPan]);
+
+  useEffect(() => {
+    const stage = atlasStageRef.current;
+    if (!stage) return;
+    const handleWheel = (event: WheelEvent) => {
+      if (event.deltaY === 0) return;
+      event.preventDefault();
+      event.stopPropagation();
+      changeAtlasZoom(event.deltaY < 0 ? 0.1 : -0.1);
+    };
+    stage.addEventListener("wheel", handleWheel, { passive: false });
+    return () => stage.removeEventListener("wheel", handleWheel);
+  }, [changeAtlasZoom]);
+
+  const beginAtlasPan = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (zoom <= 1 || event.button > 0 || (event.target as HTMLElement).closest("button, a, input")) return;
+    event.preventDefault();
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    atlasDragRef.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, panX: atlasPanRef.current.x, panY: atlasPanRef.current.y };
+    setIsAtlasPanning(true);
+  };
+
+  const moveAtlasPan = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const drag = atlasDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    event.preventDefault();
+    applyAtlasPan({ x: drag.panX + event.clientX - drag.x, y: drag.panY + event.clientY - drag.y });
+  };
+
+  const endAtlasPan = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (atlasDragRef.current?.pointerId !== event.pointerId) return;
+    event.currentTarget.releasePointerCapture?.(event.pointerId);
+    atlasDragRef.current = null;
+    setIsAtlasPanning(false);
+  };
+
   useEffect(() => {
     const selectedIsAvailable = selectedInProfile?.layer === activeLayer && anatomyPositionFor(selectedInProfile, view);
     if (!selectedIsAvailable) {
@@ -120,6 +191,7 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
 
   const selectLayer = (layer: BodyLayer) => {
     setFocused(null);
+    applyAtlasPan({ x: 0, y: 0 });
     onLayerChange(layer);
     setQuery("");
     const structures = anatomyStructures.filter((item) => item.layer === layer && structureMatchesBodyProfile(item, bodyProfile));
@@ -129,6 +201,7 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
 
   const changeView = () => {
     setFocused(null);
+    applyAtlasPan({ x: 0, y: 0 });
     const nextView: AtlasView = view === "anterior" ? "posterior" : "anterior";
     setView(nextView);
     const selectedIsVisible = selectedInProfile?.layer === activeLayer && anatomyPositionFor(selectedInProfile, nextView);
@@ -140,6 +213,7 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
 
   const changeBodyProfile = (profile: AtlasBodyProfile) => {
     setBodyProfile(profile);
+    applyAtlasPan({ x: 0, y: 0 });
     setQuery("");
     setFocused(null);
     const next = anatomyStructures.find((structure) => structure.layer === activeLayer && structureMatchesBodyProfile(structure, profile) && anatomyPositionFor(structure, view));
@@ -265,9 +339,9 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
           <div className="med-atlas-level-context" aria-live="polite"><span>{level}</span><strong>{levelProfile.title}</strong><small>{levelProfile.atlasDescription}</small></div>
         </div>
         <div className="med-atlas-controls">
-          <button onClick={() => setZoom((value) => Math.max(0.8, value - 0.1))} aria-label="Diminuir zoom"><ZoomOut /></button>
+          <button onClick={() => changeAtlasZoom(-0.1)} aria-label="Diminuir zoom"><ZoomOut /></button>
           <span>{Math.round(zoom * 100)}%</span>
-          <button onClick={() => setZoom((value) => Math.min(1.5, value + 0.1))} aria-label="Aumentar zoom"><ZoomIn /></button>
+          <button onClick={() => changeAtlasZoom(0.1)} aria-label="Aumentar zoom"><ZoomIn /></button>
           <button className="wide" onClick={changeView}><RotateCcw /> {view === "anterior" ? "Anterior" : "Posterior"}</button>
           <a className="wide" href="https://www.openanatomy.org/atlas-pages/" target="_blank" rel="noreferrer"><Box /> Atlas validado <ExternalLink /></a>
         </div>
@@ -318,20 +392,19 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
         </nav>
 
         <div
-          className={`med-body-stage is-${atlasImageStatus}`}
-          onWheel={(event) => {
-            if (event.deltaY === 0) return;
-            event.preventDefault();
-            const direction = event.deltaY < 0 ? 0.1 : -0.1;
-            setZoom((value) => Math.min(1.5, Math.max(0.8, Number((value + direction).toFixed(2)))));
-          }}
-          aria-label="Imagem anatômica interativa; use a roda do mouse para controlar o zoom"
+          ref={atlasStageRef}
+          className={`med-body-stage is-${atlasImageStatus}${zoom > 1 ? " is-pannable" : ""}${isAtlasPanning ? " is-panning" : ""}`}
+          onPointerDown={beginAtlasPan}
+          onPointerMove={moveAtlasPan}
+          onPointerUp={endAtlasPan}
+          onPointerCancel={endAtlasPan}
+          aria-label="Imagem anatômica interativa; use a roda do mouse para controlar o zoom e arraste para navegar"
         >
           <div className="med-scan-grid" />
           {atlasImageStatus !== "ready" && <div className={`med-atlas-image-status ${atlasImageStatus}`} role="status" aria-live="polite">
             {atlasImageStatus === "error" ? <><Info /><strong>Não foi possível carregar a ilustração.</strong><span>Recarregue a página para tentar novamente.</span></> : <><span className="med-atlas-loader" /><strong>Carregando ilustração em alta definição</strong><span>A resolução original está sendo preservada.</span></>}
           </div>}
-          <div className="med-body-viewport" style={{ transform: `scale(${zoom})` }}>
+          <div ref={atlasViewportRef} className="med-body-viewport" style={{ transform: `translate3d(${atlasPan.x}px, ${atlasPan.y}px, 0) scale(${zoom})` }}>
             <img
               key={atlasImage}
               className="med-body-image"
@@ -364,7 +437,7 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
           {canvasStructures.length < filteredStructures.length && <span className="med-atlas-density-note">
             {canvasStructures.length} de {filteredStructures.length} pontos exibidos · use os botões ou a roda do mouse para mostrar mais
           </span>}
-          <span className="med-atlas-image-note">Referência educacional em alta definição · não diagnóstica</span>
+          <span className="med-atlas-image-note">{zoom > 1 ? "Arraste para navegar · limites ativos" : "Referência educacional em alta definição · não diagnóstica"}</span>
           <div className="med-orientation"><span>D</span><strong>{view === "anterior" ? "ANTERIOR" : "POSTERIOR"}</strong><span>E</span></div>
         </div>
 
