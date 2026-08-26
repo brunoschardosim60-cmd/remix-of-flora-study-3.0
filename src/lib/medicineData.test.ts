@@ -195,13 +195,11 @@ describe("medicine content integrity", () => {
     }
   });
 
-  it("catalogs the posterior skeleton bone by bone instead of only as grouped regions", () => {
+  it("catalogs the adult posterior skeleton without counting group summaries twice", () => {
     const posteriorBoneIds = [
       ...Array.from({ length: 7 }, (_, index) => `vertebra-c${index + 1}`),
       ...Array.from({ length: 12 }, (_, index) => `vertebra-t${index + 1}`),
       ...Array.from({ length: 5 }, (_, index) => `vertebra-l${index + 1}`),
-      ...Array.from({ length: 5 }, (_, index) => `sacral-segment-s${index + 1}`),
-      ...Array.from({ length: 4 }, (_, index) => `coccygeal-segment-co${index + 1}`),
       ...Array.from({ length: 12 }, (_, index) => `rib-${index + 1}`),
       "scaphoid",
       "lunate",
@@ -218,6 +216,8 @@ describe("medicine content integrity", () => {
       "medial-cuneiform",
       "intermediate-cuneiform",
       "lateral-cuneiform",
+      "sacrum",
+      "coccyx",
     ];
 
     for (const id of posteriorBoneIds) {
@@ -233,6 +233,15 @@ describe("medicine content integrity", () => {
       expect(anatomyStructures.some((item) => item.id === `hand-phalanx-${digit}-proximal`), `hand phalanx ${digit}`).toBe(true);
       expect(anatomyStructures.some((item) => item.id === `foot-phalanx-${digit}-proximal`), `foot phalanx ${digit}`).toBe(true);
     }
+
+    const redundantGroupIds = [
+      "cervical-vertebrae", "thoracic-vertebrae", "lumbar-vertebrae", "ribs", "carpals",
+      "metacarpals", "hand-phalanges", "tarsals", "metatarsals", "foot-phalanges",
+      ...Array.from({ length: 5 }, (_, index) => `sacral-segment-s${index + 1}`),
+      ...Array.from({ length: 4 }, (_, index) => `coccygeal-segment-co${index + 1}`),
+    ];
+    for (const id of redundantGroupIds) expect(anatomyStructures.some((item) => item.id === id), id).toBe(false);
+    expect(anatomyStructures.filter((item) => item.layer === "skeletal")).toHaveLength(112);
   });
 
   it("keeps deep anatomical layers fully explorable from the posterior view", () => {

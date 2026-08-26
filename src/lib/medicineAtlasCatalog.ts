@@ -218,30 +218,6 @@ const individualVertebraRows: CatalogRow[] = [
       [`l${number}`, `vértebra l${number}`],
     ] as CatalogRow;
   }),
-  ...Array.from({ length: 5 }, (_, index) => {
-    const number = index + 1;
-    return [
-      `sacral-segment-s${number}`,
-      `Segmento sacral S${number}`,
-      "sacro",
-      "Compõe o sacro fusionado, participa da parede posterior da pelve e transmite carga à cintura pélvica.",
-      posterior(49.6 + (index % 2) * 0.8, 48.8 + index * 1.05),
-      `Vertebra sacralis ${number}`,
-      [`s${number}`, `segmento s${number}`],
-    ] as CatalogRow;
-  }),
-  ...Array.from({ length: 4 }, (_, index) => {
-    const number = index + 1;
-    return [
-      `coccygeal-segment-co${number}`,
-      `Segmento coccígeo Co${number}`,
-      "cóccix",
-      "Compõe a extremidade inferior da coluna e oferece inserção a ligamentos e músculos do assoalho pélvico.",
-      posterior(49.7 + (index % 2) * 0.6, 54.1 + index * 0.75),
-      `Vertebra coccygea ${number}`,
-      [`co${number}`, `segmento coccígeo ${number}`],
-    ] as CatalogRow;
-  }),
 ];
 
 const individualRibRows: CatalogRow[] = Array.from({ length: 12 }, (_, index) => {
@@ -342,19 +318,12 @@ const skeletalStructures = makeGroup("skeletal", "openstaxSkeleton", [
   ["zygomatic-bone", "Osso zigomático", "face lateral", "Forma a proeminência da bochecha e parte da órbita.", anterior(44, 9), "Os zygomaticum"],
   ["maxilla", "Maxila", "face média", "Sustenta os dentes superiores e participa das cavidades oral, nasal e orbital.", anterior(48, 10), "Maxilla"],
   ["mandible", "Mandíbula", "face inferior", "Sustenta os dentes inferiores e articula-se com o osso temporal.", anterior(50, 12), "Mandibula"],
-  ["cervical-vertebrae", "Vértebras cervicais", "coluna cervical", "Sustentam a cabeça, protegem a medula e permitem mobilidade cervical.", both(50, 15, 50, 15), "Vertebrae cervicales"],
-  ["thoracic-vertebrae", "Vértebras torácicas", "coluna torácica", "Articulam-se com as costelas e protegem a medula espinal.", posterior(50, 29), "Vertebrae thoracicae"],
-  ["lumbar-vertebrae", "Vértebras lombares", "coluna lombar", "Suportam grande parte da carga do tronco.", posterior(50, 42), "Vertebrae lumbales"],
   ["clavicle", "Clavícula", "cintura escapular anterior", "Mantém o membro superior afastado do tronco e transmite forças ao esqueleto axial.", anterior(43, 19), "Clavicula"],
   ["scapula", "Escápula", "dorso superior", "Oferece inserção muscular e participa da articulação do ombro.", posterior(42, 25), "Scapula"],
   ["sternum", "Esterno", "tórax anterior", "Protege estruturas mediastinais e articula-se com clavículas e cartilagens costais.", anterior(50, 27), "Sternum"],
-  ["ribs", "Costelas", "caixa torácica", "Protegem órgãos torácicos e participam da mecânica respiratória.", both(41, 28, 59, 28), "Costae"],
   ["humerus", "Úmero", "braço", "Forma o esqueleto do braço e participa das articulações do ombro e cotovelo.", both(31, 31, 69, 31), "Humerus"],
   ["radius", "Rádio", "antebraço lateral", "Participa das articulações do cotovelo e punho e permite pronação e supinação.", both(23, 44, 77, 44), "Radius"],
   ["ulna", "Ulna", "antebraço medial", "Estabiliza o antebraço e forma importante articulação com o úmero.", both(27, 44, 73, 44), "Ulna"],
-  ["carpals", "Ossos do carpo", "punho", "Formam o esqueleto proximal da mão e permitem mobilidade do punho.", both(20, 49, 80, 49), "Ossa carpi"],
-  ["metacarpals", "Metacarpos", "palma", "Formam o esqueleto da palma da mão.", both(18, 51, 82, 51), "Ossa metacarpi"],
-  ["hand-phalanges", "Falanges da mão", "dedos da mão", "Formam o esqueleto dos dedos e permitem preensão fina.", both(15, 53, 85, 53), "Phalanges manus"],
   ["sacrum", "Sacro", "pelve posterior", "Transmite carga da coluna para a cintura pélvica.", posterior(50, 50), "Os sacrum"],
   ["coccyx", "Cóccix", "extremidade inferior da coluna", "Serve de inserção para ligamentos e músculos do assoalho pélvico.", posterior(50, 54), "Os coccygis"],
   ["hip-bone", "Osso do quadril", "cintura pélvica", "Transmite peso aos membros inferiores e protege vísceras pélvicas.", both(42, 50, 58, 50), "Os coxae", ["osso coxal"]],
@@ -366,9 +335,6 @@ const skeletalStructures = makeGroup("skeletal", "openstaxSkeleton", [
   ["fibula", "Fíbula", "perna lateral", "Estabiliza o tornozelo e oferece inserções musculares.", both(40, 84, 60, 84), "Fibula"],
   ["talus", "Tálus", "tornozelo", "Transmite carga entre a perna e o pé.", both(45, 93, 55, 93), "Talus"],
   ["calcaneus", "Calcâneo", "calcanhar", "Forma o calcanhar e recebe o tendão calcâneo.", both(44, 95, 56, 95), "Calcaneus"],
-  ["tarsals", "Ossos do tarso", "retropé e mediopé", "Formam a porção proximal do esqueleto do pé.", both(43, 94, 57, 94), "Ossa tarsi"],
-  ["metatarsals", "Metatarsos", "antepé", "Formam o esqueleto intermediário do pé e participam dos arcos plantares.", both(42, 96, 58, 96), "Ossa metatarsi"],
-  ["foot-phalanges", "Falanges do pé", "dedos do pé", "Formam o esqueleto dos dedos e auxiliam equilíbrio e propulsão.", both(40, 98, 60, 98), "Phalanges pedis"],
   ...individualVertebraRows,
   ...individualRibRows,
   ...detailedHandBoneRows,

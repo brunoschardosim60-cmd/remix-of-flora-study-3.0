@@ -138,7 +138,7 @@ function navGroupForSection(section: MedicineSection) {
 const levelOrder: MedicineLevel[] = ["Iniciante", "Ciclo básico", "Ciclo clínico", "Internato", "Residência"];
 const beginnerPracticeIds = new Set([
   "heart", "lungs", "brain", "liver", "kidneys", "skin", "deltoid", "femur", "aorta", "scalp",
-  "frontal-region", "oral-region", "cervical-vertebrae", "clavicle", "sternum", "ribs", "humerus",
+  "frontal-region", "oral-region", "vertebra-c1", "clavicle", "sternum", "rib-1", "humerus",
   "radius", "ulna", "patella", "tibia", "fibula", "pectoralis-major", "biceps-brachii", "triceps-brachii",
   "rectus-abdominis", "gluteus-maximus", "gastrocnemius", "trachea", "stomach", "pancreas", "spleen",
   "urinary-bladder", "thyroid-gland", "spinal-cord",
