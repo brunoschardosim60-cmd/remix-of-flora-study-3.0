@@ -236,6 +236,14 @@ describe("medicine content integrity", () => {
     }
   });
 
+  it("keeps the anterior forearm markers attached to the current skeletal artwork", () => {
+    const radius = anatomyStructures.find((structure) => structure.id === "radius")!;
+    const ulna = anatomyStructures.find((structure) => structure.id === "ulna")!;
+
+    expect(anatomyPositionFor(radius, "anterior")).toEqual({ x: 19, y: 44 });
+    expect(anatomyPositionFor(ulna, "anterior")).toEqual({ x: 22, y: 44 });
+  });
+
   it("catalogs the adult posterior skeleton without counting group summaries twice", () => {
     const posteriorBoneIds = [
       ...Array.from({ length: 7 }, (_, index) => `vertebra-c${index + 1}`),
