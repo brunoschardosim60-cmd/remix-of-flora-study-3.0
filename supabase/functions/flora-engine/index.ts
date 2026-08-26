@@ -15,6 +15,7 @@ import {
 import { FloraPersonality, ExplanationStyle, getSystemPromptWithPersona } from "../_shared/flora_persona.ts";
 import { checkQuota, logAIUsage, quotaExceededResponse } from "../_shared/usage.ts";
 import { cacheLookup as sharedCacheLookup, cacheStore as sharedCacheStore, buildCacheKey as sharedBuildCacheKey, normCacheStr as sharedNormCacheStr } from "../_shared/cache.ts";
+import { buildAnamnesisMatcherPrompt, composeServerAnchoredReply, sanitizeAnamnesisPayload } from "../_shared/anamnesis_patient.ts";
 
 // ─── Cache em memória do contexto do aluno ──────────────────────────────────
 // Várias ações da Flora (chat → quiz → flashcards → lesson) carregam o mesmo
@@ -74,6 +75,7 @@ function sanitizeQuizQuestions(questions: any[]): any[] {
 // "chat" cobre `recommend` (chat com a Flora).
 const QUOTA_ACTION_MAP: Record<string, string> = {
   recommend: "chat",
+  anamnesis_patient: "chat",
   decide_next_topic: "decide_next_topic",
   study_now: "decide_next_topic",
   study_now_followup: "chat",
@@ -299,6 +301,50 @@ serve(async (req) => {
       }
     }
     // execute_action tem subtipos (QUIZ, FLASHCARDS) que também consomem IA — checa lá embaixo.
+
+    // ─── ANAMNESE DINÂMICA, MAS CLINICAMENTE ANCORADA ─────────────────────
+    // O modelo só classifica a intenção da pergunta. A resposta do paciente é
+    // composta no servidor com respostas literais do caso, impedindo invenção.
+    if (action === "anamnesis_patient") {
+      const clinicalCase = sanitizeAnamnesisPayload(data?.case);
+      const studentMessage = String(data?.studentMessage ?? "").trim().slice(0, 1200);
+      const crisisActive = Boolean(data?.crisisActive);
+      if (!clinicalCase || studentMessage.length < 2) {
+        return jsonResponse({ error: "Caso ou mensagem inválidos." }, 400);
+      }
+
+      const recentConversation = Array.isArray(data?.conversation)
+        ? data.conversation.slice(-8).map((turn: unknown) => {
+          const safeTurn = turn && typeof turn === "object" ? turn as Record<string, unknown> : {};
+          return {
+            role: safeTurn.role === "patient" ? "patient" : "student",
+            text: String(safeTurn.text ?? "").slice(0, 800),
+          };
+        })
+        : [];
+      const opts: CallOptions = {
+        messages: [
+          { role: "system", content: buildAnamnesisMatcherPrompt(clinicalCase) },
+          { role: "user", content: `Conversa recente: ${JSON.stringify(recentConversation)}\nPergunta atual do aluno: ${studentMessage}` },
+        ],
+        maxTokens: 120,
+        temperature: 0,
+        jsonMode: true,
+      };
+
+      const raw = await runTaskChain(opts, "lite", "flora:anamnesis_patient", { supabase, userId, actionType: "chat" });
+      const parsed = parseAIJSON(raw) as { matchedQuestionIds?: unknown };
+      const allowedIds = new Set(clinicalCase.questions.map((question) => question.id));
+      const matchedQuestionIds = Array.isArray(parsed?.matchedQuestionIds)
+        ? [...new Set(parsed.matchedQuestionIds.map(String).filter((id: string) => allowedIds.has(id)))].slice(0, 2)
+        : [];
+
+      return jsonResponse({
+        reply: composeServerAnchoredReply(clinicalCase, matchedQuestionIds, crisisActive),
+        coveredQuestionIds: matchedQuestionIds,
+        anchored: true,
+      });
+    }
 
     // ─── Context do aluno ──────────────────────────────────────────────────
     async function getStudentContext(uid: string) {

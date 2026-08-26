@@ -14,11 +14,32 @@ describe("anamnesis simulation", () => {
       expect(new Set(clinicalCase.decisions.map((decision) => decision.value)).size, `${clinicalCase.id} decision values`).toBe(3);
       expect(clinicalCase.keyFindings.length, `${clinicalCase.id} findings`).toBeGreaterThanOrEqual(5);
       expect(clinicalCase.differentials.length, `${clinicalCase.id} differentials`).toBeGreaterThanOrEqual(5);
+      expect(["neutral", "pain", "distressed", "unconscious", "stabilized"]).toContain(clinicalCase.initialState);
 
       for (const question of clinicalCase.questions) {
         expect(question.text.length, question.id).toBeGreaterThan(20);
         expect(question.answer.length, question.id).toBeGreaterThan(20);
         expect(question.feedback.length, question.id).toBeGreaterThan(30);
+      }
+    }
+  });
+
+  it("validates deterministic crisis triggers and safe responses", () => {
+    expect(anamnesisCases.filter((item) => item.crisisTrigger)).toHaveLength(4);
+    for (const clinicalCase of anamnesisCases) {
+      const trigger = clinicalCase.crisisTrigger!;
+      expect(trigger.afterTurns).toBeGreaterThanOrEqual(3);
+      expect(trigger.narrative.length).toBeGreaterThan(30);
+      expect(trigger.patientResponse.length).toBeGreaterThan(15);
+      const questionIds = new Set(clinicalCase.questions.map((item) => item.id));
+      const decisionIds = new Set(clinicalCase.decisions.map((item) => item.id));
+      expect(trigger.requiredQuestionIds.every((id) => questionIds.has(id))).toBe(true);
+      expect(trigger.safeDecisionIds.every((id) => decisionIds.has(id))).toBe(true);
+      expect(trigger.safeDecisionIds.every((id) => clinicalCase.decisions.find((item) => item.id === id)?.value !== "unsafe")).toBe(true);
+      if (trigger.crisisVitals) {
+        expect(trigger.crisisVitals.heartRate).toBeGreaterThan(0);
+        expect(trigger.crisisVitals.oxygenSaturation).toBeGreaterThan(0);
+        expect(trigger.crisisVitals.oxygenSaturation).toBeLessThanOrEqual(100);
       }
     }
   });

@@ -8,6 +8,26 @@ export type AnamnesisCategory =
 
 export type QuestionValue = "critical" | "high" | "useful" | "poor";
 export type DecisionValue = "best" | "reasonable" | "unsafe";
+export type PatientVisualState = "neutral" | "pain" | "distressed" | "unconscious" | "stabilized";
+
+export interface AnamnesisVitalSigns {
+  heartRate: number;
+  bloodPressure: string;
+  respiratoryRate: number;
+  oxygenSaturation: number;
+  temperatureC?: number;
+}
+
+export interface AnamnesisCrisisTrigger {
+  id: string;
+  afterTurns: number;
+  requiredQuestionIds: string[];
+  state: Exclude<PatientVisualState, "neutral" | "stabilized">;
+  narrative: string;
+  patientResponse: string;
+  crisisVitals?: AnamnesisVitalSigns;
+  safeDecisionIds: string[];
+}
 
 export interface AnamnesisQuestion {
   id: string;
@@ -43,6 +63,9 @@ export interface AnamnesisCase {
   arrival: string;
   openingStatement: string;
   demeanor: string;
+  initialState: PatientVisualState;
+  baselineVitals?: AnamnesisVitalSigns;
+  crisisTrigger?: AnamnesisCrisisTrigger;
   learningGoals: string[];
   questions: AnamnesisQuestion[];
   decisions: AnamnesisDecision[];
@@ -69,6 +92,16 @@ export const anamnesisSources = [
     url: "https://www.cdc.gov/stroke/signs-symptoms/index.html",
   },
   {
+    id: "aha-acs",
+    title: "Síndrome coronariana aguda — American Heart Association",
+    url: "https://www.heart.org/en/health-topics/heart-attack/about-heart-attacks/acute-coronary-syndrome",
+  },
+  {
+    id: "acog-ectopic",
+    title: "Gestação ectópica — American College of Obstetricians and Gynecologists",
+    url: "https://www.acog.org/womens-health/faqs/ectopic-pregnancy",
+  },
+  {
     id: "who-mhgap",
     title: "Guia de intervenção mhGAP — OMS",
     url: "https://iris.who.int/bitstream/handle/10665/250239/9789241549790-eng.pdf",
@@ -87,6 +120,18 @@ export const anamnesisCases: AnamnesisCase[] = [
     arrival: "Chegou acompanhado, está apreensivo e leva a mão ao centro do tórax.",
     openingStatement: "Doutor, começou uma pressão forte aqui no peito e não está passando. Achei que fosse nervoso, mas fiquei com medo.",
     demeanor: "Fala em frases curtas, transpira e parece desconfortável.",
+    initialState: "pain",
+    baselineVitals: { heartRate: 106, bloodPressure: "152/94", respiratoryRate: 23, oxygenSaturation: 95, temperatureC: 36.6 },
+    crisisTrigger: {
+      id: "cp-progressive-distress",
+      afterTurns: 4,
+      requiredQuestionIds: ["cp-associated", "cp-timing"],
+      state: "distressed",
+      narrative: "Durante a entrevista, a pressão torácica fica mais intensa, o paciente demonstra maior desconforto e passa a falar com mais dificuldade.",
+      patientResponse: "A pressão está piorando... estou mais sem ar e muito suado.",
+      crisisVitals: { heartRate: 124, bloodPressure: "96/62", respiratoryRate: 29, oxygenSaturation: 91, temperatureC: 36.6 },
+      safeDecisionIds: ["cp-best", "cp-reasonable"],
+    },
     learningGoals: ["Começar com pergunta aberta", "Caracterizar a queixa", "Reconhecer sinais de alarme", "Evitar encerramento prematuro"],
     questions: [
       { id: "cp-open", category: "Abertura", text: "Conte com suas palavras o que aconteceu desde o começo.", answer: "Eu estava dirigindo quando veio uma pressão bem no meio do peito. Parei o carro, mas não melhorou. Parece que aperta e vai para o braço esquerdo.", value: "critical", feedback: "Boa abertura: permite conhecer cronologia, qualidade, localização e irradiação sem induzir a resposta.", redFlag: "Pressão retroesternal persistente com irradiação" },
@@ -108,7 +153,7 @@ export const anamnesisCases: AnamnesisCase[] = [
     referenceSummary: "Pessoa de 54 anos com pressão retroesternal persistente, irradiação para braço, dispneia, náusea e sudorese, além de fatores cardiovasculares. O objetivo educacional é reconhecer urgência e evitar atribuição precoce à ansiedade.",
     keyFindings: ["Pressão retroesternal", "Irradiação para braço esquerdo", "Sudorese e náusea", "Sintoma persistente", "Fatores cardiovasculares"],
     differentials: ["Síndrome coronariana aguda", "Síndrome aórtica", "Embolia pulmonar", "Causa gastrointestinal", "Dor musculoesquelética"],
-    sourceIds: ["openstax-interview", "openstax-history"],
+    sourceIds: ["openstax-interview", "openstax-history", "aha-acs"],
   },
   {
     id: "sudden-neurologic-deficit",
@@ -121,6 +166,18 @@ export const anamnesisCases: AnamnesisCase[] = [
     arrival: "A filha responde parte das perguntas; a paciente compreende, mas tem dificuldade para articular palavras.",
     openingStatement: "Eu... estava... café... minha mão não...",
     demeanor: "Mantém-se acordada, frustrada com a fala e movimenta menos o braço direito.",
+    initialState: "distressed",
+    baselineVitals: { heartRate: 88, bloodPressure: "178/96", respiratoryRate: 18, oxygenSaturation: 97, temperatureC: 36.7 },
+    crisisTrigger: {
+      id: "neuro-communication-decline",
+      afterTurns: 4,
+      requiredQuestionIds: ["neuro-witness", "neuro-last-well", "neuro-features"],
+      state: "distressed",
+      narrative: "A dificuldade de comunicação se acentua durante a entrevista e a filha percebe que a paciente responde menos.",
+      patientResponse: "Eu... não... consigo...",
+      crisisVitals: { heartRate: 94, bloodPressure: "184/100", respiratoryRate: 20, oxygenSaturation: 96, temperatureC: 36.7 },
+      safeDecisionIds: ["neuro-best", "neuro-reasonable"],
+    },
     learningGoals: ["Identificar a fonte da história", "Definir o último momento sem sintomas", "Pesquisar anticoagulantes", "Priorizar sinais neurológicos súbitos"],
     questions: [
       { id: "neuro-witness", category: "Abertura", text: "Peço autorização para que sua filha ajude: o que vocês observaram?", answer: "A filha diz: ela estava normal quando acordou. Durante o café, a xícara caiu da mão direita e a fala ficou enrolada de repente.", value: "critical", feedback: "Reconhece a limitação de comunicação, identifica fonte secundária e preserva a participação da paciente.", redFlag: "Déficit focal súbito observado por familiar" },
@@ -156,6 +213,18 @@ export const anamnesisCases: AnamnesisCase[] = [
     arrival: "Está pálida, ansiosa e pede que o acompanhante aguarde fora durante parte da conversa.",
     openingStatement: "Estou com uma dor forte de um lado da barriga e comecei a sangrar. Minha menstruação também está atrasada.",
     demeanor: "Responde com clareza, mas teme estar grávida e demonstra preocupação com confidencialidade.",
+    initialState: "pain",
+    baselineVitals: { heartRate: 108, bloodPressure: "104/68", respiratoryRate: 22, oxygenSaturation: 98, temperatureC: 36.5 },
+    crisisTrigger: {
+      id: "gyn-presyncope",
+      afterTurns: 4,
+      requiredQuestionIds: ["gyn-pain", "gyn-bleeding", "gyn-pregnancy"],
+      state: "distressed",
+      narrative: "Durante a entrevista, a paciente fica mais pálida, relata tontura intensa e precisa se apoiar para não cair.",
+      patientResponse: "Estou ficando muito tonta... parece que vou desmaiar.",
+      crisisVitals: { heartRate: 126, bloodPressure: "86/54", respiratoryRate: 26, oxygenSaturation: 96, temperatureC: 36.5 },
+      safeDecisionIds: ["gyn-best", "gyn-reasonable"],
+    },
     learningGoals: ["Assegurar privacidade", "Perguntar sobre possibilidade de gestação sem julgamento", "Reconhecer sintomas de instabilidade", "Integrar história ginecológica"],
     questions: [
       { id: "gyn-privacy", category: "Abertura", text: "Podemos conversar em ambiente privado? Há algo que você prefira discutir sem acompanhante?", answer: "Sim, obrigada. Eu não contei ao meu parceiro que minha menstruação atrasou e quero falar disso sozinha.", value: "high", feedback: "Privacidade e autonomia favorecem uma história reprodutiva segura e honesta." },
@@ -177,7 +246,7 @@ export const anamnesisCases: AnamnesisCase[] = [
     referenceSummary: "Pessoa de 29 anos com teste de gestação positivo, dor pélvica unilateral progressiva, sangramento, dor no ombro e pré-síncope. A entrevista deve reconhecer urgência, preservar privacidade e evitar julgamento.",
     keyFindings: ["Gestação possível", "Dor pélvica unilateral", "Sangramento", "Pré-síncope", "Dor no ombro"],
     differentials: ["Gestação ectópica", "Perda gestacional", "Cisto ovariano complicado", "Torção anexial", "Causa gastrointestinal ou urinária"],
-    sourceIds: ["openstax-interview", "openstax-history"],
+    sourceIds: ["openstax-interview", "openstax-history", "acog-ectopic"],
   },
   {
     id: "self-harm-risk",
@@ -191,6 +260,16 @@ export const anamnesisCases: AnamnesisCase[] = [
     arrival: "Veio após faltar às aulas. Mantém pouco contato visual e fala baixo.",
     openingStatement: "Eu não estou conseguindo fazer nada. Parece que só atrapalho todo mundo e não vejo mais saída.",
     demeanor: "Apresenta fala lenta, desesperança e hesita antes de responder sobre segurança.",
+    initialState: "distressed",
+    crisisTrigger: {
+      id: "mh-withdrawal",
+      afterTurns: 5,
+      requiredQuestionIds: ["mh-direct", "mh-plan", "mh-means"],
+      state: "distressed",
+      narrative: "Sem uma abordagem direta de segurança, o paciente se retrai, reduz o contato e diz que prefere encerrar a conversa.",
+      patientResponse: "Acho que não adianta continuar falando... eu quero ir embora.",
+      safeDecisionIds: ["mh-best", "mh-reasonable"],
+    },
     learningGoals: ["Usar comunicação terapêutica", "Perguntar diretamente sobre suicídio", "Avaliar plano e acesso a meios", "Identificar suporte e proteção"],
     questions: [
       { id: "mh-open", category: "Abertura", text: "Quero entender melhor. Como têm sido seus dias e o que significa não ver saída?", answer: "Há semanas quase não saio da cama. Parei de ir às aulas, não sinto prazer em nada e acho que minha família estaria melhor sem mim.", value: "critical", feedback: "Abertura empática explora sofrimento e revela desesperança sem confronto.", redFlag: "Desesperança e percepção de ser um peso" },
