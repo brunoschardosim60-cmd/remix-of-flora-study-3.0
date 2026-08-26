@@ -136,7 +136,10 @@ export function Anatomy3DStudio({ level, initialStructureId }: Anatomy3DStudioPr
     return levelVisibleStructures.filter((item) => normalize(`${item.name} ${item.latin ?? ""} ${item.region} ${item.system} ${item.function}`).includes(normalized));
   }, [guidedStructures, level, levelVisibleStructures, query, system]);
   const selected = anatomy3DStructures.find((item) => item.id === selectedId) ?? modelSelection;
-  const selectedIsVisible = Boolean(selected && levelVisibleStructures.some((item) => item.id === selected.id));
+  const selectedIsVisible = Boolean(selected && (
+    modelSelection?.id === selected.id
+    || levelVisibleStructures.some((item) => item.id === selected.id || normalize(item.name) === normalize(selected.name))
+  ));
   const baseCameraFocus = focusSelected && selected && selectedIsVisible ? selected.focus : regionMeta.focus;
   const baseCameraDistance = focusSelected && selected && selectedIsVisible ? selected.focusDistance : regionMeta.distance;
   const cameraFocus = baseCameraFocus;

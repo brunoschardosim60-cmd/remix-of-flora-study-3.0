@@ -2095,6 +2095,22 @@
   .med-template-grid-rich { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
+/* Com a navegação lateral aberta, o estúdio de Sistemas perde cerca de 236 px.
+   A lista vira uma faixa horizontal antes de começar a comprimir o conteúdo. */
+@media (max-width: 1400px) {
+  .med-systems-workspace { grid-template-columns: 1fr; }
+  .med-systems-workspace > .med-system-list {
+    position: static;
+    max-height: none;
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: thin;
+  }
+  .med-system-list-heading { display: none; }
+  .med-systems-workspace .med-system-list button { width: 210px; min-width: 210px; }
+}
+
 @media (max-width: 680px) {
   .med-template-grid-rich { grid-template-columns: 1fr; }
   .med-template-preview { height: 210px; }
@@ -2514,11 +2530,77 @@
 .med-source-status.sync-error { border-color: rgba(193, 111, 86, .35); background: #fff4ef; color: #a1503c; }
 .med-hero-actions { flex-wrap: wrap; }
 
-/* Escala mínima de leitura para os módulos médicos. */
-.med-app p { font-size: max(13px, 1em) !important; }
-.med-app :where(button, input, select, textarea) { font-size: max(12px, 1em) !important; }
-.med-app small { font-size: max(10px, 1em) !important; }
-.med-app :where(.med-eyebrow, .med-kicker, [class*="-eyebrow"], [class*="-kicker"], dt) { font-size: max(10px, 1em) !important; }
+.med-send-notebook {
+  display: flex;
+  height: 40px;
+  align-items: center;
+  gap: 7px;
+  padding: 0 11px;
+  border: 1px solid var(--med-line);
+  border-radius: 12px;
+  background: rgba(255,255,255,.82);
+  color: #315f52;
+  font-weight: 750;
+  white-space: nowrap;
+}
+.med-send-notebook:hover { border-color: rgba(65,111,98,.3); background: #edf5f1; }
+.med-send-notebook svg { width: 17px; flex: 0 0 17px; }
+
+/* Progresso e revisão compartilham a mesma linguagem de cartões. */
+.med-competency-overview { margin-top: 18px; padding: 22px; border: 1px solid var(--med-line); border-radius: 22px; background: #fff; }
+.med-competency-overview > header { display: flex; align-items: end; justify-content: space-between; gap: 16px; }
+.med-competency-overview h2 { margin-top: 5px; font-family: Georgia,serif; font-size: 25px; font-weight: 500; }
+.med-competency-overview > header button { display: flex; align-items: center; gap: 6px; color: #477668; font-weight: 800; }
+.med-competency-overview > header svg { width: 14px; }
+.med-competency-overview > div { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 9px; margin-top: 18px; }
+.med-competency-overview article { min-width: 0; padding: 13px; border: 1px solid rgba(55,91,80,.1); border-radius: 14px; background: #f7faf8; }
+.med-competency-overview article > span { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.med-competency-overview article strong { overflow: hidden; color: #3c5f55; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.med-competency-overview article b { color: #4d7a6d; font-size: 10px; }
+.med-competency-overview article > div,.med-review-summary article > div { height: 5px; overflow: hidden; margin-top: 9px; border-radius: 99px; background: #e2ebe7; }
+.med-competency-overview article i,.med-review-summary article i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg,#77a495,#3f7667); }
+.med-competency-overview article small { display: block; margin-top: 7px; color: #7a8d86; }
+
+.med-review-center { max-width: 1180px; }
+.med-review-summary { display: grid; grid-template-columns: 190px repeat(3,minmax(0,1fr)); gap: 9px; }
+.med-review-summary > div,.med-review-summary > article { min-width: 0; padding: 16px; border: 1px solid var(--med-line); border-radius: 16px; background: #fff; }
+.med-review-summary > div { display: flex; align-items: center; gap: 13px; background: linear-gradient(135deg,#315f52,#4e8373); color: #fff; }
+.med-review-summary > div > svg { width: 25px; }
+.med-review-summary > div span { display: flex; flex-direction: column; }
+.med-review-summary > div strong { font-family: Georgia,serif; font-size: 27px; font-weight: 500; line-height: 1; }
+.med-review-summary > div small { margin-top: 5px; color: #d5e6e0; }
+.med-review-summary article span { display: block; overflow: hidden; color: #647a73; text-overflow: ellipsis; white-space: nowrap; }
+.med-review-summary article strong { display: block; margin-top: 7px; color: #315f52; font-family: Georgia,serif; font-size: 20px; font-weight: 500; }
+.med-review-empty { display: grid; min-height: 330px; margin-top: 15px; place-items: center; align-content: center; gap: 9px; padding: 28px; border: 1px dashed rgba(61,105,92,.24); border-radius: 22px; background: rgba(255,255,255,.62); text-align: center; }
+.med-review-empty > svg { width: 34px; color: #5c887a; }
+.med-review-empty h2 { font-family: Georgia,serif; font-size: 27px; font-weight: 500; }
+.med-review-empty p { max-width: 520px; color: #687d76; }
+.med-review-empty button { display: flex; min-height: 40px; align-items: center; gap: 7px; margin-top: 8px; padding: 0 14px; border-radius: 11px; background: #416f62; color: #fff; font-weight: 800; }
+.med-review-empty button svg { width: 14px; }
+.med-review-groups { display: grid; gap: 12px; margin-top: 15px; }
+.med-review-groups > section { overflow: hidden; border: 1px solid var(--med-line); border-radius: 19px; background: #fff; }
+.med-review-groups > section > header { display: flex; min-height: 58px; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 15px; border-bottom: 1px solid var(--med-line); background: #f6f9f7; }
+.med-review-groups > section > header > div { display: flex; align-items: center; gap: 9px; }
+.med-review-groups > section > header span { color: #315f52; font-weight: 850; }
+.med-review-groups > section > header strong { display: grid; min-width: 23px; height: 23px; place-items: center; border-radius: 99px; background: #e4eeea; color: #477668; font-size: 9px; }
+.med-review-groups > section > header button { display: flex; align-items: center; gap: 6px; color: #4a7468; font-weight: 800; }
+.med-review-groups > section > header svg { width: 13px; }
+.med-review-groups > section > div { display: grid; gap: 1px; background: #e9efec; }
+.med-review-groups article { display: grid; grid-template-columns: 34px minmax(0,1fr) auto; align-items: center; gap: 11px; padding: 13px 15px; background: #fff; }
+.med-review-groups article > span { display: grid; width: 30px; height: 30px; place-items: center; border-radius: 9px; background: #faece8; color: #b76155; }
+.med-review-groups article > span svg { width: 14px; }
+.med-review-groups article > div { display: flex; min-width: 0; flex-direction: column; }
+.med-review-groups article > div strong { overflow: hidden; color: #36584f; text-overflow: ellipsis; white-space: nowrap; }
+.med-review-groups article > div small { margin-top: 3px; color: #7a8d87; }
+.med-review-groups article > button { display: flex; align-items: center; gap: 5px; color: #477668; font-weight: 800; }
+.med-review-groups article > button svg { width: 13px; }
+
+/* Escala legível sem fazer cada elemento herdar os 16 px do contêiner.
+   O antigo max(..., 1em) expandia cartões e sobrepunha controles. */
+.med-app p { font-size: clamp(11px, .84vw, 13px) !important; }
+.med-app :where(button, input, select, textarea) { font-size: clamp(10px, .76vw, 12px) !important; }
+.med-app small { font-size: clamp(8px, .66vw, 10px) !important; }
+.med-app :where(.med-eyebrow, .med-kicker, [class*="-eyebrow"], [class*="-kicker"], dt) { font-size: clamp(8px, .66vw, 10px) !important; }
 
 @media (max-width: 820px) {
   .med-nav-backdrop {
@@ -2536,6 +2618,25 @@
   .med-3d-level-scope, .med-notebook-context { align-items: flex-start; flex-direction: column; }
   .med-surgery-linked-instrument { align-items: flex-start; flex-direction: column; }
   .med-3d-level-scope > b { width: 100%; }
+}
+
+@media (max-width: 1180px) {
+  .med-header-context { display: none; }
+  .med-review-summary { grid-template-columns: repeat(3,minmax(0,1fr)); }
+  .med-review-summary > div { grid-column: 1 / -1; }
+  .med-competency-overview > div { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+
+@media (max-width: 920px) {
+  .med-send-notebook { width: 40px; justify-content: center; padding: 0; }
+  .med-send-notebook span { display: none; }
+}
+
+@media (max-width: 620px) {
+  .med-review-summary,.med-competency-overview > div { grid-template-columns: 1fr; }
+  .med-review-summary > div { grid-column: auto; }
+  .med-review-groups article { grid-template-columns: 30px minmax(0,1fr); }
+  .med-review-groups article > button { grid-column: 2; justify-self: start; }
 }
 
 @media (max-width: 360px) {
