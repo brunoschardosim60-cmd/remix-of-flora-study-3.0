@@ -19,6 +19,7 @@ import {
   type MedicalPathology,
   type PathologyHotspot,
 } from "@/lib/medicalPathology";
+import { preloadMedicalImages } from "@/lib/medicineMedia";
 
 interface MedicalPathologyLabProps {
   onOpenNotebook: () => void;
@@ -50,7 +51,13 @@ export function MedicalPathologyLab({
     setTab("changes");
     setHotspotId(pathology.hotspots[0].id);
     setAnswer(null);
-  }, [pathology.id]);
+  }, [pathology]);
+
+  useEffect(() => {
+    const pathologyIndex = medicalPathologies.findIndex((item) => item.id === pathology.id);
+    const nextPathology = medicalPathologies[(pathologyIndex + 1) % medicalPathologies.length];
+    void preloadMedicalImages([pathology.image, nextPathology.image], "high");
+  }, [pathology]);
 
   const copyTransparentImage = async () => {
     try {

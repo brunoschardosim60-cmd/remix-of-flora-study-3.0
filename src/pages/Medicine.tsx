@@ -16,6 +16,7 @@ import {
 } from "@/lib/medicineData";
 import { medicalNotebookTemplates, type MedicalNotebookTemplate } from "@/lib/medicalNotebookTemplates";
 import { prepareMedicalNotebookHtml } from "@/lib/notebookMedicalAssets";
+import { preloadMedicalImages } from "@/lib/medicineMedia";
 import {
   emptyMedicineLearningState,
   medicineCompetencyProgress,
@@ -88,6 +89,32 @@ const SECTION_PATHS: Record<MedicineSection, string> = {
 };
 
 const SECTION_FROM_PATH = Object.fromEntries(Object.entries(SECTION_PATHS).map(([section, path]) => [path, section])) as Record<string, MedicineSection>;
+
+const SECTION_IMAGE_WARMUPS: Partial<Record<MedicineSection, string[]>> = {
+  home: ["/medicine/medicine-hero-v2.png"],
+  atlas: ["/medicine/atlas/organs-anterior-v2.png", "/medicine/atlas/organs-female-anterior-v3.png"],
+  atlas3d: ["/medicine/medicine-hero-v2.png"],
+  instruments: ["/medicine/instruments/stethoscope-v1.png", "/medicine/instruments/sphygmomanometer-v1.png"],
+  surgery: ["/medicine/surgery/acute-abdomen-surface-v1.png", "/medicine/surgery/acute-abdomen-anatomy-v1.png"],
+  systems: ["/medicine/systems/cardiovascular-v1.png", "/medicine/systems/respiratory-v1.png"],
+  pathology: ["/medicine/pathology/lungs-emphysema-comparison-v1.png"],
+  development: ["/medicine/development/week-1-v1.png", "/medicine/development/weeks-2-3-v1.png"],
+  practice: ["/medicine/atlas/organs-anterior-v2.png"],
+  clinic: ["/medicine/clinical/meningococcal-purpura-v1.png", "/medicine/clinical/open-tibia-fracture-v1.png"],
+  notebook: ["/medicine/atlas/organs-anterior-v2.png", "/medicine/systems/cardiovascular-v1.png"],
+};
+
+function warmMedicineSection(section: MedicineSection) {
+  const images = preloadMedicalImages(SECTION_IMAGE_WARMUPS[section] ?? [], "high");
+  const module = section === "atlas3d" ? import("@/components/medicine/Anatomy3DStudio")
+    : section === "instruments" ? import("@/components/medicine/InstrumentsStudio")
+      : section === "surgery" ? import("@/components/medicine/SurgerySimulator")
+        : section === "pathology" ? import("@/components/medicine/MedicalPathologyLab")
+          : section === "semiology" ? import("@/components/medicine/SemiologyAcademy")
+            : section === "anamnesis" ? import("@/components/medicine/AnamnesisSimulator")
+              : Promise.resolve();
+  return Promise.allSettled([images, module]);
+}
 
 const NAV_GROUPS: Array<{ id: string; label: string; Icon: typeof Activity; defaultSection: MedicineSection; items: MedicineSection[] }> = [
   { id: "overview", label: "Visão geral", Icon: Activity, defaultSection: "home", items: ["home"] },
@@ -198,6 +225,10 @@ export default function Medicine() {
     setSection(next);
     setOpenNavGroup(navGroupForSection(next));
   }, [location.pathname]);
+
+  useEffect(() => {
+    void warmMedicineSection(section);
+  }, [section]);
 
   useEffect(() => {
     if (!mobileNav) return;
@@ -314,6 +345,7 @@ export default function Medicine() {
   };
 
   const go = (next: MedicineSection) => {
+    void warmMedicineSection(next);
     if (next === "practice" && section !== "practice") {
       const randomStructure = randomPracticeStructure(practicePool, practiceStructure.id);
       if (randomStructure) setPracticeStructure(randomStructure);
@@ -365,7 +397,7 @@ export default function Medicine() {
         <div className="med-header-context"><span>Ambiente educacional</span><strong>{NAV.find((item) => item.id === section)?.label}</strong></div>
         <div className="med-header-actions">
           <button className={`med-focus-toggle ${focusMode ? "active" : ""}`} onClick={() => setFocusMode((value) => !value)} aria-label={focusMode ? "Sair do modo foco" : "Entrar no modo foco"}><PanelLeftClose /></button>
-          {section !== "notebook" && <button className="med-send-notebook" onClick={() => navigate("/notebooks")} title="Abrir meus cadernos"><NotebookPen /><span>Abrir Caderno</span></button>}
+          {section !== "notebook" && <button className="med-send-notebook" onPointerEnter={() => void warmMedicineSection("notebook")} onFocus={() => void warmMedicineSection("notebook")} onClick={() => navigate("/notebooks")} title="Abrir meus cadernos"><NotebookPen /><span>Abrir Caderno</span></button>}
           <div className="med-level-chip" title={levelProfile.focus}><span>Nível</span><select aria-label="Nível de estudo" value={level} onChange={(event) => updateLevel(event.target.value as MedicineLevel)}>{levelOrder.map((item) => <option key={item}>{item}</option>)}</select></div>
           <button className={`med-source-status ${cloudSyncError ? "sync-error" : ""}`} onClick={() => go("sources")} title={cloudSyncError ? "O progresso continua salvo neste dispositivo e será reenviado na próxima alteração." : undefined}><ShieldCheck /> {cloudSyncError ? "Sincronização pendente" : cloudReady ? "Progresso protegido" : "Conteúdo rastreável"}</button>
           <button className="med-menu-button" onClick={() => setMobileNav((value) => !value)} aria-label={mobileNav ? "Fechar navegação" : "Abrir navegação"} aria-expanded={mobileNav} aria-controls="medicine-navigation">{mobileNav ? <X /> : <Menu />}</button>
@@ -381,7 +413,7 @@ export default function Medicine() {
               const active = group.items.includes(section);
               const expanded = openNavGroup === group.id && group.items.length > 1;
               return <div className={`med-nav-group ${active ? "active" : ""}`} key={group.id}>
-                <button className="med-nav-hub" onClick={() => {
+                <button className="med-nav-hub" onPointerEnter={() => void warmMedicineSection(group.defaultSection)} onFocus={() => void warmMedicineSection(group.defaultSection)} onClick={() => {
                   if (group.items.length === 1) { go(group.defaultSection); return; }
                   if (!active) go(group.defaultSection);
                   else setOpenNavGroup((current) => current === group.id ? "" : group.id);
@@ -390,7 +422,7 @@ export default function Medicine() {
                 </button>
                 {expanded && <div className="med-nav-children">{group.items.map((itemId) => {
                   const item = NAV.find((entry) => entry.id === itemId)!;
-                  return <button key={item.id} onClick={() => go(item.id)} className={section === item.id ? "active" : ""} aria-current={section === item.id ? "page" : undefined}><item.Icon /><span>{item.label}</span>{item.id === "review" && pendingReviews.length > 0 && <b>{pendingReviews.length}</b>}</button>;
+                  return <button key={item.id} onPointerEnter={() => void warmMedicineSection(item.id)} onFocus={() => void warmMedicineSection(item.id)} onClick={() => go(item.id)} className={section === item.id ? "active" : ""} aria-current={section === item.id ? "page" : undefined}><item.Icon /><span>{item.label}</span>{item.id === "review" && pendingReviews.length > 0 && <b>{pendingReviews.length}</b>}</button>;
                 })}</div>}
               </div>;
             })}
@@ -446,7 +478,7 @@ export default function Medicine() {
 function MedicineHome({ level, progress, competencies, wrongCount, resumeSection, onGo }: { level: MedicineLevel; progress: number; competencies: ReturnType<typeof medicineCompetencyProgress>; wrongCount: number; resumeSection: MedicineSection; onGo: (id: MedicineSection) => void }) {
   const profile = medicineLevelProfiles[level];
   return <div className="med-home">
-    <section className="med-hero"><img src="/medicine/medicine-hero-v2.png" alt="Modelo anatômico educacional translúcido com coração, cérebro, vasos e nervos" /><div className="med-hero-overlay"/><div className="med-hero-content"><span className="med-kicker"><ShieldCheck /> Conteúdo educacional com fontes</span><div className="med-home-level"><span>{level}</span><strong>{profile.title}</strong></div><h1>Entenda o corpo.<br/><em>Construa raciocínio.</em></h1><p>{profile.homeDescription}</p><div className="med-hero-actions"><button onClick={() => onGo("atlas")}><Play /> Explorar o corpo</button>{resumeSection !== "home" && <button onClick={() => onGo(resumeSection)}>Continuar em {NAV.find((item) => item.id === resumeSection)?.label} <ArrowRight /></button>}<button onClick={() => onGo("plan")}>Montar meu plano <ArrowRight /></button></div><small>Foco deste nível: {profile.focus}</small></div></section>
+    <section className="med-hero"><img src="/medicine/medicine-hero-v2.png" alt="Modelo anatômico educacional translúcido com coração, cérebro, vasos e nervos" decoding="async" /><div className="med-hero-overlay"/><div className="med-hero-content"><span className="med-kicker"><ShieldCheck /> Conteúdo educacional com fontes</span><div className="med-home-level"><span>{level}</span><strong>{profile.title}</strong></div><h1>Entenda o corpo.<br/><em>Construa raciocínio.</em></h1><p>{profile.homeDescription}</p><div className="med-hero-actions"><button onClick={() => onGo("atlas")}><Play /> Explorar o corpo</button>{resumeSection !== "home" && <button onClick={() => onGo(resumeSection)}>Continuar em {NAV.find((item) => item.id === resumeSection)?.label} <ArrowRight /></button>}<button onClick={() => onGo("plan")}>Montar meu plano <ArrowRight /></button></div><small>Foco deste nível: {profile.focus}</small></div></section>
     <section className="med-command-grid">
       <button className="primary" onClick={() => onGo("atlas")}><span><Search /></span><div><small>EXPLORAR</small><h3>Atlas por camadas</h3><p>Pele, músculos, esqueleto, vasos, nervos e órgãos.</p></div><ChevronRight /></button>
       <button onClick={() => onGo("practice")}><span><Target /></span><div><small>PRATICAR</small><h3>Identificação ativa</h3><p>Nomeie estruturas e transforme erros em revisão.</p></div><ChevronRight /></button>
@@ -536,6 +568,13 @@ function SystemsSection({ level, onOpenAtlas, onOpen3D, onOpenQuestions, onOpenN
     setSystemAnswer(null);
   }, [selectedId]);
 
+  useEffect(() => {
+    const selectedIndex = medicalSystems.findIndex((system) => system.id === selected.id);
+    const nextSystem = medicalSystems[(selectedIndex + 1) % medicalSystems.length];
+    const anatomyPreview = activeStructure ? `/medicine/atlas/${activeStructure.layer}-${structureView}-v2.png` : null;
+    void preloadMedicalImages([selected.image, nextSystem?.image, anatomyPreview], "high");
+  }, [activeStructure, selected, structureView]);
+
   const nextQuestion = () => {
     setQuestionIndex((value) => value + 1);
     setSystemAnswer(null);
@@ -562,7 +601,7 @@ function SystemsSection({ level, onOpenAtlas, onOpen3D, onOpenQuestions, onOpenN
             </div>
             <div className="med-system-hero-actions"><button onClick={() => setTab("structures")}><ZoomIn /> Explorar de perto</button><button onClick={() => setTab("practice")}>Testar agora <ArrowRight /></button><button onClick={() => onOpenNotebook(selected.name)}><NotebookPen /> Enviar ao Caderno</button></div>
           </div>
-          <div className="med-system-visual med-system-hero-visual"><img key={selected.image} src={selected.image} alt={`Ilustração educacional do sistema ${selected.name}`} /><span>Modelo educacional · não diagnóstico</span></div>
+          <div className="med-system-visual med-system-hero-visual"><img key={selected.image} src={selected.image} alt={`Ilustração educacional do sistema ${selected.name}`} decoding="async" /><span>Modelo educacional · não diagnóstico</span></div>
         </section>
 
         <nav className="med-system-tabs" aria-label="Conteúdo do sistema">
@@ -601,7 +640,7 @@ function SystemsSection({ level, onOpenAtlas, onOpen3D, onOpenQuestions, onOpenN
             {activeStructure && structurePosition && <article>
               <div className="med-system-anatomy-preview" aria-label={`Ampliação de ${activeStructure.name}`}>
                 <div className="med-anatomy-focus-grid" />
-                <img key={`${activeStructure.layer}-${structureView}`} src={`/medicine/atlas/${activeStructure.layer}-${structureView}-v2.png`} alt={`Localização anatômica de ${activeStructure.name}`} style={{ height: "280%", left: "50%", top: "50%", transform: `translate(-${structurePosition.x}%, -${structurePosition.y}%)` }} />
+                <img key={`${activeStructure.layer}-${structureView}`} src={`/medicine/atlas/${activeStructure.layer}-${structureView}-v2.png`} alt={`Localização anatômica de ${activeStructure.name}`} decoding="async" style={{ height: "280%", left: "50%", top: "50%", transform: `translate(-${structurePosition.x}%, -${structurePosition.y}%)` }} />
                 <i /><div><strong>{activeStructure.name}</strong><span>{activeStructure.region} · vista {structureView}</span></div>
               </div>
               <div className="med-system-structure-copy"><span className="med-eyebrow">{bodyLayers.find((layer) => layer.id === activeStructure.layer)?.label}</span><h3>{activeStructure.name}</h3>{activeStructure.latin && <em>{activeStructure.latin}</em>}<p>{activeStructure.summary}</p><dl><div><dt>Função</dt><dd>{activeStructure.function}</dd></div><div><dt>Relações</dt><dd>{activeStructure.relations}</dd></div></dl><div className="med-system-structure-actions"><button onClick={() => onOpenAtlas(activeStructure.layer, activeStructure)}>Abrir no atlas <ArrowRight /></button><button onClick={() => onOpen3D(activeStructure)}><Rotate3D /> Girar em 3D</button><button onClick={() => onOpenNotebook(activeStructure.name)}><NotebookPen /> Caderno</button></div></div>
@@ -668,6 +707,11 @@ function DevelopmentSection() {
   const source = medicalSources[stage.sourceId];
   const progress = ((active + 1) / embryologyTimeline.length) * 100;
   const selectStage = (index: number) => setActive(Math.min(Math.max(index, 0), embryologyTimeline.length - 1));
+
+  useEffect(() => {
+    const nextStage = embryologyTimeline[Math.min(active + 1, embryologyTimeline.length - 1)];
+    void preloadMedicalImages([previousStage.image, stage.image, nextStage.image], "high");
+  }, [active, previousStage.image, stage.image]);
 
   useEffect(() => {
     setActiveMilestone(0);
@@ -785,7 +829,7 @@ function DevelopmentSection() {
         </div> : <>
           <div className="med-development-image-backdrop" style={{ backgroundImage: `url(${stage.image})` }} aria-hidden="true" />
           <div className="med-development-image-canvas" style={{ transform: `translate3d(${visualPan.x}px, ${visualPan.y}px, 0) scale(${visualZoom})` }}>
-            <img key={stage.image} src={stage.image} alt={stage.imageAlt} draggable={false} />
+            <img key={stage.image} src={stage.image} alt={stage.imageAlt} decoding="async" draggable={false} />
           </div>
         </>}
         <div className="med-development-visual-controls">
@@ -850,6 +894,7 @@ function DevelopmentSection() {
 
 function PracticeSection({ level, structure, input, result, onInput, onSubmit, onNext }: { level: MedicineLevel; structure: AnatomyStructure; input: string; result: "correct" | "wrong" | null; onInput: (value: string) => void; onSubmit: () => void; onNext: () => void }) {
   const modelView = preferredAnatomyView(structure);
+  const modelImage = `/medicine/atlas/${structure.layer}-${modelView}-v2.png`;
   const markerPosition = anatomyPositionFor(structure, modelView) ?? { x: structure.x, y: structure.y };
   const [visualZoom, setVisualZoom] = useState(2.2);
   const [visualPan, setVisualPan] = useState({ x: 0, y: 0 });
@@ -882,6 +927,7 @@ function PracticeSection({ level, structure, input, result, onInput, onSubmit, o
 
   useEffect(() => {
     setClueRevealed(false);
+    void preloadMedicalImages([modelImage], "high");
     const frame = window.requestAnimationFrame(() => {
       const width = modelRef.current?.clientWidth ?? 293;
       const height = modelRef.current?.clientHeight ?? 520;
@@ -893,7 +939,7 @@ function PracticeSection({ level, structure, input, result, onInput, onSubmit, o
       });
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [markerPosition.x, markerPosition.y, structure.id]);
+  }, [markerPosition.x, markerPosition.y, modelImage, structure.id]);
 
   return <div className="med-page"><PageHeading eyebrow={`Aprendizado ativo · ${level}`} title="Identificação anatômica" description={profile.practiceDescription} />
     <div className="med-practice-card"><div className="med-practice-visual"><div className="pulse-ring"/>
@@ -938,7 +984,7 @@ function PracticeSection({ level, structure, input, result, onInput, onSubmit, o
         onLostPointerCapture={() => { dragRef.current = null; setPanning(false); }}
         aria-label="Imagem anatômica ampliável; arraste para navegar"
       >
-        <div ref={modelRef} className="med-practice-model" style={{ transform: `translate3d(${visualPan.x}px, ${visualPan.y}px, 0) scale(${visualZoom})` }}><img key={`${structure.layer}-${modelView}`} src={`/medicine/atlas/${structure.layer}-${modelView}-v2.png`} alt={`Modelo anatômico educacional em vista ${modelView}`} draggable={false} /><i style={{ left: `${markerPosition.x}%`, top: `${markerPosition.y}%` } as CSSProperties}/></div>
+        <div ref={modelRef} className="med-practice-model" style={{ transform: `translate3d(${visualPan.x}px, ${visualPan.y}px, 0) scale(${visualZoom})` }}><img key={`${structure.layer}-${modelView}`} src={modelImage} alt={`Modelo anatômico educacional em vista ${modelView}`} decoding="async" draggable={false} /><i style={{ left: `${markerPosition.x}%`, top: `${markerPosition.y}%` } as CSSProperties}/></div>
       </div>
       <div className="med-practice-drag-help">Arraste para navegar · roda para aproximar</div><span>MODELO ANATÔMICO EM ALTA DEFINIÇÃO</span><small>Ilustração educacional · não diagnóstica</small></div><div className="med-practice-prompt"><span className="med-eyebrow">{eyebrow}</span><h2>Qual é esta estrutura?</h2>{result ? <p>{structure.summary}</p> : <button type="button" className={`med-practice-clue ${clueRevealed ? "revealed" : ""}`} onClick={() => setClueRevealed(true)} aria-expanded={clueRevealed}><span>{clue}</span><b>{clueRevealed ? <><EyeOff /> Dica revelada</> : <><Eye /> Revelar dica</>}</b></button>}<div className="med-answer-box"><input value={input} onChange={(event) => onInput(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") onSubmit(); }} placeholder="Digite o nome da estrutura" disabled={result !== null}/>{result === null ? <button onClick={onSubmit}>Responder</button> : <button onClick={onNext}>Próxima <ArrowRight /></button>}</div>{result && <div className={`med-feedback ${result}`}><span>{result === "correct" ? <Check /> : <X />}</span><div><strong>{result === "correct" ? "Resposta correta" : `Resposta: ${structure.name}`}</strong><p><b>Função:</b> {structure.function}</p><p><b>Próximas:</b> {structure.nearby.length ? structure.nearby.join(", ") : "consulte a fonte anatômica"}</p></div></div>}</div></div>
   </div>;
@@ -974,6 +1020,12 @@ function ClinicalSection({ level, clinicalCase, cases, sensitiveContentEnabled, 
   const levelRank = levelOrder.indexOf(level);
   const difficultyRank = levelOrder.indexOf(clinicalCase.difficulty);
   const showHint = levelRank < 2 && activeStep.hint;
+
+  useEffect(() => {
+    const currentIndex = cases.findIndex((item) => item.id === clinicalCase.id);
+    const nextCase = cases[(currentIndex + 1) % cases.length];
+    void preloadMedicalImages([clinicalCase.visual?.image, nextCase?.visual?.image], "high");
+  }, [cases, clinicalCase]);
 
   return <div className="med-page med-clinic-page">
     <PageHeading eyebrow={`Simulação educacional · ${level}`} title="Clínica imersiva" description={`${medicineLevelProfiles[level].clinicalInstruction} Os cenários reproduzem padrões clínicos realistas, mas todas as pessoas e informações são fictícias.`} />
@@ -1016,7 +1068,7 @@ function ClinicalSection({ level, clinicalCase, cases, sensitiveContentEnabled, 
         <header><div><span className="med-eyebrow">ETAPA {step + 1} DE {clinicalCase.steps.length}</span><h2>{activeStep.title}</h2></div><span>Dados liberados agora</span></header>
 
         {clinicalCase.visual && <section className={`med-case-visual ${clinicalCase.sensitive && !sensitiveContentEnabled ? "concealed" : "revealed"}`}>
-          <img src={clinicalCase.visual.image} alt={sensitiveContentEnabled || !clinicalCase.sensitive ? clinicalCase.visual.alt : "Conteúdo clínico sensível ocultado"} />
+          <img src={clinicalCase.visual.image} alt={sensitiveContentEnabled || !clinicalCase.sensitive ? clinicalCase.visual.alt : "Conteúdo clínico sensível ocultado"} decoding="async" />
           {clinicalCase.sensitive && !sensitiveContentEnabled && <div className="med-sensitive-cover"><AlertTriangle/><strong>Conteúdo clínico sensível</strong><p>{clinicalCase.sensitivityNote}</p><button onClick={onToggleSensitive}><Eye /> Estou ciente — mostrar imagem</button></div>}
           {clinicalCase.sensitive && sensitiveContentEnabled && <button className="med-hide-sensitive" onClick={onToggleSensitive}><EyeOff /> Ocultar imagens sensíveis</button>}
           <footer><span>{clinicalCase.visual.caption}</span><b>IMAGEM SINTÉTICA · NÃO DIAGNÓSTICA</b></footer>

@@ -10,6 +10,7 @@ import {
   type MedicalInstrument, type MedicalInstrumentCategory, type MedicalInstrumentIcon,
 } from "@/lib/medicalInstruments";
 import { medicalSources, type MedicineLevel } from "@/lib/medicineData";
+import { preloadMedicalImages } from "@/lib/medicineMedia";
 
 const iconMap: Record<MedicalInstrumentIcon, LucideIcon> = {
   stethoscope: Stethoscope,
@@ -88,6 +89,12 @@ export function InstrumentsStudio({ level, onLearningEvent, onOpenSurgery }: {
   const promptKind = quizIndex % 2 === 0 ? "function" : "recognition";
   const levelRank = levelOrder.indexOf(level);
   const learnedAtLevel = medicalInstruments.filter((item) => levelOrder.indexOf(item.level) <= levelRank).length;
+
+  useEffect(() => {
+    const selectedIndex = medicalInstruments.findIndex((item) => item.id === selected.id);
+    const nextInstrument = medicalInstruments[(selectedIndex + 1) % medicalInstruments.length];
+    void preloadMedicalImages([selected.image, nextInstrument?.image, quizInstrument.image], "high");
+  }, [quizInstrument.image, selected]);
 
   const answerQuiz = (id: string) => {
     if (quizAnswer) return;

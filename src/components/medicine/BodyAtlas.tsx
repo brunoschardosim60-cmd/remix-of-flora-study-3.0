@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { Box, ChevronLeft, ChevronRight, ExternalLink, Maximize2, Move, Rotate3D, RotateCcw, Search, Volume2, X, ZoomIn, ZoomOut } from "lucide-react";
 import { organ3DStructureForAtlasId } from "@/lib/anatomy3DModel";
 import { findAtlasSnapTarget } from "@/lib/anatomyAtlasNavigation";
+import { preloadMedicalImages } from "@/lib/medicineMedia";
 import {
   anatomyPositionFor,
   anatomyStructures,
@@ -73,6 +74,15 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
       if (next) onSelect(next);
     }
   }, [activeLayer, onSelect, selectedInProfile, structuresInLayer, view]);
+
+  useEffect(() => {
+    const otherView: AtlasView = view === "anterior" ? "posterior" : "anterior";
+    void preloadMedicalImages([
+      atlasImage,
+      atlasImageFor(activeLayer, otherView, bodyProfile),
+      activeLayer === "organs" ? atlasImageFor(activeLayer, view, bodyProfile === "male" ? "female" : "male") : null,
+    ], "high");
+  }, [activeLayer, atlasImage, bodyProfile, view]);
 
   useEffect(() => {
     if (!focused) return;
@@ -274,6 +284,7 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
               className="med-body-image"
               src={atlasImage}
               alt={`Ilustração educacional do corpo humano ${bodyProfile === "female" ? "feminino" : "masculino"}, vista ${view}, camada ${activeLayer}`}
+              decoding="async"
               draggable={false}
             />
             {filteredStructures.map((structure) => {
@@ -398,6 +409,7 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
                   key={`${focused.structure.layer}-${focused.view}`}
                   src={atlasImageFor(focused.structure.layer, focused.view, bodyProfile)}
                   alt={`Ampliação anatômica educacional de ${focused.structure.name}`}
+                  decoding="async"
                   style={{
                     height: `${detailZoom * 100}%`,
                     left: `calc(50% + ${detailPan.x}px)`,

@@ -1,4 +1,4 @@
-import { useMemo, useState, type CSSProperties, type MouseEvent } from "react";
+import { useEffect, useMemo, useState, type CSSProperties, type MouseEvent } from "react";
 import {
   Activity, AlertOctagon, ArrowRight, Bone, Brain, Check, ClipboardCheck, Droplets, ExternalLink,
   Eye, EyeOff, HeartPulse, ListChecks, LockKeyhole, RotateCcw, Scissors, ShieldCheck, Sparkles,
@@ -13,6 +13,7 @@ import {
 } from "@/lib/surgicalSimulation";
 import { surgicalScenarioVisuals } from "@/lib/surgicalVisuals";
 import type { MedicineLevel } from "@/lib/medicineData";
+import { preloadMedicalImages } from "@/lib/medicineMedia";
 
 type SimulationState = "ready" | "running" | "failed" | "complete";
 
@@ -73,6 +74,13 @@ export function SurgerySimulator({ level, initialInstrumentId, onLearningEvent, 
     "--surgery-target-x": `${target.x}%`,
     "--surgery-target-y": `${target.y}%`,
   } as CSSProperties;
+
+  useEffect(() => {
+    const scenarioIndex = surgicalScenarios.findIndex((item) => item.id === scenario.id);
+    const nextScenario = surgicalScenarios[(scenarioIndex + 1) % surgicalScenarios.length];
+    const nextVisual = surgicalScenarioVisuals[nextScenario.id];
+    void preloadMedicalImages([visual.surfaceImage, visual.anatomyImage, nextVisual.surfaceImage, nextVisual.anatomyImage], "high");
+  }, [scenario.id, visual.anatomyImage, visual.surfaceImage]);
 
   const reset = () => {
     setState("ready");
@@ -178,8 +186,8 @@ export function SurgerySimulator({ level, initialInstrumentId, onLearningEvent, 
         </header>
 
         <div className={`med-surgery-body ${showAnatomy ? "anatomy-on" : "anatomy-off"}`} data-scenario={scenario.id} style={safeStyle} onClick={missTarget}>
-          <img className="med-surgery-surface" src={visual.surfaceImage} alt={visual.surfaceAlt} />
-          <img className="med-surgery-inner" src={visual.anatomyImage} alt={visual.anatomyAlt} />
+          <img className="med-surgery-surface" src={visual.surfaceImage} alt={visual.surfaceAlt} decoding="async" />
+          <img className="med-surgery-inner" src={visual.anatomyImage} alt={visual.anatomyAlt} decoding="async" />
           <div className="med-surgery-field-ring" />
           {state === "running" && showAnatomy && stageIndex >= 2 && stageIndex <= 5 && <div className={`med-surgery-trauma-marker ${scenario.sensitivity === "Intenso" ? "intense" : ""}`}><i /><i /></div>}
           {stage.id === "bleeding-control" && state === "running" && showAnatomy && <div className="med-surgery-bleeding"><i /><i /><i /></div>}
