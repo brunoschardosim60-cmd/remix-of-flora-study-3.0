@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
+import { inflateSync } from "node:zlib";
 import {
   anatomyPositionFor,
   anatomyStructures,
@@ -17,6 +18,61 @@ import {
   medicalSystems,
   type MedicineLevel,
 } from "./medicineData";
+
+function paethPredictor(left: number, above: number, upperLeft: number) {
+  const prediction = left + above - upperLeft;
+  const leftDistance = Math.abs(prediction - left);
+  const aboveDistance = Math.abs(prediction - above);
+  const upperLeftDistance = Math.abs(prediction - upperLeft);
+  if (leftDistance <= aboveDistance && leftDistance <= upperLeftDistance) return left;
+  return aboveDistance <= upperLeftDistance ? above : upperLeft;
+}
+
+function readRgbaPngAlpha(asset: string) {
+  const png = readFileSync(resolve(process.cwd(), "public", asset.replace(/^\//, "")));
+  const width = png.readUInt32BE(16);
+  const height = png.readUInt32BE(20);
+  expect(png[24], `${asset} bit depth`).toBe(8);
+  expect(png[25], `${asset} color type`).toBe(6);
+
+  const compressed: Buffer[] = [];
+  for (let offset = 8; offset < png.length;) {
+    const length = png.readUInt32BE(offset);
+    const type = png.toString("ascii", offset + 4, offset + 8);
+    if (type === "IDAT") compressed.push(png.subarray(offset + 8, offset + 8 + length));
+    offset += length + 12;
+  }
+
+  const inflated = inflateSync(Buffer.concat(compressed));
+  const stride = width * 4;
+  const alpha = new Uint8Array(width * height);
+  let inputOffset = 0;
+  let previous = Buffer.alloc(stride);
+
+  for (let y = 0; y < height; y += 1) {
+    const filter = inflated[inputOffset];
+    inputOffset += 1;
+    const row = Buffer.from(inflated.subarray(inputOffset, inputOffset + stride));
+    inputOffset += stride;
+
+    for (let index = 0; index < stride; index += 1) {
+      const left = index >= 4 ? row[index - 4] : 0;
+      const above = previous[index] ?? 0;
+      const upperLeft = index >= 4 ? previous[index - 4] : 0;
+      const predictor = filter === 0 ? 0
+        : filter === 1 ? left
+          : filter === 2 ? above
+            : filter === 3 ? Math.floor((left + above) / 2)
+              : paethPredictor(left, above, upperLeft);
+      row[index] = (row[index] + predictor) & 0xff;
+    }
+
+    for (let x = 0; x < width; x += 1) alpha[(y * width) + x] = row[(x * 4) + 3];
+    previous = row;
+  }
+
+  return { width, height, alpha };
+}
 
 describe("medicine content integrity", () => {
   const publicAssetExists = (asset: string) => existsSync(resolve(process.cwd(), "public", asset.replace(/^\//, "")));
@@ -242,6 +298,39 @@ describe("medicine content integrity", () => {
 
     expect(anatomyPositionFor(radius, "anterior")).toEqual({ x: 19, y: 44 });
     expect(anatomyPositionFor(ulna, "anterior")).toEqual({ x: 22, y: 44 });
+  });
+
+  it("mantém todos os marcadores sobre a silhueta das ilustrações atuais", () => {
+    const masks = new Map<string, ReturnType<typeof readRgbaPngAlpha>>();
+    const detached: string[] = [];
+
+    for (const structure of anatomyStructures) {
+      for (const view of ["anterior", "posterior"] as const) {
+        const position = anatomyPositionFor(structure, view);
+        if (!position) continue;
+        const asset = atlasImageForStructure(structure, view);
+        const mask = masks.get(asset) ?? readRgbaPngAlpha(asset);
+        masks.set(asset, mask);
+        const centerX = Math.round((position.x / 100) * (mask.width - 1));
+        const centerY = Math.round((position.y / 100) * (mask.height - 1));
+        const radiusX = Math.max(3, Math.round(mask.width * 0.012));
+        const radiusY = Math.max(3, Math.round(mask.height * 0.012));
+        let touchesArtwork = false;
+
+        for (let y = Math.max(0, centerY - radiusY); y <= Math.min(mask.height - 1, centerY + radiusY) && !touchesArtwork; y += 2) {
+          for (let x = Math.max(0, centerX - radiusX); x <= Math.min(mask.width - 1, centerX + radiusX); x += 2) {
+            if (mask.alpha[(y * mask.width) + x] >= 48) {
+              touchesArtwork = true;
+              break;
+            }
+          }
+        }
+
+        if (!touchesArtwork) detached.push(`${structure.id}:${view}@${position.x},${position.y}`);
+      }
+    }
+
+    expect(detached).toEqual([]);
   });
 
   it("catalogs the adult posterior skeleton without counting group summaries twice", () => {
