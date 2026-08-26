@@ -22,13 +22,15 @@ import {
 import { preloadMedicalImages } from "@/lib/medicineMedia";
 
 interface MedicalPathologyLabProps {
-  onOpenNotebook: () => void;
+  onOpenNotebook: (context: { label: string; summary: string; image: string; imageAlt: string }) => void;
+  onLearningEvent?: (event: { id: string; label: string; correct: boolean }) => void;
 }
 
 type DetailTab = "changes" | "progression" | "practice";
 
 export function MedicalPathologyLab({
   onOpenNotebook,
+  onLearningEvent,
 }: MedicalPathologyLabProps) {
   const [activeId, setActiveId] = useState(medicalPathologies[0].id);
   const [split, setSplit] = useState(50);
@@ -360,7 +362,11 @@ export function MedicalPathologyLab({
                     <button
                       key={option}
                       className={state}
-                      onClick={() => answer === null && setAnswer(index)}
+                      onClick={() => {
+                        if (answer !== null) return;
+                        setAnswer(index);
+                        onLearningEvent?.({ id: `pathology:${pathology.id}`, label: `${pathology.organ} · ${pathology.condition}`, correct: index === pathology.question.answer });
+                      }}
                     >
                       <b>{String.fromCharCode(65 + index)}</b>
                       <span>{option}</span>
@@ -414,7 +420,12 @@ export function MedicalPathologyLab({
             <button onClick={copyTransparentImage}>
               <Clipboard /> Copiar sem fundo
             </button>
-            <button onClick={onOpenNotebook}>
+            <button onClick={() => onOpenNotebook({
+              label: `${pathology.organ} — ${pathology.condition}`,
+              summary: `${pathology.healthy} Comparação: ${pathology.pathological}`,
+              image: pathology.image,
+              imageAlt: pathology.imageAlt,
+            })}>
               <BookOpen /> Abrir Caderno
             </button>
           </div>

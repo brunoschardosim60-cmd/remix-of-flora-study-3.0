@@ -32,4 +32,11 @@ describe("medicineLearning", () => {
     expect(merged.items["question:1"].pending).toBe(true);
     expect(merged.items["question:2"].pending).toBe(false);
   });
+
+  it("mantém histologia, desenvolvimento e patologia separados na revisão", () => {
+    let state = registerMedicineAttempt(emptyMedicineLearningState, { id: "histology:retina", label: "Retina", category: "histologia", competency: "fisiologia", sourceSection: "histology", correct: false });
+    state = registerMedicineAttempt(state, { id: "development:fetal", label: "Período fetal", category: "desenvolvimento", competency: "fisiologia", sourceSection: "development", correct: false });
+    state = registerMedicineAttempt(state, { id: "pathology:lungs", label: "Pulmões · enfisema", category: "patologia", competency: "raciocinio-clinico", sourceSection: "pathology", correct: false });
+    expect(pendingMedicineReviews(state).map((item) => item.category).sort()).toEqual(["desenvolvimento", "histologia", "patologia"]);
+  });
 });

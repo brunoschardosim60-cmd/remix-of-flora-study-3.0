@@ -2763,3 +2763,68 @@
   .med-answer-box { align-items: stretch; flex-direction: column; }
   .med-answer-box button { width: 100%; }
 }
+
+/* Revisão de legibilidade e carregamento — mantém os assets originais intactos. */
+.med-main { position: relative; }
+.med-media-loading {
+  position: sticky;
+  top: 84px;
+  z-index: 35;
+  display: flex;
+  width: min(560px, calc(100% - 28px));
+  min-height: 64px;
+  align-items: center;
+  gap: 12px;
+  margin: 14px auto -78px;
+  padding: 11px 14px;
+  border: 1px solid rgba(67,112,98,.2);
+  border-radius: 16px;
+  background: rgba(250,252,249,.95);
+  box-shadow: 0 16px 45px rgba(31,69,57,.14);
+  color: #416f62;
+  backdrop-filter: blur(16px);
+}
+.med-media-loading > span { display: grid; width: 38px; height: 38px; flex: 0 0 38px; place-items: center; border-radius: 12px; background: #e2efe9; }
+.med-media-loading svg { width: 18px; animation: med3d-spin 1.8s linear infinite; }
+.med-media-loading > div { display: grid; gap: 3px; }
+.med-media-loading strong { color: #315b50; font-size: 12px; }
+.med-media-loading small { color: #6e827b; font-size: 10px !important; line-height: 1.4; }
+
+.med-development-study-actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 20px; padding-top: 17px; border-top: 1px solid var(--med-line); }
+.med-development-study-actions button { display: flex; min-height: 42px; align-items: center; gap: 8px; padding: 0 14px; border: 1px solid var(--med-line); border-radius: 11px; background: #fff; color: #416f62; font-weight: 800; }
+.med-development-study-actions button:first-child { border-color: #477668; background: #477668; color: #fff; }
+.med-development-study-actions svg { width: 15px; }
+
+/* Elementos densos do 3D e das jornadas ainda estavam entre 6 e 9 px. */
+.med-app :where(
+  .med-3d-system-strip small,
+  .med-3d-profile-title small,
+  .med-3d-profile-options small,
+  .med-3d-profile-strip > p,
+  .med-3d-skin-tones > span,
+  .med-3d-index-title span,
+  .med-3d-structure-list > button small,
+  .med-system-hero-stats span,
+  .med-system-route p,
+  .med-system-structure-list small,
+  .med-development-ribbon small,
+  .med-development-gallery strong,
+  .med-development-source-mini strong,
+  .med-case-data strong,
+  .med-case-workspace > footer strong
+) { font-size: clamp(9px, .7vw, 11px) !important; line-height: 1.35; }
+
+.med-app :where(
+  .med-3d-system-strip strong,
+  .med-3d-profile-title strong,
+  .med-3d-profile-options strong,
+  .med-3d-index-title strong,
+  .med-3d-structure-list > button strong,
+  .med-development-ribbon strong
+) { font-size: clamp(10px, .78vw, 12px) !important; line-height: 1.3; }
+
+@media (max-width: 620px) {
+  .med-media-loading { top: 78px; margin-bottom: -72px; }
+  .med-development-study-actions { flex-direction: column; }
+  .med-development-study-actions button { justify-content: center; }
+}

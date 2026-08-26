@@ -23,7 +23,7 @@ import "./histology-microscope.css";
 interface HistologyMicroscopeProps {
   level: MedicineLevel;
   onLearningEvent: (event: { id: string; label: string; correct: boolean }) => void;
-  onOpenNotebook: (label: string) => void;
+  onOpenNotebook: (context: { label: string; summary?: string; image?: string; imageAlt?: string; sourceId?: string }) => void;
 }
 
 type ZoomStage = "macro" | "meso" | "micro";
@@ -74,6 +74,10 @@ export function HistologyMicroscope({ level, onLearningEvent, onOpenNotebook }: 
   const viewStructures = activeView?.structureIds.map(sensoryStructureById).filter(Boolean) as SensoryStructure[] | undefined;
   const activeTargets: SelectedDetail[] = stage === "micro" ? microscopeLevel.hotspots : journey === "cell" ? cellOrganelles : (viewStructures ?? []);
   const currentSource = selected ? histologySourceFor(selected.sourceId) : histologySourceFor(stage === "micro" ? microscopeLevel.sourceId : activeView?.sourceId ?? "openstax-tissues");
+  const notebookImage = stage === "micro" ? microscopeLevel.image : activeView?.image;
+  const notebookImageAlt = stage === "micro" ? microscopeLevel.alt : activeView?.alt;
+  const notebookSummary = selected?.summary ?? (stage === "micro" ? specimen.summary : activeView?.description);
+  const notebookSourceId = selected?.sourceId ?? (stage === "micro" ? microscopeLevel.sourceId : activeView?.sourceId);
 
   useEffect(() => {
     if (journey === "eye") { setViewId(stage === "macro" ? "eye-external" : "eye-anatomy"); setSpecimenId("retina"); }
@@ -184,9 +188,9 @@ export function HistologyMicroscope({ level, onLearningEvent, onOpenNotebook }: 
           <p>{selected.summary}</p>
           <div className="hm-detail-block"><b>FUNÇÃO</b><p>{selected.function}</p></div>
         </> : <><h2>{stage === "micro" ? specimen.name : activeView?.title ?? "Base celular"}</h2><p>{stage === "micro" ? specimen.summary : activeView?.description ?? "Selecione uma organela ou um tecido para aprofundar."}</p></>}
-        {stage === "micro" && <div className="hm-detail-block"><b>FIDELIDADE DO ASSET</b><p>{microscopeLevel.note}</p></div>}
+        {stage === "micro" && <div className="hm-detail-block"><b>FIDELIDADE DA IMAGEM</b><p>{microscopeLevel.note}</p></div>}
         {currentSource && <a className="hm-source-link" href={currentSource.url} target="_blank" rel="noreferrer"><BookOpen /><span><b>Conferir fonte científica</b><small>{currentSource.organization} · {currentSource.license}</small></span><ExternalLink /></a>}
-        <button className="hm-notebook" onClick={() => onOpenNotebook(selected?.name ?? specimen.name)}><NotebookPen /> Enviar ao Caderno</button>
+        <button className="hm-notebook" onClick={() => onOpenNotebook({ label: selected?.name ?? (stage === "micro" ? specimen.name : activeView?.title ?? specimen.name), summary: notebookSummary, image: notebookImage, imageAlt: notebookImageAlt, sourceId: notebookSourceId })}><NotebookPen /> Enviar ao Caderno</button>
         <div className="hm-safety"><Sparkles /><p><b>Material educacional licenciado.</b> Micrografias reais e esquemas são identificados separadamente. Os valores de objetiva organizam a jornada didática e não substituem os metadados da fonte.</p></div>
       </aside>
     </section>

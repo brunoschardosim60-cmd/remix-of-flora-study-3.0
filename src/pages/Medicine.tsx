@@ -16,7 +16,7 @@ import {
 } from "@/lib/medicineData";
 import { medicalNotebookTemplates, type MedicalNotebookTemplate } from "@/lib/medicalNotebookTemplates";
 import { prepareMedicalNotebookHtml } from "@/lib/notebookMedicalAssets";
-import { preloadMedicalImages } from "@/lib/medicineMedia";
+import { isMedicalImageReady, preloadMedicalImages } from "@/lib/medicineMedia";
 import {
   emptyMedicineLearningState,
   medicineCompetencyProgress,
@@ -48,6 +48,16 @@ const MedicalPathologyLab = lazy(() => import("@/components/medicine/MedicalPath
 const HistologyMicroscope = lazy(() => import("@/components/medicine/HistologyMicroscope").then((module) => ({ default: module.HistologyMicroscope })));
 
 type MedicineSection = "home" | "atlas" | "atlas3d" | "histology" | "instruments" | "surgery" | "systems" | "pathology" | "development" | "practice" | "questions" | "review" | "semiology" | "anamnesis" | "clinic" | "plan" | "notebook" | "sources";
+
+type MedicalNotebookContext = {
+  section: MedicineSection;
+  label: string;
+  structureId?: string;
+  summary?: string;
+  image?: string;
+  imageAlt?: string;
+  sourceId?: string;
+};
 
 const NAV: Array<{ id: MedicineSection; label: string; Icon: typeof Activity }> = [
   { id: "home", label: "Visão geral", Icon: Activity },
@@ -171,6 +181,18 @@ function saveMedicineState(key: string, value: unknown) {
   try { localStorage.setItem(`flora.medicine.${key}`, JSON.stringify(value)); } catch { /* progresso local opcional */ }
 }
 
+function loadAtlasLayer(): BodyLayer {
+  const stored = loadMedicineState<string>("atlas_layer", "organs");
+  return bodyLayers.some((layer) => layer.id === stored) ? stored as BodyLayer : "organs";
+}
+
+function loadAtlasStructure() {
+  const storedId = loadMedicineState<string>("atlas_structure", "heart");
+  return anatomyStructures.find((item) => item.id === storedId)
+    ?? anatomyStructures.find((item) => item.id === "heart")
+    ?? anatomyStructures[0];
+}
+
 function escapeNotebookText(value: string) {
   return value.replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[character] ?? character);
 }
@@ -188,8 +210,8 @@ export default function Medicine() {
   const [openNavGroup, setOpenNavGroup] = useState(() => navGroupForSection(section));
   const [focusMode, setFocusMode] = useState(false);
   const [level, setLevel] = useState<MedicineLevel>(() => loadMedicineState("level", "Ciclo básico"));
-  const [activeLayer, setActiveLayer] = useState<BodyLayer>("organs");
-  const [selectedStructure, setSelectedStructure] = useState<AnatomyStructure | null>(() => anatomyStructures.find((item) => item.id === "heart") ?? null);
+  const [activeLayer, setActiveLayer] = useState<BodyLayer>(loadAtlasLayer);
+  const [selectedStructure, setSelectedStructure] = useState<AnatomyStructure | null>(loadAtlasStructure);
   const [favoriteIds, setFavoriteIds] = useState<string[]>(() => loadMedicineState("favorites", []));
   const [questionIndex, setQuestionIndex] = useState(0);
   const [answer, setAnswer] = useState<number | null>(null);
@@ -212,6 +234,7 @@ export default function Medicine() {
   const [cloudSyncError, setCloudSyncError] = useState(false);
   const [resumeSection, setResumeSection] = useState<MedicineSection>(() => loadMedicineState("last_section", "home"));
   const [initial3DStructureId, setInitial3DStructureId] = useState<string | null>(null);
+  const [sectionMediaReady, setSectionMediaReady] = useState(() => (SECTION_IMAGE_WARMUPS[section] ?? []).every(isMedicalImageReady));
 
   const levelProfile = medicineLevelProfiles[level];
   const filteredQuestions = useMemo(() => medicalQuestions.filter((item) => item.level === level), [level]);
@@ -232,8 +255,18 @@ export default function Medicine() {
   }, [location.pathname]);
 
   useEffect(() => {
-    void warmMedicineSection(section);
+    let active = true;
+    const images = SECTION_IMAGE_WARMUPS[section] ?? [];
+    const alreadyReady = images.length === 0 || images.every(isMedicalImageReady);
+    setSectionMediaReady(alreadyReady);
+    void warmMedicineSection(section).then(() => { if (active) setSectionMediaReady(true); });
+    return () => { active = false; };
   }, [section]);
+
+  useEffect(() => {
+    saveMedicineState("atlas_layer", activeLayer);
+    if (selectedStructure) saveMedicineState("atlas_structure", selectedStructure.id);
+  }, [activeLayer, selectedStructure]);
 
   useEffect(() => {
     if (!mobileNav) return;
@@ -302,7 +335,7 @@ export default function Medicine() {
         learning_state: learningState,
         case_progress: caseProgress,
         last_section: section === "home" ? resumeSection : section,
-        content_version: "MED-2026.08.25",
+        content_version: "MED-2026.08.26",
       }, { onConflict: "user_id" }).then(({ error }) => setCloudSyncError(Boolean(error)));
     }, 650);
     return () => window.clearTimeout(timeout);
@@ -363,6 +396,10 @@ export default function Medicine() {
     setMobileNav(false);
     navigate(SECTION_PATHS[next]);
     window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+  const sendToNotebook = (context: MedicalNotebookContext) => {
+    saveMedicineState("notebook_context", context);
+    go("notebook");
   };
   const updateLevel = (next: MedicineLevel) => {
     if (next === level) return;
@@ -436,16 +473,17 @@ export default function Medicine() {
         </aside>
 
         <main className="med-main">
+          {!sectionMediaReady && <div className="med-media-loading" role="status" aria-live="polite"><span><Sparkles /></span><div><strong>Preparando imagens em alta definição</strong><small>Os arquivos originais estão sendo carregados sem compressão nem redução de qualidade.</small></div></div>}
           <Suspense fallback={<div className="med-3d-route-loading"><Sparkles /><strong>Preparando o módulo…</strong><span>Carregando apenas os recursos necessários para esta atividade.</span></div>}>
           {section === "home" && <MedicineHome level={level} progress={progress} competencies={competencyProgress} wrongCount={pendingReviews.length} resumeSection={resumeSection} onGo={go} />}
-          {section === "atlas" && <div className="med-section-wrap"><BodyAtlas level={level} activeLayer={activeLayer} onLayerChange={setActiveLayer} selected={selectedStructure} onSelect={setSelectedStructure} onOpen3D={(structureId) => { setInitial3DStructureId(structureId); go("atlas3d"); }} />{selectedStructure && <div className="med-atlas-actions"><button onClick={() => toggleFavorite(selectedStructure.id)}>{favoriteIds.includes(selectedStructure.id) ? <Check /> : <BookOpen />}{favoriteIds.includes(selectedStructure.id) ? "Salva para revisão" : "Salvar para revisão"}</button><button onClick={() => go("questions")}><ListChecks /> Questões relacionadas</button><button onClick={() => go("pathology")}><Microscope /> Comparar alterações</button><button onClick={() => { saveMedicineState("notebook_context", { section: "atlas", label: selectedStructure.name, structureId: selectedStructure.id }); go("notebook"); }}><NotebookPen /> Enviar ao Caderno</button><button onClick={() => toast.info("A Flora deve explicar apenas com base nas fontes exibidas nesta estrutura.")}><Sparkles /> Explicar com a Flora</button></div>}</div>}
+          {section === "atlas" && <div className="med-section-wrap"><BodyAtlas level={level} activeLayer={activeLayer} onLayerChange={setActiveLayer} selected={selectedStructure} onSelect={setSelectedStructure} onOpen3D={(structureId) => { setInitial3DStructureId(structureId); go("atlas3d"); }} />{selectedStructure && <div className="med-atlas-actions"><button onClick={() => toggleFavorite(selectedStructure.id)}>{favoriteIds.includes(selectedStructure.id) ? <Check /> : <BookOpen />}{favoriteIds.includes(selectedStructure.id) ? "Salva para revisão" : "Salvar para revisão"}</button><button onClick={() => go("questions")}><ListChecks /> Questões relacionadas</button><button onClick={() => go("pathology")}><Microscope /> Comparar alterações</button><button onClick={() => sendToNotebook({ section: "atlas", label: selectedStructure.name, structureId: selectedStructure.id })}><NotebookPen /> Enviar ao Caderno</button><button onClick={() => toast.info("A Flora deve explicar apenas com base nas fontes exibidas nesta estrutura.")}><Sparkles /> Explicar com a Flora</button></div>}</div>}
           {section === "atlas3d" && <Suspense fallback={<div className="med-3d-route-loading"><Rotate3D /><strong>Carregando o ambiente tridimensional…</strong><span>Preparando iluminação, câmera e estruturas.</span></div>}><Anatomy3DStudio level={level} initialStructureId={initial3DStructureId} /></Suspense>}
-          {section === "histology" && <Suspense fallback={<div className="med-3d-route-loading"><Microscope /><strong>Preparando o laboratório visual…</strong><span>Carregando os assets licenciados sem reduzir a resolução.</span></div>}><HistologyMicroscope level={level} onLearningEvent={(event) => recordLearning({ ...event, category: "questoes", competency: "fisiologia", sourceSection: "histology" })} onOpenNotebook={(label) => { saveMedicineState("notebook_context", { section: "histology", label }); go("notebook"); }} /></Suspense>}
+          {section === "histology" && <Suspense fallback={<div className="med-3d-route-loading"><Microscope /><strong>Preparando o laboratório visual…</strong><span>Carregando as imagens licenciadas sem reduzir a resolução.</span></div>}><HistologyMicroscope level={level} onLearningEvent={(event) => recordLearning({ ...event, category: "histologia", competency: "fisiologia", sourceSection: "histology" })} onOpenNotebook={(context) => sendToNotebook({ section: "histology", ...context })} /></Suspense>}
           {section === "instruments" && <InstrumentsStudio level={level} onLearningEvent={(event) => recordLearning({ ...event, category: "instrumentos", competency: "instrumentos", sourceSection: "instruments" })} onOpenSurgery={(instrumentId) => { saveMedicineState("surgery_instrument", instrumentId); go("surgery"); }} />}
           {section === "surgery" && <SurgerySimulator level={level} initialInstrumentId={loadMedicineState("surgery_instrument", null)} onLearningEvent={(event) => recordLearning({ ...event, category: "cirurgia", competency: "seguranca", sourceSection: "surgery" })} onOpenInstruments={() => go("instruments")} />}
-          {section === "systems" && <SystemsSection level={level} onOpenAtlas={(layer, structure) => { setActiveLayer(layer); if (structure) setSelectedStructure(structure); go("atlas"); }} onOpen3D={(structure) => { setInitial3DStructureId(structure.id); go("atlas3d"); }} onOpenQuestions={() => go("questions")} onOpenNotebook={(label) => { saveMedicineState("notebook_context", { section: "systems", label }); go("notebook"); }} onLearningEvent={(event) => recordLearning({ ...event, category: "questoes", competency: "fisiologia", sourceSection: "systems" })} />}
-          {section === "pathology" && <MedicalPathologyLab onOpenNotebook={() => go("notebook")} />}
-          {section === "development" && <DevelopmentSection />}
+          {section === "systems" && <SystemsSection level={level} onOpenAtlas={(layer, structure) => { setActiveLayer(layer); if (structure) setSelectedStructure(structure); go("atlas"); }} onOpen3D={(structure) => { setInitial3DStructureId(structure.id); go("atlas3d"); }} onOpenQuestions={() => go("questions")} onOpenNotebook={(context) => sendToNotebook({ section: "systems", ...context })} onLearningEvent={(event) => recordLearning({ ...event, category: "questoes", competency: "fisiologia", sourceSection: "systems" })} />}
+          {section === "pathology" && <MedicalPathologyLab onOpenNotebook={(context) => sendToNotebook({ section: "pathology", ...context })} onLearningEvent={(event) => recordLearning({ ...event, category: "patologia", competency: "raciocinio-clinico", sourceSection: "pathology" })} />}
+          {section === "development" && <DevelopmentSection onOpenNotebook={(context) => sendToNotebook({ section: "development", ...context })} onLearningEvent={(event) => recordLearning({ ...event, category: "desenvolvimento", competency: "fisiologia", sourceSection: "development" })} />}
           {section === "practice" && <PracticeSection level={level} structure={practiceStructure} input={practiceInput} result={practiceResult} onInput={setPracticeInput} onSubmit={() => {
             const normalized = normalizeAnswer(practiceInput);
             const acceptedNames = [...practiceStructure.synonyms, practiceStructure.name, practiceStructure.latin ?? ""].map(normalizeAnswer);
@@ -533,7 +571,7 @@ function SystemsSection({ level, onOpenAtlas, onOpen3D, onOpenQuestions, onOpenN
   onOpenAtlas: (layer: BodyLayer, structure?: AnatomyStructure) => void;
   onOpen3D: (structure: AnatomyStructure) => void;
   onOpenQuestions: () => void;
-  onOpenNotebook: (label: string) => void;
+  onOpenNotebook: (context: Omit<MedicalNotebookContext, "section">) => void;
   onLearningEvent: (event: { id: string; label: string; correct: boolean }) => void;
 }) {
   const [selectedId, setSelectedId] = useState(medicalSystems[0].id);
@@ -605,7 +643,7 @@ function SystemsSection({ level, onOpenAtlas, onOpen3D, onOpenQuestions, onOpenN
               <div><strong>{selected.topics.length}</strong><span>eixos de fisiologia</span></div>
               <div><strong>{systemQuestions.length}</strong><span>questões relacionadas</span></div>
             </div>
-            <div className="med-system-hero-actions"><button onClick={() => setTab("structures")}><ZoomIn /> Explorar de perto</button><button onClick={() => setTab("practice")}>Testar agora <ArrowRight /></button><button onClick={() => onOpenNotebook(selected.name)}><NotebookPen /> Enviar ao Caderno</button></div>
+            <div className="med-system-hero-actions"><button onClick={() => setTab("structures")}><ZoomIn /> Explorar de perto</button><button onClick={() => setTab("practice")}>Testar agora <ArrowRight /></button><button onClick={() => onOpenNotebook({ label: `Sistema ${selected.name}`, summary: selected.description, image: selected.image, imageAlt: `Ilustração educacional do sistema ${selected.name}`, sourceId: selected.sourceId })}><NotebookPen /> Enviar ao Caderno</button></div>
           </div>
           <div className="med-system-visual med-system-hero-visual"><img key={selected.image} src={selected.image} alt={`Ilustração educacional do sistema ${selected.name}`} decoding="async" /><span>Modelo educacional · não diagnóstico</span></div>
         </section>
@@ -649,7 +687,7 @@ function SystemsSection({ level, onOpenAtlas, onOpen3D, onOpenQuestions, onOpenN
                 <img key={`${activeStructure.layer}-${structureView}`} src={atlasImageForStructure(activeStructure, structureView)} alt={`Localização anatômica de ${activeStructure.name}`} decoding="async" style={{ height: "280%", left: "50%", top: "50%", transform: `translate(-${structurePosition.x}%, -${structurePosition.y}%)` }} />
                 <i /><div><strong>{activeStructure.name}</strong><span>{activeStructure.region} · vista {structureView}</span></div>
               </div>
-              <div className="med-system-structure-copy"><span className="med-eyebrow">{bodyLayers.find((layer) => layer.id === activeStructure.layer)?.label}</span><h3>{activeStructure.name}</h3>{activeStructure.latin && <em>{activeStructure.latin}</em>}<p>{activeStructure.summary}</p><dl><div><dt>Função</dt><dd>{activeStructure.function}</dd></div><div><dt>Relações</dt><dd>{activeStructure.relations}</dd></div></dl><div className="med-system-structure-actions"><button onClick={() => onOpenAtlas(activeStructure.layer, activeStructure)}>Abrir no atlas <ArrowRight /></button><button onClick={() => onOpen3D(activeStructure)}><Rotate3D /> Girar em 3D</button><button onClick={() => onOpenNotebook(activeStructure.name)}><NotebookPen /> Caderno</button></div></div>
+              <div className="med-system-structure-copy"><span className="med-eyebrow">{bodyLayers.find((layer) => layer.id === activeStructure.layer)?.label}</span><h3>{activeStructure.name}</h3>{activeStructure.latin && <em>{activeStructure.latin}</em>}<p>{activeStructure.summary}</p><dl><div><dt>Função</dt><dd>{activeStructure.function}</dd></div><div><dt>Relações</dt><dd>{activeStructure.relations}</dd></div></dl><div className="med-system-structure-actions"><button onClick={() => onOpenAtlas(activeStructure.layer, activeStructure)}>Abrir no atlas <ArrowRight /></button><button onClick={() => onOpen3D(activeStructure)}><Rotate3D /> Girar em 3D</button><button onClick={() => onOpenNotebook({ label: activeStructure.name, structureId: activeStructure.id })}><NotebookPen /> Caderno</button></div></div>
             </article>}
           </div>}
 
@@ -697,7 +735,10 @@ function developmentCinematicShot(stageId: string, milestone: number): Developme
   return shots[milestone % shots.length];
 }
 
-function DevelopmentSection() {
+function DevelopmentSection({ onOpenNotebook, onLearningEvent }: {
+  onOpenNotebook: (context: Omit<MedicalNotebookContext, "section">) => void;
+  onLearningEvent: (event: { id: string; label: string; correct: boolean }) => void;
+}) {
   const [active, setActive] = useState(0);
   const [activeMilestone, setActiveMilestone] = useState(0);
   const [immersive, setImmersive] = useState(false);
@@ -887,6 +928,7 @@ function DevelopmentSection() {
     <section className="med-development-prompts">
       <div><span className="med-eyebrow">RECUPERAÇÃO ATIVA</span><h3>Consegue explicar sem reler?</h3><p>Responda com suas palavras. Se travar, volte aos marcos e confira a referência.</p></div>
       <ol>{stage.studyQuestions.map((question, index) => <li key={question}><span>{String(index + 1).padStart(2, "0")}</span><p>{question}</p></li>)}</ol>
+      <footer className="med-development-study-actions"><button onClick={() => { onLearningEvent({ id: `development:${stage.id}`, label: stage.title, correct: true }); toast.success("Fase registrada no seu progresso."); }}><Check /> Marcar fase como estudada</button><button onClick={() => onOpenNotebook({ label: stage.title, summary: stage.detail, image: stage.image, imageAlt: stage.imageAlt, sourceId: stage.sourceId })}><NotebookPen /> Enviar fase ao Caderno</button></footer>
     </section>
 
     <section className="med-development-gallery">
@@ -1112,7 +1154,7 @@ function StudyPlanSection({ level, hours, goal, onHours, onGoal, onStart }: { le
 function NotebookSection({ navigate }: { navigate: ReturnType<typeof useNavigate> }) {
   const { user } = useAuth();
   const [creatingId, setCreatingId] = useState<string | null>(null);
-  const [incomingContext, setIncomingContext] = useState(() => loadMedicineState<{ section: string; label: string; structureId?: string } | null>("notebook_context", null));
+  const [incomingContext, setIncomingContext] = useState(() => loadMedicineState<MedicalNotebookContext | null>("notebook_context", null));
   const createFromTemplate = async (template: MedicalNotebookTemplate) => {
     if (!user || creatingId) return;
     setCreatingId(template.id);
@@ -1130,7 +1172,10 @@ function NotebookSection({ navigate }: { navigate: ReturnType<typeof useNavigate
       return;
     }
     const contextStructure = incomingContext?.structureId ? anatomyStructures.find((item) => item.id === incomingContext.structureId) : undefined;
-    const contextSource = contextStructure ? medicalSources[contextStructure.sourceId] : undefined;
+    const contextSource = contextStructure
+      ? medicalSources[contextStructure.sourceId]
+      : incomingContext?.sourceId ? medicalSources[incomingContext.sourceId] : undefined;
+    const contextImage = incomingContext?.image?.startsWith("/medicine/") ? incomingContext.image : undefined;
     const contextPage = incomingContext ? [{
       title: incomingContext.label,
       purpose: "Conteúdo selecionado na academia médica",
@@ -1148,10 +1193,12 @@ function NotebookSection({ navigate }: { navigate: ReturnType<typeof useNavigate
         <h2>Minhas anotações</h2><p><br><br><br></p>
       ` : `
         <h1>${escapeNotebookText(incomingContext.label)}</h1>
-        <p>Conteúdo trazido da área ${escapeNotebookText(NAV.find((item) => item.id === incomingContext.section)?.label ?? incomingContext.section)}.</p>
-        <h2>O que preciso compreender?</h2><p><br><br></p>
-        <h2>Conexões com anatomia, fisiologia e clínica</h2><p><br><br><br></p>
-        <h2>Pontos para revisão</h2><ul><li></li><li></li><li></li></ul>
+        <p><strong>Origem:</strong> ${escapeNotebookText(NAV.find((item) => item.id === incomingContext.section)?.label ?? incomingContext.section)}</p>
+        ${contextImage ? `<img src="${escapeNotebookText(contextImage)}" alt="${escapeNotebookText(incomingContext.imageAlt ?? incomingContext.label)}" />` : ""}
+        ${incomingContext.summary ? `<h2>Visão geral</h2><p>${escapeNotebookText(incomingContext.summary)}</p>` : ""}
+        ${contextSource ? `<blockquote><strong>Fonte para conferência:</strong> ${escapeNotebookText(contextSource.title)} — ${escapeNotebookText(contextSource.organization)}</blockquote>` : ""}
+        <h2>Relações importantes</h2><p><br><br></p>
+        <h2>Minhas anotações</h2><p><br><br><br></p>
       `,
     }] : [];
     const pagesToCreate = [...contextPage, ...template.pages];
@@ -1202,7 +1249,7 @@ function SourcesSection() {
     if (report.trim().length < 12) { toast.info("Descreva a estrutura, tela e o possível problema."); return; }
     if (!user) return;
     setSubmitting(true);
-    const { error } = await supabase.from("medicine_content_reports").insert({ user_id: user.id, description: report.trim(), content_version: "MED-2026.08.25" });
+    const { error } = await supabase.from("medicine_content_reports").insert({ user_id: user.id, description: report.trim(), content_version: "MED-2026.08.26" });
     setSubmitting(false);
     if (error) { toast.error("Não foi possível registrar agora. Seu texto foi mantido para tentar novamente."); return; }
     setReport("");
@@ -1214,7 +1261,7 @@ function SourcesSection() {
     ["Cobertura do atlas", `${anatomyStructures.length} estruturas catalogadas`],
     ["Rastreabilidade", `${Object.keys(medicalSources).length} fontes identificadas`],
   ];
-  return <div className="med-page"><PageHeading eyebrow="Governança clínica" title="Fontes, limites e revisão" description="Toda afirmação educacional deve apontar para uma referência identificável e uma data de revisão." /><div className="med-safety-hero"><ShieldCheck/><div><h2>Segurança antes de velocidade</h2><p>O módulo não diagnostica, não prescreve e não processa casos de pacientes reais. Conteúdo com incerteza deve ser sinalizado e revisado antes da publicação.</p><span>Versão editorial MED-2026.08.25</span></div></div><div className="med-content-audit" aria-label="Resumo da auditoria editorial">{auditItems.map(([label, value]) => <article key={label}><Check/><span><small>{label}</small><strong>{value}</strong></span></article>)}</div><div className="med-source-grid">{Object.entries(medicalSources).map(([id, source]) => <article key={id}><span>REVISADO EM {new Date(`${source.reviewedAt}T12:00:00`).toLocaleDateString("pt-BR")}</span><h3>{source.title}</h3><p>{source.organization}</p>{source.license && <small>{source.license}</small>}{source.attribution && <small>{source.attribution === "Access for free at openstax.org." ? "Acesso gratuito em openstax.org." : source.attribution}</small>}<a href={source.url} target="_blank" rel="noreferrer">Abrir fonte <ExternalLink /></a></article>)}</div><div className="med-governance"><h3>Regras editoriais do módulo</h3>{["Separar conteúdo educacional de orientação individual", "Exigir fonte e data de revisão para cada estrutura", "Usar modelos anatômicos validados e licenciados", "Manter nomes latinos identificados, sem misturá-los ao texto em português", "Registrar correções e manter histórico de versões", "Não incluir dados identificáveis em simulações clínicas"].map((rule) => <div key={rule}><Check />{rule}</div>)}</div><div className="med-report-card"><div><span className="med-eyebrow">VIGILÂNCIA DO CONTEÚDO</span><h3>Sinalizar possível erro</h3><p>Informe a tela, a estrutura e o ponto que precisa ser conferido. Não inclua dados de pacientes.</p></div><textarea value={report} onChange={(event) => setReport(event.target.value)} placeholder="Ex.: Atlas › Coração — conferir a descrição de…"/><button onClick={() => void submitReport()} disabled={submitting}>{submitting ? "Registrando…" : "Enviar para revisão"} {!submitting && <ArrowRight />}</button></div></div>;
+  return <div className="med-page"><PageHeading eyebrow="Governança clínica" title="Fontes, limites e revisão" description="Toda afirmação educacional deve apontar para uma referência identificável e uma data de revisão." /><div className="med-safety-hero"><ShieldCheck/><div><h2>Segurança antes de velocidade</h2><p>O módulo não diagnostica, não prescreve e não processa casos de pacientes reais. Conteúdo com incerteza deve ser sinalizado e revisado antes da publicação.</p><span>Versão editorial MED-2026.08.26</span></div></div><div className="med-content-audit" aria-label="Resumo da auditoria editorial">{auditItems.map(([label, value]) => <article key={label}><Check/><span><small>{label}</small><strong>{value}</strong></span></article>)}</div><div className="med-source-grid">{Object.entries(medicalSources).map(([id, source]) => <article key={id}><span>REVISADO EM {new Date(`${source.reviewedAt}T12:00:00`).toLocaleDateString("pt-BR")}</span><h3>{source.title}</h3><p>{source.organization}</p>{source.license && <small>{source.license}</small>}{source.attribution && <small>{source.attribution === "Access for free at openstax.org." ? "Acesso gratuito em openstax.org." : source.attribution}</small>}<a href={source.url} target="_blank" rel="noreferrer">Abrir fonte <ExternalLink /></a></article>)}</div><div className="med-governance"><h3>Regras editoriais do módulo</h3>{["Separar conteúdo educacional de orientação individual", "Exigir fonte e data de revisão para cada estrutura", "Usar modelos anatômicos validados e licenciados", "Manter nomes latinos identificados, sem misturá-los ao texto em português", "Registrar correções e manter histórico de versões", "Não incluir dados identificáveis em simulações clínicas"].map((rule) => <div key={rule}><Check />{rule}</div>)}</div><div className="med-report-card"><div><span className="med-eyebrow">VIGILÂNCIA DO CONTEÚDO</span><h3>Sinalizar possível erro</h3><p>Informe a tela, a estrutura e o ponto que precisa ser conferido. Não inclua dados de pacientes.</p></div><textarea value={report} onChange={(event) => setReport(event.target.value)} placeholder="Ex.: Atlas › Coração — conferir a descrição de…"/><button onClick={() => void submitReport()} disabled={submitting}>{submitting ? "Registrando…" : "Enviar para revisão"} {!submitting && <ArrowRight />}</button></div></div>;
 }
 
 function PageHeading({ eyebrow, title, description }: { eyebrow: string; title: string; description: string }) {

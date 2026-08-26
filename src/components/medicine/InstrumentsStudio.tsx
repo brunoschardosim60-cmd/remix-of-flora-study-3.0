@@ -138,7 +138,7 @@ export function InstrumentsStudio({ level, onLearningEvent, onOpenSurgery }: {
         }) : <div className="med-instrument-empty"><Search/><strong>Nenhum instrumento encontrado</strong><button onClick={() => { setQuery(""); setCategory("Todos"); }}>Limpar filtros</button></div>}</section>
 
         <article className="med-instrument-detail" style={{ "--instrument": selectedCategory.color } as CSSProperties}>
-          <div className="med-instrument-detail-visual"><InstrumentGlyph instrument={selected}/><span>{selected.image ? "RENDER EDUCACIONAL EM ALTA DEFINIÇÃO · CONFIRA VARIAÇÕES NA FONTE" : "REPRESENTAÇÃO VETORIAL · IMAGEM DETALHADA EM PREPARAÇÃO"}</span></div>
+          <div className="med-instrument-detail-visual"><InstrumentGlyph instrument={selected}/><span>{selected.image ? "IMAGEM EDUCACIONAL EM ALTA DEFINIÇÃO · CONFIRA VARIAÇÕES NA FONTE" : "REPRESENTAÇÃO VETORIAL · IMAGEM DETALHADA EM PREPARAÇÃO"}</span></div>
           <div className="med-instrument-detail-copy"><span className="med-eyebrow">{selected.category} · {selected.level}</span><h2>{selected.name}</h2><p>{selected.function}</p>
             <section><h3>Como reconhecer</h3>{selected.recognition.map((clue) => <div key={clue}><CircleDot/><span>{clue}</span></div>)}</section>
             <aside><ShieldCheck/><div><strong>Cuidado essencial</strong><p>{selected.safety}</p></div></aside>

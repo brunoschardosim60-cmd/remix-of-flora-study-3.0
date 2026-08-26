@@ -1,5 +1,5 @@
 export type MedicineCompetency = "anatomia" | "fisiologia" | "semiologia" | "raciocinio-clinico" | "instrumentos" | "seguranca";
-export type MedicineReviewCategory = "anatomia" | "questoes" | "instrumentos" | "anamnese" | "semiologia" | "clinica" | "cirurgia";
+export type MedicineReviewCategory = "anatomia" | "histologia" | "desenvolvimento" | "patologia" | "questoes" | "instrumentos" | "anamnese" | "semiologia" | "clinica" | "cirurgia";
 
 export interface MedicineLearningAttempt {
   id: string;
@@ -42,6 +42,9 @@ export const medicineCompetencyLabels: Record<MedicineCompetency, string> = {
 
 export const medicineReviewCategoryLabels: Record<MedicineReviewCategory, string> = {
   anatomia: "Estruturas anatômicas",
+  histologia: "Histologia e sentidos",
+  desenvolvimento: "Desenvolvimento humano",
+  patologia: "Anatomia patológica",
   questoes: "Questões",
   instrumentos: "Instrumentos",
   anamnese: "Anamnese",

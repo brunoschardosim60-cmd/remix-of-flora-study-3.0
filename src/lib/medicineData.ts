@@ -648,7 +648,7 @@ export const medicalSources: Record<string, MedicalSource> = {
   cdcInjectionSafety: {
     title: "Práticas seguras de injeção e sua saúde",
     organization: "Centers for Disease Control and Prevention",
-    url: "https://www.cdc.gov/injectionsafety/index.html",
+    url: "https://www.cdc.gov/injection-safety/hcp/clinical-guidance/index.html",
     reviewedAt: "2026-08-24",
   },
   fdaAed: {
