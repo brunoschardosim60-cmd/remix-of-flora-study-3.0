@@ -818,9 +818,14 @@ function DetailedOrgansModel({ integrated = false, realistic, bodyProfile, selec
     });
     supplements.forEach((supplement) => {
       const active = supplement === selectedSupplement && organView !== "context";
+      const isHeartOverview = !integrated
+        && organView === "context"
+        && supplement.structure.id === "model:organs:supplement:heart";
       // Na composição integrada, complementos de alta definição selecionados
       // substituem a antiga geometria simplificada mesmo no modo contextual.
-      supplement.root.visible = active || (integrated && supplement === selectedSupplement);
+      // O arquivo principal de vísceras não contém uma malha cardíaca utilizável;
+      // por isso o coração suplementar também compõe a visão geral entre os pulmões.
+      supplement.root.visible = active || isHeartOverview || (integrated && supplement === selectedSupplement);
       supplement.root.traverse((object) => {
         if (!(object instanceof Mesh)) return;
         const material = object.material as MeshPhysicalMaterial;
@@ -848,7 +853,15 @@ function DetailedOrgansModel({ integrated = false, realistic, bodyProfile, selec
 
   return <group>
     <primitive object={prepared.root} onClick={integrated ? selectIntegratedOrgan : undefined} />
-    {supplements.map((supplement) => <primitive key={supplement.structure.id} object={supplement.root} />)}
+    {supplements.map((supplement) => <primitive
+      key={supplement.structure.id}
+      object={supplement.root}
+      onClick={(event: ThreeEvent<MouseEvent>) => {
+        if (!supplement.root.visible) return;
+        event.stopPropagation();
+        onSelect(supplement.structure);
+      }}
+    />)}
     <NativeMeshPicker active={!integrated && !selectedSupplement} root={prepared.root} onPick={selectOrgan} />
   </group>;
 }
@@ -1025,7 +1038,7 @@ function prepareDetailedOrgans(source: Object3D) {
 
 function prepareSupplementalOrgan(source: Object3D, kind: keyof typeof SUPPLEMENTAL_ORGAN_PATHS) {
   const settings = {
-    heart: { name: "Coração", latin: "Cor", target: [0.1, 1.45, 0] as [number, number, number], size: 1.25, color: "#b53c50", regionId: "thorax" as Anatomy3DRegionId, region: "Mediastino", system: "Cardiovascular", summary: "Modelo isolado de alta definição do coração, indicado para observar toda a superfície externa em rotação livre.", function: "Mantém o fluxo sanguíneo pelas circulações pulmonar e sistêmica por contrações coordenadas." },
+    heart: { name: "Coração", latin: "Cor", target: [0.1, 1.45, 0.18] as [number, number, number], size: 1.25, color: "#b53c50", regionId: "thorax" as Anatomy3DRegionId, region: "Mediastino", system: "Cardiovascular", summary: "Modelo de alta definição do coração posicionado entre os pulmões e disponível para exploração isolada em rotação livre.", function: "Mantém o fluxo sanguíneo pelas circulações pulmonar e sistêmica por contrações coordenadas." },
     brain: { name: "Encéfalo", latin: "Encephalon", target: [0, 3.35, 0] as [number, number, number], size: 1.22, color: "#cf8e94", regionId: "head" as Anatomy3DRegionId, region: "Cavidade craniana", system: "Nervoso", summary: "Modelo isolado de alta definição do encéfalo para exploração externa em múltiplos ângulos.", function: "Integra informação sensorial, movimento, cognição, memória e regulação autonômica." },
     spleen: { name: "Baço", latin: "Lien", target: [-0.48, .42, .02] as [number, number, number], size: .62, color: "#7e4058", regionId: "abdomen" as Anatomy3DRegionId, region: "Hipocôndrio esquerdo", system: "Linfático e imune", summary: "Modelo isolado de alta definição do baço para estudo de forma, polos, faces e relações gerais.", function: "Filtra o sangue, participa da resposta imune e remove células sanguíneas envelhecidas." },
     eye: { name: "Olho", latin: "Oculus", target: [0, 3.42, .18] as [number, number, number], size: .42, color: "#7198a4", regionId: "head" as Anatomy3DRegionId, region: "Órbita", system: "Órgãos dos sentidos", summary: "Modelo isolado de alta definição do globo ocular para estudo tridimensional de sua forma externa.", function: "Recebe a luz e a converte em sinais neurais que seguem pelas vias visuais." },
