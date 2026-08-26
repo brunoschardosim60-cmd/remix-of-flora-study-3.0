@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Box, ChevronLeft, ChevronRight, ExternalLink, Maximize2, Move, Rotate3D, RotateCcw, Search, Volume2, X, ZoomIn, ZoomOut } from "lucide-react";
+import { Box, ChevronLeft, ChevronRight, ExternalLink, Maximize2, Move, Rotate3D, RotateCcw, Search, UserRound, UsersRound, Volume2, X, ZoomIn, ZoomOut } from "lucide-react";
 import { organ3DStructureForAtlasId } from "@/lib/anatomy3DModel";
 import { findAtlasSnapTarget } from "@/lib/anatomyAtlasNavigation";
 import {
@@ -26,8 +26,12 @@ interface BodyAtlasProps {
 }
 
 const levelOrder: MedicineLevel[] = ["Iniciante", "Ciclo básico", "Ciclo clínico", "Internato", "Residência"];
+type AtlasBodyProfile = "female" | "male";
+const femaleOnlyStructureIds = new Set(["ovaries", "uterine-tubes", "uterus", "cervix", "vagina", "vulva"]);
+const maleOnlyStructureIds = new Set(["testes", "epididymis", "ductus-deferens", "seminal-vesicles", "prostate", "penis"]);
 
 export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelect, onOpen3D }: BodyAtlasProps) {
+  const [bodyProfile, setBodyProfile] = useState<AtlasBodyProfile>("female");
   const [zoom, setZoom] = useState(1);
   const [view, setView] = useState<AtlasView>("anterior");
   const [query, setQuery] = useState("");
@@ -39,7 +43,11 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
   const detailDragRef = useRef<{ pointerId: number; x: number; y: number } | null>(null);
   const detailPanRef = useRef({ x: 0, y: 0 });
   const detailImageRef = useRef<HTMLImageElement | null>(null);
-  const structuresInLayer = useMemo(() => anatomyStructures.filter((item) => item.layer === activeLayer), [activeLayer]);
+  const structuresInLayer = useMemo(
+    () => anatomyStructures.filter((item) => item.layer === activeLayer && structureMatchesBodyProfile(item, bodyProfile)),
+    [activeLayer, bodyProfile],
+  );
+  const selectedInProfile = selected && structureMatchesBodyProfile(selected, bodyProfile) ? selected : null;
   const visibleStructures = useMemo(
     () => structuresInLayer.filter((item) => anatomyPositionFor(item, view)),
     [structuresInLayer, view],
@@ -54,18 +62,18 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
       ...structure.synonyms,
     ].join(" ")).includes(term));
   }, [query, visibleStructures]);
-  const atlasImage = atlasImageFor(activeLayer, view);
+  const atlasImage = atlasImageFor(activeLayer, view, bodyProfile);
   const levelProfile = medicineLevelProfiles[level];
   const levelRank = levelOrder.indexOf(level);
 
   useEffect(() => {
     setFocused(null);
-    const selectedIsAvailable = selected?.layer === activeLayer && anatomyPositionFor(selected, view);
+    const selectedIsAvailable = selectedInProfile?.layer === activeLayer && anatomyPositionFor(selectedInProfile, view);
     if (!selectedIsAvailable) {
       const next = structuresInLayer.find((structure) => anatomyPositionFor(structure, view)) ?? structuresInLayer[0];
       if (next) onSelect(next);
     }
-  }, [activeLayer, onSelect, selected, structuresInLayer, view]);
+  }, [activeLayer, onSelect, selectedInProfile, structuresInLayer, view]);
 
   useEffect(() => {
     if (!focused) return;
@@ -84,7 +92,7 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
   const selectLayer = (layer: BodyLayer) => {
     onLayerChange(layer);
     setQuery("");
-    const structures = anatomyStructures.filter((item) => item.layer === layer);
+    const structures = anatomyStructures.filter((item) => item.layer === layer && structureMatchesBodyProfile(item, bodyProfile));
     const firstStructure = structures.find((item) => anatomyPositionFor(item, view)) ?? structures[0];
     if (firstStructure) onSelect(firstStructure);
   };
@@ -92,11 +100,19 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
   const changeView = () => {
     const nextView: AtlasView = view === "anterior" ? "posterior" : "anterior";
     setView(nextView);
-    const selectedIsVisible = selected?.layer === activeLayer && anatomyPositionFor(selected, nextView);
+    const selectedIsVisible = selectedInProfile?.layer === activeLayer && anatomyPositionFor(selectedInProfile, nextView);
     if (!selectedIsVisible) {
       const firstVisible = structuresInLayer.find((item) => anatomyPositionFor(item, nextView));
       if (firstVisible) onSelect(firstVisible);
     }
+  };
+
+  const changeBodyProfile = (profile: AtlasBodyProfile) => {
+    setBodyProfile(profile);
+    setQuery("");
+    setFocused(null);
+    const next = anatomyStructures.find((structure) => structure.layer === activeLayer && structureMatchesBodyProfile(structure, profile) && anatomyPositionFor(structure, view));
+    if (next) onSelect(next);
   };
 
   const openDetail = (structure: AnatomyStructure, requestedView: AtlasView = view) => {
@@ -111,7 +127,7 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
 
   const navigateDetail = useCallback((direction: -1 | 1) => {
     if (!focused) return;
-    const structures = anatomyStructures.filter((structure) => structure.layer === focused.structure.layer && anatomyPositionFor(structure, focused.view));
+    const structures = anatomyStructures.filter((structure) => structure.layer === focused.structure.layer && structureMatchesBodyProfile(structure, bodyProfile) && anatomyPositionFor(structure, focused.view));
     const currentIndex = structures.findIndex((structure) => structure.id === focused.structure.id);
     const nextIndex = (Math.max(currentIndex, 0) + direction + structures.length) % structures.length;
     const nextStructure = structures[nextIndex];
@@ -121,7 +137,7 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
     setDetailPan({ x: 0, y: 0 });
     setSnapCandidate(nextStructure);
     setFocused({ structure: nextStructure, view: focused.view });
-  }, [focused, onSelect]);
+  }, [bodyProfile, focused, onSelect]);
 
   useEffect(() => {
     if (!focused) return;
@@ -171,7 +187,7 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
   const findDetailSnapCandidate = (pan: { x: number; y: number }) => {
     if (!focused || !focusedPosition || !detailImageRef.current) return null;
     const points = anatomyStructures.flatMap((structure) => {
-      if (structure.layer !== focused.structure.layer) return [];
+      if (structure.layer !== focused.structure.layer || !structureMatchesBodyProfile(structure, bodyProfile)) return [];
       const position = anatomyPositionFor(structure, focused.view);
       return position ? [{ ...position, id: structure.id, structure }] : [];
     });
@@ -213,11 +229,20 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
         </div>
       </div>
 
+      <div className="med-atlas-profile-strip" aria-label="Perfil anatômico do atlas">
+        <div className="med-atlas-profile-title"><UsersRound /><span><strong>Perfil anatômico</strong><small>Estruturas reprodutivas coerentes</small></span></div>
+        <div className="med-atlas-profile-options">
+          <button className={bodyProfile === "female" ? "active" : ""} onClick={() => changeBodyProfile("female")} aria-pressed={bodyProfile === "female"}><UserRound /><span><strong>Feminino</strong><small>Anatomia ovariana</small></span></button>
+          <button className={bodyProfile === "male" ? "active" : ""} onClick={() => changeBodyProfile("male")} aria-pressed={bodyProfile === "male"}><UserRound /><span><strong>Masculino</strong><small>Anatomia testicular</small></span></button>
+        </div>
+        <p><strong>{bodyProfile === "female" ? "Modelo feminino:" : "Modelo masculino:"}</strong> {bodyProfile === "female" ? "ovários, tubas uterinas, útero, colo e vagina; estruturas masculinas ficam ocultas." : "testículos, epidídimos, ductos deferentes, vesículas seminais e próstata; estruturas femininas ficam ocultas."}</p>
+      </div>
+
       <div className="med-atlas-body">
         <nav className="med-layer-rail" aria-label="Camadas do corpo">
           <div className="med-layer-list">
             {bodyLayers.map((layer) => {
-              const total = anatomyStructures.filter((structure) => structure.layer === layer.id).length;
+              const total = anatomyStructures.filter((structure) => structure.layer === layer.id && structureMatchesBodyProfile(structure, bodyProfile)).length;
               return <button key={layer.id} className={activeLayer === layer.id ? "active" : ""} onClick={() => selectLayer(layer.id)}>
                 <span className="dot" style={{ background: layer.color }} />
                 <span><strong>{layer.label}</strong><small>{layer.description}</small></span>
@@ -233,7 +258,7 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
             <div className="med-atlas-index-meta"><strong>{filteredStructures.length}</strong><span>na vista {view}</span></div>
             <div className="med-atlas-structure-list">
               {filteredStructures.map((structure) => (
-                <button key={structure.id} className={selected?.id === structure.id ? "active" : ""} onClick={() => onSelect(structure)}>
+                <button key={structure.id} className={selectedInProfile?.id === structure.id ? "active" : ""} onClick={() => onSelect(structure)}>
                   <span>{structure.name}</span><small>{structure.region}</small>
                 </button>
               ))}
@@ -249,7 +274,7 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
               key={atlasImage}
               className="med-body-image"
               src={atlasImage}
-              alt={`Ilustração educacional do corpo humano, vista ${view}, camada ${activeLayer}`}
+              alt={`Ilustração educacional do corpo humano ${bodyProfile === "female" ? "feminino" : "masculino"}, vista ${view}, camada ${activeLayer}`}
               draggable={false}
             />
             {filteredStructures.map((structure) => {
@@ -257,7 +282,7 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
               if (!position) return null;
               return <button
                 key={structure.id}
-                className={`med-anatomy-pin ${selected?.id === structure.id ? "active" : ""}`}
+                className={`med-anatomy-pin ${selectedInProfile?.id === structure.id ? "active" : ""}`}
                 style={{ left: `${position.x}%`, top: `${position.y}%` }}
                 onClick={() => onSelect(structure)}
                 aria-label={`Selecionar ${structure.name}`}
@@ -270,17 +295,17 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
         </div>
 
         <aside className="med-structure-panel">
-          {selected ? <>
-            <span className="med-eyebrow">{selected.region}</span>
-            <h3>{selected.name}</h3>
-            {selected.latin && levelRank >= 1 && <em>{selected.latin}</em>}
-            <p>{selected.summary}</p>
+          {selectedInProfile ? <>
+            <span className="med-eyebrow">{selectedInProfile.region}</span>
+            <h3>{selectedInProfile.name}</h3>
+            {selectedInProfile.latin && levelRank >= 1 && <em>{selectedInProfile.latin}</em>}
+            <p>{selectedInProfile.summary}</p>
             <dl>
-              <div><dt>Função</dt><dd>{selected.function}</dd></div>
-              {levelRank >= 1 && <div><dt>Relações</dt><dd>{selected.relations}</dd></div>}
-              {levelRank >= 2 && <div><dt>Estruturas próximas</dt><dd>{selected.nearby.length ? selected.nearby.join(" · ") : "Consulte a fonte e as vistas regionais para relações de proximidade."}</dd></div>}
+              <div><dt>Função</dt><dd>{selectedInProfile.function}</dd></div>
+              {levelRank >= 1 && <div><dt>Relações</dt><dd>{selectedInProfile.relations}</dd></div>}
+              {levelRank >= 2 && <div><dt>Estruturas próximas</dt><dd>{selectedInProfile.nearby.length ? selectedInProfile.nearby.join(" · ") : "Consulte a fonte e as vistas regionais para relações de proximidade."}</dd></div>}
             </dl>
-            <div className="med-structure-actions"><button className="detail" onClick={() => openDetail(selected)}><Maximize2 /> Abrir em detalhe</button><button onClick={() => speakStructure(selected.name)}><Volume2 /> Ouvir nome</button><a href={medicalSourceUrl(selected.sourceId)} target="_blank" rel="noreferrer">Ver fonte anatômica <ExternalLink /></a></div>
+            <div className="med-structure-actions"><button className="detail" onClick={() => openDetail(selectedInProfile)}><Maximize2 /> Abrir em detalhe</button><button onClick={() => speakStructure(selectedInProfile.name)}><Volume2 /> Ouvir nome</button><a href={medicalSourceUrl(selectedInProfile.sourceId)} target="_blank" rel="noreferrer">Ver fonte anatômica <ExternalLink /></a></div>
           </> : <div className="med-empty-selection"><Search /><h3>Selecione uma estrutura</h3><p>Os pontos ativos mudam conforme a camada escolhida.</p></div>}
         </aside>
       </div>
@@ -372,7 +397,7 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
                 <img
                   ref={detailImageRef}
                   key={`${focused.structure.layer}-${focused.view}`}
-                  src={atlasImageFor(focused.structure.layer, focused.view)}
+                  src={atlasImageFor(focused.structure.layer, focused.view, bodyProfile)}
                   alt={`Ampliação anatômica educacional de ${focused.structure.name}`}
                   style={{
                     height: `${detailZoom * 100}%`,
@@ -425,9 +450,15 @@ function normalizeSearch(value: string) {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR").trim();
 }
 
-function atlasImageFor(layer: BodyLayer, view: AtlasView) {
+function atlasImageFor(layer: BodyLayer, view: AtlasView, profile: AtlasBodyProfile) {
+  if (layer === "organs" && profile === "female") return `/medicine/atlas/organs-female-${view}-v3.png`;
   const version = layer === "surface" ? "v3" : "v2";
   return `/medicine/atlas/${layer}-${view}-${version}.png`;
+}
+
+function structureMatchesBodyProfile(structure: AnatomyStructure, profile: AtlasBodyProfile) {
+  if (profile === "female") return !maleOnlyStructureIds.has(structure.id);
+  return !femaleOnlyStructureIds.has(structure.id);
 }
 
 function medicalSourceUrl(sourceId: string) {

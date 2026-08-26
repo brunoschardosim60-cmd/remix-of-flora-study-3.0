@@ -496,6 +496,38 @@ const organStructures = makeGroup("organs", "openstax", [
 ]);
 
 const deepLayerWithPosteriorContext = new Set<BodyLayer>(["vascular", "nervous", "organs"]);
+const femaleReproductiveDetail: Record<string, Partial<Pick<AtlasCatalogSeed, "summary" | "relations" | "nearby">>> = {
+  ovaries: {
+    summary: "Gônadas pares situadas na pelve, responsáveis pela produção de oócitos e pela secreção de hormônios ovarianos.",
+    relations: "Cada ovário liga-se ao útero pelo ligamento próprio do ovário e à parede pélvica pelo ligamento suspensor; as fímbrias da tuba uterina ficam próximas à sua extremidade tubária.",
+    nearby: ["Tubas uterinas", "Útero", "Ligamento largo", "Vasos ilíacos"],
+  },
+  "uterine-tubes": {
+    summary: "Tubos musculomembranosos pares que se estendem dos cornos uterinos em direção aos ovários.",
+    relations: "O infundíbulo e as fímbrias aproximam-se do ovário; a ampola é o local mais comum de fecundação, e o istmo comunica-se com a cavidade uterina.",
+    nearby: ["Ovários", "Útero", "Ligamento largo", "Cavidade peritoneal"],
+  },
+  uterus: {
+    summary: "Órgão muscular oco, mediano e de paredes espessas, situado na pelve menor entre a bexiga e o reto.",
+    relations: "O fundo recebe as tubas uterinas, o colo projeta-se na porção superior da vagina, a bexiga fica anteriormente e o reto posteriormente.",
+    nearby: ["Bexiga urinária", "Reto", "Tubas uterinas", "Ovários", "Vagina"],
+  },
+  cervix: {
+    summary: "Porção inferior e estreita do útero que contém o canal cervical e se projeta no ápice da vagina.",
+    relations: "Continua-se superiormente com o corpo do útero e inferiormente com a vagina; relaciona-se anteriormente com a bexiga e posteriormente com o reto.",
+    nearby: ["Corpo do útero", "Vagina", "Bexiga urinária", "Reto"],
+  },
+  vagina: {
+    summary: "Canal fibromuscular que se estende do colo do útero ao vestíbulo vaginal.",
+    relations: "Situa-se posteriormente à bexiga e à uretra e anteriormente ao reto; envolve o colo uterino formando os fórnices vaginais.",
+    nearby: ["Colo do útero", "Uretra", "Bexiga urinária", "Reto", "Vulva"],
+  },
+  vulva: {
+    summary: "Conjunto das estruturas genitais externas, incluindo monte do púbis, lábios maiores e menores, clitóris e vestíbulo.",
+    relations: "O vestíbulo contém as aberturas externas da uretra e da vagina e é delimitado pelos lábios menores.",
+    nearby: ["Clitóris", "Vestíbulo vaginal", "Uretra", "Vagina", "Períneo"],
+  },
+};
 
 export const medicineAtlasCatalog: AtlasCatalogSeed[] = [
   ...surfaceStructures,
@@ -514,4 +546,4 @@ export const medicineAtlasCatalog: AtlasCatalogSeed[] = [
       posterior: point(100 - front.x, front.y),
     },
   };
-});
+}).map((structure) => ({ ...structure, ...(femaleReproductiveDetail[structure.id] ?? {}) }));
