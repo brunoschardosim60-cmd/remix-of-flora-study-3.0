@@ -10,7 +10,7 @@ import { BodyAtlas } from "@/components/medicine/BodyAtlas";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  anatomyPositionFor, anatomyStructures, bodyLayers, embryologyTimeline, medicalClinicalCase, medicalClinicalCases, medicalQuestions,
+  anatomyPositionFor, anatomyStructures, atlasImageForStructure, bodyLayers, embryologyTimeline, medicalClinicalCase, medicalClinicalCases, medicalQuestions,
   medicineLevelProfiles, medicalSources, medicalSystems, type AnatomyStructure, type BodyLayer, type MedicineLevel,
   preferredAnatomyView,
 } from "@/lib/medicineData";
@@ -571,7 +571,7 @@ function SystemsSection({ level, onOpenAtlas, onOpen3D, onOpenQuestions, onOpenN
   useEffect(() => {
     const selectedIndex = medicalSystems.findIndex((system) => system.id === selected.id);
     const nextSystem = medicalSystems[(selectedIndex + 1) % medicalSystems.length];
-    const anatomyPreview = activeStructure ? `/medicine/atlas/${activeStructure.layer}-${structureView}-v2.png` : null;
+    const anatomyPreview = activeStructure ? atlasImageForStructure(activeStructure, structureView) : null;
     void preloadMedicalImages([selected.image, nextSystem?.image, anatomyPreview], "high");
   }, [activeStructure, selected, structureView]);
 
@@ -640,7 +640,7 @@ function SystemsSection({ level, onOpenAtlas, onOpen3D, onOpenQuestions, onOpenN
             {activeStructure && structurePosition && <article>
               <div className="med-system-anatomy-preview" aria-label={`Ampliação de ${activeStructure.name}`}>
                 <div className="med-anatomy-focus-grid" />
-                <img key={`${activeStructure.layer}-${structureView}`} src={`/medicine/atlas/${activeStructure.layer}-${structureView}-v2.png`} alt={`Localização anatômica de ${activeStructure.name}`} decoding="async" style={{ height: "280%", left: "50%", top: "50%", transform: `translate(-${structurePosition.x}%, -${structurePosition.y}%)` }} />
+                <img key={`${activeStructure.layer}-${structureView}`} src={atlasImageForStructure(activeStructure, structureView)} alt={`Localização anatômica de ${activeStructure.name}`} decoding="async" style={{ height: "280%", left: "50%", top: "50%", transform: `translate(-${structurePosition.x}%, -${structurePosition.y}%)` }} />
                 <i /><div><strong>{activeStructure.name}</strong><span>{activeStructure.region} · vista {structureView}</span></div>
               </div>
               <div className="med-system-structure-copy"><span className="med-eyebrow">{bodyLayers.find((layer) => layer.id === activeStructure.layer)?.label}</span><h3>{activeStructure.name}</h3>{activeStructure.latin && <em>{activeStructure.latin}</em>}<p>{activeStructure.summary}</p><dl><div><dt>Função</dt><dd>{activeStructure.function}</dd></div><div><dt>Relações</dt><dd>{activeStructure.relations}</dd></div></dl><div className="med-system-structure-actions"><button onClick={() => onOpenAtlas(activeStructure.layer, activeStructure)}>Abrir no atlas <ArrowRight /></button><button onClick={() => onOpen3D(activeStructure)}><Rotate3D /> Girar em 3D</button><button onClick={() => onOpenNotebook(activeStructure.name)}><NotebookPen /> Caderno</button></div></div>
@@ -894,7 +894,7 @@ function DevelopmentSection() {
 
 function PracticeSection({ level, structure, input, result, onInput, onSubmit, onNext }: { level: MedicineLevel; structure: AnatomyStructure; input: string; result: "correct" | "wrong" | null; onInput: (value: string) => void; onSubmit: () => void; onNext: () => void }) {
   const modelView = preferredAnatomyView(structure);
-  const modelImage = `/medicine/atlas/${structure.layer}-${modelView}-v2.png`;
+  const modelImage = atlasImageForStructure(structure, modelView);
   const markerPosition = anatomyPositionFor(structure, modelView) ?? { x: structure.x, y: structure.y };
   const [visualZoom, setVisualZoom] = useState(2.2);
   const [visualPan, setVisualPan] = useState({ x: 0, y: 0 });
@@ -1133,7 +1133,7 @@ function NotebookSection({ navigate }: { navigate: ReturnType<typeof useNavigate
         <h1>${escapeNotebookText(contextStructure.name)}</h1>
         ${contextStructure.latin ? `<p><em>${escapeNotebookText(contextStructure.latin)}</em></p>` : ""}
         <p><strong>Região:</strong> ${escapeNotebookText(contextStructure.region)} · <strong>Sistema:</strong> ${escapeNotebookText(contextStructure.system)}</p>
-        <img src="/medicine/atlas/${contextStructure.layer}-${preferredAnatomyView(contextStructure)}-v2.png" alt="Localização anatômica de ${escapeNotebookText(contextStructure.name)}" />
+        <img src="${atlasImageForStructure(contextStructure)}" alt="Localização anatômica de ${escapeNotebookText(contextStructure.name)}" />
         <h2>Visão geral</h2><p>${escapeNotebookText(contextStructure.summary)}</p>
         <h2>Função</h2><p>${escapeNotebookText(contextStructure.function)}</p>
         <h2>Relações anatômicas</h2><p>${escapeNotebookText(contextStructure.relations)}</p>

@@ -4,6 +4,8 @@ import { resolve } from "node:path";
 import {
   anatomyPositionFor,
   anatomyStructures,
+  atlasImageFor,
+  atlasImageForStructure,
   bodyLayers,
   embryologyTimeline,
   medicineLevelProfiles,
@@ -261,13 +263,24 @@ describe("medicine content integrity", () => {
     }
 
     for (const layer of bodyLayers) {
-      expect(publicAssetExists(`/medicine/atlas/${layer.id}-anterior-v2.png`)).toBe(true);
-      expect(publicAssetExists(`/medicine/atlas/${layer.id}-posterior-v2.png`)).toBe(true);
+      expect(publicAssetExists(atlasImageFor(layer.id, "anterior"))).toBe(true);
+      expect(publicAssetExists(atlasImageFor(layer.id, "posterior"))).toBe(true);
     }
 
     for (const clinicalCase of medicalClinicalCases) {
       if (clinicalCase.visual) expect(publicAssetExists(clinicalCase.visual.image), clinicalCase.visual.image).toBe(true);
     }
+  });
+
+  it("uses the current atlas artwork consistently in every integrated module", () => {
+    const skin = anatomyStructures.find((item) => item.id === "skin")!;
+    const uterus = anatomyStructures.find((item) => item.id === "uterus")!;
+    const heart = anatomyStructures.find((item) => item.id === "heart")!;
+
+    expect(atlasImageForStructure(skin, "anterior")).toBe("/medicine/atlas/surface-anterior-v3.png");
+    expect(atlasImageForStructure(skin, "posterior")).toBe("/medicine/atlas/surface-posterior-v3.png");
+    expect(atlasImageForStructure(uterus, "anterior")).toBe("/medicine/atlas/organs-female-anterior-v3.png");
+    expect(atlasImageForStructure(heart, "anterior")).toBe("/medicine/atlas/organs-anterior-v2.png");
   });
 
   it("mantém todas as imagens médicas íntegras e em alta resolução", () => {

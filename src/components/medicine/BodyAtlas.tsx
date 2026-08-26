@@ -7,11 +7,14 @@ import { preloadMedicalImages } from "@/lib/medicineMedia";
 import {
   anatomyPositionFor,
   anatomyStructures,
+  atlasImageFor,
   bodyLayers,
   medicineLevelProfiles,
   medicalSources,
   preferredAnatomyView,
+  structureMatchesAtlasBodyProfile,
   type AnatomyStructure,
+  type AtlasBodyProfile,
   type AtlasView,
   type BodyLayer,
   type MedicineLevel,
@@ -27,9 +30,6 @@ interface BodyAtlasProps {
 }
 
 const levelOrder: MedicineLevel[] = ["Iniciante", "Ciclo básico", "Ciclo clínico", "Internato", "Residência"];
-type AtlasBodyProfile = "female" | "male";
-const femaleOnlyStructureIds = new Set(["ovaries", "uterine-tubes", "uterus", "cervix", "vagina", "vulva"]);
-const maleOnlyStructureIds = new Set(["testes", "epididymis", "ductus-deferens", "seminal-vesicles", "prostate", "penis"]);
 
 export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelect, onOpen3D }: BodyAtlasProps) {
   const [bodyProfile, setBodyProfile] = useState<AtlasBodyProfile>("male");
@@ -461,15 +461,8 @@ function normalizeSearch(value: string) {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR").trim();
 }
 
-function atlasImageFor(layer: BodyLayer, view: AtlasView, profile: AtlasBodyProfile) {
-  if (layer === "organs" && profile === "female") return `/medicine/atlas/organs-female-${view}-v3.png`;
-  const version = layer === "surface" ? "v3" : "v2";
-  return `/medicine/atlas/${layer}-${view}-${version}.png`;
-}
-
 function structureMatchesBodyProfile(structure: AnatomyStructure, profile: AtlasBodyProfile) {
-  if (profile === "female") return !maleOnlyStructureIds.has(structure.id);
-  return !femaleOnlyStructureIds.has(structure.id);
+  return structureMatchesAtlasBodyProfile(structure, profile);
 }
 
 function medicalSourceUrl(sourceId: string) {

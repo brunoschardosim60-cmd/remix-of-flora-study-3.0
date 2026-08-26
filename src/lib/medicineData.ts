@@ -3,6 +3,7 @@ import { additionalMedicalClinicalCases } from "./additionalMedicalClinicalCases
 
 export type MedicineLevel = "Iniciante" | "Ciclo básico" | "Ciclo clínico" | "Internato" | "Residência";
 export type BodyLayer = "surface" | "muscular" | "skeletal" | "vascular" | "nervous" | "organs";
+export type AtlasBodyProfile = "female" | "male";
 export type AtlasView = "anterior" | "posterior";
 
 export interface AtlasPosition {
@@ -679,6 +680,28 @@ export function preferredAnatomyView(structure: AnatomyStructure): AtlasView {
   if (structure.positions?.anterior) return "anterior";
   if (structure.positions?.posterior) return "posterior";
   return structure.id === "sciatic" ? "posterior" : "anterior";
+}
+
+const femaleOnlyAtlasStructureIds = new Set(["ovaries", "uterine-tubes", "uterus", "cervix", "vagina", "vulva"]);
+const maleOnlyAtlasStructureIds = new Set(["testes", "epididymis", "ductus-deferens", "seminal-vesicles", "prostate", "penis"]);
+
+export function atlasImageFor(layer: BodyLayer, view: AtlasView, profile: AtlasBodyProfile = "male") {
+  if (layer === "organs" && profile === "female") return `/medicine/atlas/organs-female-${view}-v3.png`;
+  const version = layer === "surface" ? "v3" : "v2";
+  return `/medicine/atlas/${layer}-${view}-${version}.png`;
+}
+
+export function atlasBodyProfileForStructure(structure: AnatomyStructure): AtlasBodyProfile {
+  return femaleOnlyAtlasStructureIds.has(structure.id) ? "female" : "male";
+}
+
+export function atlasImageForStructure(structure: AnatomyStructure, view = preferredAnatomyView(structure)) {
+  return atlasImageFor(structure.layer, view, atlasBodyProfileForStructure(structure));
+}
+
+export function structureMatchesAtlasBodyProfile(structure: AnatomyStructure, profile: AtlasBodyProfile) {
+  if (profile === "female") return !maleOnlyAtlasStructureIds.has(structure.id);
+  return !femaleOnlyAtlasStructureIds.has(structure.id);
 }
 
 export const medicalSystems: MedicalSystem[] = [
