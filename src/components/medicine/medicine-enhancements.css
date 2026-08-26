@@ -640,6 +640,24 @@
 .med-anatomy-pin:hover::after,
 .med-anatomy-pin:focus-visible::after { transform: translate(-50%, 0); opacity: 1; }
 
+.med-atlas-density-note {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  z-index: 4;
+  transform: translateX(-50%);
+  padding: 7px 11px;
+  border: 1px solid rgba(73, 116, 102, .15);
+  border-radius: 999px;
+  background: rgba(248, 251, 249, .9);
+  color: #416c60;
+  font-size: 9px;
+  font-weight: 750;
+  white-space: nowrap;
+  box-shadow: 0 8px 24px rgba(36, 66, 58, .1);
+  backdrop-filter: blur(12px);
+}
+
 .med-atlas-image-note {
   position: absolute;
   bottom: 35px;

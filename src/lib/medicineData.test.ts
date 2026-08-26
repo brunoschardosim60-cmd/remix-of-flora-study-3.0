@@ -256,7 +256,32 @@ describe("medicine content integrity", () => {
       ...Array.from({ length: 4 }, (_, index) => `coccygeal-segment-co${index + 1}`),
     ];
     for (const id of redundantGroupIds) expect(anatomyStructures.some((item) => item.id === id), id).toBe(false);
-    expect(anatomyStructures.filter((item) => item.layer === "skeletal")).toHaveLength(112);
+    expect(anatomyStructures.filter((item) => item.layer === "skeletal")).toHaveLength(123);
+  });
+
+  it("amplia o atlas com estruturas regionais de alto valor sem inflar grupos redundantes", () => {
+    const requiredByLayer = {
+      surface: ["epigastric-region", "perineal-region", "carpal-region", "calcaneal-region"],
+      muscular: ["buccinator", "transversus-abdominis", "subscapularis", "piriformis", "levator-ani"],
+      skeletal: ["sphenoid-bone", "ethmoid-bone", "hyoid-bone", "malleus", "incus", "stapes"],
+      vascular: ["pulmonary-trunk", "pulmonary-veins", "left-coronary-artery", "hepatic-veins", "small-saphenous-vein"],
+      nervous: ["olfactory-nerve", "oculomotor-nerve", "vestibulocochlear-nerve", "accessory-nerve", "hypoglossal-nerve", "pudendal-nerve"],
+      organs: ["cornea", "submandibular-gland", "epiglottis", "alveoli", "pericardium", "aortic-valve", "clitoris", "bulbourethral-glands"],
+    } as const;
+
+    for (const [layer, ids] of Object.entries(requiredByLayer)) {
+      for (const id of ids) {
+        const structure = anatomyStructures.find((item) => item.id === id);
+        expect(structure, `${layer}/${id}`).toBeDefined();
+        expect(structure?.layer, id).toBe(layer);
+      }
+    }
+
+    const cranialNerveIds = [
+      "olfactory-nerve", "optic-nerve", "oculomotor-nerve", "trochlear-nerve", "trigeminal-nerve", "abducens-nerve",
+      "facial-nerve", "vestibulocochlear-nerve", "glossopharyngeal-nerve", "vagus-nerve", "accessory-nerve", "hypoglossal-nerve",
+    ];
+    for (const id of cranialNerveIds) expect(anatomyStructures.some((item) => item.id === id), id).toBe(true);
   });
 
   it("keeps deep anatomical layers fully explorable from the posterior view", () => {

@@ -228,6 +228,14 @@ export const medicalSources: Record<string, MedicalSource> = {
     license: "CC BY-NC-SA 4.0",
     attribution: "Access for free at openstax.org.",
   },
+  openstaxSurfaceAnatomy: {
+    title: "Regiões do corpo humano",
+    organization: "OpenStax, Rice University",
+    url: "https://openstax.org/books/anatomy-and-physiology-2e/pages/1-6-anatomical-terminology",
+    reviewedAt: "2026-08-26",
+    license: "CC BY-NC-SA 4.0",
+    attribution: "Access for free at openstax.org.",
+  },
   openstaxSkeleton: {
     title: "Funções do sistema esquelético",
     organization: "OpenStax, Rice University",
@@ -236,11 +244,35 @@ export const medicalSources: Record<string, MedicalSource> = {
     license: "CC BY-NC-SA 4.0",
     attribution: "Access for free at openstax.org.",
   },
+  openstaxSkull: {
+    title: "O crânio e o osso hioide",
+    organization: "OpenStax, Rice University",
+    url: "https://openstax.org/books/anatomy-and-physiology-2e/pages/7-2-the-skull",
+    reviewedAt: "2026-08-26",
+    license: "CC BY-NC-SA 4.0",
+    attribution: "Access for free at openstax.org.",
+  },
   openstaxMuscle: {
     title: "Músculo esquelético",
     organization: "OpenStax, Rice University",
     url: "https://openstax.org/books/anatomy-and-physiology-2e/pages/10-2-skeletal-muscle",
     reviewedAt: "2026-08-24",
+    license: "CC BY-NC-SA 4.0",
+    attribution: "Access for free at openstax.org.",
+  },
+  openstaxAxialMuscles: {
+    title: "Músculos axiais da cabeça, pescoço, dorso, abdome e tórax",
+    organization: "OpenStax, Rice University",
+    url: "https://openstax.org/books/anatomy-and-physiology-2e/pages/11-3-axial-muscles-of-the-head-neck-and-back",
+    reviewedAt: "2026-08-26",
+    license: "CC BY-NC-SA 4.0",
+    attribution: "Access for free at openstax.org.",
+  },
+  openstaxAppendicularMuscles: {
+    title: "Músculos dos membros superiores e inferiores",
+    organization: "OpenStax, Rice University",
+    url: "https://openstax.org/books/anatomy-and-physiology-2e/pages/11-6-appendicular-muscles-of-the-pelvic-girdle-and-lower-limbs",
+    reviewedAt: "2026-08-26",
     license: "CC BY-NC-SA 4.0",
     attribution: "Access for free at openstax.org.",
   },
@@ -257,6 +289,14 @@ export const medicalSources: Record<string, MedicalSource> = {
     organization: "OpenStax, Rice University",
     url: "https://openstax.org/books/anatomy-and-physiology-2e/pages/13-4-the-peripheral-nervous-system",
     reviewedAt: "2026-08-24",
+    license: "CC BY-NC-SA 4.0",
+    attribution: "Access for free at openstax.org.",
+  },
+  openstaxCranialNerves: {
+    title: "Os doze pares de nervos cranianos",
+    organization: "OpenStax, Rice University",
+    url: "https://openstax.org/books/anatomy-and-physiology-2e/pages/16-3-the-cranial-nerve-exam",
+    reviewedAt: "2026-08-26",
     license: "CC BY-NC-SA 4.0",
     attribution: "Access for free at openstax.org.",
   },
@@ -300,6 +340,14 @@ export const medicalSources: Record<string, MedicalSource> = {
     license: "CC BY-NC-SA 4.0",
     attribution: "Access for free at openstax.org.",
   },
+  openstaxRespiratoryAnatomy: {
+    title: "Órgãos e estruturas do sistema respiratório",
+    organization: "OpenStax, Rice University",
+    url: "https://openstax.org/books/anatomy-and-physiology-2e/pages/22-1-organs-and-structures-of-the-respiratory-system",
+    reviewedAt: "2026-08-26",
+    license: "CC BY-NC-SA 4.0",
+    attribution: "Access for free at openstax.org.",
+  },
   openstaxDigestive: {
     title: "Processos e regulação do sistema digestório",
     organization: "OpenStax, Rice University",
@@ -307,6 +355,12 @@ export const medicalSources: Record<string, MedicalSource> = {
     reviewedAt: "2026-08-24",
     license: "CC BY-NC-SA 4.0",
     attribution: "Access for free at openstax.org.",
+  },
+  ncbiSalivaryGlands: {
+    title: "Anatomia das glândulas salivares",
+    organization: "National Center for Biotechnology Information",
+    url: "https://www.ncbi.nlm.nih.gov/books/NBK538325/",
+    reviewedAt: "2026-08-26",
   },
   openstaxKidney: {
     title: "Anatomia microscópica do rim",
@@ -655,17 +709,17 @@ export const atlasCoverageByLayer: Record<BodyLayer, AtlasCoverageReference> = {
   surface: {
     humanReference: "Não existe um total universal de regiões superficiais.",
     catalogNote: "O total varia conforme o nível de subdivisão adotado; aqui entram regiões externas e marcos palpáveis selecionados.",
-    sourceIds: ["openstaxTerminology", "humanReferenceAtlas"],
+    sourceIds: ["openstaxSurfaceAnatomy", "humanReferenceAtlas"],
   },
   muscular: {
     humanReference: "O corpo humano possui mais de 600 músculos.",
     catalogNote: "O atlas reúne músculos e grupos principais; estruturas bilaterais compartilham uma entrada, portanto não é uma contagem muscular total.",
-    sourceIds: ["nihMuscleCount", "openstaxMuscle"],
+    sourceIds: ["nihMuscleCount", "openstaxAxialMuscles", "openstaxAppendicularMuscles"],
   },
   skeletal: {
     humanReference: "O esqueleto adulto típico possui 206 ossos.",
-    catalogNote: "O atlas é parcial e reúne os lados direito e esquerdo em uma entrada. Os 112 itens não equivalem a 112 ossos individuais.",
-    sourceIds: ["openstaxSkeletonCount"],
+    catalogNote: "O atlas reúne os lados direito e esquerdo em uma entrada e inclui ossos pequenos do crânio e da orelha; o total editorial não equivale ao número de ossos individuais.",
+    sourceIds: ["openstaxSkeletonCount", "openstaxSkull"],
   },
   vascular: {
     humanReference: "Não existe um total anatômico único de vasos sanguíneos.",
@@ -675,12 +729,12 @@ export const atlasCoverageByLayer: Record<BodyLayer, AtlasCoverageReference> = {
   nervous: {
     humanReference: "Há 12 pares de nervos cranianos e 31 pares de nervos espinais, além de seus ramos.",
     catalogNote: "Esta camada também inclui encéfalo, medula e plexos; por isso, seus itens não representam uma contagem total de nervos.",
-    sourceIds: ["openstaxNerveCount", "openstaxCns"],
+    sourceIds: ["openstaxNerveCount", "openstaxCranialNerves", "openstaxCns"],
   },
   organs: {
     humanReference: "A anatomia é organizada em 11 sistemas, mas não há consenso sobre um total único de órgãos.",
     catalogNote: "O catálogo combina órgãos inteiros, partes de órgãos, glândulas, sentidos e estruturas de conexão; o número exibido é editorial.",
-    sourceIds: ["ncbiBodyOrganization", "pubmedOrganDefinition"],
+    sourceIds: ["ncbiBodyOrganization", "pubmedOrganDefinition", "ncbiSalivaryGlands"],
   },
 };
 
@@ -772,8 +826,8 @@ export function preferredAnatomyView(structure: AnatomyStructure): AtlasView {
   return structure.id === "sciatic" ? "posterior" : "anterior";
 }
 
-const femaleOnlyAtlasStructureIds = new Set(["ovaries", "uterine-tubes", "uterus", "cervix", "vagina", "vulva"]);
-const maleOnlyAtlasStructureIds = new Set(["testes", "epididymis", "ductus-deferens", "seminal-vesicles", "prostate", "penis"]);
+const femaleOnlyAtlasStructureIds = new Set(["mammary-glands", "ovaries", "uterine-tubes", "uterus", "cervix", "vagina", "vulva", "clitoris"]);
+const maleOnlyAtlasStructureIds = new Set(["testes", "epididymis", "ductus-deferens", "seminal-vesicles", "bulbourethral-glands", "prostate", "scrotum", "penis"]);
 
 export function atlasImageFor(layer: BodyLayer, view: AtlasView, profile: AtlasBodyProfile = "male") {
   if (layer === "organs" && profile === "female") return `/medicine/atlas/organs-female-${view}-v3.png`;
@@ -795,17 +849,17 @@ export function structureMatchesAtlasBodyProfile(structure: AnatomyStructure, pr
 }
 
 export const medicalSystems: MedicalSystem[] = [
-  { id: "cardiovascular", name: "Cardiovascular", description: "Bomba cardíaca, vasos e transporte sistêmico.", color: "#b35f68", icon: "heart", image: "/medicine/systems/cardiovascular-v1.png", structures: ["Coração", "Aorta", "Artérias", "Veias", "Capilares"], topics: ["Ciclo cardíaco", "Hemodinâmica", "Circulações pulmonar e sistêmica"], atlasStructureIds: ["heart", "aorta", "ascending-aorta", "aortic-arch", "common-carotid-artery", "superior-vena-cava", "femoral-artery"], questionSystems: ["Cardiovascular"], sourceId: "openstaxHeart" },
-  { id: "respiratory", name: "Respiratório", description: "Ventilação, difusão e transporte de gases.", color: "#7398a8", icon: "lungs", image: "/medicine/systems/respiratory-v1.png", structures: ["Pulmões", "Traqueia", "Brônquios", "Alvéolos", "Diafragma"], topics: ["Mecânica ventilatória", "Trocas gasosas", "Controle da respiração"], atlasStructureIds: ["lungs", "nasal-cavity", "pharynx", "larynx", "trachea", "main-bronchi", "diaphragm"], questionSystems: ["Respiratório"], sourceId: "openstaxRespiratory" },
-  { id: "nervous", name: "Nervoso", description: "Integração sensorial, motora e autonômica.", color: "#b48a46", icon: "brain", image: "/medicine/systems/nervous-v1.png", structures: ["Encéfalo", "Medula espinal", "Nervos periféricos"], topics: ["Potencial de ação", "Sinapses", "Vias motoras e sensitivas"], atlasStructureIds: ["brain", "cerebrum", "cerebellum", "brainstem", "spinal-cord", "vagus-nerve", "sciatic"], questionSystems: ["Nervoso"], sourceId: "openstaxCns" },
-  { id: "digestive", name: "Digestório", description: "Digestão, absorção e metabolismo de nutrientes.", color: "#8d7861", icon: "activity", image: "/medicine/systems/digestive-v1.png", structures: ["Esôfago", "Estômago", "Intestinos", "Fígado", "Pâncreas"], topics: ["Motilidade", "Secreções", "Absorção"], atlasStructureIds: ["oral-cavity", "parotid-gland", "esophagus", "stomach", "liver", "gallbladder", "pancreas", "duodenum", "jejunum", "ileum", "ascending-colon", "rectum"], questionSystems: ["Digestório"], sourceId: "openstaxDigestive" },
-  { id: "musculoskeletal", name: "Musculoesquelético", description: "Sustentação, movimento e proteção.", color: "#9d685f", icon: "bone", image: "/medicine/systems/musculoskeletal-v1.png", structures: ["Ossos", "Articulações", "Músculos", "Tendões"], topics: ["Tecido ósseo", "Contração muscular", "Biomecânica"], atlasStructureIds: ["deltoid", "femur", "clavicle", "scapula", "sternum", "rib-1", "humerus", "patella", "tibia", "pectoralis-major", "biceps-brachii", "rectus-femoris"], questionSystems: ["Musculoesquelético"], sourceId: "openstaxSkeleton" },
-  { id: "endocrine", name: "Endócrino", description: "Sinalização hormonal e homeostase.", color: "#8d7397", icon: "sparkles", image: "/medicine/systems/endocrine-v1.png", structures: ["Hipófise", "Tireoide", "Suprarrenais", "Pâncreas endócrino"], topics: ["Eixos hormonais", "Retroalimentação hormonal", "Metabolismo"], atlasStructureIds: ["pituitary-gland", "pineal-gland", "thyroid-gland", "parathyroid-glands", "adrenal-glands", "pancreas"], questionSystems: ["Endócrino"], sourceId: "openstaxEndocrine" },
+  { id: "cardiovascular", name: "Cardiovascular", description: "Bomba cardíaca, vasos e transporte sistêmico.", color: "#b35f68", icon: "heart", image: "/medicine/systems/cardiovascular-v1.png", structures: ["Coração", "Aorta", "Artérias", "Veias", "Capilares"], topics: ["Ciclo cardíaco", "Hemodinâmica", "Circulações pulmonar e sistêmica"], atlasStructureIds: ["heart", "right-atrium", "left-atrium", "right-ventricle", "left-ventricle", "tricuspid-valve", "mitral-valve", "aortic-valve", "pulmonary-trunk", "pulmonary-veins", "left-coronary-artery", "aorta", "aortic-arch", "superior-vena-cava", "femoral-artery"], questionSystems: ["Cardiovascular"], sourceId: "openstaxHeart" },
+  { id: "respiratory", name: "Respiratório", description: "Ventilação, difusão e transporte de gases.", color: "#7398a8", icon: "lungs", image: "/medicine/systems/respiratory-v1.png", structures: ["Pulmões", "Traqueia", "Brônquios", "Alvéolos", "Diafragma"], topics: ["Mecânica ventilatória", "Trocas gasosas", "Controle da respiração"], atlasStructureIds: ["lungs", "nasal-cavity", "pharynx", "larynx", "epiglottis", "trachea", "main-bronchi", "bronchioles", "alveoli", "pleura", "diaphragm"], questionSystems: ["Respiratório"], sourceId: "openstaxRespiratory" },
+  { id: "nervous", name: "Nervoso", description: "Integração sensorial, motora e autonômica.", color: "#b48a46", icon: "brain", image: "/medicine/systems/nervous-v1.png", structures: ["Encéfalo", "Medula espinal", "Nervos periféricos"], topics: ["Potencial de ação", "Sinapses", "Vias motoras e sensitivas"], atlasStructureIds: ["brain", "cerebrum", "cerebellum", "brainstem", "spinal-cord", "olfactory-nerve", "optic-nerve", "trigeminal-nerve", "facial-nerve", "vestibulocochlear-nerve", "vagus-nerve", "hypoglossal-nerve", "pudendal-nerve", "sciatic"], questionSystems: ["Nervoso"], sourceId: "openstaxCns" },
+  { id: "digestive", name: "Digestório", description: "Digestão, absorção e metabolismo de nutrientes.", color: "#8d7861", icon: "activity", image: "/medicine/systems/digestive-v1.png", structures: ["Esôfago", "Estômago", "Intestinos", "Fígado", "Pâncreas"], topics: ["Motilidade", "Secreções", "Absorção"], atlasStructureIds: ["oral-cavity", "parotid-gland", "submandibular-gland", "sublingual-gland", "esophagus", "stomach", "liver", "gallbladder", "common-bile-duct", "pancreas", "duodenum", "jejunum", "ileum", "ascending-colon", "rectum", "anal-canal"], questionSystems: ["Digestório"], sourceId: "openstaxDigestive" },
+  { id: "musculoskeletal", name: "Musculoesquelético", description: "Sustentação, movimento e proteção.", color: "#9d685f", icon: "bone", image: "/medicine/systems/musculoskeletal-v1.png", structures: ["Ossos", "Articulações", "Músculos", "Tendões"], topics: ["Tecido ósseo", "Contração muscular", "Biomecânica"], atlasStructureIds: ["deltoid", "femur", "sphenoid-bone", "hyoid-bone", "clavicle", "scapula", "sternum", "rib-1", "humerus", "patella", "tibia", "pectoralis-major", "subscapularis", "transversus-abdominis", "piriformis", "rectus-femoris"], questionSystems: ["Musculoesquelético"], sourceId: "openstaxSkeleton" },
+  { id: "endocrine", name: "Endócrino", description: "Sinalização hormonal e homeostase.", color: "#8d7397", icon: "sparkles", image: "/medicine/systems/endocrine-v1.png", structures: ["Hipófise", "Tireoide", "Suprarrenais", "Pâncreas endócrino"], topics: ["Eixos hormonais", "Retroalimentação hormonal", "Metabolismo"], atlasStructureIds: ["hypothalamus", "pituitary-gland", "pineal-gland", "thyroid-gland", "parathyroid-glands", "adrenal-glands", "pancreas"], questionSystems: ["Endócrino"], sourceId: "openstaxEndocrine" },
   { id: "urinary", name: "Urinário", description: "Filtração, equilíbrio interno e excreção.", color: "#6085a0", icon: "droplets", image: "/medicine/systems/urinary-v1.png", structures: ["Rins", "Ureteres", "Bexiga", "Uretra"], topics: ["Filtração glomerular", "Transporte tubular", "Equilíbrio ácido-base"], atlasStructureIds: ["kidneys", "ureters", "urinary-bladder", "urethra"], questionSystems: ["Urinário"], sourceId: "openstaxKidney" },
   { id: "immune", name: "Linfático e imune", description: "Defesa, vigilância e retorno de fluidos.", color: "#668a75", icon: "shield", image: "/medicine/systems/immune-v1.png", structures: ["Linfonodos", "Baço", "Timo", "Vasos linfáticos"], topics: ["Imunidade inata", "Imunidade adaptativa", "Drenagem linfática"], atlasStructureIds: ["thymus", "spleen", "palatine-tonsils", "cervical-lymph-nodes", "axillary-lymph-nodes", "inguinal-lymph-nodes"], questionSystems: ["Imune", "Linfático"], sourceId: "openstaxImmune" },
   { id: "integumentary", name: "Tegumentar", description: "Barreira corporal, anexos cutâneos e termorregulação.", color: "#c08c75", icon: "shield", image: "/medicine/systems/integumentary-v1.png", structures: ["Epiderme", "Derme", "Hipoderme", "Pelos", "Unhas", "Glândulas cutâneas"], topics: ["Barreira epidérmica", "Anexos cutâneos", "Termorregulação e sensibilidade"], atlasStructureIds: ["skin", "epidermis", "dermis", "hypodermis", "hair-follicle", "sebaceous-gland", "sweat-gland", "nails"], questionSystems: ["Tegumentar"], sourceId: "openstaxSkinLayers" },
-  { id: "special-senses", name: "Sentidos especiais", description: "Visão, audição, equilíbrio, olfato e gustação.", color: "#8b79a6", icon: "eye", image: "/medicine/systems/special-senses-v1.png", structures: ["Olho", "Retina", "Orelha interna", "Epitélio olfatório", "Botões gustativos"], topics: ["Transdução sensorial", "Vias visuais e auditivas", "Equilíbrio, olfato e gustação"], atlasStructureIds: ["eyes", "retina", "lens-eye", "optic-nerve", "cochlea", "semicircular-canals", "olfactory-epithelium", "tongue", "taste-buds"], questionSystems: ["Sentidos especiais"], sourceId: "openstaxSenses" },
-  { id: "reproductive", name: "Reprodutor", description: "Gônadas, gametas, ductos e regulação reprodutiva.", color: "#a56f86", icon: "activity", image: "/medicine/atlas/organs-anterior-v2.png", structures: ["Ovários", "Tubas uterinas", "Útero", "Testículos", "Epidídimo", "Próstata"], topics: ["Gametogênese", "Ciclos e regulação hormonal", "Trajetos reprodutivos"], atlasStructureIds: ["ovaries", "uterine-tubes", "uterus", "cervix", "vagina", "testes", "epididymis", "ductus-deferens", "seminal-vesicles", "prostate"], questionSystems: ["Reprodutor"], sourceId: "openstaxReproductive" },
+  { id: "special-senses", name: "Sentidos especiais", description: "Visão, audição, equilíbrio, olfato e gustação.", color: "#8b79a6", icon: "eye", image: "/medicine/systems/special-senses-v1.png", structures: ["Olho", "Retina", "Orelha interna", "Epitélio olfatório", "Botões gustativos"], topics: ["Transdução sensorial", "Vias visuais e auditivas", "Equilíbrio, olfato e gustação"], atlasStructureIds: ["eyes", "cornea", "iris", "sclera", "retina", "lens-eye", "lacrimal-gland", "optic-nerve", "tympanic-membrane", "cochlea", "semicircular-canals", "olfactory-epithelium", "tongue", "taste-buds"], questionSystems: ["Sentidos especiais"], sourceId: "openstaxSenses" },
+  { id: "reproductive", name: "Reprodutor", description: "Gônadas, gametas, ductos e regulação reprodutiva.", color: "#a56f86", icon: "activity", image: "/medicine/atlas/organs-anterior-v2.png", structures: ["Ovários", "Tubas uterinas", "Útero", "Testículos", "Epidídimo", "Próstata"], topics: ["Gametogênese", "Ciclos e regulação hormonal", "Trajetos reprodutivos"], atlasStructureIds: ["mammary-glands", "ovaries", "uterine-tubes", "uterus", "cervix", "vagina", "clitoris", "testes", "epididymis", "ductus-deferens", "seminal-vesicles", "bulbourethral-glands", "prostate", "scrotum"], questionSystems: ["Reprodutor"], sourceId: "openstaxReproductive" },
 ];
 
 export const embryologyTimeline: DevelopmentStage[] = [

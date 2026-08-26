@@ -68,6 +68,20 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
   const levelProfile = medicineLevelProfiles[level];
   const levelRank = levelOrder.indexOf(level);
   const activeCoverage = atlasCoverageByLayer[activeLayer];
+  const canvasPinLimit = [28, 36, 46, 58, 72][Math.max(levelRank, 0)];
+  const canvasStructures = useMemo(() => {
+    if (query.trim() || zoom >= 1.25 || filteredStructures.length <= canvasPinLimit) return filteredStructures;
+    const selectedStructure = selectedInProfile && filteredStructures.some((item) => item.id === selectedInProfile.id)
+      ? selectedInProfile
+      : filteredStructures[0];
+    if (!selectedStructure) return [];
+    const remaining = filteredStructures.filter((item) => item.id !== selectedStructure.id);
+    const slots = Math.max(canvasPinLimit - 1, 1);
+    const sampled = Array.from({ length: Math.min(slots, remaining.length) }, (_, index) => (
+      remaining[Math.min(Math.floor(index * remaining.length / slots), remaining.length - 1)]
+    ));
+    return [selectedStructure, ...Array.from(new Map(sampled.map((item) => [item.id, item])).values())];
+  }, [canvasPinLimit, filteredStructures, query, selectedInProfile, zoom]);
 
   useEffect(() => {
     const selectedIsAvailable = selectedInProfile?.layer === activeLayer && anatomyPositionFor(selectedInProfile, view);
@@ -297,7 +311,7 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
               decoding="async"
               draggable={false}
             />
-            {filteredStructures.map((structure) => {
+            {canvasStructures.map((structure) => {
               const position = anatomyPositionFor(structure, view);
               if (!position) return null;
               return <button
@@ -310,6 +324,9 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
               ><span /></button>;
             })}
           </div>
+          {canvasStructures.length < filteredStructures.length && <span className="med-atlas-density-note">
+            {canvasStructures.length} de {filteredStructures.length} pontos visíveis · aproxime para revelar todos
+          </span>}
           <span className="med-atlas-image-note">Ilustração educacional gerada · não diagnóstica</span>
           <div className="med-orientation"><span>D</span><strong>{view === "anterior" ? "ANTERIOR" : "POSTERIOR"}</strong><span>E</span></div>
         </div>
