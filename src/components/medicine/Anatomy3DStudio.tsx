@@ -171,15 +171,18 @@ export function Anatomy3DStudio({ level, initialStructureId }: Anatomy3DStudioPr
   }, [levelVisibleStructures, modelSelection?.id, selectedId]);
 
   const changeSystem = (nextSystem: Anatomy3DSystemId) => {
-    const nextRegion = structuresFor3D(nextSystem, region).length ? region : "whole";
+    const nextRegion: Anatomy3DRegionId = "whole";
     setSystem(nextSystem);
     setRegion(nextRegion);
     setAppearance("educational");
     setQuery("");
-    const next = structuresFor3D(nextSystem, nextRegion)[0] ?? structuresFor3D(nextSystem, "whole")[0];
+    const systemStructures = structuresFor3D(nextSystem, nextRegion);
+    const next = systemStructures.find((structure) => structure.regionId === "whole") ?? systemStructures[0];
     if (next) setSelectedId(next.id);
     setModelSelection(null);
     setOrganView("context");
+    setCameraView("perspective");
+    setZoom(1);
     setFocusSelected(false);
     setFocusKey((value) => value + 1);
   };
@@ -231,9 +234,8 @@ export function Anatomy3DStudio({ level, initialStructureId }: Anatomy3DStudioPr
     setSelectedId(replacement.id);
     setModelSelection(replacement);
     if (realistic && replacement.layer === "organs") setOrganView("isolated");
-    setFocusSelected(system !== "all");
     setFocusKey((value) => value + 1);
-  }, [detailedCatalogs, realistic, selectedId, system]);
+  }, [detailedCatalogs, realistic, selectedId]);
 
   const selectedPosition = filteredStructures.findIndex((structure) => structure.id === selected?.id || normalize(structure.name) === normalize(selected?.name ?? ""));
   const navigateStructure = useCallback((direction: -1 | 1) => {
