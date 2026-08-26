@@ -430,20 +430,31 @@
 }
 
 .med-atlas-profile-strip {
-  display: grid;
-  grid-template-columns: 170px minmax(320px, 1fr);
+  display: flex;
   align-items: center;
-  gap: 9px 14px;
-  padding: 10px 13px;
+  justify-content: flex-end;
+  min-height: 50px;
+  padding: 6px 13px;
   border-top: 1px solid var(--med-line);
   border-bottom: 1px solid var(--med-line);
   background: linear-gradient(90deg, #f8faf7, #eef5f1);
 }
-.med-atlas-profile-title,.med-atlas-profile-title>span,.med-atlas-development-link,.med-atlas-development-link>span{display:flex;min-width:0}
-.med-atlas-profile-title{align-items:center;gap:9px;color:#3f7062}.med-atlas-profile-title>svg{width:18px}.med-atlas-profile-title>span,.med-atlas-development-link>span{flex:1;flex-direction:column}
-.med-atlas-profile-title strong,.med-atlas-development-link strong{color:#315f53;font-size:9px}.med-atlas-profile-title small,.med-atlas-development-link small{margin-top:2px;color:#7b8e87;font-size:7px}
-.med-atlas-profile-options{display:grid;grid-template-columns:repeat(2,minmax(130px,1fr));gap:6px}.med-atlas-profile-options>button{display:grid;min-width:0;grid-template-columns:27px 1fr;align-items:center;gap:7px;padding:7px;border:1px solid rgba(54,92,80,.13);border-radius:10px;background:rgba(255,255,255,.82);color:#607b72;text-align:left;cursor:pointer}.med-atlas-profile-options>button>svg{width:14px}.med-atlas-profile-options>button>span{display:flex;min-width:0;flex-direction:column}.med-atlas-profile-options strong{overflow:hidden;color:#476d62;font-size:8px;text-overflow:ellipsis;white-space:nowrap}.med-atlas-profile-options small{margin-top:2px;color:#879790;font-size:6.5px}.med-atlas-profile-options>button:hover{border-color:#76a194}.med-atlas-profile-options>button.active{border-color:#397765;background:#397765;color:#fff;box-shadow:0 6px 16px rgba(40,103,85,.16)}.med-atlas-profile-options>button.active strong,.med-atlas-profile-options>button.active small{color:#fff}
-.med-atlas-development-link{align-items:center;gap:8px;padding:8px 10px;border:1px solid rgba(68,118,102,.18);border-radius:11px;background:#fff;text-align:left;cursor:pointer}.med-atlas-development-link>svg{width:15px;color:#4e7f70}.med-atlas-development-link>svg:last-child{width:12px}.med-atlas-profile-strip>p{grid-column:1/-1;margin:-1px 0 0;color:#73867f;font-size:7px;line-height:1.45}.med-atlas-profile-strip>p strong{color:#456f63}
+.med-atlas-profile-options { display: flex; align-items: center; gap: 6px; }
+.med-atlas-profile-options > button {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 1px solid rgba(54,92,80,.14);
+  border-radius: 11px;
+  background: rgba(255,255,255,.86);
+  color: #607b72;
+  cursor: pointer;
+  transition: transform .16s ease, border-color .16s ease, background .16s ease;
+}
+.med-atlas-profile-options > button > span { font-family: Arial, sans-serif; font-size: 21px; font-weight: 700; line-height: 1; }
+.med-atlas-profile-options > button:hover { transform: translateY(-1px); border-color: #76a194; }
+.med-atlas-profile-options > button.active { border-color: #397765; background: #397765; color: #fff; box-shadow: 0 6px 16px rgba(40,103,85,.16); }
 
 .med-body-image {
   position: absolute;
@@ -2394,14 +2405,15 @@
 }
 
 .dark .med-atlas-profile-strip,.black .med-atlas-profile-strip{border-color:rgba(167,202,190,.14);background:linear-gradient(90deg,#17211c,#111915)}
-.dark .med-atlas-profile-options>button,.black .med-atlas-profile-options>button,.dark .med-atlas-development-link,.black .med-atlas-development-link{border-color:rgba(167,202,190,.14);background:#1c2822}.dark .med-atlas-profile-options strong,.black .med-atlas-profile-options strong,.dark .med-atlas-profile-title strong,.black .med-atlas-profile-title strong,.dark .med-atlas-development-link strong,.black .med-atlas-development-link strong{color:#c9ddd6}
+.dark .med-atlas-profile-options>button,.black .med-atlas-profile-options>button{border-color:rgba(167,202,190,.14);background:#1c2822;color:#b9cec6}.dark .med-atlas-profile-options>button.active,.black .med-atlas-profile-options>button.active{background:#397765;color:#fff}
 
 @media (max-width: 980px) {
-  .med-atlas-profile-strip{grid-template-columns:1fr}.med-atlas-profile-title{display:none}.med-atlas-profile-strip>p{grid-column:auto}.med-atlas-development-link{justify-self:stretch}
+  .med-atlas-profile-strip { min-height: 48px; }
 }
 
 @media (max-width: 560px) {
-  .med-atlas-profile-options{display:flex;overflow-x:auto;padding-bottom:2px}.med-atlas-profile-options>button{min-width:112px}.med-atlas-profile-strip{padding:10px}.med-atlas-profile-strip>p{font-size:6.5px}
+  .med-atlas-profile-strip { padding: 6px 9px; }
+  .med-atlas-profile-options > button { width: 34px; height: 34px; }
 }
 
 .med-practice-clue {

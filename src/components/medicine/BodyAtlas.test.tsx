@@ -37,17 +37,28 @@ describe("BodyAtlas selection flow", () => {
     expect(screen.getByRole("heading", { level: 2, name: "Pulmões" })).toBeInTheDocument();
   });
 
+  it("keeps the detail dialog open when the focused structure changes", () => {
+    render(<AtlasHarness />);
+
+    fireEvent.click(screen.getByRole("button", { name: /^Pulmões/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Abrir em detalhe" }));
+    fireEvent.click(screen.getByRole("button", { name: /Próxima estrutura/ }));
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
   it("separates female and male reproductive anatomy", () => {
     render(<AtlasHarness />);
+
+    expect(screen.getAllByRole("button", { name: /^(Homem|Mulher)$/ }).map((button) => button.getAttribute("aria-label"))).toEqual(["Homem", "Mulher"]);
+    expect(screen.queryByRole("button", { name: /^Útero/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Próstata/ })).toBeInTheDocument();
+    expect(screen.getByAltText(/corpo humano masculino/)).toHaveAttribute("src", "/medicine/atlas/organs-anterior-v2.png");
+
+    fireEvent.click(screen.getByRole("button", { name: "Mulher" }));
 
     expect(screen.getByRole("button", { name: /^Útero/ })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^Próstata/ })).not.toBeInTheDocument();
     expect(screen.getByAltText(/corpo humano feminino/)).toHaveAttribute("src", "/medicine/atlas/organs-female-anterior-v3.png");
-
-    fireEvent.click(screen.getByRole("button", { name: /Masculino/ }));
-
-    expect(screen.queryByRole("button", { name: /^Útero/ })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /^Próstata/ })).toBeInTheDocument();
-    expect(screen.getByAltText(/corpo humano masculino/)).toHaveAttribute("src", "/medicine/atlas/organs-anterior-v2.png");
   });
 });

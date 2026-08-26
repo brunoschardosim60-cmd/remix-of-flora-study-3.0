@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Box, ChevronLeft, ChevronRight, ExternalLink, Maximize2, Move, Rotate3D, RotateCcw, Search, UserRound, UsersRound, Volume2, X, ZoomIn, ZoomOut } from "lucide-react";
+import { Box, ChevronLeft, ChevronRight, ExternalLink, Maximize2, Move, Rotate3D, RotateCcw, Search, Volume2, X, ZoomIn, ZoomOut } from "lucide-react";
 import { organ3DStructureForAtlasId } from "@/lib/anatomy3DModel";
 import { findAtlasSnapTarget } from "@/lib/anatomyAtlasNavigation";
 import {
@@ -31,7 +31,7 @@ const femaleOnlyStructureIds = new Set(["ovaries", "uterine-tubes", "uterus", "c
 const maleOnlyStructureIds = new Set(["testes", "epididymis", "ductus-deferens", "seminal-vesicles", "prostate", "penis"]);
 
 export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelect, onOpen3D }: BodyAtlasProps) {
-  const [bodyProfile, setBodyProfile] = useState<AtlasBodyProfile>("female");
+  const [bodyProfile, setBodyProfile] = useState<AtlasBodyProfile>("male");
   const [zoom, setZoom] = useState(1);
   const [view, setView] = useState<AtlasView>("anterior");
   const [query, setQuery] = useState("");
@@ -67,7 +67,6 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
   const levelRank = levelOrder.indexOf(level);
 
   useEffect(() => {
-    setFocused(null);
     const selectedIsAvailable = selectedInProfile?.layer === activeLayer && anatomyPositionFor(selectedInProfile, view);
     if (!selectedIsAvailable) {
       const next = structuresInLayer.find((structure) => anatomyPositionFor(structure, view)) ?? structuresInLayer[0];
@@ -90,6 +89,7 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
   }, [focused]);
 
   const selectLayer = (layer: BodyLayer) => {
+    setFocused(null);
     onLayerChange(layer);
     setQuery("");
     const structures = anatomyStructures.filter((item) => item.layer === layer && structureMatchesBodyProfile(item, bodyProfile));
@@ -98,6 +98,7 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
   };
 
   const changeView = () => {
+    setFocused(null);
     const nextView: AtlasView = view === "anterior" ? "posterior" : "anterior";
     setView(nextView);
     const selectedIsVisible = selectedInProfile?.layer === activeLayer && anatomyPositionFor(selectedInProfile, nextView);
@@ -230,12 +231,10 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
       </div>
 
       <div className="med-atlas-profile-strip" aria-label="Perfil anatômico do atlas">
-        <div className="med-atlas-profile-title"><UsersRound /><span><strong>Perfil anatômico</strong><small>Estruturas reprodutivas coerentes</small></span></div>
-        <div className="med-atlas-profile-options">
-          <button className={bodyProfile === "female" ? "active" : ""} onClick={() => changeBodyProfile("female")} aria-pressed={bodyProfile === "female"}><UserRound /><span><strong>Feminino</strong><small>Anatomia ovariana</small></span></button>
-          <button className={bodyProfile === "male" ? "active" : ""} onClick={() => changeBodyProfile("male")} aria-pressed={bodyProfile === "male"}><UserRound /><span><strong>Masculino</strong><small>Anatomia testicular</small></span></button>
+        <div className="med-atlas-profile-options" role="group" aria-label="Escolher anatomia masculina ou feminina">
+          <button className={bodyProfile === "male" ? "active" : ""} onClick={() => changeBodyProfile("male")} aria-label="Homem" title="Homem" aria-pressed={bodyProfile === "male"}><span aria-hidden="true">♂</span></button>
+          <button className={bodyProfile === "female" ? "active" : ""} onClick={() => changeBodyProfile("female")} aria-label="Mulher" title="Mulher" aria-pressed={bodyProfile === "female"}><span aria-hidden="true">♀</span></button>
         </div>
-        <p><strong>{bodyProfile === "female" ? "Modelo feminino:" : "Modelo masculino:"}</strong> {bodyProfile === "female" ? "ovários, tubas uterinas, útero, colo e vagina; estruturas masculinas ficam ocultas." : "testículos, epidídimos, ductos deferentes, vesículas seminais e próstata; estruturas femininas ficam ocultas."}</p>
       </div>
 
       <div className="med-atlas-body">
