@@ -317,7 +317,16 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
           </div>
         </nav>
 
-        <div className={`med-body-stage is-${atlasImageStatus}`}>
+        <div
+          className={`med-body-stage is-${atlasImageStatus}`}
+          onWheel={(event) => {
+            if (event.deltaY === 0) return;
+            event.preventDefault();
+            const direction = event.deltaY < 0 ? 0.1 : -0.1;
+            setZoom((value) => Math.min(1.5, Math.max(0.8, Number((value + direction).toFixed(2)))));
+          }}
+          aria-label="Imagem anatômica interativa; use a roda do mouse para controlar o zoom"
+        >
           <div className="med-scan-grid" />
           {atlasImageStatus !== "ready" && <div className={`med-atlas-image-status ${atlasImageStatus}`} role="status" aria-live="polite">
             {atlasImageStatus === "error" ? <><Info /><strong>Não foi possível carregar a ilustração.</strong><span>Recarregue a página para tentar novamente.</span></> : <><span className="med-atlas-loader" /><strong>Carregando ilustração em alta definição</strong><span>A resolução original está sendo preservada.</span></>}
@@ -353,7 +362,7 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
             })}
           </div>
           {canvasStructures.length < filteredStructures.length && <span className="med-atlas-density-note">
-            {canvasStructures.length} de {filteredStructures.length} pontos exibidos · use o zoom para mostrar mais
+            {canvasStructures.length} de {filteredStructures.length} pontos exibidos · use os botões ou a roda do mouse para mostrar mais
           </span>}
           <span className="med-atlas-image-note">Referência educacional em alta definição · não diagnóstica</span>
           <div className="med-orientation"><span>D</span><strong>{view === "anterior" ? "ANTERIOR" : "POSTERIOR"}</strong><span>E</span></div>

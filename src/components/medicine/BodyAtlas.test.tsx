@@ -52,6 +52,24 @@ describe("BodyAtlas selection flow", () => {
     expect(labelsAfter).toEqual(labelsBefore);
   });
 
+  it("controls atlas zoom with the mouse wheel", () => {
+    render(<AtlasHarness />);
+    const stage = screen.getByLabelText(/use a roda do mouse para controlar o zoom/i);
+    const initialMarkerCount = screen.getAllByRole("button", { name: /^Selecionar / }).length;
+
+    fireEvent.wheel(stage, { deltaY: -100 });
+    expect(screen.getByText("110%")).toBeInTheDocument();
+
+    fireEvent.wheel(stage, { deltaY: 100 });
+    expect(screen.getByText("100%")).toBeInTheDocument();
+
+    fireEvent.wheel(stage, { deltaY: -100 });
+    fireEvent.wheel(stage, { deltaY: -100 });
+    fireEvent.wheel(stage, { deltaY: -100 });
+    expect(screen.getByText("130%")).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /^Selecionar / }).length).toBeGreaterThan(initialMarkerCount);
+  });
+
   it("opens the detail dialog only from the explicit button", () => {
     render(<AtlasHarness />);
 
