@@ -490,24 +490,48 @@
 }
 
 .med-layer-list > button > b {
-  display: grid;
-  min-width: 27px;
-  height: 22px;
-  place-items: center;
-  border-radius: 999px;
+  display: flex;
+  min-width: 43px;
+  min-height: 32px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
   background: rgba(82, 126, 113, .09);
   color: #55756c;
-  font-size: 8px;
   font-weight: 900;
+  line-height: 1;
 }
+
+.med-layer-list > button > b strong { font-size: 10px; }
+.med-layer-list > button > b small { margin-top: 3px; color: #71857e; font-size: 6px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; }
+
+.med-atlas-coverage-note {
+  display: flex;
+  gap: 7px;
+  margin: 10px 2px 0;
+  padding: 9px;
+  border: 1px solid rgba(73, 122, 106, .14);
+  border-radius: 11px;
+  background: rgba(234, 243, 239, .72);
+  color: #527068;
+}
+
+.med-atlas-coverage-note > svg { width: 14px; height: 14px; flex: 0 0 auto; margin-top: 1px; color: #477d6c; }
+.med-atlas-coverage-note > div { min-width: 0; }
+.med-atlas-coverage-note strong { display: block; color: #315f52; font-size: 8px; line-height: 1.35; }
+.med-atlas-coverage-note span { display: block; margin-top: 4px; font-size: 7px; line-height: 1.45; }
+.med-atlas-coverage-note div > div { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px; }
+.med-atlas-coverage-note a { display: inline-flex; align-items: center; gap: 3px; color: #356f5d; font-size: 7px; font-weight: 850; }
+.med-atlas-coverage-note a svg { width: 9px; height: 9px; }
 
 .med-atlas-index {
   display: flex;
   min-height: 0;
   flex: 1;
   flex-direction: column;
-  margin-top: 14px;
-  padding-top: 14px;
+  margin-top: 10px;
+  padding-top: 10px;
   border-top: 1px solid var(--med-line);
 }
 

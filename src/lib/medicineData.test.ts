@@ -6,6 +6,7 @@ import {
   anatomyStructures,
   atlasImageFor,
   atlasImageForStructure,
+  atlasCoverageByLayer,
   bodyLayers,
   embryologyTimeline,
   medicineLevelProfiles,
@@ -153,6 +154,20 @@ describe("medicine content integrity", () => {
     for (const layer of bodyLayers) {
       expect(anatomyStructures.some((structure) => structure.layer === layer.id), layer.label).toBe(true);
     }
+  });
+
+  it("distingue a cobertura editorial do atlas da escala anatômica humana", () => {
+    for (const layer of bodyLayers) {
+      const coverage = atlasCoverageByLayer[layer.id];
+      expect(coverage.humanReference.length, layer.label).toBeGreaterThan(25);
+      expect(coverage.catalogNote.length, layer.label).toBeGreaterThan(50);
+      expect(coverage.sourceIds.length, layer.label).toBeGreaterThan(0);
+      for (const sourceId of coverage.sourceIds) expect(medicalSources[sourceId], `${layer.id}/${sourceId}`).toBeDefined();
+    }
+
+    expect(atlasCoverageByLayer.skeletal.humanReference).toContain("206");
+    expect(atlasCoverageByLayer.muscular.humanReference).toContain("mais de 600");
+    expect(atlasCoverageByLayer.organs.humanReference).toContain("não há consenso");
   });
 
   it("keeps every system connected to atlas structures, questions and a reviewed source", () => {

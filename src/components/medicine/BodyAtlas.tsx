@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Box, ChevronLeft, ChevronRight, ExternalLink, Maximize2, Move, Rotate3D, RotateCcw, Search, Volume2, X, ZoomIn, ZoomOut } from "lucide-react";
+import { Box, ChevronLeft, ChevronRight, ExternalLink, Info, Maximize2, Move, Rotate3D, RotateCcw, Search, Volume2, X, ZoomIn, ZoomOut } from "lucide-react";
 import { organ3DStructureForAtlasId } from "@/lib/anatomy3DModel";
 import { findAtlasSnapTarget } from "@/lib/anatomyAtlasNavigation";
 import { preloadMedicalImages } from "@/lib/medicineMedia";
@@ -8,6 +8,7 @@ import {
   anatomyPositionFor,
   anatomyStructures,
   atlasImageFor,
+  atlasCoverageByLayer,
   bodyLayers,
   medicineLevelProfiles,
   medicalSources,
@@ -66,6 +67,7 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
   const atlasImage = atlasImageFor(activeLayer, view, bodyProfile);
   const levelProfile = medicineLevelProfiles[level];
   const levelRank = levelOrder.indexOf(level);
+  const activeCoverage = atlasCoverageByLayer[activeLayer];
 
   useEffect(() => {
     const selectedIsAvailable = selectedInProfile?.layer === activeLayer && anatomyPositionFor(selectedInProfile, view);
@@ -255,9 +257,17 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
               return <button key={layer.id} className={activeLayer === layer.id ? "active" : ""} onClick={() => selectLayer(layer.id)}>
                 <span className="dot" style={{ background: layer.color }} />
                 <span><strong>{layer.label}</strong><small>{layer.description}</small></span>
-                <b>{total}</b>
+                <b title={`${total} itens cadastrados nesta camada do atlas`}><strong>{total}</strong><small>no atlas</small></b>
               </button>;
             })}
+          </div>
+          <div className="med-atlas-coverage-note" aria-live="polite">
+            <Info />
+            <div>
+              <strong>{structuresInLayer.length} itens catalogados — não é o total do corpo</strong>
+              <span>{activeCoverage.humanReference} {activeCoverage.catalogNote}</span>
+              <div>{activeCoverage.sourceIds.map((sourceId, index) => <a key={sourceId} href={medicalSources[sourceId].url} target="_blank" rel="noreferrer">{index === 0 ? "Referência" : `Fonte ${index + 1}`} <ExternalLink /></a>)}</div>
+            </div>
           </div>
           <div className="med-atlas-index">
             <label>

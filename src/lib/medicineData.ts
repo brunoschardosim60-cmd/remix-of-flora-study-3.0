@@ -20,6 +20,12 @@ export interface MedicalSource {
   attribution?: string;
 }
 
+export interface AtlasCoverageReference {
+  humanReference: string;
+  catalogNote: string;
+  sourceIds: string[];
+}
+
 export interface AnatomyStructure {
   id: string;
   name: string;
@@ -147,6 +153,54 @@ export const medicalSources: Record<string, MedicalSource> = {
     reviewedAt: "2026-08-24",
     license: "CC BY-NC-SA 4.0",
     attribution: "Access for free at openstax.org.",
+  },
+  openstaxTerminology: {
+    title: "Terminologia anatômica e regiões do corpo",
+    organization: "OpenStax, Rice University",
+    url: "https://openstax.org/books/anatomy-and-physiology-2e/pages/1-6-anatomical-terminology",
+    reviewedAt: "2026-08-26",
+    license: "CC BY-NC-SA 4.0",
+    attribution: "Access for free at openstax.org.",
+  },
+  openstaxSkeletonCount: {
+    title: "Divisões do sistema esquelético",
+    organization: "OpenStax, Rice University",
+    url: "https://openstax.org/books/anatomy-and-physiology-2e/pages/7-1-divisions-of-the-skeletal-system",
+    reviewedAt: "2026-08-26",
+    license: "CC BY-NC-SA 4.0",
+    attribution: "Access for free at openstax.org.",
+  },
+  nihMuscleCount: {
+    title: "Mais de 600 músculos no corpo humano",
+    organization: "National Center for Advancing Translational Sciences, NIH",
+    url: "https://ncats.nih.gov/research/research-activities/tissue-chip/meet-chip",
+    reviewedAt: "2026-08-26",
+  },
+  openstaxNerveCount: {
+    title: "Organização dos nervos periféricos",
+    organization: "OpenStax, Rice University",
+    url: "https://openstax.org/books/introduction-behavioral-neuroscience/pages/1-5-the-peripheral-nervous-system-pns",
+    reviewedAt: "2026-08-26",
+    license: "CC BY 4.0",
+    attribution: "Access for free at openstax.org.",
+  },
+  ncbiBodyOrganization: {
+    title: "Organização do corpo humano em sistemas",
+    organization: "National Library of Medicine, NCBI Bookshelf",
+    url: "https://www.ncbi.nlm.nih.gov/books/NBK607445/",
+    reviewedAt: "2026-08-26",
+  },
+  pubmedOrganDefinition: {
+    title: "Limites da definição anatômica de órgão",
+    organization: "PubMed, National Library of Medicine",
+    url: "https://pubmed.ncbi.nlm.nih.gov/28192867/",
+    reviewedAt: "2026-08-26",
+  },
+  humanReferenceAtlas: {
+    title: "Atlas de referência do corpo humano",
+    organization: "National Library of Medicine, PubMed Central",
+    url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC13153392/",
+    reviewedAt: "2026-08-26",
   },
   openstaxSkin: {
     title: "Funções do sistema tegumentar",
@@ -591,8 +645,42 @@ export const bodyLayers: Array<{ id: BodyLayer; label: string; description: stri
   { id: "skeletal", label: "Esqueleto", description: "Suporte e proteção", color: "#d7cfb6" },
   { id: "vascular", label: "Vasos", description: "Circulação arterial e venosa", color: "#5d83a8" },
   { id: "nervous", label: "Nervos", description: "Integração e condução", color: "#d7a947" },
-  { id: "organs", label: "Órgãos", description: "Estruturas viscerais", color: "#8b6b83" },
+  { id: "organs", label: "Órgãos", description: "Órgãos, glândulas e sentidos", color: "#8b6b83" },
 ];
+
+/** Referências de escala: a contagem do atlas é editorial, não um total do corpo. */
+export const atlasCoverageByLayer: Record<BodyLayer, AtlasCoverageReference> = {
+  surface: {
+    humanReference: "Não existe um total universal de regiões superficiais.",
+    catalogNote: "O total varia conforme o nível de subdivisão adotado; aqui entram regiões externas e marcos palpáveis selecionados.",
+    sourceIds: ["openstaxTerminology", "humanReferenceAtlas"],
+  },
+  muscular: {
+    humanReference: "O corpo humano possui mais de 600 músculos.",
+    catalogNote: "O atlas reúne músculos e grupos principais; estruturas bilaterais compartilham uma entrada, portanto não é uma contagem muscular total.",
+    sourceIds: ["nihMuscleCount", "openstaxMuscle"],
+  },
+  skeletal: {
+    humanReference: "O esqueleto adulto típico possui 206 ossos.",
+    catalogNote: "O atlas é parcial e reúne os lados direito e esquerdo em uma entrada. Os 112 itens não equivalem a 112 ossos individuais.",
+    sourceIds: ["openstaxSkeletonCount"],
+  },
+  vascular: {
+    humanReference: "Não existe um total anatômico único de vasos sanguíneos.",
+    catalogNote: "Artérias e veias se ramificam progressivamente até redes microscópicas; o atlas mostra troncos e ramos nomeados selecionados.",
+    sourceIds: ["openstaxCirculation", "humanReferenceAtlas"],
+  },
+  nervous: {
+    humanReference: "Há 12 pares de nervos cranianos e 31 pares de nervos espinais, além de seus ramos.",
+    catalogNote: "Esta camada também inclui encéfalo, medula e plexos; por isso, seus itens não representam uma contagem total de nervos.",
+    sourceIds: ["openstaxNerveCount", "openstaxCns"],
+  },
+  organs: {
+    humanReference: "A anatomia é organizada em 11 sistemas, mas não há consenso sobre um total único de órgãos.",
+    catalogNote: "O catálogo combina órgãos inteiros, partes de órgãos, glândulas, sentidos e estruturas de conexão; o número exibido é editorial.",
+    sourceIds: ["ncbiBodyOrganization", "pubmedOrganDefinition"],
+  },
+};
 
 export const medicineLevelProfiles: Record<MedicineLevel, MedicineLevelProfile> = {
   Iniciante: {
