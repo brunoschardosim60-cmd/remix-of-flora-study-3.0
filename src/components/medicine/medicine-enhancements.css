@@ -291,7 +291,7 @@
   object-fit: contain;
   filter: drop-shadow(0 24px 30px rgba(35, 70, 60, .18));
   image-rendering: auto;
-  transition: height .18s ease, transform .18s ease;
+  transition: height .18s ease, left .18s ease, top .18s ease, transform .18s ease;
   user-select: none;
 }
 
