@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Box, ChevronLeft, ChevronRight, ExternalLink, Info, Maximize2, Move, Rotate3D, RotateCcw, Search, Volume2, X, ZoomIn, ZoomOut } from "lucide-react";
 import { organ3DStructureForAtlasId } from "@/lib/anatomy3DModel";
-import { findAtlasSnapTarget } from "@/lib/anatomyAtlasNavigation";
+import { findAtlasSnapTarget, preserveAtlasSnapPan } from "@/lib/anatomyAtlasNavigation";
 import { preloadMedicalImages } from "@/lib/medicineMedia";
 import {
   anatomyPositionFor,
@@ -42,6 +42,8 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
   const [detailPan, setDetailPan] = useState({ x: 0, y: 0 });
   const [isDetailPanning, setIsDetailPanning] = useState(false);
   const [snapCandidate, setSnapCandidate] = useState<AnatomyStructure | null>(null);
+  const [loadedAtlasImage, setLoadedAtlasImage] = useState<string | null>(null);
+  const [failedAtlasImage, setFailedAtlasImage] = useState<string | null>(null);
   const detailDragRef = useRef<{ pointerId: number; x: number; y: number } | null>(null);
   const detailPanRef = useRef({ x: 0, y: 0 });
   const detailImageRef = useRef<HTMLImageElement | null>(null);
@@ -65,9 +67,17 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
     ].join(" ")).includes(term));
   }, [query, visibleStructures]);
   const atlasImage = atlasImageFor(activeLayer, view, bodyProfile);
+  const atlasImageStatus = failedAtlasImage === atlasImage ? "error" : loadedAtlasImage === atlasImage ? "ready" : "loading";
   const levelProfile = medicineLevelProfiles[level];
   const levelRank = levelOrder.indexOf(level);
   const activeCoverage = atlasCoverageByLayer[activeLayer];
+  const layerStatistics = useMemo(() => new Map(bodyLayers.map((layer) => {
+    const catalogued = anatomyStructures.filter((structure) => structure.layer === layer.id && structureMatchesBodyProfile(structure, bodyProfile));
+    return [layer.id, {
+      catalogued: catalogued.length,
+      inCurrentView: catalogued.filter((structure) => anatomyPositionFor(structure, view)).length,
+    }];
+  })), [bodyProfile, view]);
   const canvasPinLimit = [28, 36, 46, 58, 72][Math.max(levelRank, 0)];
   const canvasStructures = useMemo(() => {
     if (query.trim() || zoom >= 1.25 || filteredStructures.length <= canvasPinLimit) return filteredStructures;
@@ -228,14 +238,27 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
   };
 
   const snapDetailToClosest = () => {
-    if (!focused) return;
+    if (!focused || !focusedPosition || !detailImageRef.current) return;
     const target = findDetailSnapCandidate(detailPanRef.current);
     setSnapCandidate(target);
     if (!target) return;
+    const targetPosition = anatomyPositionFor(target, focused.view);
+    if (!targetPosition) return;
+    const image = detailImageRef.current;
+    const preservedPan = preserveAtlasSnapPan({
+      pan: detailPanRef.current,
+      fromPoint: { id: focused.structure.id, ...focusedPosition },
+      toPoint: { id: target.id, ...targetPosition },
+      imageSize: { width: image.offsetWidth, height: image.offsetHeight },
+    });
     onSelect(target);
-    detailPanRef.current = { x: 0, y: 0 };
-    setDetailPan({ x: 0, y: 0 });
+    detailPanRef.current = preservedPan;
+    setDetailPan(preservedPan);
     setFocused({ structure: target, view: focused.view });
+    window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
+      detailPanRef.current = { x: 0, y: 0 };
+      setDetailPan({ x: 0, y: 0 });
+    }));
   };
 
   return <>
@@ -256,29 +279,29 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
         </div>
       </div>
 
-      <div className="med-atlas-profile-strip" aria-label="Perfil anatômico do atlas">
+      {activeLayer === "organs" && <div className="med-atlas-profile-strip" aria-label="Perfil reprodutivo da camada de órgãos">
         <div className="med-atlas-profile-options" role="group" aria-label="Escolher anatomia masculina ou feminina">
           <button className={bodyProfile === "male" ? "active" : ""} onClick={() => changeBodyProfile("male")} aria-label="Homem" title="Homem" aria-pressed={bodyProfile === "male"}><span aria-hidden="true">♂</span></button>
           <button className={bodyProfile === "female" ? "active" : ""} onClick={() => changeBodyProfile("female")} aria-label="Mulher" title="Mulher" aria-pressed={bodyProfile === "female"}><span aria-hidden="true">♀</span></button>
         </div>
-      </div>
+      </div>}
 
       <div className="med-atlas-body">
         <nav className="med-layer-rail" aria-label="Camadas do corpo">
           <div className="med-layer-list">
             {bodyLayers.map((layer) => {
-              const total = anatomyStructures.filter((structure) => structure.layer === layer.id && structureMatchesBodyProfile(structure, bodyProfile)).length;
+              const statistics = layerStatistics.get(layer.id)!;
               return <button key={layer.id} className={activeLayer === layer.id ? "active" : ""} onClick={() => selectLayer(layer.id)}>
                 <span className="dot" style={{ background: layer.color }} />
                 <span><strong>{layer.label}</strong><small>{layer.description}</small></span>
-                <b title={`${total} itens cadastrados nesta camada do atlas`}><strong>{total}</strong><small>no atlas</small></b>
+                <b title={`${statistics.catalogued} estruturas catalogadas; ${statistics.inCurrentView} disponíveis na vista ${view}`}><strong>{statistics.catalogued}</strong><small>estruturas</small></b>
               </button>;
             })}
           </div>
           <div className="med-atlas-coverage-note" aria-live="polite">
             <Info />
             <div>
-              <strong>{structuresInLayer.length} itens catalogados — não é o total do corpo</strong>
+              <strong>{structuresInLayer.length} catalogadas · {visibleStructures.length} nesta vista</strong>
               <span>{activeCoverage.humanReference} {activeCoverage.catalogNote}</span>
               <div>{activeCoverage.sourceIds.map((sourceId, index) => <a key={sourceId} href={medicalSources[sourceId].url} target="_blank" rel="noreferrer">{index === 0 ? "Referência" : `Fonte ${index + 1}`} <ExternalLink /></a>)}</div>
             </div>
@@ -288,7 +311,7 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
               <Search />
               <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar estrutura" aria-label="Buscar estrutura nesta camada" />
             </label>
-            <div className="med-atlas-index-meta"><strong>{filteredStructures.length}</strong><span>na vista {view}</span></div>
+            <div className="med-atlas-index-meta"><strong>{filteredStructures.length}</strong><span>{query.trim() ? "resultados" : `na vista ${view}`}</span></div>
             <div className="med-atlas-structure-list">
               {filteredStructures.map((structure) => (
                 <button key={structure.id} className={selectedInProfile?.id === structure.id ? "active" : ""} onClick={() => onSelect(structure)}>
@@ -300,15 +323,26 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
           </div>
         </nav>
 
-        <div className="med-body-stage">
+        <div className={`med-body-stage is-${atlasImageStatus}`}>
           <div className="med-scan-grid" />
+          {atlasImageStatus !== "ready" && <div className={`med-atlas-image-status ${atlasImageStatus}`} role="status" aria-live="polite">
+            {atlasImageStatus === "error" ? <><Info /><strong>Não foi possível carregar a ilustração.</strong><span>Recarregue a página para tentar novamente.</span></> : <><span className="med-atlas-loader" /><strong>Carregando ilustração em alta definição</strong><span>A resolução original está sendo preservada.</span></>}
+          </div>}
           <div className="med-body-viewport" style={{ transform: `scale(${zoom})` }}>
             <img
               key={atlasImage}
               className="med-body-image"
               src={atlasImage}
-              alt={`Ilustração educacional do corpo humano ${bodyProfile === "female" ? "feminino" : "masculino"}, vista ${view}, camada ${activeLayer}`}
+              alt={activeLayer === "organs"
+                ? `Ilustração educacional do corpo humano ${bodyProfile === "female" ? "feminino" : "masculino"}, vista ${view}, camada ${activeLayer}`
+                : `Ilustração educacional de referência adulta, vista ${view}, camada ${activeLayer}`}
               decoding="async"
+              loading="eager"
+              onLoad={() => {
+                setFailedAtlasImage(null);
+                setLoadedAtlasImage(atlasImage);
+              }}
+              onError={() => setFailedAtlasImage(atlasImage)}
               draggable={false}
             />
             {canvasStructures.map((structure) => {
@@ -327,7 +361,7 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
           {canvasStructures.length < filteredStructures.length && <span className="med-atlas-density-note">
             {canvasStructures.length} de {filteredStructures.length} pontos visíveis · aproxime para revelar todos
           </span>}
-          <span className="med-atlas-image-note">Ilustração educacional gerada · não diagnóstica</span>
+          <span className="med-atlas-image-note">Referência educacional em alta definição · não diagnóstica</span>
           <div className="med-orientation"><span>D</span><strong>{view === "anterior" ? "ANTERIOR" : "POSTERIOR"}</strong><span>E</span></div>
         </div>
 

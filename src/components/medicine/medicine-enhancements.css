@@ -62,8 +62,8 @@
   text-transform: uppercase;
 }
 
-.med-atlas-level-context strong { color: #345c51; font-size: 9px; }
-.med-atlas-level-context small { color: #657a73; font-size: 8px; line-height: 1.45; }
+.med-atlas-level-context strong { color: #345c51; font-size: 11px; }
+.med-atlas-level-context small { color: #657a73; font-size: 10px; line-height: 1.5; }
 
 .med-focus-toggle {
   display: grid;
@@ -99,7 +99,7 @@
   border-radius: 11px;
   background: #e5efeb;
   color: #426f61;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 800;
   text-align: center;
 }
@@ -291,7 +291,7 @@
   object-fit: contain;
   filter: drop-shadow(0 24px 30px rgba(35, 70, 60, .18));
   image-rendering: auto;
-  transition: height .18s ease, left .18s ease, top .18s ease, transform .18s ease;
+  transition: height .24s cubic-bezier(.22, .8, .2, 1), left .24s cubic-bezier(.22, .8, .2, 1), top .24s cubic-bezier(.22, .8, .2, 1), transform .24s cubic-bezier(.22, .8, .2, 1);
   user-select: none;
 }
 
@@ -465,12 +465,50 @@
   user-select: none;
   filter: drop-shadow(0 26px 24px rgba(46, 75, 67, .17));
   animation: med-atlas-image-in .28s ease both;
+  opacity: 1;
+  transition: opacity .2s ease;
+}
+
+.med-body-stage.is-loading .med-body-image,
+.med-body-stage.is-error .med-body-image { opacity: 0; }
+
+.med-atlas-image-status {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 6;
+  display: grid;
+  min-width: 250px;
+  max-width: calc(100% - 36px);
+  transform: translate(-50%, -50%);
+  place-items: center;
+  padding: 22px;
+  border: 1px solid rgba(66, 112, 97, .14);
+  border-radius: 18px;
+  background: rgba(250, 252, 250, .88);
+  box-shadow: 0 18px 44px rgba(38, 73, 62, .12);
+  color: #416b5f;
+  text-align: center;
+  backdrop-filter: blur(15px);
+}
+
+.med-atlas-image-status > svg { width: 22px; height: 22px; margin-bottom: 9px; }
+.med-atlas-image-status strong { font-size: 12px; }
+.med-atlas-image-status span:last-child { margin-top: 5px; color: #748780; font-size: 10px; }
+.med-atlas-loader {
+  width: 28px;
+  height: 28px;
+  margin-bottom: 10px;
+  border: 3px solid rgba(72, 121, 105, .16);
+  border-top-color: #4b806f;
+  border-radius: 50%;
+  animation: med-atlas-loader-spin .8s linear infinite;
 }
 
 .med-atlas-body {
   height: 700px;
   min-height: 700px;
-  grid-template-columns: 250px minmax(420px, 1fr) 290px;
+  grid-template-columns: 275px minmax(420px, 1fr) 310px;
 }
 
 .med-layer-rail {
@@ -489,6 +527,9 @@
   flex-direction: column;
 }
 
+.med-layer-list > button > span:nth-child(2) strong { font-size: 12px; }
+.med-layer-list > button > span:nth-child(2) small { margin-top: 3px; font-size: 9px; line-height: 1.35; }
+
 .med-layer-list > button > b {
   display: flex;
   min-width: 43px;
@@ -503,8 +544,8 @@
   line-height: 1;
 }
 
-.med-layer-list > button > b strong { font-size: 10px; }
-.med-layer-list > button > b small { margin-top: 3px; color: #71857e; font-size: 6px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; }
+.med-layer-list > button > b strong { font-size: 12px; }
+.med-layer-list > button > b small { margin-top: 3px; color: #71857e; font-size: 7px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; }
 
 .med-atlas-coverage-note {
   display: flex;
@@ -519,10 +560,10 @@
 
 .med-atlas-coverage-note > svg { width: 14px; height: 14px; flex: 0 0 auto; margin-top: 1px; color: #477d6c; }
 .med-atlas-coverage-note > div { min-width: 0; }
-.med-atlas-coverage-note strong { display: block; color: #315f52; font-size: 8px; line-height: 1.35; }
-.med-atlas-coverage-note span { display: block; margin-top: 4px; font-size: 7px; line-height: 1.45; }
+.med-atlas-coverage-note strong { display: block; color: #315f52; font-size: 11px; line-height: 1.4; }
+.med-atlas-coverage-note span { display: block; margin-top: 5px; font-size: 9px; line-height: 1.5; }
 .med-atlas-coverage-note div > div { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px; }
-.med-atlas-coverage-note a { display: inline-flex; align-items: center; gap: 3px; color: #356f5d; font-size: 7px; font-weight: 850; }
+.med-atlas-coverage-note a { display: inline-flex; align-items: center; gap: 3px; color: #356f5d; font-size: 9px; font-weight: 850; }
 .med-atlas-coverage-note a svg { width: 9px; height: 9px; }
 
 .med-atlas-index {
@@ -554,7 +595,7 @@
 }
 
 .med-atlas-index > label svg { width: 14px; color: #758a83; }
-.med-atlas-index > label input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--med-ink); font-size: 10px; }
+.med-atlas-index > label input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--med-ink); font-size: 12px; }
 
 .med-atlas-index-meta {
   display: flex;
@@ -562,12 +603,12 @@
   gap: 5px;
   padding: 10px 3px 7px;
   color: #7b8c87;
-  font-size: 8px;
+  font-size: 10px;
   text-transform: uppercase;
   letter-spacing: .07em;
 }
 
-.med-atlas-index-meta strong { color: #426f61; font-size: 11px; }
+.med-atlas-index-meta strong { color: #426f61; font-size: 13px; }
 
 .med-atlas-structure-list {
   display: flex;
@@ -597,8 +638,8 @@
 
 .med-layer-rail .med-atlas-structure-list > button:hover { background: rgba(227, 238, 233, .66); }
 .med-layer-rail .med-atlas-structure-list > button.active { border-color: rgba(82, 134, 118, .16); background: #e6f0ec; box-shadow: inset 2px 0 #568676; }
-.med-atlas-structure-list > button span { overflow: hidden; width: 100%; color: #345c51; font-size: 9px; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
-.med-atlas-structure-list > button small { overflow: hidden; width: 100%; color: #82928d; font-size: 7px; text-overflow: ellipsis; white-space: nowrap; }
+.med-atlas-structure-list > button span { overflow: hidden; width: 100%; color: #345c51; font-size: 11px; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+.med-atlas-structure-list > button small { overflow: hidden; width: 100%; color: #82928d; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
 .med-atlas-structure-list > p { padding: 12px 6px; color: var(--med-muted); font-size: 9px; line-height: 1.5; }
 
 .med-anatomy-pin {
@@ -675,6 +716,10 @@
   white-space: nowrap;
   backdrop-filter: blur(10px);
 }
+
+.med-structure-panel > p { font-size: 13px; line-height: 1.65; }
+.med-structure-panel dt { font-size: 10px; }
+.med-structure-panel dd { font-size: 11px; line-height: 1.65; }
 
 .med-development-note {
   display: block;
@@ -1260,6 +1305,8 @@
   to { opacity: 1; transform: scale(1); }
 }
 
+@keyframes med-atlas-loader-spin { to { transform: rotate(360deg); } }
+
 .dark .med-app,
 .black .med-app {
   --med-ink: #e4eee9;
@@ -1503,6 +1550,12 @@
   .med-system-intro { grid-template-columns: 1fr; }
   .med-system-visual { min-height: 250px; }
   .med-system-visual img { height: 240px; }
+}
+
+@media (max-width: 1280px) {
+  .med-atlas-body { height: auto; grid-template-columns: 240px minmax(360px, 1fr); }
+  .med-layer-rail { height: 700px; }
+  .med-structure-panel { grid-column: 1 / -1; border-top: 1px solid var(--med-line); border-left: 0; }
 }
 
 @media (max-width: 1100px) {

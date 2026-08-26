@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { findAtlasSnapTarget } from "./anatomyAtlasNavigation";
+import { findAtlasSnapTarget, preserveAtlasSnapPan } from "./anatomyAtlasNavigation";
 
 const points = [
   { id: "heart", x: 50, y: 34 },
@@ -35,5 +35,20 @@ describe("findAtlasSnapTarget", () => {
       imageSize: { width: 900, height: 1500 },
       threshold: 30,
     })).toBeNull();
+  });
+
+  it("preserves the visual image position before smoothly centering a snapped structure", () => {
+    const pan = { x: 27, y: -180 };
+    const imageSize = { width: 900, height: 1500 };
+    const preserved = preserveAtlasSnapPan({
+      pan,
+      fromPoint: points[0],
+      toPoint: points[1],
+      imageSize,
+    });
+
+    expect(preserved).toEqual({ x: 0, y: 0 });
+    expect(preserved.x - imageSize.width * (points[1].x / 100)).toBeCloseTo(pan.x - imageSize.width * (points[0].x / 100));
+    expect(preserved.y - imageSize.height * (points[1].y / 100)).toBeCloseTo(pan.y - imageSize.height * (points[0].y / 100));
   });
 });

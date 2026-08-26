@@ -4,6 +4,21 @@ export interface AtlasSnapPoint {
   y: number;
 }
 
+interface PreserveAtlasSnapPanOptions {
+  pan: { x: number; y: number };
+  fromPoint: AtlasSnapPoint;
+  toPoint: AtlasSnapPoint;
+  imageSize: { width: number; height: number };
+}
+
+/** Keeps the image visually still while ownership of the reticle changes to a new structure. */
+export function preserveAtlasSnapPan({ pan, fromPoint, toPoint, imageSize }: PreserveAtlasSnapPanOptions) {
+  return {
+    x: pan.x + imageSize.width * ((toPoint.x - fromPoint.x) / 100),
+    y: pan.y + imageSize.height * ((toPoint.y - fromPoint.y) / 100),
+  };
+}
+
 interface FindAtlasSnapTargetOptions<T extends AtlasSnapPoint> {
   points: T[];
   focusedPoint: AtlasSnapPoint;

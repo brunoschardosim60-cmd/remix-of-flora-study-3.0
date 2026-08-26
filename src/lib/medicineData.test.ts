@@ -21,6 +21,32 @@ import {
 describe("medicine content integrity", () => {
   const publicAssetExists = (asset: string) => existsSync(resolve(process.cwd(), "public", asset.replace(/^\//, "")));
 
+  it("audita a contagem editorial de cada camada e vista", () => {
+    const audit = bodyLayers.map((layer) => {
+      const structures = anatomyStructures.filter((structure) => structure.layer === layer.id);
+      return {
+        camada: layer.id,
+        catalogadas: structures.length,
+        anterior: structures.filter((structure) => anatomyPositionFor(structure, "anterior")).length,
+        posterior: structures.filter((structure) => anatomyPositionFor(structure, "posterior")).length,
+      };
+    });
+    expect(audit).toEqual([
+      { camada: "surface", catalogadas: 54, anterior: 41, posterior: 32 },
+      { camada: "muscular", catalogadas: 80, anterior: 47, posterior: 36 },
+      { camada: "skeletal", catalogadas: 123, anterior: 31, posterior: 108 },
+      { camada: "vascular", catalogadas: 68, anterior: 59, posterior: 68 },
+      { camada: "nervous", catalogadas: 52, anterior: 29, posterior: 52 },
+      { camada: "organs", catalogadas: 88, anterior: 83, posterior: 88 },
+    ]);
+    const normalizedNames = new Map<string, string[]>();
+    for (const structure of anatomyStructures) {
+      const key = `${structure.layer}:${structure.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR")}`;
+      normalizedNames.set(key, [...(normalizedNames.get(key) ?? []), structure.id]);
+    }
+    expect([...normalizedNames.entries()].filter(([, ids]) => ids.length > 1)).toEqual([]);
+  });
+
   it("keeps every content reference traceable", () => {
     for (const structure of anatomyStructures) {
       expect(medicalSources[structure.sourceId], `source for ${structure.id}`).toBeDefined();
@@ -344,6 +370,18 @@ describe("medicine content integrity", () => {
       expect(bytes.subarray(0, 8).toString("hex"), file).toBe("89504e470d0a1a0a");
       expect(bytes.readUInt32BE(16), `${file} width`).toBeGreaterThanOrEqual(600);
       expect(bytes.readUInt32BE(20), `${file} height`).toBeGreaterThanOrEqual(400);
+    }
+
+    const activeAtlasImages = new Set([
+      ...bodyLayers.flatMap((layer) => [atlasImageFor(layer.id, "anterior"), atlasImageFor(layer.id, "posterior")]),
+      atlasImageFor("organs", "anterior", "female"),
+      atlasImageFor("organs", "posterior", "female"),
+    ]);
+    for (const asset of activeAtlasImages) {
+      const file = resolve(process.cwd(), "public", asset.replace(/^\//, ""));
+      const bytes = readFileSync(file);
+      expect(bytes.readUInt32BE(16), `${asset} width`).toBeGreaterThanOrEqual(940);
+      expect(bytes.readUInt32BE(20), `${asset} height`).toBeGreaterThanOrEqual(1536);
     }
   });
 });

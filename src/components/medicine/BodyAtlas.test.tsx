@@ -17,6 +17,19 @@ function AtlasHarness() {
   />;
 }
 
+function SurfaceAtlasHarness() {
+  const initial = anatomyStructures.find((structure) => structure.id === "skin") as AnatomyStructure;
+  const [selected, setSelected] = useState<AnatomyStructure | null>(initial);
+
+  return <BodyAtlas
+    level="Iniciante"
+    activeLayer="surface"
+    onLayerChange={() => undefined}
+    selected={selected}
+    onSelect={setSelected}
+  />;
+}
+
 describe("BodyAtlas selection flow", () => {
   it("selects a structure without opening the detail dialog", () => {
     render(<AtlasHarness />);
@@ -60,5 +73,24 @@ describe("BodyAtlas selection flow", () => {
     expect(screen.getByRole("button", { name: /^Útero/ })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^Próstata/ })).not.toBeInTheDocument();
     expect(screen.getByAltText(/corpo humano feminino/)).toHaveAttribute("src", "/medicine/atlas/organs-female-anterior-v3.png");
+  });
+
+  it("shows reproductive profile controls only where they change the artwork", () => {
+    render(<SurfaceAtlasHarness />);
+
+    expect(screen.queryByRole("button", { name: "Homem" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Mulher" })).not.toBeInTheDocument();
+    expect(screen.getByText("54 catalogadas · 41 nesta vista")).toBeInTheDocument();
+    expect(screen.getByAltText(/referência adulta/)).toHaveAttribute("src", "/medicine/atlas/surface-anterior-v3.png");
+  });
+
+  it("presents a loading state without replacing the high-resolution image", () => {
+    render(<AtlasHarness />);
+    const image = screen.getByAltText(/corpo humano masculino/);
+
+    expect(screen.getByText("Carregando ilustração em alta definição")).toBeInTheDocument();
+    fireEvent.load(image);
+    expect(screen.queryByText("Carregando ilustração em alta definição")).not.toBeInTheDocument();
+    expect(image).toHaveAttribute("src", "/medicine/atlas/organs-anterior-v2.png");
   });
 });
