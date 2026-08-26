@@ -57,7 +57,7 @@ async function blobToBase64(blob: Blob) {
   });
 }
 
-export default function AnamnesisSimulator({ level, onLearningEvent }: { level: MedicineLevel; onLearningEvent?: (event: MedicineLearningEvent) => void }) {
+export function AnamnesisSimulator({ level, onLearningEvent }: { level: MedicineLevel; onLearningEvent?: (event: MedicineLearningEvent) => void }) {
   const [caseId, setCaseId] = useState(anamnesisCases[0].id);
   const clinicalCase = anamnesisCases.find((item) => item.id === caseId) ?? anamnesisCases[0];
   const [messages, setMessages] = useState<ChatMessage[]>([openingMessage(clinicalCase)]);
@@ -209,6 +209,8 @@ export default function AnamnesisSimulator({ level, onLearningEvent }: { level: 
     </div>
   </div>;
 }
+
+export default AnamnesisSimulator;
 
 function AnamnesisReport({ clinicalCase, questions, decision, summary, score, missedCritical, sources, crisisOccurred, crisisResolved, onRestart }: {
   clinicalCase: AnamnesisCase; questions: AnamnesisQuestion[]; decision: AnamnesisDecision; summary: string; score: number;
