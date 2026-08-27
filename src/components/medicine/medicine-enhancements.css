@@ -2853,3 +2853,15 @@
   .med-back { width: 40px; }
   .med-sources-list a, .med-app main a[href^="http"] { min-height: 34px; align-items: center; padding-block: 4px; }
 }
+
+/* Densidade: com a tipografia legível, as grades antigas apertavam títulos e chips. */
+@media (min-width: 1051px) {
+  .med-instrument-workspace { grid-template-columns: minmax(430px, .95fr) minmax(440px, 1.05fr); }
+}
+.med-instrument-grid-list { grid-template-columns: repeat(auto-fill, minmax(205px, 1fr)); }
+.med-instrument-grid-list > button { min-height: 0; grid-template-columns: 66px 1fr 14px; align-items: start; }
+.med-instrument-grid-list button small { line-height: 1.35; }
+.med-instrument-grid-list button strong { -webkit-line-clamp: 2; display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; }
+
+.med-3d-system-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 6px; }
+.med-3d-system-strip > button { min-width: 0; }
