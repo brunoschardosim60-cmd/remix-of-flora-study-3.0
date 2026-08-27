@@ -10,91 +10,10 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.17"
   }
   public: {
     Tables: {
-      medicine_content_reports: {
-        Row: {
-          content_version: string
-          created_at: string
-          description: string
-          id: string
-          reviewed_at: string | null
-          status: string
-          user_id: string
-        }
-        Insert: {
-          content_version?: string
-          created_at?: string
-          description: string
-          id?: string
-          reviewed_at?: string | null
-          status?: string
-          user_id: string
-        }
-        Update: {
-          content_version?: string
-          created_at?: string
-          description?: string
-          id?: string
-          reviewed_at?: string | null
-          status?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      medicine_progress: {
-        Row: {
-          answered: Json
-          case_step: number
-          content_version: string
-          created_at: string
-          favorites: Json
-          learning_state: Json
-          case_progress: Json
-          last_section: string
-          level: string
-          study_goal: string
-          study_hours: number
-          updated_at: string
-          user_id: string
-          wrong_items: Json
-        }
-        Insert: {
-          answered?: Json
-          case_step?: number
-          content_version?: string
-          created_at?: string
-          favorites?: Json
-          learning_state?: Json
-          case_progress?: Json
-          last_section?: string
-          level?: string
-          study_goal?: string
-          study_hours?: number
-          updated_at?: string
-          user_id: string
-          wrong_items?: Json
-        }
-        Update: {
-          answered?: Json
-          case_step?: number
-          content_version?: string
-          created_at?: string
-          favorites?: Json
-          learning_state?: Json
-          case_progress?: Json
-          last_section?: string
-          level?: string
-          study_goal?: string
-          study_hours?: number
-          updated_at?: string
-          user_id?: string
-          wrong_items?: Json
-        }
-        Relationships: []
-      }
       admin_action_logs: {
         Row: {
           action_type: string
