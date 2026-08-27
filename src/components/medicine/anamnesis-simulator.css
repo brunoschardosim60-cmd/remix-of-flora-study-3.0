@@ -25,7 +25,7 @@
 .med-anamnesis-library button > div { min-width: 0; }
 .med-anamnesis-library button small { color: #7b8c86; font-size: 5.5px; font-weight: 900; letter-spacing: .05em; }
 .med-anamnesis-library button strong { display: block; overflow: hidden; margin-top: 4px; color: #35594f; font-size:11.5px; text-overflow: ellipsis; white-space: nowrap; }
-.med-anamnesis-library button p { overflow: hidden; margin-top: 4px; color: #768780; font-size: 6.5px; text-overflow: ellipsis; white-space: nowrap; }
+.med-anamnesis-library button p { overflow: hidden; margin-top: 4px; color: #768780; font-size: 11.5px; text-overflow: ellipsis; white-space: nowrap; }
 .med-anamnesis-library button > b { display: flex; align-items: center; gap: 3px; padding: 5px 6px; border-radius: 7px; background: #f6e8df; color: #93634c; font-size: 5px; white-space: nowrap; }
 .med-anamnesis-library button > b svg, .med-anamnesis-library button > svg { width: 11px; }
 .med-anamnesis-library button > svg { color: #7b9189; }
@@ -52,7 +52,7 @@
 .med-anamnesis-progress > div i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #397463, #83ad9e); transition: width .3s ease; }
 .med-anamnesis-guide { display: flex; align-items: flex-start; gap: 8px; padding: 13px 16px; border-top: 1px solid var(--anam-line); background: #edf4f1; color: #527468; }
 .med-anamnesis-guide svg { width: 14px; flex: 0 0 auto; }
-.med-anamnesis-guide p { font-size: 6.5px; line-height: 1.5; }
+.med-anamnesis-guide p { font-size: 11.5px; line-height: 1.5; }
 .med-anamnesis-guide strong { display: block; margin-bottom: 3px; font-size:11px; }
 
 .med-anamnesis-conversation { min-width: 0; }
@@ -74,7 +74,7 @@
 .med-anamnesis-chat article.student p { color: #fff; }
 .med-anamnesis-exchange > aside { max-width: 82%; margin: -5px 0 18px 41px; padding: 9px 11px; border-left: 3px solid #71988a; border-radius: 0 10px 10px 0; background: #edf4f1; }
 .med-anamnesis-exchange > aside strong { color: #4f7368; font-size:10px; font-weight: 950; text-transform: uppercase; }
-.med-anamnesis-exchange > aside p { margin-top: 3px; color: #698079; font-size: 6.5px; line-height: 1.45; }
+.med-anamnesis-exchange > aside p { margin-top: 3px; color: #698079; font-size: 11.5px; line-height: 1.45; }
 .med-anamnesis-exchange > aside span { display: flex; align-items: center; gap: 4px; margin-top: 6px; color: #9b5d4f; font-size: 5.5px; font-weight: 900; }
 .med-anamnesis-exchange > aside span svg { width: 10px; }
 .med-anamnesis-exchange > aside.critical { border-color: #b05f50; background: #fbede8; }
@@ -94,7 +94,7 @@
 .med-anamnesis-decisions > div > button.active { border-color: #4d806f; background: #edf5f1; box-shadow: inset 3px 0 #467765; }
 .med-anamnesis-decisions > div > button span { display: grid; width: 31px; height: 31px; place-items: center; border-radius: 9px; background: #edf2ef; color: #53786d; }
 .med-anamnesis-decisions > div > button span svg { width: 13px; }
-.med-anamnesis-decisions > div > button strong { font-size: 7.5px; line-height: 1.45; }
+.med-anamnesis-decisions > div > button strong { font-size: 11.5px; line-height: 1.45; }
 .med-anamnesis-decisions > aside { display: flex; align-items: flex-start; gap: 10px; margin-top: 12px; padding: 13px; border-radius: 13px; background: #eaf4ee; color: #47705e; }
 .med-anamnesis-decisions > aside.reasonable { background: #f6efdf; color: #7c633f; }
 .med-anamnesis-decisions > aside.unsafe { background: #fae8e5; color: #96534e; }
@@ -102,7 +102,7 @@
 .med-anamnesis-decisions > aside strong { font-size:11px; }
 .med-anamnesis-decisions > aside p { margin-top: 4px; font-size:11px; line-height: 1.5; }
 .med-anamnesis-decisions > footer { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--anam-line); }
-.med-anamnesis-decisions > footer span { color: #7c8d87; font-size: 6.5px; }
+.med-anamnesis-decisions > footer span { color: #7c8d87; font-size: 11.5px; }
 .med-anamnesis-decisions > footer button, .med-anamnesis-sensitive-gate button, .med-anamnesis-report > footer > button { display: flex; min-height: 42px; flex: 0 0 auto; align-items: center; justify-content: center; gap: 6px; padding: 0 13px; border-radius: 11px; background: #326655; color: #fff; font-size:11px; font-weight: 900; }
 .med-anamnesis-decisions > footer button:disabled { opacity: .4; }
 .med-anamnesis-decisions > footer svg, .med-anamnesis-sensitive-gate button svg, .med-anamnesis-report > footer > button svg { width: 13px; }
@@ -159,12 +159,12 @@
 .med-anamnesis-reference strong, .med-anamnesis-gaps article > strong { color: #46675e; font-size:11px; }
 .med-anamnesis-reference p { margin-top: 7px; color: #657970; font-size:11px; line-height: 1.6; }
 .med-anamnesis-reference ul { display: grid; gap: 6px; margin-top: 9px; }
-.med-anamnesis-reference li { display: flex; align-items: flex-start; gap: 5px; color: #647970; font-size: 6.5px; line-height: 1.35; }
+.med-anamnesis-reference li { display: flex; align-items: flex-start; gap: 5px; color: #647970; font-size: 11.5px; line-height: 1.35; }
 .med-anamnesis-reference li svg { width: 10px; flex: 0 0 auto; color: #4f806f; }
 .med-anamnesis-gaps > div { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
 .med-anamnesis-gaps article.warning { border-color: #ead5bd; background: #fbf5eb; }
 .med-anamnesis-gaps article.success { border-color: #cfe2d8; background: #f0f7f3; }
-.med-anamnesis-gaps article p { display: flex; align-items: flex-start; gap: 6px; margin-top: 8px; color: #6c7d77; font-size: 6.5px; line-height: 1.45; }
+.med-anamnesis-gaps article p { display: flex; align-items: flex-start; gap: 6px; margin-top: 8px; color: #6c7d77; font-size: 11.5px; line-height: 1.45; }
 .med-anamnesis-gaps article p svg { width: 11px; flex: 0 0 auto; color: #a36b4c; }
 .med-anamnesis-report > footer { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin-top: 23px; padding-top: 18px; border-top: 1px solid var(--anam-line); }
 .med-anamnesis-report > footer > div { display: flex; min-width: 0; flex-direction: column; gap: 5px; }
