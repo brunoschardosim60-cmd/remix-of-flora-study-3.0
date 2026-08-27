@@ -20,7 +20,7 @@
   align-items: center;
   gap: 8px;
   color: #568275;
-  font-size: 9px;
+  font-size:12.5px;
   font-weight: 850;
   letter-spacing: 0.13em;
   text-transform: uppercase;
@@ -60,12 +60,12 @@
   flex-direction: column;
 }
 .pathology-heading > aside strong {
-  font-size: 10px;
+  font-size:13px;
 }
 .pathology-heading > aside span {
   margin-top: 3px;
   color: #687c75;
-  font-size: 9px;
+  font-size:12.5px;
   line-height: 1.45;
 }
 .pathology-organ-nav {
@@ -107,7 +107,7 @@
   border-radius: 11px;
   background: color-mix(in srgb, var(--organ-accent) 15%, white);
   color: var(--organ-accent);
-  font-size: 9px;
+  font-size:12.5px;
   font-weight: 900;
 }
 .pathology-organ-nav > button > div {
@@ -118,18 +118,18 @@
 }
 .pathology-organ-nav small {
   color: #80918b;
-  font-size: 7px;
+  font-size:11px;
   text-transform: uppercase;
 }
 .pathology-organ-nav strong {
   margin-top: 2px;
-  font-size: 10px;
+  font-size:13px;
 }
 .pathology-organ-nav em {
   overflow: hidden;
   margin-top: 2px;
   color: #74847f;
-  font-size: 7px;
+  font-size:11px;
   font-style: normal;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -165,7 +165,7 @@
 }
 .pathology-visual-column > header small {
   color: #758983;
-  font-size: 7px;
+  font-size:11px;
   font-weight: 850;
   letter-spacing: 0.12em;
 }
@@ -185,7 +185,7 @@
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.75);
   color: #54746b;
-  font-size: 8px;
+  font-size:11.5px;
   font-weight: 750;
 }
 .pathology-visual-source {
@@ -198,7 +198,7 @@
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.78);
   color: #54746b;
-  font-size: 8px;
+  font-size:11.5px;
   font-weight: 750;
   text-decoration: none;
 }
@@ -279,14 +279,14 @@
 }
 .pathology-side-label small {
   color: #84928e;
-  font-size: 6px;
+  font-size:11.5px;
   font-weight: 850;
   letter-spacing: 0.09em;
 }
 .pathology-side-label strong {
   max-width: 150px;
   overflow: hidden;
-  font-size: 8px;
+  font-size:11.5px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -364,18 +364,18 @@
 }
 .pathology-clinical-visual figcaption span {
   color: var(--path-accent);
-  font-size: 7px;
+  font-size:11px;
   font-weight: 900;
   letter-spacing: .1em;
 }
 .pathology-clinical-visual figcaption p {
   margin: 4px 0 3px;
-  font-size: 9px;
+  font-size:12.5px;
   line-height: 1.5;
 }
 .pathology-clinical-visual figcaption small {
   color: #74847f;
-  font-size: 7px;
+  font-size:11px;
 }
 .pathology-visual-library {
   display: grid;
@@ -403,11 +403,11 @@
   flex-direction: column;
 }
 .pathology-visual-library > header strong {
-  font-size: 9px;
+  font-size:12.5px;
 }
 .pathology-visual-library > header small {
   color: #7a8c86;
-  font-size: 7px;
+  font-size:11px;
 }
 .pathology-visual-library > div {
   display: grid;
@@ -446,14 +446,14 @@
 }
 .pathology-visual-library button small {
   color: var(--path-accent);
-  font-size: 6px;
+  font-size:11.5px;
   font-weight: 850;
   letter-spacing: .06em;
 }
 .pathology-visual-library button strong {
   overflow: hidden;
   margin-top: 3px;
-  font-size: 8px;
+  font-size:11.5px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -475,7 +475,7 @@
   transition: 180ms ease;
 }
 .pathology-hotspot span {
-  font-size: 7px;
+  font-size:11px;
   font-weight: 900;
 }
 .pathology-hotspot.active {
@@ -501,7 +501,7 @@
 }
 .pathology-comparison-copy span {
   color: #5e8277;
-  font-size: 7px;
+  font-size:11px;
   font-weight: 850;
   letter-spacing: 0.1em;
 }
@@ -511,7 +511,7 @@
 .pathology-comparison-copy p {
   margin-top: 5px;
   color: #5f746e;
-  font-size: 8px;
+  font-size:11.5px;
   line-height: 1.5;
 }
 .pathology-stage-track {
@@ -532,17 +532,17 @@
 }
 .pathology-stage-track small {
   color: #758983;
-  font-size: 7px;
+  font-size:11px;
   font-weight: 850;
   letter-spacing: 0.1em;
 }
 .pathology-stage-track header strong {
   margin-top: 3px;
-  font-size: 10px;
+  font-size:13px;
 }
 .pathology-stage-track header > span {
   color: #81908b;
-  font-size: 8px;
+  font-size:11.5px;
 }
 .pathology-stage-track > div {
   position: relative;
@@ -568,7 +568,7 @@
   flex-direction: column;
   gap: 5px;
   color: #899691;
-  font-size: 7px;
+  font-size:11px;
 }
 .pathology-stage-track button > span {
   display: grid;
@@ -578,7 +578,7 @@
   border: 2px solid #d6e0dc;
   border-radius: 50%;
   background: #f8faf8;
-  font-size: 8px;
+  font-size:11.5px;
   font-weight: 900;
 }
 .pathology-stage-track button svg {
@@ -604,7 +604,7 @@
   padding-top: 11px;
   border-top: 1px solid rgba(39, 73, 65, 0.09);
   color: #5d716b;
-  font-size: 8px;
+  font-size:11.5px;
   line-height: 1.55;
 }
 .pathology-inspector {
@@ -615,7 +615,7 @@
 }
 .pathology-inspector > header > span {
   color: #6b8c82;
-  font-size: 7px;
+  font-size:11px;
   font-weight: 850;
   letter-spacing: 0.12em;
 }
@@ -628,7 +628,7 @@
 .pathology-inspector > header p {
   color: var(--path-accent);
   font-family: Georgia, serif;
-  font-size: 12px;
+  font-size:14px;
   font-style: italic;
 }
 .pathology-tabs {
@@ -644,7 +644,7 @@
   height: 32px;
   border-radius: 8px;
   color: #778a83;
-  font-size: 8px;
+  font-size:11.5px;
   font-weight: 750;
 }
 .pathology-tabs button.active {
@@ -672,7 +672,7 @@
   border-radius: 10px;
   background: var(--path-accent);
   color: white;
-  font-size: 8px;
+  font-size:11.5px;
   font-weight: 900;
 }
 .pathology-hotspot-card > div {
@@ -681,18 +681,18 @@
 }
 .pathology-hotspot-card small {
   color: #7b8c87;
-  font-size: 6px;
+  font-size:11.5px;
   font-weight: 850;
   letter-spacing: 0.1em;
 }
 .pathology-hotspot-card strong {
   margin-top: 2px;
-  font-size: 10px;
+  font-size:13px;
 }
 .pathology-hotspot-card p {
   margin-top: 4px;
   color: #5d706a;
-  font-size: 8px;
+  font-size:11.5px;
   line-height: 1.5;
 }
 .pathology-hotspot-list {
@@ -720,11 +720,11 @@
   place-items: center;
   border-radius: 6px;
   background: #eef3f1;
-  font-size: 6px;
+  font-size:11.5px;
 }
 .pathology-hotspot-list span {
   overflow: hidden;
-  font-size: 6px;
+  font-size:11.5px;
   font-weight: 750;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -744,7 +744,7 @@
 .pathology-info-group h4 {
   margin-bottom: 7px;
   color: #71837d;
-  font-size: 7px;
+  font-size:11px;
   font-weight: 850;
   letter-spacing: 0.09em;
   text-transform: uppercase;
@@ -755,7 +755,7 @@
   gap: 6px;
   padding: 3px 0;
   color: #536a63;
-  font-size: 7px;
+  font-size:11px;
   line-height: 1.45;
 }
 .pathology-info-group svg {
@@ -779,7 +779,7 @@
   place-items: center;
   border: 1px solid #d4dfdb;
   border-radius: 50%;
-  font-size: 7px;
+  font-size:11px;
   font-weight: 850;
 }
 .pathology-tab-panel.progression > button > div {
@@ -787,12 +787,12 @@
   flex-direction: column;
 }
 .pathology-tab-panel.progression strong {
-  font-size: 9px;
+  font-size:12.5px;
 }
 .pathology-tab-panel.progression p {
   margin-top: 3px;
   color: #687a74;
-  font-size: 7px;
+  font-size:11px;
   line-height: 1.5;
 }
 .pathology-tab-panel.progression > button.active > span {
@@ -817,7 +817,7 @@
 }
 .pathology-tab-panel.progression > aside p,
 .pathology-tab-panel.practice > aside p {
-  font-size: 7px;
+  font-size:11px;
   line-height: 1.5;
 }
 .pathology-tab-panel.progression > aside strong,
@@ -830,7 +830,7 @@
   align-items: center;
   gap: 5px;
   color: #60877b;
-  font-size: 7px;
+  font-size:11px;
   font-weight: 850;
   letter-spacing: 0.1em;
 }
@@ -867,11 +867,11 @@
   place-items: center;
   border-radius: 8px;
   background: #eef3f1;
-  font-size: 7px;
+  font-size:11px;
 }
 .pathology-tab-panel.practice button span {
   flex: 1;
-  font-size: 8px;
+  font-size:11.5px;
 }
 .pathology-tab-panel.practice button svg {
   width: 13px;
@@ -909,7 +909,7 @@
 }
 .pathology-limit p {
   color: #63756f;
-  font-size: 7px;
+  font-size:11px;
   line-height: 1.5;
 }
 .pathology-limit strong {
@@ -936,14 +936,14 @@
   flex-direction: column;
 }
 .pathology-source small {
-  font-size: 6px;
+  font-size:11.5px;
   font-weight: 850;
   letter-spacing: 0.09em;
 }
 .pathology-source strong {
   overflow: hidden;
   margin-top: 1px;
-  font-size: 8px;
+  font-size:11.5px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -965,7 +965,7 @@
   border-radius: 10px;
   background: #edf3f0;
   color: #456f63;
-  font-size: 7px;
+  font-size:11px;
   font-weight: 800;
 }
 .pathology-actions button:first-child {
@@ -1031,7 +1031,7 @@
     font-size: 39px;
   }
   .pathology-heading > div > p {
-    font-size: 11px;
+    font-size:13.5px;
   }
   .pathology-visual-column {
     padding: 9px;
@@ -1082,7 +1082,7 @@
     padding: 12px;
   }
   .pathology-stage-track button strong {
-    font-size: 6px;
+    font-size:11.5px;
   }
   .pathology-inspector {
     padding: 22px 17px;

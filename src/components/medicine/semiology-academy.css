@@ -49,14 +49,14 @@
 
 .sem-hero-copy,
 .sem-progress-card { position: relative; z-index: 1; }
-.sem-eyebrow { display: inline-flex; align-items: center; gap: 8px; color: #4f877b; font-size: 11px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+.sem-eyebrow { display: inline-flex; align-items: center; gap: 8px; color: #4f877b; font-size:13.5px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
 .sem-eyebrow svg { width: 15px; height: 15px; }
 .sem-hero .sem-eyebrow { color: #acd8cc; }
 .sem-hero h1 { max-width: 770px; margin: 14px 0 14px; font-family: Georgia, "Times New Roman", serif; font-size: clamp(34px, 4vw, 56px); font-weight: 500; line-height: 1.04; letter-spacing: -.035em; }
 .sem-hero-copy > p { max-width: 760px; margin: 0; color: rgba(255,255,255,.72); font-size: 15px; line-height: 1.75; }
 .sem-hero-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 25px; }
 .sem-hero-actions button,
-.sem-next-step button { display: inline-flex; align-items: center; justify-content: center; gap: 9px; min-height: 44px; padding: 0 17px; border: 1px solid transparent; border-radius: 12px; background: #f6fbf9; color: #184e44; font-size: 12px; font-weight: 800; cursor: pointer; }
+.sem-next-step button { display: inline-flex; align-items: center; justify-content: center; gap: 9px; min-height: 44px; padding: 0 17px; border: 1px solid transparent; border-radius: 12px; background: #f6fbf9; color: #184e44; font-size:14px; font-weight: 800; cursor: pointer; }
 .sem-hero-actions button svg,
 .sem-next-step button svg { width: 16px; }
 .sem-hero-actions .secondary { border-color: rgba(255,255,255,.22); background: rgba(255,255,255,.08); color: #fff; }
@@ -65,13 +65,13 @@
 .sem-progress-ring::before { content: ""; grid-area: 1/1; width: 72px; height: 72px; border-radius: inherit; background: #1a554a; }
 .sem-progress-ring span { z-index: 1; grid-area: 1/1; display: flex; flex-direction: column; text-align: center; }
 .sem-progress-ring strong { font-size: 20px; }
-.sem-progress-ring small { color: rgba(255,255,255,.65); font-size: 9px; }
+.sem-progress-ring small { color: rgba(255,255,255,.65); font-size:12.5px; }
 .sem-progress-card > div:last-child { display: flex; flex-direction: column; gap: 7px; }
 .sem-progress-card > div:last-child strong { font-size: 13px; }
-.sem-progress-card > div:last-child span { color: rgba(255,255,255,.65); font-size: 11px; line-height: 1.5; }
+.sem-progress-card > div:last-child span { color: rgba(255,255,255,.65); font-size:13.5px; line-height: 1.5; }
 
 .sem-tabs { position: sticky; z-index: 8; top: 0; display: flex; gap: 5px; max-width: 1320px; margin: 0 auto 20px; padding: 6px; border: 1px solid var(--sem-line); border-radius: 16px; background: rgba(255,255,255,.92); box-shadow: 0 10px 30px rgba(31, 72, 64, .06); backdrop-filter: blur(14px); }
-.sem-tabs button { display: flex; flex: 1; align-items: center; justify-content: center; gap: 8px; min-height: 43px; border: 0; border-radius: 11px; background: transparent; color: #627872; font-size: 12px; font-weight: 700; cursor: pointer; }
+.sem-tabs button { display: flex; flex: 1; align-items: center; justify-content: center; gap: 8px; min-height: 43px; border: 0; border-radius: 11px; background: transparent; color: #627872; font-size:14px; font-weight: 700; cursor: pointer; }
 .sem-tabs button svg { width: 16px; }
 .sem-tabs button:hover { background: #f3f7f5; }
 .sem-tabs button.active { background: var(--sem-ink); color: #fff; box-shadow: 0 8px 18px rgba(18,61,54,.16); }
@@ -89,49 +89,49 @@
 .sem-panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 15px; }
 .sem-panel-heading > div > span,
 .sem-module-kicker,
-.sem-record aside > span { display: block; margin-bottom: 5px; color: #639187; font-size: 9px; font-weight: 900; letter-spacing: .13em; text-transform: uppercase; }
+.sem-record aside > span { display: block; margin-bottom: 5px; color: #639187; font-size:12.5px; font-weight: 900; letter-spacing: .13em; text-transform: uppercase; }
 .sem-panel-heading h2 { margin: 0; color: var(--sem-ink); font-family: Georgia, "Times New Roman", serif; font-size: 21px; font-weight: 500; }
-.sem-panel-heading > strong { display: grid; min-width: 44px; height: 31px; place-items: center; border-radius: 10px; background: var(--sem-pale); color: var(--sem-green); font-size: 11px; }
+.sem-panel-heading > strong { display: grid; min-width: 44px; height: 31px; place-items: center; border-radius: 10px; background: var(--sem-pale); color: var(--sem-green); font-size:13.5px; }
 .sem-panel-heading > svg { width: 22px; color: #6a9b90; }
 .sem-panel-heading > button { display: grid; width: 34px; height: 34px; place-items: center; border: 1px solid var(--sem-line); border-radius: 10px; background: #fff; color: var(--sem-green); cursor: pointer; }
 .sem-panel-heading > button svg { width: 15px; }
 .sem-phase { margin-top: 19px; }
-.sem-phase h3 { margin: 0 0 7px 4px; color: #81938f; font-size: 9px; letter-spacing: .12em; text-transform: uppercase; }
+.sem-phase h3 { margin: 0 0 7px 4px; color: #81938f; font-size:12.5px; letter-spacing: .12em; text-transform: uppercase; }
 .sem-phase > button { display: grid; width: 100%; grid-template-columns: 31px minmax(0,1fr) 16px; gap: 10px; align-items: center; padding: 10px; border: 1px solid transparent; border-radius: 12px; background: transparent; color: #5e736e; text-align: left; cursor: pointer; }
 .sem-phase > button:hover { background: #f5f8f7; }
 .sem-phase > button.active { border-color: #c9ded8; background: #edf6f3; color: var(--sem-ink); }
 .sem-phase > button.done .sem-module-number { background: var(--sem-green); color: #fff; }
-.sem-module-number { display: grid; width: 29px; height: 29px; place-items: center; border-radius: 9px; background: #eef2f1; color: #72847f; font-size: 10px; font-weight: 800; }
+.sem-module-number { display: grid; width: 29px; height: 29px; place-items: center; border-radius: 9px; background: #eef2f1; color: #72847f; font-size:13px; font-weight: 800; }
 .sem-module-number svg { width: 13px; }
 .sem-phase button > span:nth-child(2) { display: flex; min-width: 0; flex-direction: column; gap: 3px; }
-.sem-phase button strong { color: inherit; font-size: 11px; }
-.sem-phase button small { overflow: hidden; color: #8a9996; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+.sem-phase button strong { color: inherit; font-size:13.5px; }
+.sem-phase button small { overflow: hidden; color: #8a9996; font-size:11.5px; text-overflow: ellipsis; white-space: nowrap; }
 .sem-phase button > svg { width: 13px; }
 
 .sem-module-detail { scroll-margin-top: 76px; padding: clamp(22px, 4vw, 44px); }
 .sem-module-detail > header { display: flex; justify-content: space-between; gap: 22px; padding-bottom: 25px; border-bottom: 1px solid var(--sem-line); }
 .sem-module-detail h2 { margin: 6px 0; font-family: Georgia, "Times New Roman", serif; font-size: clamp(31px, 4vw, 46px); font-weight: 500; letter-spacing: -.025em; }
 .sem-module-detail header p { margin: 0; color: var(--sem-muted); font-size: 14px; }
-.sem-status { display: inline-flex; align-items: center; align-self: flex-start; gap: 7px; padding: 9px 11px; border-radius: 10px; background: #f0f4f2; color: #71847f; font-size: 10px; font-weight: 800; white-space: nowrap; }
+.sem-status { display: inline-flex; align-items: center; align-self: flex-start; gap: 7px; padding: 9px 11px; border-radius: 10px; background: #f0f4f2; color: #71847f; font-size:13px; font-weight: 800; white-space: nowrap; }
 .sem-status.done { background: #e6f5ef; color: #20705e; }
 .sem-status svg { width: 14px; }
 .sem-goals { margin: 28px 0; padding: 20px 22px; border: 1px solid #dcebe7; border-radius: 16px; background: #f5faf8; }
-.sem-goals > span { display: flex; align-items: center; gap: 8px; color: #39786b; font-size: 10px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+.sem-goals > span { display: flex; align-items: center; gap: 8px; color: #39786b; font-size:13px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
 .sem-goals svg { width: 14px; }
 .sem-goals ul { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 14px 0 0; padding: 0; list-style: none; }
-.sem-goals li { display: flex; align-items: flex-start; gap: 7px; color: #536a65; font-size: 11px; line-height: 1.5; }
+.sem-goals li { display: flex; align-items: flex-start; gap: 7px; color: #536a65; font-size:13.5px; line-height: 1.5; }
 .sem-goals li svg { flex: 0 0 auto; width: 13px; color: #3f8c7c; }
 .sem-concept-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
 .sem-concept-grid section { position: relative; min-height: 132px; padding: 20px; border: 1px solid #e3ebe8; border-radius: 16px; background: linear-gradient(145deg, #fff, #fbfcfc); }
 .sem-concept-grid section > span { position: absolute; top: 15px; right: 16px; color: #b7c6c2; font: 500 25px Georgia, serif; }
 .sem-concept-grid h3 { margin: 0 0 9px; padding-right: 35px; font-family: Georgia, "Times New Roman", serif; font-size: 18px; font-weight: 500; }
-.sem-concept-grid p { margin: 0; color: #637873; font-size: 11px; line-height: 1.65; }
+.sem-concept-grid p { margin: 0; color: #637873; font-size:13.5px; line-height: 1.65; }
 .sem-callouts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 20px 0; }
 .sem-callouts > div { display: flex; gap: 12px; padding: 17px; border: 1px solid #d9ebe3; border-radius: 14px; background: #eef8f4; color: #41675e; }
 .sem-callouts > div.warning { border-color: #f0dfca; background: #fff8ee; color: #765e40; }
 .sem-callouts svg { flex: 0 0 auto; width: 17px; }
-.sem-callouts span { display: flex; flex-direction: column; gap: 5px; font-size: 10px; line-height: 1.55; }
-.sem-callouts strong { color: inherit; font-size: 10px; }
+.sem-callouts span { display: flex; flex-direction: column; gap: 5px; font-size:13px; line-height: 1.55; }
+.sem-callouts strong { color: inherit; font-size:13px; }
 
 .sem-checkpoint { margin-top: 26px; padding: 24px; border-radius: 18px; background: #123d36; color: #fff; }
 .sem-checkpoint .sem-panel-heading h2 { color: #fff; }
@@ -139,23 +139,23 @@
 .sem-checkpoint .sem-panel-heading > svg { color: #9fd8c9; }
 .sem-checkpoint > p { margin: 20px 0 14px; color: rgba(255,255,255,.8); font-size: 13px; line-height: 1.6; }
 .sem-options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.sem-options button { display: grid; grid-template-columns: 27px minmax(0,1fr) 15px; gap: 9px; align-items: center; min-height: 54px; padding: 9px 12px; border: 1px solid rgba(255,255,255,.12); border-radius: 12px; background: rgba(255,255,255,.07); color: rgba(255,255,255,.78); font-size: 10px; line-height: 1.35; text-align: left; cursor: pointer; }
+.sem-options button { display: grid; grid-template-columns: 27px minmax(0,1fr) 15px; gap: 9px; align-items: center; min-height: 54px; padding: 9px 12px; border: 1px solid rgba(255,255,255,.12); border-radius: 12px; background: rgba(255,255,255,.07); color: rgba(255,255,255,.78); font-size:13px; line-height: 1.35; text-align: left; cursor: pointer; }
 .sem-options button:hover:not(:disabled) { border-color: rgba(255,255,255,.35); background: rgba(255,255,255,.12); }
-.sem-options button > span { display: grid; width: 27px; height: 27px; place-items: center; border-radius: 8px; background: rgba(255,255,255,.1); font-size: 10px; font-weight: 800; }
+.sem-options button > span { display: grid; width: 27px; height: 27px; place-items: center; border-radius: 8px; background: rgba(255,255,255,.1); font-size:13px; font-weight: 800; }
 .sem-options button svg { width: 14px; }
 .sem-options button.correct,
 .sem-options button.reveal { border-color: #71bfaa; background: rgba(61,161,135,.24); color: #fff; }
 .sem-options button.wrong { border-color: #d88379; background: rgba(196,83,72,.22); color: #fff; }
 .sem-feedback { display: flex; gap: 10px; margin-top: 13px; padding: 13px; border-radius: 12px; background: rgba(255,255,255,.08); color: rgba(255,255,255,.8); }
 .sem-feedback > svg { flex: 0 0 auto; width: 16px; }
-.sem-feedback > span { display: flex; flex-direction: column; gap: 4px; font-size: 10px; line-height: 1.55; }
+.sem-feedback > span { display: flex; flex-direction: column; gap: 4px; font-size:13px; line-height: 1.55; }
 .sem-feedback.correct { background: rgba(66,165,139,.18); }
 .sem-feedback.wrong { background: rgba(206,106,92,.18); }
 .sem-module-footer { display: flex; justify-content: space-between; gap: 24px; align-items: end; margin-top: 26px; padding-top: 22px; border-top: 1px solid var(--sem-line); }
 .sem-module-footer > div { display: flex; max-width: 72%; flex-direction: column; gap: 4px; }
-.sem-module-footer > div > span { color: #8a9b97; font-size: 9px; font-weight: 800; text-transform: uppercase; }
-.sem-module-footer a { overflow: hidden; color: #3a776b; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
-.sem-module-footer button { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 14px; border: 0; border-radius: 11px; background: var(--sem-ink); color: #fff; font-size: 10px; font-weight: 800; cursor: pointer; }
+.sem-module-footer > div > span { color: #8a9b97; font-size:12.5px; font-weight: 800; text-transform: uppercase; }
+.sem-module-footer a { overflow: hidden; color: #3a776b; font-size:13px; text-overflow: ellipsis; white-space: nowrap; }
+.sem-module-footer button { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 14px; border: 0; border-radius: 11px; background: var(--sem-ink); color: #fff; font-size:13px; font-weight: 800; cursor: pointer; }
 .sem-module-footer button svg { width: 14px; }
 
 .sem-lab,
@@ -170,24 +170,24 @@
 .sem-lab-intro p,
 .sem-glossary header p,
 .sem-record header p,
-.sem-next-step p { max-width: 770px; margin: 0; color: var(--sem-muted); font-size: 12px; line-height: 1.65; }
+.sem-next-step p { max-width: 770px; margin: 0; color: var(--sem-muted); font-size:14px; line-height: 1.65; }
 .sem-lab-grid { display: grid; grid-template-columns: 1.15fr .85fr; gap: 16px; }
 .sem-technique-lab,
 .sem-vitals-lab,
 .sem-systems-lab { padding: 25px; }
 .sem-technique-lab > p,
-.sem-vitals-lab > p { color: var(--sem-muted); font-size: 11px; }
+.sem-vitals-lab > p { color: var(--sem-muted); font-size:13.5px; }
 .sem-technique-stage { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin: 19px 0; }
 .sem-technique-stage > div { display: flex; min-height: 74px; flex-direction: column; align-items: center; justify-content: center; gap: 6px; border: 1px dashed #cad8d4; border-radius: 13px; background: #fafcfb; color: #9aaaa6; text-align: center; }
 .sem-technique-stage > div.filled { border-style: solid; border-color: #a8cec4; background: #eef7f4; color: var(--sem-ink); }
-.sem-technique-stage span { display: grid; width: 20px; height: 20px; place-items: center; border-radius: 50%; background: #e8efed; font-size: 9px; }
-.sem-technique-stage strong { padding: 0 5px; font-size: 9px; }
+.sem-technique-stage span { display: grid; width: 20px; height: 20px; place-items: center; border-radius: 50%; background: #e8efed; font-size:12.5px; }
+.sem-technique-stage strong { padding: 0 5px; font-size:12.5px; }
 .sem-technique-bank { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .sem-technique-bank button { display: grid; grid-template-columns: 8px minmax(0,1fr); padding: 12px; border: 1px solid var(--sem-line); border-radius: 12px; background: #fff; color: var(--sem-ink); text-align: left; cursor: pointer; }
 .sem-technique-bank button:disabled { opacity: .4; cursor: default; }
 .sem-technique-bank button > span { grid-row: span 2; width: 7px; height: 100%; min-height: 34px; border-radius: 5px; background: var(--tech-color); }
-.sem-technique-bank strong { font-size: 10px; }
-.sem-technique-bank small { margin-top: 3px; color: #7c8d89; font-size: 8px; line-height: 1.4; }
+.sem-technique-bank strong { font-size:13px; }
+.sem-technique-bank small { margin-top: 3px; color: #7c8d89; font-size:11.5px; line-height: 1.4; }
 .sem-technique-lab .sem-feedback { color: #46655e; background: #eff7f4; }
 .sem-technique-lab .sem-feedback.wrong { color: #795f4d; background: #fff3e9; }
 .sem-vitals-lab details { margin-top: 8px; border: 1px solid var(--sem-line); border-radius: 12px; background: #fbfcfc; }
@@ -196,20 +196,20 @@
 .sem-vitals-lab summary > span { display: grid; width: 27px; height: 27px; place-items: center; border-radius: 8px; background: var(--sem-pale); color: var(--sem-green); }
 .sem-vitals-lab summary svg { width: 13px; transition: transform .2s; }
 .sem-vitals-lab details[open] summary > svg { transform: rotate(90deg); }
-.sem-vitals-lab summary strong { font-size: 10px; }
-.sem-vitals-lab details p { margin: 0; padding: 0 13px 10px 50px; color: #6a7d79; font-size: 9px; line-height: 1.55; }
+.sem-vitals-lab summary strong { font-size:13px; }
+.sem-vitals-lab details p { margin: 0; padding: 0 13px 10px 50px; color: #6a7d79; font-size:12.5px; line-height: 1.55; }
 .sem-systems-lab { margin-top: 16px; }
 .sem-systems-lab > div:last-child { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-top: 19px; }
 .sem-systems-lab article { position: relative; padding: 17px; border: 1px solid var(--sem-line); border-radius: 14px; background: #fbfdfc; }
 .sem-systems-lab article > span { display: grid; width: 26px; height: 26px; place-items: center; border-radius: 8px; background: var(--sem-pale); color: var(--sem-green); }
 .sem-systems-lab article svg { width: 13px; }
 .sem-systems-lab h3 { margin: 12px 0 7px; font: 500 17px Georgia, serif; }
-.sem-systems-lab p { margin: 0; color: #6d7e7a; font-size: 9px; line-height: 1.55; }
+.sem-systems-lab p { margin: 0; color: #6d7e7a; font-size:12.5px; line-height: 1.55; }
 .sem-reasoning-flow { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 16px; padding: 24px; border-radius: 20px; background: var(--sem-ink); color: #fff; }
 .sem-reasoning-flow > div { display: flex; min-width: 120px; flex-direction: column; align-items: center; gap: 3px; text-align: center; }
 .sem-reasoning-flow > div span { color: #83c5b5; font: 500 21px Georgia, serif; }
-.sem-reasoning-flow > div strong { font-size: 10px; }
-.sem-reasoning-flow > div small { color: rgba(255,255,255,.55); font-size: 8px; }
+.sem-reasoning-flow > div strong { font-size:13px; }
+.sem-reasoning-flow > div small { color: rgba(255,255,255,.55); font-size:11.5px; }
 .sem-reasoning-flow > svg { width: 15px; color: rgba(255,255,255,.25); }
 
 .sem-glossary,
@@ -218,39 +218,39 @@
 .sem-record > header { display: flex; justify-content: space-between; gap: 30px; align-items: center; padding-bottom: 25px; border-bottom: 1px solid var(--sem-line); }
 .sem-glossary label { display: flex; width: min(360px, 100%); align-items: center; gap: 9px; padding: 0 13px; border: 1px solid #cfded9; border-radius: 12px; background: #fbfdfc; }
 .sem-glossary label svg { width: 16px; color: #75918a; }
-.sem-glossary input { width: 100%; min-height: 45px; border: 0; outline: 0; background: transparent; color: var(--sem-ink); font-size: 11px; }
+.sem-glossary input { width: 100%; min-height: 45px; border: 0; outline: 0; background: transparent; color: var(--sem-ink); font-size:13.5px; }
 .sem-term-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-top: 25px; }
 .sem-term-grid article { display: flex; gap: 12px; min-height: 104px; padding: 17px; border: 1px solid var(--sem-line); border-radius: 14px; background: #fcfdfd; }
 .sem-term-grid article > span { display: grid; flex: 0 0 32px; width: 32px; height: 32px; place-items: center; border-radius: 9px; background: var(--sem-pale); color: var(--sem-green); font-family: Georgia,serif; }
 .sem-term-grid h3 { margin: 2px 0 6px; font: 500 16px Georgia, serif; }
-.sem-term-grid p { margin: 0; color: #71827e; font-size: 9px; line-height: 1.55; }
+.sem-term-grid p { margin: 0; color: #71827e; font-size:12.5px; line-height: 1.55; }
 .sem-empty { display: flex; min-height: 260px; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: #81928e; }
 .sem-empty svg { width: 26px; }
 .sem-empty strong { color: var(--sem-ink); }
-.sem-empty span { font-size: 10px; }
+.sem-empty span { font-size:13px; }
 
 .sem-privacy { display: flex; max-width: 265px; gap: 10px; padding: 12px; border: 1px solid #e9dcc9; border-radius: 12px; background: #fff8ee; color: #745e42; }
 .sem-privacy svg { flex: 0 0 auto; width: 16px; }
-.sem-privacy span { display: flex; flex-direction: column; gap: 4px; font-size: 9px; line-height: 1.4; }
+.sem-privacy span { display: flex; flex-direction: column; gap: 4px; font-size:12.5px; line-height: 1.4; }
 .sem-record-layout { display: grid; grid-template-columns: .7fr 1.3fr; gap: 20px; margin-top: 25px; }
 .sem-record aside { align-self: start; padding: 22px; border-radius: 17px; background: var(--sem-ink); color: #fff; }
 .sem-record aside h3 { margin: 7px 0 12px; font: 500 24px Georgia,serif; }
-.sem-record aside > p { color: rgba(255,255,255,.7); font-size: 10px; line-height: 1.75; }
-.sem-record aside > div { display: flex; gap: 9px; margin-top: 18px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,.12); color: #a9cfc5; font-size: 9px; line-height: 1.5; }
+.sem-record aside > p { color: rgba(255,255,255,.7); font-size:13px; line-height: 1.75; }
+.sem-record aside > div { display: flex; gap: 9px; margin-top: 18px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,.12); color: #a9cfc5; font-size:12.5px; line-height: 1.5; }
 .sem-record aside svg { flex: 0 0 auto; width: 15px; }
 .sem-soap-form { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
 .sem-soap-form label { display: flex; flex-direction: column; gap: 6px; }
-.sem-soap-form label span { color: #547069; font-size: 10px; font-weight: 800; }
-.sem-soap-form textarea { min-height: 118px; padding: 13px; resize: vertical; border: 1px solid #d5e2de; border-radius: 12px; outline: none; color: var(--sem-ink); font-size: 10px; line-height: 1.55; }
+.sem-soap-form label span { color: #547069; font-size:13px; font-weight: 800; }
+.sem-soap-form textarea { min-height: 118px; padding: 13px; resize: vertical; border: 1px solid #d5e2de; border-radius: 12px; outline: none; color: var(--sem-ink); font-size:13px; line-height: 1.55; }
 .sem-soap-form textarea:focus { border-color: #76a99d; box-shadow: 0 0 0 3px rgba(65,133,117,.1); }
-.sem-soap-form > button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 42px; border: 0; border-radius: 11px; background: var(--sem-ink); color: #fff; font-size: 10px; font-weight: 800; cursor: pointer; }
+.sem-soap-form > button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 42px; border: 0; border-radius: 11px; background: var(--sem-ink); color: #fff; font-size:13px; font-weight: 800; cursor: pointer; }
 .sem-soap-form > button:disabled { background: #cbd6d3; cursor: not-allowed; }
 .sem-soap-form > button svg { width: 15px; }
-.sem-soap-form > small { align-self: center; color: #82928f; font-size: 8px; }
+.sem-soap-form > small { align-self: center; color: #82928f; font-size:11.5px; }
 .sem-record-review { display: flex; gap: 13px; margin-top: 20px; padding: 17px; border: 1px solid #bcded5; border-radius: 14px; background: #edf8f4; color: #3c6d62; }
 .sem-record-review > svg { flex: 0 0 auto; width: 20px; }
-.sem-record-review strong { font-size: 11px; }
-.sem-record-review p { margin: 5px 0 0; font-size: 9px; line-height: 1.6; }
+.sem-record-review strong { font-size:13.5px; }
+.sem-record-review p { margin: 5px 0 0; font-size:12.5px; line-height: 1.6; }
 
 .sem-next-step { display: flex; justify-content: space-between; gap: 32px; align-items: center; margin-top: 20px; padding: 30px 34px; border: 1px solid #ccdfda; border-radius: 22px; background: linear-gradient(120deg,#eef7f4,#f9fbfa); }
 .sem-next-step > div:last-child { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
