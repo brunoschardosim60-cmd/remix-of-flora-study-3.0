@@ -59,6 +59,14 @@ export interface BasicTissue {
 }
 
 export const histologySources: Record<string, HistologySource> = {
+  "zanatomy-models": {
+    title: "Modelos anatômicos tridimensionais",
+    organization: "Z-Anatomy / BodyParts3D",
+    url: "https://www.z-anatomy.com/",
+    reviewedAt: "2026-08-26",
+    license: "CC BY-SA 4.0",
+    attribution: "Z-Anatomy e BodyParts3D; conversões GLB e atribuições detalhadas em public/medicine/models/ATTRIBUTION.md.",
+  },
   "openstax-cell": {
     title: "Citoplasma e organelas celulares",
     organization: "OpenStax — Anatomy and Physiology 2e",
