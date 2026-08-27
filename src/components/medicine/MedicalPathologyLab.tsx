@@ -7,6 +7,7 @@ import {
   Clipboard,
   ExternalLink,
   Focus,
+  Images,
   Microscope,
   RotateCcw,
   ShieldCheck,
@@ -36,6 +37,7 @@ export function MedicalPathologyLab({
   const [split, setSplit] = useState(50);
   const [stage, setStage] = useState(0);
   const [tab, setTab] = useState<DetailTab>("changes");
+  const [visualId, setVisualId] = useState(medicalPathologies[0].visuals[0].id);
   const [hotspotId, setHotspotId] = useState(
     medicalPathologies[0].hotspots[0].id,
   );
@@ -46,14 +48,20 @@ export function MedicalPathologyLab({
   const hotspot =
     pathology.hotspots.find((item) => item.id === hotspotId) ??
     pathology.hotspots[0];
+  const activeVisual = pathology.visuals.find((item) => item.id === visualId) ?? pathology.visuals[0];
 
   useEffect(() => {
     setSplit(50);
     setStage(0);
     setTab("changes");
+    setVisualId(pathology.visuals[0].id);
     setHotspotId(pathology.hotspots[0].id);
     setAnswer(null);
   }, [pathology]);
+
+  useEffect(() => {
+    void preloadMedicalImages([activeVisual.image], "high");
+  }, [activeVisual.image]);
 
   useEffect(() => {
     const pathologyIndex = medicalPathologies.findIndex((item) => item.id === pathology.id);
@@ -63,24 +71,24 @@ export function MedicalPathologyLab({
 
   const copyTransparentImage = async () => {
     try {
-      const response = await fetch(pathology.image);
+      const response = await fetch(activeVisual.image);
       if (!response.ok) throw new Error("Falha ao carregar a imagem");
       const blob = await response.blob();
       if (navigator.clipboard?.write && typeof ClipboardItem !== "undefined") {
         await navigator.clipboard.write([
-          new ClipboardItem({ "image/png": blob }),
+          new ClipboardItem({ [blob.type || "image/png"]: blob }),
         ]);
-        toast.success("Imagem sem fundo copiada", {
+        toast.success(activeVisual.kind === "comparison" ? "Imagem sem fundo copiada" : "Imagem clínica copiada", {
           description:
             "Cole no Caderno Flora, Samsung Notes ou outro aplicativo compatível.",
         });
         return;
       }
-      downloadImage(blob, pathology);
+      downloadImage(blob, pathology, activeVisual.image);
     } catch {
-      const response = await fetch(pathology.image);
+      const response = await fetch(activeVisual.image);
       const blob = await response.blob();
-      downloadImage(blob, pathology);
+      downloadImage(blob, pathology, activeVisual.image);
     }
   };
 
@@ -106,8 +114,8 @@ export function MedicalPathologyLab({
           <div>
             <strong>Ambiente educacional protegido</strong>
             <span>
-              Ilustrações sintéticas revisáveis, fontes abertas e limites
-              explícitos.
+              Pranchas didáticas e imagens clínicas reais, com licença, fonte
+              e limites explícitos.
             </span>
           </div>
         </aside>
@@ -136,17 +144,19 @@ export function MedicalPathologyLab({
         <div className="pathology-visual-column">
           <header>
             <div>
-              <small>PRANCHA COMPARATIVA</small>
+              <small>{visualKindLabel(activeVisual.kind)}</small>
               <strong>
-                {pathology.organ} · {pathology.condition}
+                {pathology.organ} · {activeVisual.title}
               </strong>
             </div>
-            <button onClick={() => setSplit(50)}>
+            {activeVisual.kind === "comparison" ? <button onClick={() => setSplit(50)}>
               <RotateCcw /> Centralizar
-            </button>
+            </button> : <a className="pathology-visual-source" href={activeVisual.source.url} target="_blank" rel="noreferrer">
+              <ExternalLink /> Conferir fonte
+            </a>}
           </header>
 
-          <div
+          {activeVisual.kind === "comparison" ? <div
             className="pathology-compare"
             role="img"
             aria-label={pathology.imageAlt}
@@ -206,7 +216,22 @@ export function MedicalPathologyLab({
               }
               onChange={(event) => setSplit(Number(event.target.value))}
             />
-          </div>
+          </div> : <figure className="pathology-clinical-visual">
+            <img src={activeVisual.image} alt={activeVisual.imageAlt} loading="eager" decoding="async" />
+            <figcaption>
+              <span>{visualKindLabel(activeVisual.kind)}</span>
+              <p>{activeVisual.caption}</p>
+              <small>{activeVisual.source.author} · {activeVisual.source.license}</small>
+            </figcaption>
+          </figure>}
+
+          <nav className="pathology-visual-library" aria-label={`Biblioteca visual de ${pathology.organ}`}>
+            <header><Images /><span><strong>Biblioteca visual</strong><small>{pathology.visuals.length} visões verificadas</small></span></header>
+            <div>{pathology.visuals.map((visual) => <button key={visual.id} className={visual.id === activeVisual.id ? "active" : ""} onClick={() => setVisualId(visual.id)}>
+              <img src={visual.image} alt="" loading="lazy" decoding="async" />
+              <span><small>{visualKindLabel(visual.kind)}</small><strong>{visual.title}</strong></span>
+            </button>)}</div>
+          </nav>
 
           <div className="pathology-comparison-copy">
             <article>
@@ -418,13 +443,13 @@ export function MedicalPathologyLab({
           </a>
           <div className="pathology-actions">
             <button onClick={copyTransparentImage}>
-              <Clipboard /> Copiar sem fundo
+              <Clipboard /> {activeVisual.kind === "comparison" ? "Copiar sem fundo" : "Copiar imagem"}
             </button>
             <button onClick={() => onOpenNotebook({
               label: `${pathology.organ} — ${pathology.condition}`,
               summary: `${pathology.healthy} Comparação: ${pathology.pathological}`,
-              image: pathology.image,
-              imageAlt: pathology.imageAlt,
+              image: activeVisual.image,
+              imageAlt: activeVisual.imageAlt,
             })}>
               <BookOpen /> Abrir Caderno
             </button>
@@ -478,15 +503,23 @@ function InfoGroup({ title, items }: { title: string; items: string[] }) {
   );
 }
 
-function downloadImage(blob: Blob, pathology: MedicalPathology) {
+function downloadImage(blob: Blob, pathology: MedicalPathology, imagePath: string) {
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
-  anchor.download = `flora-${pathology.id}-${pathology.condition.toLocaleLowerCase("pt-BR").replace(/[^a-z0-9]+/g, "-")}.png`;
+  const extension = imagePath.toLocaleLowerCase("pt-BR").endsWith(".jpg") ? "jpg" : "png";
+  anchor.download = `flora-${pathology.id}-${pathology.condition.toLocaleLowerCase("pt-BR").replace(/[^a-z0-9]+/g, "-")}.${extension}`;
   anchor.click();
   URL.revokeObjectURL(url);
-  toast.success("PNG sem fundo baixado", {
+  toast.success("Imagem baixada", {
     description:
       "O navegador não permitiu copiar; o arquivo foi salvo para você inserir onde quiser.",
   });
+}
+
+function visualKindLabel(kind: MedicalPathology["visuals"][number]["kind"]) {
+  if (kind === "histology") return "HISTOLOGIA REAL";
+  if (kind === "ultrasound") return "ULTRASSONOGRAFIA REAL";
+  if (kind === "gross") return "ANATOMOPATOLOGIA REAL";
+  return "PRANCHA COMPARATIVA";
 }

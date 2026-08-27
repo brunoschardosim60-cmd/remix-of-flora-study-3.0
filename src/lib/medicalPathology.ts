@@ -21,6 +21,18 @@ export interface PathologyQuestion {
   explanation: string;
 }
 
+export type PathologyVisualKind = "comparison" | "histology" | "ultrasound" | "gross";
+
+export interface PathologyVisual {
+  id: string;
+  title: string;
+  kind: PathologyVisualKind;
+  image: string;
+  imageAlt: string;
+  caption: string;
+  source: { author: string; license: string; url: string };
+}
+
 export interface MedicalPathology {
   id: PathologyOrganId;
   organ: string;
@@ -29,6 +41,7 @@ export interface MedicalPathology {
   accent: string;
   image: string;
   imageAlt: string;
+  visuals: PathologyVisual[];
   healthy: string;
   pathological: string;
   visualLimit: string;
@@ -50,6 +63,10 @@ export const medicalPathologies: MedicalPathology[] = [
     accent: "#a95f63",
     image: "/medicine/pathology/lungs-emphysema-comparison-v1.png",
     imageAlt: "Comparação educacional entre pulmões saudáveis e pulmões com alterações enfisematosas",
+    visuals: [
+      { id: "lungs-comparison", title: "Comparação macroscópica", kind: "comparison", image: "/medicine/pathology/lungs-emphysema-comparison-v1.png", imageAlt: "Comparação educacional entre pulmões saudáveis e pulmões com alterações enfisematosas", caption: "Prancha didática para comparar forma e padrão macroscópico; não substitui imagem diagnóstica.", source: { author: "Flora Study · síntese educacional", license: "Material didático", url: "https://www.nhlbi.nih.gov/health/copd/causes" } },
+      { id: "lungs-histology", title: "Enfisema ao microscópio", kind: "histology", image: "/medicine/pathology/clinical/lungs-emphysema-histology.jpg", imageAlt: "Micrografia histológica de enfisema grave corada por hematoxilina e eosina", caption: "Os grandes espaços claros correspondem a alvéolos ampliados e confluentes pela perda de septos alveolares.", source: { author: "Mikael Häggström, M.D.", license: "CC0 1.0", url: "https://commons.wikimedia.org/wiki/File:Histopathology_of_emphysema.jpg" } },
+    ],
     healthy: "Parênquima elástico, espaços aéreos pequenos e grande área disponível para trocas gasosas.",
     pathological: "Destruição de septos alveolares, aumento permanente dos espaços aéreos e perda de recolhimento elástico.",
     visualLimit: "A prancha representa um padrão macroscópico avançado. Cor isolada não diagnostica tabagismo nem DPOC.",
@@ -82,6 +99,10 @@ export const medicalPathologies: MedicalPathology[] = [
     accent: "#b9535f",
     image: "/medicine/pathology/heart-infarction-comparison-v1.png",
     imageAlt: "Comparação educacional entre coração saudável e coração com cicatriz após infarto",
+    visuals: [
+      { id: "heart-comparison", title: "Comparação macroscópica", kind: "comparison", image: "/medicine/pathology/heart-infarction-comparison-v1.png", imageAlt: "Comparação educacional entre coração saudável e coração com cicatriz após infarto", caption: "Prancha didática da distribuição de uma cicatriz; extensão e território variam em cada caso.", source: { author: "Flora Study · síntese educacional", license: "Material didático", url: "https://www.heart.org/en/health-topics/heart-attack/about-heart-attacks" } },
+      { id: "heart-histology", title: "Evolução histológica do infarto", kind: "histology", image: "/medicine/pathology/clinical/heart-infarction-stages-histology.jpg", imageAlt: "Painel de micrografias com estágios histológicos de infarto do miocárdio sem reperfusão", caption: "Sequência H&E de ondulação das fibras, necrose, inflamação, tecido de granulação e cicatriz fibrosa.", source: { author: "Michaud, Basso, d’Amati et al.", license: "CC BY 3.0", url: "https://commons.wikimedia.org/wiki/File:Histological_features_of_myocardial_infarction_at_different_stages.jpg" } },
+    ],
     healthy: "Miocárdio viável e espessura ventricular preservada, capaz de contrair de forma coordenada.",
     pathological: "Após necrose isquêmica, a área lesada pode cicatrizar com tecido fibroso que não contrai como o músculo saudável.",
     visualLimit: "A localização e a extensão reais variam conforme o vaso, o tempo até reperfusão e o tratamento. A imagem não representa um ECG ou exame de imagem.",
@@ -114,6 +135,10 @@ export const medicalPathologies: MedicalPathology[] = [
     accent: "#9a6752",
     image: "/medicine/pathology/liver-cirrhosis-comparison-v1.png",
     imageAlt: "Comparação educacional entre fígado saudável e fígado com alterações cirróticas",
+    visuals: [
+      { id: "liver-comparison", title: "Comparação macroscópica", kind: "comparison", image: "/medicine/pathology/liver-cirrhosis-comparison-v1.png", imageAlt: "Comparação educacional entre fígado saudável e fígado com alterações cirróticas", caption: "Prancha didática da superfície nodular e da distorção arquitetural da cirrose.", source: { author: "Flora Study · síntese educacional", license: "Material didático", url: "https://www.niddk.nih.gov/health-information/liver-disease/cirrhosis" } },
+      { id: "liver-histology", title: "Fibrose em pontes", kind: "histology", image: "/medicine/pathology/clinical/liver-cirrhosis-fibrosis.jpg", imageAlt: "Histologia de esteato-hepatite com cirrose estabelecida e bandas espessas de fibrose", caption: "Coloração de Van Gieson mostrando faixas espessas de fibrose circundando um nódulo hepatocitário.", source: { author: "Alexander Boyd, Owen Cain, Abhishek Chauhan et al.", license: "CC BY 4.0", url: "https://commons.wikimedia.org/wiki/File:Histopathology_of_steatohepatitis_with_established_cirrhosis,_with_thick_bands_of_fibrosis_(van_Gieson).jpg" } },
+    ],
     healthy: "Superfície lisa e arquitetura organizada para metabolismo, síntese, armazenamento e fluxo biliar.",
     pathological: "Fibrose difusa e nódulos regenerativos distorcem a arquitetura, o fluxo sanguíneo e a função hepática.",
     visualLimit: "Uma superfície nodular sugere alteração avançada, mas a causa e a gravidade exigem história, exames laboratoriais e imagem apropriada.",
@@ -146,6 +171,10 @@ export const medicalPathologies: MedicalPathology[] = [
     accent: "#8c6b70",
     image: "/medicine/pathology/kidney-hydronephrosis-comparison-v1.png",
     imageAlt: "Comparação educacional em corte entre rim saudável e rim com hidronefrose",
+    visuals: [
+      { id: "kidney-comparison", title: "Comparação em corte", kind: "comparison", image: "/medicine/pathology/kidney-hydronephrosis-comparison-v1.png", imageAlt: "Comparação educacional em corte entre rim saudável e rim com hidronefrose", caption: "Prancha didática da dilatação progressiva da pelve e dos cálices renais.", source: { author: "Flora Study · síntese educacional", license: "Material didático", url: "https://medlineplus.gov/ency/article/000506.htm" } },
+      { id: "kidney-ultrasound", title: "Hidronefrose no ultrassom", kind: "ultrasound", image: "/medicine/pathology/clinical/kidney-hydronephrosis-ultrasound.jpg", imageAlt: "Ultrassom sagital de rim direito com hidronefrose moderada e cálice dilatado", caption: "Imagem ultrassonográfica real mostrando múltiplos cálices dilatados; o rótulo original em inglês foi preservado na imagem-fonte.", source: { author: "Cerevisae", license: "CC BY-SA 4.0", url: "https://commons.wikimedia.org/wiki/File:Ultrasound_of_right_kidney_moderate_hydronephrosis.jpg" } },
+    ],
     healthy: "Córtex e medula preservados drenam urina por cálices estreitos para a pelve renal e o ureter.",
     pathological: "A dificuldade de drenagem pode dilatar pelve e cálices; quando persistente, comprime e afina o parênquima.",
     visualLimit: "Hidronefrose descreve dilatação, não sua causa. A imagem avançada não permite concluir obstrução, função renal ou urgência sozinha.",
@@ -178,6 +207,10 @@ export const medicalPathologies: MedicalPathology[] = [
     accent: "#8f6c78",
     image: "/medicine/pathology/brain-stroke-comparison-v1.png",
     imageAlt: "Comparação educacional em corte entre cérebro saudável e cérebro com área de infarto isquêmico",
+    visuals: [
+      { id: "brain-comparison", title: "Comparação em corte", kind: "comparison", image: "/medicine/pathology/brain-stroke-comparison-v1.png", imageAlt: "Comparação educacional em corte entre cérebro saudável e cérebro com área de infarto isquêmico", caption: "Prancha didática de uma lesão territorial; não representa a aparência de uma tomografia aguda.", source: { author: "Flora Study · síntese educacional", license: "Material didático", url: "https://www.stroke.org/en/about-stroke/types-of-stroke/ischemic-stroke-clots" } },
+      { id: "brain-gross", title: "Infarto cerebral macroscópico", kind: "gross", image: "/medicine/pathology/clinical/brain-cerebral-infarction.jpg", imageAlt: "Peça anatomopatológica de encéfalo em corte mostrando área de infarto cerebral", caption: "Peça anatômica real preservada. A área pálida evidencia perda e alteração do tecido após o infarto.", source: { author: "Ala’a Najjar", license: "CC BY-SA 3.0", url: "https://commons.wikimedia.org/wiki/File:Cerebral_infarction.jpg" } },
+    ],
     healthy: "Fluxo sanguíneo contínuo sustenta neurônios e glia em territórios vasculares interdependentes.",
     pathological: "A obstrução arterial interrompe oxigênio e nutrientes; a lesão varia conforme território, duração e circulação colateral.",
     visualLimit: "AVC agudo é reconhecido por sintomas e confirmado por avaliação e imagem urgentes. A palidez desta prancha é uma representação didática, não um aspecto confiável a olho nu.",

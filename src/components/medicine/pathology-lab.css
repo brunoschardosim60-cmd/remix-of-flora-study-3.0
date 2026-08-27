@@ -188,6 +188,20 @@
   font-size: 8px;
   font-weight: 750;
 }
+.pathology-visual-source {
+  display: flex;
+  height: 34px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  border: 1px solid rgba(39, 73, 65, 0.12);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.78);
+  color: #54746b;
+  font-size: 8px;
+  font-weight: 750;
+  text-decoration: none;
+}
 .pathology-visual-column > header svg {
   width: 13px;
 }
@@ -315,6 +329,133 @@
   height: 100%;
   cursor: ew-resize;
   opacity: 0;
+}
+.pathology-clinical-visual {
+  position: relative;
+  display: grid;
+  width: min(100%, 760px);
+  min-height: 510px;
+  margin: auto;
+  overflow: hidden;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-radius: 24px;
+  background: #14201d;
+  box-shadow: 0 22px 55px rgba(35, 68, 58, 0.15);
+}
+.pathology-clinical-visual > img {
+  display: block;
+  width: 100%;
+  max-height: 680px;
+  object-fit: contain;
+}
+.pathology-clinical-visual figcaption {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  left: 14px;
+  padding: 13px 15px;
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  border-radius: 14px;
+  background: rgba(248, 251, 249, 0.92);
+  color: #48655d;
+  box-shadow: 0 12px 30px rgba(14, 31, 26, 0.22);
+  backdrop-filter: blur(14px);
+}
+.pathology-clinical-visual figcaption span {
+  color: var(--path-accent);
+  font-size: 7px;
+  font-weight: 900;
+  letter-spacing: .1em;
+}
+.pathology-clinical-visual figcaption p {
+  margin: 4px 0 3px;
+  font-size: 9px;
+  line-height: 1.5;
+}
+.pathology-clinical-visual figcaption small {
+  color: #74847f;
+  font-size: 7px;
+}
+.pathology-visual-library {
+  display: grid;
+  grid-template-columns: 145px 1fr;
+  gap: 10px;
+  margin-top: 12px;
+}
+.pathology-visual-library > header {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 12px;
+  border: 1px solid rgba(39, 73, 65, 0.1);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.64);
+}
+.pathology-visual-library > header svg {
+  width: 17px;
+  color: var(--path-accent);
+}
+.pathology-visual-library > header span,
+.pathology-visual-library button > span {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+.pathology-visual-library > header strong {
+  font-size: 9px;
+}
+.pathology-visual-library > header small {
+  color: #7a8c86;
+  font-size: 7px;
+}
+.pathology-visual-library > div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.pathology-visual-library button {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 58px 1fr;
+  align-items: center;
+  gap: 9px;
+  padding: 6px;
+  border: 1px solid rgba(39, 73, 65, 0.1);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.68);
+  color: #395a51;
+  text-align: left;
+  transition: 160ms ease;
+}
+.pathology-visual-library button:hover,
+.pathology-visual-library button.active {
+  border-color: color-mix(in srgb, var(--path-accent) 55%, transparent);
+  background: #fff;
+  box-shadow: 0 8px 20px rgba(31, 63, 55, 0.08);
+}
+.pathology-visual-library button.active {
+  box-shadow: inset 0 -2px var(--path-accent), 0 8px 20px rgba(31, 63, 55, 0.08);
+}
+.pathology-visual-library button img {
+  width: 58px;
+  height: 48px;
+  border-radius: 9px;
+  background: #dfe8e4;
+  object-fit: cover;
+}
+.pathology-visual-library button small {
+  color: var(--path-accent);
+  font-size: 6px;
+  font-weight: 850;
+  letter-spacing: .06em;
+}
+.pathology-visual-library button strong {
+  overflow: hidden;
+  margin-top: 3px;
+  font-size: 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .pathology-hotspot {
   position: absolute;
@@ -878,6 +1019,9 @@
   .pathology-compare {
     width: min(100%, 520px);
   }
+  .pathology-clinical-visual {
+    min-height: 440px;
+  }
 }
 @media (max-width: 560px) {
   .pathology-page {
@@ -916,6 +1060,22 @@
     max-width: 100px;
   }
   .pathology-comparison-copy {
+    grid-template-columns: 1fr;
+  }
+  .pathology-clinical-visual {
+    min-height: 340px;
+    border-radius: 18px;
+  }
+  .pathology-clinical-visual figcaption {
+    position: static;
+    width: 100%;
+    border: 0;
+    border-radius: 0;
+  }
+  .pathology-visual-library {
+    grid-template-columns: 1fr;
+  }
+  .pathology-visual-library > div {
     grid-template-columns: 1fr;
   }
   .pathology-stage-track {

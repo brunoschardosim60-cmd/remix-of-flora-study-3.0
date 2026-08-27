@@ -12,6 +12,14 @@ describe("medicalPathologies", () => {
       expect(item.hotspots.length).toBeGreaterThanOrEqual(3);
       expect(item.question.options[item.question.answer]).toBeTruthy();
       expect(item.source.url.startsWith("https://")).toBe(true);
+      expect(item.visuals.length).toBeGreaterThanOrEqual(2);
+      expect(new Set(item.visuals.map((visual) => visual.id)).size).toBe(item.visuals.length);
+      for (const visual of item.visuals) {
+        expect(visual.imageAlt.length).toBeGreaterThan(24);
+        expect(visual.caption.length).toBeGreaterThan(30);
+        expect(visual.source.url.startsWith("https://")).toBe(true);
+        expect(visual.source.license).toBeTruthy();
+      }
     }
   });
 
@@ -22,6 +30,19 @@ describe("medicalPathologies", () => {
       const png = readFileSync(file);
       expect(png.subarray(1, 4).toString()).toBe("PNG");
       expect(png[25]).toBe(6);
+    }
+  });
+
+  it("inclui uma imagem clínica real e licenciada para cada condição", () => {
+    for (const item of medicalPathologies) {
+      const clinical = item.visuals.filter((visual) => visual.kind !== "comparison");
+      expect(clinical.length).toBeGreaterThanOrEqual(1);
+      for (const visual of clinical) {
+        const file = resolve(process.cwd(), "public", visual.image.replace(/^\//, ""));
+        expect(existsSync(file)).toBe(true);
+        expect(readFileSync(file).byteLength).toBeGreaterThan(100_000);
+        expect(visual.source.license).toMatch(/CC/);
+      }
     }
   });
 });
