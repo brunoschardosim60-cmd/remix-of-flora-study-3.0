@@ -856,11 +856,6 @@ function DetailedOrgansModel({ integrated = false, realistic, bodyProfile, selec
     {supplements.map((supplement) => <primitive
       key={supplement.structure.id}
       object={supplement.root}
-      onClick={(event: ThreeEvent<MouseEvent>) => {
-        if (!supplement.root.visible) return;
-        event.stopPropagation();
-        onSelect(supplement.structure);
-      }}
     />)}
     <NativeMeshPicker active={!integrated && !selectedSupplement} root={prepared.root} onPick={selectOrgan} />
   </group>;
@@ -1038,7 +1033,7 @@ function prepareDetailedOrgans(source: Object3D) {
 
 function prepareSupplementalOrgan(source: Object3D, kind: keyof typeof SUPPLEMENTAL_ORGAN_PATHS) {
   const settings = {
-    heart: { name: "Coração", latin: "Cor", target: [0.1, 1.45, 0.18] as [number, number, number], size: 1.25, color: "#b53c50", regionId: "thorax" as Anatomy3DRegionId, region: "Mediastino", system: "Cardiovascular", summary: "Modelo de alta definição do coração posicionado entre os pulmões e disponível para exploração isolada em rotação livre.", function: "Mantém o fluxo sanguíneo pelas circulações pulmonar e sistêmica por contrações coordenadas." },
+    heart: { name: "Coração", latin: "Cor", target: [0.1, 2.06, 0.16] as [number, number, number], size: .46, color: "#b53c50", regionId: "thorax" as Anatomy3DRegionId, region: "Mediastino", system: "Cardiovascular", summary: "Modelo de alta definição do coração posicionado entre os pulmões e disponível para exploração isolada em rotação livre.", function: "Mantém o fluxo sanguíneo pelas circulações pulmonar e sistêmica por contrações coordenadas." },
     brain: { name: "Encéfalo", latin: "Encephalon", target: [0, 3.35, 0] as [number, number, number], size: 1.22, color: "#cf8e94", regionId: "head" as Anatomy3DRegionId, region: "Cavidade craniana", system: "Nervoso", summary: "Modelo isolado de alta definição do encéfalo para exploração externa em múltiplos ângulos.", function: "Integra informação sensorial, movimento, cognição, memória e regulação autonômica." },
     spleen: { name: "Baço", latin: "Lien", target: [-0.48, .42, .02] as [number, number, number], size: .62, color: "#7e4058", regionId: "abdomen" as Anatomy3DRegionId, region: "Hipocôndrio esquerdo", system: "Linfático e imune", summary: "Modelo isolado de alta definição do baço para estudo de forma, polos, faces e relações gerais.", function: "Filtra o sangue, participa da resposta imune e remove células sanguíneas envelhecidas." },
     eye: { name: "Olho", latin: "Oculus", target: [0, 3.42, .18] as [number, number, number], size: .42, color: "#7198a4", regionId: "head" as Anatomy3DRegionId, region: "Órbita", system: "Órgãos dos sentidos", summary: "Modelo isolado de alta definição do globo ocular para estudo tridimensional de sua forma externa.", function: "Recebe a luz e a converte em sinais neurais que seguem pelas vias visuais." },
@@ -1050,7 +1045,7 @@ function prepareSupplementalOrgan(source: Object3D, kind: keyof typeof SUPPLEMEN
   const initialCenter = initialBounds.getCenter(new Vector3());
   const initialSize = initialBounds.getSize(new Vector3());
   // The high-resolution heart contains long attached vessel stumps. Scale and
-  // center by the cardiac mass instead of letting those stumps make it tiny.
+  // center by the cardiac mass so its in-body view preserves adult proportions.
   const visualExtent = kind === "heart" ? Math.max(initialSize.x, initialSize.z) : Math.max(initialSize.x, initialSize.y, initialSize.z);
   const visualCenter = initialCenter.clone();
   if (kind === "heart") visualCenter.y += initialSize.y * .28;
