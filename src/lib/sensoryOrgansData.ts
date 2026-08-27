@@ -24,7 +24,8 @@ export interface SensoryView {
   description: string;
   image: string;
   alt: string;
-  assetKind: "anatomical" | "schematic" | "model3d";
+  assetKind: "photograph" | "anatomical" | "schematic" | "model3d";
+  aspectRatio?: number;
   sourceId: string;
   structureIds: string[];
 }
@@ -43,10 +44,12 @@ const make = (
   latin?: string,
 ): SensoryStructure => ({ id, name, latin, group, summary, function: fn, sourceId, image, stage, x, y });
 
-const eyeExternal = "/medicine/histology/openstax/eye-external.jpg";
+const eyeExternal = "/medicine/histology/real/eye-external-real.jpg";
+const eyeLacrimalMap = "/medicine/histology/openstax/eye-external.jpg";
 const eyeAnatomy = "/medicine/histology/openstax/eye-anatomy.jpg";
 const eyeMuscles = "/medicine/histology/openstax/eye-muscles.jpg";
-const oralCavity = "/medicine/histology/openstax/oral-cavity.jpg";
+const oralExternal = "/medicine/histology/real/oral-external-real.jpg";
+const oralCavity = "/medicine/histology/real/oral-cavity-real.jpg";
 const teethTypes = "/medicine/histology/openstax/teeth-types.jpg";
 const toothSection = "/medicine/histology/openstax/tooth-section.jpg";
 const tongueAnatomy = "/medicine/histology/openstax/tongue-anatomy.jpg";
@@ -54,10 +57,10 @@ const tongueTaste = "/medicine/histology/openstax/tongue-taste.jpg";
 const salivaryGlands = "/medicine/histology/openstax/salivary-glands.jpg";
 
 export const sensoryStructures: SensoryStructure[] = [
-  make("eyelids", "Pálpebras", "Superfície ocular", "Pregas móveis que recobrem a região anterior do olho.", "Protegem o globo ocular e distribuem o filme lacrimal durante o piscar.", "openstax-eye", eyeExternal, "macro", 49, 45, "Palpebrae"),
-  make("eyelashes", "Cílios", "Superfície ocular", "Pelos curtos implantados nas margens palpebrais.", "Ajudam a reter partículas e participam do reflexo de piscar.", "openstax-eye", eyeExternal, "macro", 49, 51, "Cilia"),
-  make("conjunctiva", "Conjuntiva", "Superfície ocular", "Membrana mucosa que reveste a face interna das pálpebras e a esclera anterior.", "Lubrifica e contribui para a defesa da superfície ocular.", "openstax-eye", eyeExternal, "macro", 53, 48, "Tunica conjunctiva"),
-  make("lacrimal-gland", "Glândula lacrimal", "Aparelho lacrimal", "Glândula serosa localizada na porção superolateral da órbita.", "Produz a porção aquosa das lágrimas, que lubrifica e protege a superfície ocular.", "openstax-eye", eyeExternal, "macro", 65, 30, "Glandula lacrimalis"),
+  make("eyelids", "Pálpebras", "Superfície ocular", "Pregas móveis que recobrem a região anterior do olho.", "Protegem o globo ocular e distribuem o filme lacrimal durante o piscar.", "openstax-eye", eyeExternal, "macro", 50, 35, "Palpebrae"),
+  make("eyelashes", "Cílios", "Superfície ocular", "Pelos curtos implantados nas margens palpebrais.", "Ajudam a reter partículas e participam do reflexo de piscar.", "openstax-eye", eyeExternal, "macro", 58, 46, "Cilia"),
+  make("conjunctiva", "Conjuntiva", "Superfície ocular", "Membrana mucosa que reveste a face interna das pálpebras e a esclera anterior.", "Lubrifica e contribui para a defesa da superfície ocular.", "openstax-eye", eyeExternal, "macro", 36, 57, "Tunica conjunctiva"),
+  make("lacrimal-gland", "Glândula lacrimal", "Aparelho lacrimal", "Glândula serosa localizada na porção superolateral da órbita.", "Produz a porção aquosa das lágrimas, que lubrifica e protege a superfície ocular.", "openstax-eye", eyeLacrimalMap, "macro", 65, 30, "Glandula lacrimalis"),
 
   make("cornea", "Córnea", "Globo ocular", "Parte anterior transparente da túnica fibrosa do olho.", "É a principal superfície refrativa do sistema óptico ocular.", "openstax-eye", eyeAnatomy, "meso", 64, 48, "Cornea"),
   make("iris", "Íris", "Globo ocular", "Diafragma pigmentado situado anteriormente ao cristalino.", "Modula o diâmetro pupilar e a quantidade de luz que alcança a retina.", "openstax-eye", eyeAnatomy, "meso", 61, 50, "Iris"),
@@ -77,11 +80,11 @@ export const sensoryStructures: SensoryStructure[] = [
   make("superior-oblique", "Músculo oblíquo superior", "Músculos extraoculares", "Músculo que passa pela tróclea superomedial antes de se inserir no globo.", "Intorce, deprime e auxilia a abdução do olho.", "openstax-eye-muscles", eyeMuscles, "meso", 44, 34, "Musculus obliquus superior"),
   make("inferior-oblique", "Músculo oblíquo inferior", "Músculos extraoculares", "Músculo que se origina no assoalho anterior da órbita.", "Extorce, eleva e auxilia a abdução do olho.", "openstax-eye-muscles", eyeMuscles, "meso", 60, 66, "Musculus obliquus inferior"),
 
-  make("lips", "Lábios", "Cavidade oral", "Pregas musculomucosas que delimitam a abertura da boca.", "Participam da fala, apreensão do alimento e vedação oral.", "openstax-oral", oralCavity, "macro", 50, 88, "Labia oris"),
-  make("cheeks", "Bochechas", "Cavidade oral", "Paredes laterais musculares da cavidade oral.", "Mantêm o alimento entre as superfícies mastigatórias e auxiliam expressão e fala.", "openstax-oral", oralCavity, "macro", 24, 51, "Buccae"),
-  make("hard-palate", "Palato duro", "Cavidade oral", "Porção óssea anterior do teto da boca.", "Separa cavidades oral e nasal e oferece superfície rígida para manipulação do alimento.", "openstax-oral", oralCavity, "meso", 44, 30, "Palatum durum"),
-  make("soft-palate", "Palato mole", "Cavidade oral", "Porção muscular posterior e móvel do teto da boca.", "Eleva-se na deglutição para limitar comunicação com a nasofaringe.", "openstax-oral", oralCavity, "meso", 45, 38, "Palatum molle"),
-  make("uvula", "Úvula", "Cavidade oral", "Projeção mediana pendente do palato mole.", "Integra o mecanismo do fechamento velofaríngeo e contribui para a articulação da fala.", "openstax-oral", oralCavity, "meso", 50, 45, "Uvula palatina"),
+  make("lips", "Lábios", "Cavidade oral", "Pregas musculomucosas que delimitam a abertura da boca.", "Participam da fala, apreensão do alimento e vedação oral.", "openstax-oral", oralExternal, "macro", 50, 47, "Labia oris"),
+  make("cheeks", "Bochechas", "Cavidade oral", "Paredes laterais musculares da cavidade oral.", "Mantêm o alimento entre as superfícies mastigatórias e auxiliam expressão e fala.", "openstax-oral", oralExternal, "macro", 77, 51, "Buccae"),
+  make("hard-palate", "Palato duro", "Cavidade oral", "Porção óssea anterior do teto da boca.", "Separa cavidades oral e nasal e oferece superfície rígida para manipulação do alimento.", "openstax-oral", oralCavity, "meso", 50, 20, "Palatum durum"),
+  make("soft-palate", "Palato mole", "Cavidade oral", "Porção muscular posterior e móvel do teto da boca.", "Eleva-se na deglutição para limitar comunicação com a nasofaringe.", "openstax-oral", oralCavity, "meso", 50, 37, "Palatum molle"),
+  make("uvula", "Úvula", "Cavidade oral", "Projeção mediana pendente do palato mole.", "Integra o mecanismo do fechamento velofaríngeo e contribui para a articulação da fala.", "openstax-oral", oralCavity, "meso", 50, 48, "Uvula palatina"),
 
   make("incisors", "Incisivos", "Dentes", "Dentes anteriores com borda cortante.", "Cortam o alimento durante a mastigação.", "openstax-oral", teethTypes, "meso", 50, 74, "Dentes incisivi"),
   make("canines", "Caninos", "Dentes", "Dentes de coroa pontiaguda situados ao lado dos incisivos.", "Perfuram e rasgam o alimento.", "openstax-oral", teethTypes, "meso", 38, 65, "Dentes canini"),
@@ -106,11 +109,12 @@ export const sensoryStructures: SensoryStructure[] = [
 const idsFor = (image: string) => sensoryStructures.filter((structure) => structure.image === image).map((structure) => structure.id);
 
 export const sensoryViews: SensoryView[] = [
-  { id: "eye-external", journeyId: "eye", stage: "macro", title: "Olho por fora", eyebrow: "OLHO NU", description: "Superfície ocular, proteção e aparelho lacrimal.", image: eyeExternal, alt: "Ilustração anatômica externa do olho e aparelho lacrimal.", assetKind: "anatomical", sourceId: "openstax-eye", structureIds: idsFor(eyeExternal) },
+  { id: "eye-external", journeyId: "eye", stage: "macro", title: "Olho humano real", eyebrow: "FOTOGRAFIA CLÍNICA", description: "Superfície ocular em alta resolução: pálpebras, cílios e conjuntiva visível.", image: eyeExternal, alt: "Fotografia clínica em alta resolução da região externa de um olho humano.", assetKind: "photograph", aspectRatio: 3072 / 2048, sourceId: "commons-eye-photo", structureIds: idsFor(eyeExternal) },
+  { id: "eye-lacrimal-map", journeyId: "eye", stage: "macro", title: "Mapa do aparelho lacrimal", eyebrow: "MAPA DIDÁTICO", description: "A glândula lacrimal fica profunda à região superolateral da órbita e não aparece na fotografia externa.", image: eyeLacrimalMap, alt: "Mapa anatômico do aparelho lacrimal e da superfície ocular.", assetKind: "schematic", sourceId: "openstax-eye", structureIds: idsFor(eyeLacrimalMap) },
   { id: "eye-anatomy", journeyId: "eye", stage: "meso", title: "Globo ocular em corte", eyebrow: "ANATOMIA", description: "Túnicas, meios ópticos, câmaras e via visual.", image: eyeAnatomy, alt: "Corte anatômico lateral do globo ocular.", assetKind: "schematic", sourceId: "openstax-eye", structureIds: idsFor(eyeAnatomy) },
   { id: "eye-muscles", journeyId: "eye", stage: "meso", title: "Músculos extraoculares", eyebrow: "MOVIMENTO", description: "Os seis músculos que orientam o globo ocular.", image: eyeMuscles, alt: "Ilustração anatômica dos músculos extraoculares.", assetKind: "anatomical", sourceId: "openstax-eye-muscles", structureIds: idsFor(eyeMuscles) },
-  { id: "oral-external", journeyId: "oral", stage: "macro", title: "Cavidade oral", eyebrow: "OLHO NU", description: "Limites, lábios, bochechas e entrada da boca.", image: oralCavity, alt: "Vista anterior aberta da cavidade oral.", assetKind: "schematic", sourceId: "openstax-oral", structureIds: idsFor(oralCavity).filter((id) => ["lips", "cheeks"].includes(id)) },
-  { id: "oral-cavity", journeyId: "oral", stage: "meso", title: "Palato e orofaringe", eyebrow: "ANATOMIA", description: "Palatos, úvula e limites da cavidade oral.", image: oralCavity, alt: "Diagrama anatômico da cavidade oral aberta.", assetKind: "schematic", sourceId: "openstax-oral", structureIds: idsFor(oralCavity).filter((id) => !["lips", "cheeks"].includes(id)) },
+  { id: "oral-external", journeyId: "oral", stage: "macro", title: "Boca humana real", eyebrow: "FOTOGRAFIA CLÍNICA", description: "Referência externa em alta resolução para lábios e região das bochechas.", image: oralExternal, alt: "Fotografia clínica em alta resolução da boca e dos lábios de uma pessoa adulta.", assetKind: "photograph", aspectRatio: 5760 / 3840, sourceId: "commons-mouth-external", structureIds: idsFor(oralExternal) },
+  { id: "oral-cavity", journeyId: "oral", stage: "meso", title: "Palato e orofaringe reais", eyebrow: "FOTOGRAFIA CLÍNICA", description: "Exame direto da cavidade oral mostrando palato, úvula, orofaringe e língua.", image: oralCavity, alt: "Fotografia clínica em alta resolução do interior da cavidade oral.", assetKind: "photograph", aspectRatio: 1, sourceId: "commons-oral-photo", structureIds: idsFor(oralCavity) },
   { id: "teeth-types", journeyId: "oral", stage: "meso", title: "Tipos de dentes", eyebrow: "DENTIÇÃO", description: "Incisivos, caninos, pré-molares e molares.", image: teethTypes, alt: "Diagrama dos tipos de dentes humanos.", assetKind: "schematic", sourceId: "openstax-oral", structureIds: idsFor(teethTypes) },
   { id: "tooth-section", journeyId: "oral", stage: "meso", title: "Dente em corte", eyebrow: "ESTRUTURA", description: "Esmalte, dentina e polpa dentária.", image: toothSection, alt: "Esquema em corte de um dente.", assetKind: "schematic", sourceId: "openstax-oral", structureIds: idsFor(toothSection) },
   { id: "tongue-papillae", journeyId: "oral", stage: "meso", title: "Papilas da língua", eyebrow: "PALADAR", description: "Distribuição e diferenças funcionais das papilas linguais.", image: tongueTaste, alt: "Diagrama de papilas e botões gustativos da língua.", assetKind: "schematic", sourceId: "openstax-oral", structureIds: idsFor(tongueTaste) },

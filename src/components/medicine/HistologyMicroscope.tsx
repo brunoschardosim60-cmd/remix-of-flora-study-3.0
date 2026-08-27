@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useMemo, useRef, useState, type WheelEvent } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode, type WheelEvent } from "react";
 import { Canvas } from "@react-three/fiber";
 import { Environment, OrbitControls, useGLTF } from "@react-three/drei";
 import { Box3, DoubleSide, Group, Mesh, MeshPhysicalMaterial, Vector3 } from "three";
@@ -9,7 +9,7 @@ import {
 import { toast } from "sonner";
 import { registerQuiz, loadGamification, saveGamification } from "@/lib/gamification";
 import {
-  basicTissues, cellOrganelles, histologySourceFor, histologySpecimens,
+  basicTissues, cellOrganelles, histologySourceFor, histologySpecimens, realCellFeatures, realCellImage,
   type HistologyHotspot, type HistologySpecimen, type MicroscopeLevel,
 } from "@/lib/histologyData";
 import {
@@ -62,7 +62,8 @@ export function HistologyMicroscope({ level, onLearningEvent, onOpenNotebook }: 
   const [targetId, setTargetId] = useState<string | null>(null);
   const [answered, setAnswered] = useState<"correct" | "wrong" | null>(null);
   const [completed, setCompleted] = useState<string[]>(loadCompleted);
-  const [eyeMode, setEyeMode] = useState<"diagram" | "model">("diagram");
+  const [eyeMode, setEyeMode] = useState<"diagram" | "model">("model");
+  const [cellMode, setCellMode] = useState<"micrograph" | "diagram">("micrograph");
   const focusTimer = useRef<number>();
 
   const availableViews = useMemo(() => sensoryViews.filter((item) => item.journeyId === journey && item.stage === (stage === "macro" ? "macro" : "meso")), [journey, stage]);
@@ -72,12 +73,14 @@ export function HistologyMicroscope({ level, onLearningEvent, onOpenNotebook }: 
   const microscopeLevel = specimen.levels.find((item) => item.objective === objective) ?? specimen.levels[0];
   const visibleObjectives = objectives.map((item) => ({ id: item, available: specimen.levels.some((level) => level.objective === item) }));
   const viewStructures = activeView?.structureIds.map(sensoryStructureById).filter(Boolean) as SensoryStructure[] | undefined;
-  const activeTargets: SelectedDetail[] = stage === "micro" ? microscopeLevel.hotspots : journey === "cell" ? cellOrganelles : (viewStructures ?? []);
-  const currentSource = selected ? histologySourceFor(selected.sourceId) : histologySourceFor(stage === "micro" ? microscopeLevel.sourceId : activeView?.sourceId ?? "openstax-tissues");
-  const notebookImage = stage === "micro" ? microscopeLevel.image : activeView?.image;
-  const notebookImageAlt = stage === "micro" ? microscopeLevel.alt : activeView?.alt;
-  const notebookSummary = selected?.summary ?? (stage === "micro" ? specimen.summary : activeView?.description);
-  const notebookSourceId = selected?.sourceId ?? (stage === "micro" ? microscopeLevel.sourceId : activeView?.sourceId);
+  const cellMacroTargets = cellMode === "micrograph" ? realCellFeatures : cellOrganelles;
+  const activeTargets: SelectedDetail[] = stage === "micro" ? microscopeLevel.hotspots : journey === "cell" ? stage === "macro" ? cellMacroTargets : [] : (viewStructures ?? []);
+  const cellMacroSourceId = cellMode === "micrograph" ? "nih-hela" : "openstax-cell";
+  const currentSource = selected ? histologySourceFor(selected.sourceId) : histologySourceFor(stage === "micro" ? microscopeLevel.sourceId : journey === "cell" && stage === "macro" ? cellMacroSourceId : activeView?.sourceId ?? "openstax-tissues");
+  const notebookImage = stage === "micro" ? microscopeLevel.image : journey === "cell" && stage === "macro" ? cellMode === "micrograph" ? realCellImage : "/medicine/histology/openstax/animal-cell.jpg" : activeView?.image;
+  const notebookImageAlt = stage === "micro" ? microscopeLevel.alt : journey === "cell" && stage === "macro" ? cellMode === "micrograph" ? "Microscopia multiphoton real de células HeLa." : "Mapa esquemático de uma célula animal." : activeView?.alt;
+  const notebookSummary = selected?.summary ?? (stage === "micro" ? specimen.summary : journey === "cell" && stage === "macro" ? cellMode === "micrograph" ? "Microscopia multiphoton real: DNA em ciano, microtúbulos em verde e complexo de Golgi em laranja." : "Mapa didático de organelas celulares." : activeView?.description);
+  const notebookSourceId = selected?.sourceId ?? (stage === "micro" ? microscopeLevel.sourceId : journey === "cell" && stage === "macro" ? cellMacroSourceId : activeView?.sourceId);
 
   useEffect(() => {
     if (journey === "eye") { setViewId(stage === "macro" ? "eye-external" : "eye-anatomy"); setSpecimenId("retina"); }
@@ -85,6 +88,13 @@ export function HistologyMicroscope({ level, onLearningEvent, onOpenNotebook }: 
     else if (specimen.category !== "tecido básico") setSpecimenId("nervous-tissue");
     setIdentifyMode(false); setTargetId(null); setAnswered(null); setSelected(null);
   }, [journey, specimen.category, stage]);
+
+  useEffect(() => {
+    const paths = journey === "cell"
+      ? [realCellImage]
+      : sensoryViews.filter((view) => view.journeyId === journey && view.assetKind === "photograph").map((view) => view.image);
+    paths.forEach((path) => { const image = new Image(); image.decoding = "async"; image.src = path; });
+  }, [journey]);
 
   useEffect(() => {
     const nextSpecimen = histologySpecimens.find((item) => item.id === specimenId);
@@ -160,7 +170,8 @@ export function HistologyMicroscope({ level, onLearningEvent, onOpenNotebook }: 
           <div>
             {stage === "micro" && journeySpecimens.map((item) => <button key={item.id} className={specimen.id === item.id ? "active" : ""} onClick={() => { setSpecimenId(item.id); setSelected(null); }}>{item.name}</button>)}
             {stage !== "micro" && activeView && availableViews.length > 1 && availableViews.map((view) => <button key={view.id} className={activeView.id === view.id ? "active" : ""} onClick={() => { setViewId(view.id); setSelected(null); }}>{view.title}</button>)}
-            {journey === "eye" && stage === "meso" && <button className={eyeMode === "model" ? "active" : ""} onClick={() => setEyeMode((value) => value === "diagram" ? "model" : "diagram")}><Rotate3D /> {eyeMode === "model" ? "Voltar ao diagrama" : "Globo ocular 3D"}</button>}
+            {journey === "eye" && stage === "meso" && <button className={eyeMode === "model" ? "active" : ""} onClick={() => { setEyeMode((value) => value === "diagram" ? "model" : "diagram"); setSelected(null); }}><Rotate3D /> {eyeMode === "model" ? "Ver mapa anatômico" : "Voltar ao 3D realista"}</button>}
+            {journey === "cell" && stage === "macro" && <button className={cellMode === "micrograph" ? "active" : ""} onClick={() => { setCellMode((value) => value === "micrograph" ? "diagram" : "micrograph"); setSelected(null); setIdentifyMode(false); }}><Microscope /> {cellMode === "micrograph" ? "Ver mapa de organelas" : "Voltar à microscopia real"}</button>}
             <button className={identifyMode ? "active" : ""} onClick={beginIdentification}><Target /> Identifique</button>
           </div>
         </div>
@@ -170,7 +181,7 @@ export function HistologyMicroscope({ level, onLearningEvent, onOpenNotebook }: 
 
           {stage !== "micro" && journey !== "cell" && activeView && !(journey === "eye" && stage === "meso" && eyeMode === "model") && <AnatomyImage view={activeView} structures={viewStructures ?? []} hiddenLabels={identifyMode} onChoose={chooseDetail} />}
           {stage === "meso" && journey === "eye" && eyeMode === "model" && <LicensedEyeScene />}
-          {journey === "cell" && stage === "macro" && <CellCanvas hiddenLabels={identifyMode} onChoose={chooseDetail} />}
+          {journey === "cell" && stage === "macro" && <CellCanvas mode={cellMode} hiddenLabels={identifyMode} onChoose={chooseDetail} />}
           {journey === "cell" && stage === "meso" && <TissueGallery selectedId={specimenId} onSelect={(id) => { setSpecimenId(id === "nervous" ? "nervous-tissue" : id); setSelected(null); changeDepth(84); }} />}
           {stage === "micro" && <MicroscopeCanvas specimen={specimen} level={microscopeLevel} focusing={focusChanging} hiddenLabels={identifyMode} onChoose={chooseDetail} />}
         </div>
@@ -182,12 +193,12 @@ export function HistologyMicroscope({ level, onLearningEvent, onOpenNotebook }: 
       </div>
 
       <aside className="hm-detail-panel">
-        <span className="hm-detail-stage">{stageLabel(stage)} · {stage === "micro" ? microscopeLevel.assetKind === "micrograph" ? "MICROGRAFIA REAL" : "ESQUEMA ROTULADO" : activeView?.eyebrow ?? "BASE CELULAR"}</span>
+        <span className="hm-detail-stage">{stageLabel(stage)} · {stage === "micro" ? microscopeLevel.assetKind === "micrograph" ? "MICROGRAFIA REAL" : "ESQUEMA ROTULADO" : journey === "cell" && stage === "macro" ? cellMode === "micrograph" ? "MICROSCOPIA HUMANA REAL" : "MAPA ESQUEMÁTICO" : activeView?.eyebrow ?? "BASE CELULAR"}</span>
         {selected ? <>
           <h2>{selected.name}</h2>{"latin" in selected && selected.latin && <em>{selected.latin}</em>}
           <p>{selected.summary}</p>
           <div className="hm-detail-block"><b>FUNÇÃO</b><p>{selected.function}</p></div>
-        </> : <><h2>{stage === "micro" ? specimen.name : activeView?.title ?? "Base celular"}</h2><p>{stage === "micro" ? specimen.summary : activeView?.description ?? "Selecione uma organela ou um tecido para aprofundar."}</p></>}
+        </> : <><h2>{stage === "micro" ? specimen.name : journey === "cell" && stage === "macro" ? cellMode === "micrograph" ? "Células humanas em microscopia" : "Mapa de organelas" : activeView?.title ?? "Base celular"}</h2><p>{stage === "micro" ? specimen.summary : journey === "cell" && stage === "macro" ? notebookSummary : activeView?.description ?? "Selecione uma organela ou um tecido para aprofundar."}</p></>}
         {stage === "micro" && <div className="hm-detail-block"><b>FIDELIDADE DA IMAGEM</b><p>{microscopeLevel.note}</p></div>}
         {currentSource && <a className="hm-source-link" href={currentSource.url} target="_blank" rel="noreferrer"><BookOpen /><span><b>Conferir fonte científica</b><small>{currentSource.organization} · {currentSource.license}</small></span><ExternalLink /></a>}
         <button className="hm-notebook" onClick={() => onOpenNotebook({ label: selected?.name ?? (stage === "micro" ? specimen.name : activeView?.title ?? specimen.name), summary: notebookSummary, image: notebookImage, imageAlt: notebookImageAlt, sourceId: notebookSourceId })}><NotebookPen /> Enviar ao Caderno</button>
@@ -197,19 +208,45 @@ export function HistologyMicroscope({ level, onLearningEvent, onOpenNotebook }: 
   </main>;
 }
 
+function PhotoFrame({ src, alt, aspectRatio, children }: { src: string; alt: string; aspectRatio: number; children: ReactNode }) {
+  const hostRef = useRef<HTMLDivElement>(null);
+  const [size, setSize] = useState<{ width: number; height: number } | null>(null);
+
+  useEffect(() => {
+    const host = hostRef.current;
+    if (!host) return;
+    const update = () => {
+      const bounds = host.getBoundingClientRect();
+      const width = Math.min(bounds.width, bounds.height * aspectRatio);
+      setSize({ width, height: width / aspectRatio });
+    };
+    update();
+    if (typeof ResizeObserver !== "undefined") {
+      const observer = new ResizeObserver(update);
+      observer.observe(host);
+      return () => observer.disconnect();
+    }
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, [aspectRatio]);
+
+  return <div ref={hostRef} className="hm-photo-host"><div className="hm-photo-frame" style={size ? { width: size.width, height: size.height } : undefined}><img src={src} alt={alt} draggable={false} loading="eager" decoding="async" />{children}</div></div>;
+}
+
 function AnatomyImage({ view, structures, hiddenLabels, onChoose }: { view: SensoryView; structures: SensoryStructure[]; hiddenLabels: boolean; onChoose: (item: SensoryStructure) => void }) {
-  return <div className="hm-image-canvas">
-    <img src={view.image} alt={view.alt} draggable={false} />
-    {structures.map((structure, index) => <button key={structure.id} className="hm-hotspot" style={{ left: `${structure.x}%`, top: `${structure.y}%` }} onClick={() => onChoose(structure)} aria-label={`Selecionar ${structure.name}`}><i />{!hiddenLabels && index < 7 && <span>{structure.name}</span>}</button>)}
-    <footer><span>{view.assetKind === "schematic" ? "Esquema anatômico licenciado" : "Ilustração anatômica licenciada"}</span><small>Rótulos interativos em português; a imagem-fonte é preservada sem alterações.</small></footer>
+  const markers = structures.map((structure, index) => <button key={structure.id} className="hm-hotspot" style={{ left: `${structure.x}%`, top: `${structure.y}%` }} onClick={() => onChoose(structure)} aria-label={`Selecionar ${structure.name}`}><i />{!hiddenLabels && index < 7 && <span>{structure.name}</span>}</button>);
+  return <div className={`hm-image-canvas ${view.assetKind === "photograph" ? "hm-photo-canvas" : ""}`}>
+    {view.assetKind === "photograph" ? <PhotoFrame src={view.image} alt={view.alt} aspectRatio={view.aspectRatio ?? 1}>{markers}</PhotoFrame> : <><img src={view.image} alt={view.alt} draggable={false} loading="eager" decoding="async" />{markers}</>}
+    <footer><span>{view.assetKind === "photograph" ? "Fotografia clínica licenciada" : view.assetKind === "schematic" ? "Esquema anatômico licenciado" : "Ilustração anatômica licenciada"}</span><small>Arquivo original em resolução integral; marcadores interativos em português.</small></footer>
   </div>;
 }
 
-function CellCanvas({ hiddenLabels, onChoose }: { hiddenLabels: boolean; onChoose: (item: HistologyHotspot) => void }) {
-  return <div className="hm-image-canvas hm-cell-canvas">
-    <img src="/medicine/histology/openstax/animal-cell.jpg" alt="Diagrama esquemático de uma célula animal e suas organelas." draggable={false} />
-    {cellOrganelles.map((item, index) => <button key={item.id} className="hm-hotspot" style={{ left: `${item.x}%`, top: `${item.y}%` }} onClick={() => onChoose(item)}><i />{!hiddenLabels && index < 7 && <span>{item.name}</span>}</button>)}
-    <footer><span>Esquema celular rotulado</span><small>Não é uma micrografia.</small></footer>
+function CellCanvas({ mode, hiddenLabels, onChoose }: { mode: "micrograph" | "diagram"; hiddenLabels: boolean; onChoose: (item: HistologyHotspot) => void }) {
+  const real = mode === "micrograph";
+  const targets = real ? realCellFeatures : cellOrganelles;
+  return <div className={`hm-image-canvas hm-cell-canvas ${real ? "hm-photo-canvas" : ""}`}>
+    {real ? <PhotoFrame src={realCellImage} alt="Microscopia multiphoton real de células HeLa com DNA, Golgi e microtúbulos marcados por fluorescência." aspectRatio={2400 / 1999}>{targets.map((item, index) => <button key={item.id} className="hm-hotspot" style={{ left: `${item.x}%`, top: `${item.y}%` }} onClick={() => onChoose(item)}><i />{!hiddenLabels && index < 7 && <span>{item.name}</span>}</button>)}</PhotoFrame> : <><img src="/medicine/histology/openstax/animal-cell.jpg" alt="Diagrama esquemático de uma célula animal e suas organelas." draggable={false} loading="eager" decoding="async" />{targets.map((item, index) => <button key={item.id} className="hm-hotspot" style={{ left: `${item.x}%`, top: `${item.y}%` }} onClick={() => onChoose(item)}><i />{!hiddenLabels && index < 7 && <span>{item.name}</span>}</button>)}</>}
+    <footer><span>{real ? "Microscopia multiphoton real" : "Mapa celular esquemático"}</span><small>{real ? "Células HeLa: DNA em ciano, microtúbulos em verde e Golgi em laranja; cores de fluorescência." : "Mapa opcional para organelas que não aparecem juntas em uma única micrografia."}</small></footer>
   </div>;
 }
 

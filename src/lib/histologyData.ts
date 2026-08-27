@@ -99,6 +99,38 @@ export const histologySources: Record<string, HistologySource> = {
     license: "CC BY 4.0",
     attribution: "OpenStax, Rice University. A&P 2e, seção 23.3.",
   },
+  "commons-eye-photo": {
+    title: "Fotografia em alta resolução de olho humano",
+    organization: "Wikimedia Commons / Lourie Pieterse",
+    url: "https://commons.wikimedia.org/wiki/File:Close_up_of_eye.jpg",
+    reviewedAt: "2026-08-26",
+    license: "CC BY-SA 3.0",
+    attribution: "Lourie Pieterse. Close up of eye. Wikimedia Commons.",
+  },
+  "commons-mouth-external": {
+    title: "Fotografia em alta resolução da boca humana",
+    organization: "Wikimedia Commons / Wikimedia Sverige",
+    url: "https://commons.wikimedia.org/wiki/File:Adult_human_mouth.jpg",
+    reviewedAt: "2026-08-26",
+    license: "CC BY-SA 4.0",
+    attribution: "Genusfotografen (Tomas Gunnarsson) / Wikimedia Sverige.",
+  },
+  "commons-oral-photo": {
+    title: "Fotografia clínica do palato e da úvula",
+    organization: "Wikimedia Commons / Luigithemetal64",
+    url: "https://commons.wikimedia.org/wiki/File:Palatine_Uvula.jpg",
+    reviewedAt: "2026-08-26",
+    license: "CC BY-SA 3.0",
+    attribution: "Luigithemetal64. Palatine Uvula. Wikimedia Commons.",
+  },
+  "nih-hela": {
+    title: "Células HeLa em microscopia multiphoton",
+    organization: "National Institutes of Health / Wikimedia Commons",
+    url: "https://commons.wikimedia.org/wiki/File:HeLa-I.jpg",
+    reviewedAt: "2026-08-26",
+    license: "Domínio público — obra do governo federal dos EUA",
+    attribution: "National Institutes of Health (NIH). HeLa-I.",
+  },
   "commons-retina": {
     title: "Retina — série de micrografias em ampliações crescentes",
     organization: "Wikimedia Commons / Librepath",
@@ -299,6 +331,23 @@ export const cellOrganelles: CellOrganelle[] = [
   { id: "golgi", name: "Complexo de Golgi", latin: "Apparatus Golgiensis", summary: "Conjunto de cisternas membranosas empilhadas.", function: "Modifica, classifica e direciona proteínas e lipídios.", sourceId: "openstax-cell", x: 62, y: 48 },
   { id: "plasma-membrane", name: "Membrana plasmática", latin: "Membrana cellularis", summary: "Bicamada lipídica que delimita a célula.", function: "Controla trocas e participa da comunicação celular.", sourceId: "openstax-cell", x: 85, y: 55 },
   { id: "cytoplasm", name: "Citoplasma", latin: "Cytoplasma", summary: "Conteúdo celular entre a membrana e o núcleo.", function: "Abriga organelas e muitas reações metabólicas.", sourceId: "openstax-cell", x: 57, y: 59 },
+];
+
+export const realCellImage = "/medicine/histology/real/hela-cell-real.jpg";
+
+export const realCellFeatures: HistologyHotspot[] = [
+  {
+    id: "hela-nucleus", name: "Núcleo (DNA em ciano)", summary: "Região nuclear evidenciada pela contracoloração fluorescente do DNA.",
+    function: "Armazena o material genético e organiza processos como transcrição e replicação.", sourceId: "nih-hela", x: 54, y: 51,
+  },
+  {
+    id: "hela-golgi", name: "Complexo de Golgi (laranja)", summary: "Compartimento marcado por proteína fluorescente direcionada ao aparelho de Golgi.",
+    function: "Modifica, classifica e encaminha proteínas e lipídios para seus destinos celulares.", sourceId: "nih-hela", x: 48, y: 59,
+  },
+  {
+    id: "hela-microtubules", name: "Microtúbulos (verde)", summary: "Rede do citoesqueleto revelada por marcação fluorescente específica.",
+    function: "Contribui para forma celular, transporte intracelular, posicionamento de organelas e divisão celular.", sourceId: "nih-hela", x: 64, y: 47,
+  },
 ];
 
 export const basicTissues: BasicTissue[] = [

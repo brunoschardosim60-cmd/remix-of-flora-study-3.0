@@ -1,7 +1,7 @@
 import { statSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { basicTissues, cellOrganelles, histologySources, histologySpecimens } from "./histologyData";
+import { basicTissues, cellOrganelles, histologySources, histologySpecimens, realCellFeatures, realCellImage } from "./histologyData";
 
 const publicAsset = (path: string) => resolve(process.cwd(), "public", path.replace(/^\//, ""));
 
@@ -53,12 +53,14 @@ describe("histologyData", () => {
       expect(item.summary.length).toBeGreaterThan(25);
       expect(item.function.length).toBeGreaterThan(25);
     }
+    expect(realCellFeatures.map((item) => item.id)).toEqual(expect.arrayContaining(["hela-nucleus", "hela-golgi", "hela-microtubules"]));
+    expect(statSync(publicAsset(realCellImage)).size).toBeGreaterThan(2_000_000);
   });
 
   it("mantém fontes licenciadas, seguras e atribuídas", () => {
     for (const source of Object.values(histologySources)) {
       expect(source.url).toMatch(/^https:\/\//);
-      expect(source.license).toMatch(/CC BY/);
+      expect(source.license).toMatch(/CC BY|Domínio público/);
       expect(source.attribution.length).toBeGreaterThan(8);
     }
   });

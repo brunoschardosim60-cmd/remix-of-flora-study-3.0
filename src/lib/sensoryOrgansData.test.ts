@@ -41,4 +41,19 @@ describe("sensoryOrgansData", () => {
       expect(view.structureIds.every((id) => ids.has(id))).toBe(true);
     }
   });
+
+  it("abre olho e boca com fotografias clínicas reais por padrão", () => {
+    const eye = sensoryViews.find((view) => view.id === "eye-external");
+    const mouth = sensoryViews.find((view) => view.id === "oral-external");
+    const oralCavity = sensoryViews.find((view) => view.id === "oral-cavity");
+
+    for (const view of [eye, mouth, oralCavity]) {
+      expect(view?.assetKind).toBe("photograph");
+      expect(view?.aspectRatio).toBeGreaterThan(0);
+      expect(view?.image).toContain("/histology/real/");
+      expect(statSync(resolve(process.cwd(), "public", view!.image.replace(/^\//, ""))).size).toBeGreaterThan(800_000);
+    }
+    expect(eye?.sourceId).toBe("commons-eye-photo");
+    expect(oralCavity?.sourceId).toBe("commons-oral-photo");
+  });
 });
