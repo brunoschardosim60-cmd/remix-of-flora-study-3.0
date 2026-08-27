@@ -2711,10 +2711,10 @@
 
 /* Escala legível sem fazer cada elemento herdar os 16 px do contêiner.
    O antigo max(..., 1em) expandia cartões e sobrepunha controles. */
-.med-app p { font-size: clamp(11px, .84vw, 13px) !important; }
-.med-app :where(button, input, select, textarea) { font-size: clamp(10px, .76vw, 12px) !important; }
-.med-app small { font-size: clamp(8px, .66vw, 10px) !important; }
-.med-app :where(.med-eyebrow, .med-kicker, [class*="-eyebrow"], [class*="-kicker"], dt) { font-size: clamp(8px, .66vw, 10px) !important; }
+.med-app p { font-size: clamp(13px, .95vw, 15px) !important; }
+.med-app :where(button, input, select, textarea) { font-size: clamp(13px, .9vw, 14.5px) !important; }
+.med-app small { font-size: clamp(11.5px, .8vw, 13px) !important; }
+.med-app :where(.med-eyebrow, .med-kicker, [class*="-eyebrow"], [class*="-kicker"], dt) { font-size: clamp(11px, .75vw, 12px) !important; letter-spacing: .08em; }
 
 @media (max-width: 820px) {
   .med-nav-backdrop {
