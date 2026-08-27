@@ -15,7 +15,7 @@
 .med-anamnesis-library { margin-top: 13px; overflow: hidden; border: 1px solid var(--anam-line); border-radius: 22px; background: rgba(255,255,255,.8); box-shadow: 0 18px 55px rgba(31, 67, 56, .06); }
 .med-anamnesis-library > header { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; padding: 20px 22px 16px; border-bottom: 1px solid var(--anam-line); background: linear-gradient(120deg, #fafbfa, #eef4f1); }
 .med-anamnesis-library > header h2 { margin-top: 5px; color: var(--anam-ink); font-family: Georgia, serif; font-size: 25px; font-weight: 500; }
-.med-anamnesis-library > header > strong { padding: 6px 9px; border-radius: 999px; background: #e5efeb; color: #55776d; font-size:10px; }
+.med-anamnesis-library > header > strong { padding: 6px 9px; border-radius: 999px; background: #e5efeb; color: #55776d; font-size:11.5px; }
 .med-anamnesis-library > div { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; padding: 9px; }
 .med-anamnesis-library > div > button { display: grid; min-width: 0; min-height: 104px; grid-template-columns: 39px minmax(0,1fr) auto; align-items: center; gap: 10px; padding: 12px; border: 1px solid transparent; border-radius: 15px; background: #f7f9f7; text-align: left; transition: .18s ease; }
 .med-anamnesis-library > div > button:hover { transform: translateY(-2px); border-color: rgba(64, 113, 98, .2); background: #fff; box-shadow: 0 10px 28px rgba(38, 76, 64, .07); }
@@ -46,7 +46,7 @@
 .med-anamnesis-patient dt { color: #7f918a; font-size: 5.5px; font-weight: 950; letter-spacing: .08em; text-transform: uppercase; }
 .med-anamnesis-patient dd { margin-top: 5px; color: #536d64; font-size:11px; line-height: 1.5; }
 .med-anamnesis-progress { padding: 15px 20px; background: #f5f8f6; }
-.med-anamnesis-progress header, .med-anamnesis-progress footer { display: flex; align-items: center; justify-content: space-between; color: #71857e; font-size:10px; }
+.med-anamnesis-progress header, .med-anamnesis-progress footer { display: flex; align-items: center; justify-content: space-between; color: #71857e; font-size:11.5px; }
 .med-anamnesis-progress header strong { color: #3c7060; font-family: Georgia, serif; font-size: 16px; font-weight: 500; }
 .med-anamnesis-progress > div { height: 6px; overflow: hidden; margin: 9px 0; border-radius: 999px; background: #dce8e3; }
 .med-anamnesis-progress > div i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #397463, #83ad9e); transition: width .3s ease; }
@@ -58,7 +58,7 @@
 .med-anamnesis-conversation { min-width: 0; }
 .med-anamnesis-conversation > header { display: flex; min-height: 77px; align-items: center; justify-content: space-between; gap: 16px; padding: 15px 20px; border-bottom: 1px solid var(--anam-line); background: linear-gradient(120deg, #fafcfa, #f0f5f2); }
 .med-anamnesis-conversation > header h2 { margin-top: 5px; color: var(--anam-ink); font-family: Georgia, serif; font-size: 23px; font-weight: 500; }
-.med-anamnesis-conversation > header > span { display: flex; align-items: center; gap: 5px; color: #698079; font-size:10px; font-weight: 850; }
+.med-anamnesis-conversation > header > span { display: flex; align-items: center; gap: 5px; color: #698079; font-size:11.5px; font-weight: 850; }
 .med-anamnesis-conversation > header > span svg { width: 13px; }
 .med-anamnesis-chat { max-height: 620px; min-height: 400px; overflow-y: auto; padding: 21px; background: radial-gradient(circle at 15% 0, rgba(115, 164, 147, .08), transparent 30%), #f8faf8; scrollbar-width: thin; }
 .med-anamnesis-chat article { display: flex; align-items: flex-start; gap: 9px; margin-bottom: 13px; }
@@ -73,7 +73,7 @@
 .med-anamnesis-chat article.student small { color: #aed0c4; }
 .med-anamnesis-chat article.student p { color: #fff; }
 .med-anamnesis-exchange > aside { max-width: 82%; margin: -5px 0 18px 41px; padding: 9px 11px; border-left: 3px solid #71988a; border-radius: 0 10px 10px 0; background: #edf4f1; }
-.med-anamnesis-exchange > aside strong { color: #4f7368; font-size:10px; font-weight: 950; text-transform: uppercase; }
+.med-anamnesis-exchange > aside strong { color: #4f7368; font-size:11.5px; font-weight: 950; text-transform: uppercase; }
 .med-anamnesis-exchange > aside p { margin-top: 3px; color: #698079; font-size: 11.5px; line-height: 1.45; }
 .med-anamnesis-exchange > aside span { display: flex; align-items: center; gap: 4px; margin-top: 6px; color: #9b5d4f; font-size: 5.5px; font-weight: 900; }
 .med-anamnesis-exchange > aside span svg { width: 10px; }
@@ -84,7 +84,7 @@
 .med-anamnesis-synthesis, .med-anamnesis-decisions { padding: 20px; border-top: 1px solid var(--anam-line); }
 .med-anamnesis-synthesis > header { display: flex; align-items: flex-end; justify-content: space-between; gap: 15px; }
 .med-anamnesis-synthesis h3, .med-anamnesis-decisions h3 { margin-top: 5px; color: var(--anam-ink); font-family: Georgia, serif; font-size: 21px; font-weight: 500; }
-.med-anamnesis-synthesis header small { color: #81918b; font-size:10px; }
+.med-anamnesis-synthesis header small { color: #81918b; font-size:11.5px; }
 .med-anamnesis-synthesis textarea { width: 100%; min-height: 105px; margin-top: 12px; padding: 13px; border: 1px solid var(--anam-line); border-radius: 13px; outline: 0; background: #fafbfa; color: #405f56; font: 8px/1.65 inherit; resize: vertical; }
 .med-anamnesis-synthesis textarea:focus { border-color: #6a9a8a; box-shadow: 0 0 0 3px rgba(71, 123, 105, .1); }
 .med-anamnesis-decisions > header > p { margin-top: 6px; color: #71837d; font-size:11px; }
@@ -112,12 +112,12 @@
 .med-anamnesis-questions > header h2 { margin-top: 5px; color: var(--anam-ink); font-family: Georgia, serif; font-size: 23px; font-weight: 500; }
 .med-anamnesis-questions > header p { margin-top: 6px; color: #70837c; font-size:11px; line-height: 1.5; }
 .med-anamnesis-questions > nav { display: flex; gap: 4px; overflow-x: auto; padding: 8px; border-bottom: 1px solid var(--anam-line); scrollbar-width: thin; }
-.med-anamnesis-questions > nav > span { display: flex; min-width: max-content; align-items: center; gap: 5px; padding: 7px 8px; border-radius: 8px; background: #f3f7f5; color: #70847d; font-size:10px; font-weight: 850; }
+.med-anamnesis-questions > nav > span { display: flex; min-width: max-content; align-items: center; gap: 5px; padding: 7px 8px; border-radius: 8px; background: #f3f7f5; color: #70847d; font-size:11.5px; font-weight: 850; }
 .med-anamnesis-questions > nav b { display: grid; min-width: 17px; height: 17px; place-items: center; border-radius: 5px; background: #fff; color: #4e7166; font-size: 5.5px; }
 .med-anamnesis-questions > div { display: flex; max-height: 610px; overflow-y: auto; padding: 9px; flex-direction: column; gap: 6px; scrollbar-width: thin; }
 .med-anamnesis-questions > div > section { display: flex; flex-direction: column; gap: 6px; }
 .med-anamnesis-questions > div > section + section { margin-top: 5px; padding-top: 10px; border-top: 1px solid var(--anam-line); }
-.med-anamnesis-questions > div > section > header { display: flex; align-items: center; justify-content: space-between; padding: 2px 3px; color: #6d817a; font-size:10px; letter-spacing: .04em; text-transform: uppercase; }
+.med-anamnesis-questions > div > section > header { display: flex; align-items: center; justify-content: space-between; padding: 2px 3px; color: #6d817a; font-size:11.5px; letter-spacing: .04em; text-transform: uppercase; }
 .med-anamnesis-questions > div > section > header span { color: #8b9a95; font-weight: 800; }
 .med-anamnesis-questions > div > section > button { display: grid; min-height: 68px; grid-template-columns: 29px minmax(0,1fr) auto; align-items: center; gap: 9px; padding: 9px; border: 1px solid var(--anam-line); border-radius: 12px; background: #fff; color: #526b63; text-align: left; transition: .15s ease; }
 .med-anamnesis-questions > div > section > button:hover:not(:disabled) { transform: translateX(-2px); border-color: #79a395; background: #f7faf8; }
@@ -129,11 +129,11 @@
 
 .med-anamnesis-sensitive-gate { display: flex; min-height: 670px; align-items: center; justify-content: center; padding: 38px; background: radial-gradient(circle at 50% 38%, #495954, #27332f 70%); color: #fff; text-align: center; flex-direction: column; }
 .med-anamnesis-sensitive-gate > svg { width: 46px; height: 46px; color: #e2a98f; }
-.med-anamnesis-sensitive-gate > span { margin-top: 17px; color: #e9b69e; font-size:10px; font-weight: 950; letter-spacing: .13em; }
+.med-anamnesis-sensitive-gate > span { margin-top: 17px; color: #e9b69e; font-size:11.5px; font-weight: 950; letter-spacing: .13em; }
 .med-anamnesis-sensitive-gate h2 { margin-top: 8px; font-family: Georgia, serif; font-size: 36px; font-weight: 500; }
 .med-anamnesis-sensitive-gate p { max-width: 480px; margin-top: 10px; color: #d2dfda; font-size:11.5px; line-height: 1.65; }
 .med-anamnesis-sensitive-gate button { margin-top: 23px; background: #4f8b77; }
-.med-anamnesis-sensitive-gate > small { margin-top: 11px; color: #aebdb8; font-size:10px; }
+.med-anamnesis-sensitive-gate > small { margin-top: 11px; color: #aebdb8; font-size:11.5px; }
 
 .med-anamnesis-report { padding: 25px; }
 .med-anamnesis-report > header { display: flex; align-items: center; justify-content: space-between; gap: 25px; padding-bottom: 22px; border-bottom: 1px solid var(--anam-line); }
@@ -168,8 +168,8 @@
 .med-anamnesis-gaps article p svg { width: 11px; flex: 0 0 auto; color: #a36b4c; }
 .med-anamnesis-report > footer { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin-top: 23px; padding-top: 18px; border-top: 1px solid var(--anam-line); }
 .med-anamnesis-report > footer > div { display: flex; min-width: 0; flex-direction: column; gap: 5px; }
-.med-anamnesis-report > footer > div strong { color: #587068; font-size:10px; }
-.med-anamnesis-report > footer a { display: flex; align-items: center; gap: 4px; color: #4d796c; font-size:10px; }
+.med-anamnesis-report > footer > div strong { color: #587068; font-size:11.5px; }
+.med-anamnesis-report > footer a { display: flex; align-items: center; gap: 4px; color: #4d796c; font-size:11.5px; }
 .med-anamnesis-report > footer a svg { width: 9px; }
 
 @media (max-width: 1280px) {

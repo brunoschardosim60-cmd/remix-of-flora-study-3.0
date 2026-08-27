@@ -1638,7 +1638,7 @@
   .med-system-hero-copy h2 { font-size: 40px; }
   .med-system-hero-stats { gap: 4px; }
   .med-system-hero-stats > div { padding: 10px 7px; }
-  .med-system-hero-stats span { font-size:10px; }
+  .med-system-hero-stats span { font-size:11.5px; }
   .med-system-hero-actions { align-items: stretch; flex-direction: column; }
   .med-system-hero-visual img { height: 230px; }
   .med-system-tabs button { min-width: 132px; }
@@ -1730,7 +1730,7 @@
 .med-development-source-mini { display: flex; gap: 11px; margin-top: 25px; padding: 14px; border: 1px solid var(--med-line); border-radius: 15px; background: #f4f7f4; }
 .med-development-source-mini > svg { width: 18px; flex: 0 0 auto; color: #527b70; }
 .med-development-source-mini > div { display: flex; min-width: 0; flex-direction: column; }
-.med-development-source-mini small { color: #758780; font-size:10px; font-weight: 900; letter-spacing: .1em; }
+.med-development-source-mini small { color: #758780; font-size:11.5px; font-weight: 900; letter-spacing: .1em; }
 .med-development-source-mini strong { overflow: hidden; margin-top: 3px; font-size:12.5px; text-overflow: ellipsis; white-space: nowrap; }
 .med-development-source-mini span { margin-top: 3px; color: #7a8b85; font-size:11px; line-height: 1.4; }
 .med-development-hero-actions { display: grid; grid-template-columns: 1fr 1.15fr; gap: 8px; margin-top: 24px; }
@@ -1771,7 +1771,7 @@
 .med-development-gallery button.active { border-color: #729b8e; background: #edf4f1; box-shadow: inset 0 -2px #588677; }
 .med-development-gallery button > span { display: block; width: 100%; height: 84px; overflow: hidden; border-radius: 10px; background: #e7eee9; }
 .med-development-gallery img { width: 100%; height: 100%; object-fit: cover; }
-.med-development-gallery small { margin: 8px 3px 0; color: #7d8e88; font-size:10px; font-weight: 800; text-transform: uppercase; }
+.med-development-gallery small { margin: 8px 3px 0; color: #7d8e88; font-size:11.5px; font-weight: 800; text-transform: uppercase; }
 .med-development-gallery strong { display: -webkit-box; overflow: hidden; margin: 3px; font-size:11.5px; line-height: 1.3; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 
 .dark .med-development-safety, .black .med-development-safety { border-color: rgba(165, 203, 190, .13); background: linear-gradient(105deg, #1d332b, #17241f); }
@@ -1871,7 +1871,7 @@
 .med-case-library button p { margin-top: 6px; color: #6a7f78; font-size:11.5px; line-height: 1.5; }
 .med-case-library button > svg { width: 15px; color: #9aaba5; }
 .med-case-library button footer { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 12px; }
-.med-case-library button footer span { display: flex; min-height: 21px; align-items: center; gap: 4px; padding: 0 7px; border-radius: 999px; background: #e9efec; color: #687d76; font-size:10px; font-weight: 850; }
+.med-case-library button footer span { display: flex; min-height: 21px; align-items: center; gap: 4px; padding: 0 7px; border-radius: 999px; background: #e9efec; color: #687d76; font-size:11.5px; font-weight: 850; }
 .med-case-library button footer span.compatible { background: #dff0e7; color: #3e755d; }
 .med-case-library button footer span.advanced { background: #f2eadb; color: #7c6338; }
 .med-case-library button footer span.sensitive { background: #f8e5e1; color: #9a5149; }
@@ -1893,14 +1893,14 @@
 .med-case-monitor > div:first-child { align-items: center; flex-direction: row; justify-content: flex-start; gap: 9px; background: #263f38; color: #fff; }
 .med-case-monitor > div:first-child svg { width: 19px; color: #83c1ad; }
 .med-case-monitor > div:first-child span { display: flex; flex-direction: column; }
-.med-case-monitor small { color: #81938c; font-size:10px; font-weight: 900; letter-spacing: .06em; }
+.med-case-monitor small { color: #81938c; font-size:11.5px; font-weight: 900; letter-spacing: .06em; }
 .med-case-monitor > div:first-child small { color: #8eb2a6; }
 .med-case-monitor strong { margin-top: 3px; color: #34544b; font-size:13px; }
 .med-case-monitor > div:first-child strong { color: #fff; }
 .med-case-monitor > div.attention strong { color: #9a6c2e; }
 .med-case-monitor > div.critical { background: #fff5f2; }
 .med-case-monitor > div.critical strong { color: #ad5148; }
-.med-case-monitor-difficulty span { margin-top: 2px; color: #7d9189; font-size:10px; }
+.med-case-monitor-difficulty span { margin-top: 2px; color: #7d9189; font-size:11.5px; }
 
 .med-clinical-case-heading {
   display: flex;
@@ -1927,7 +1927,7 @@
 .med-clinic-page .med-case-steps li { align-items: center; min-height: 58px; padding: 8px; border-radius: 13px; }
 .med-clinic-page .med-case-steps li > span { width: 34px; height: 34px; flex: 0 0 auto; }
 .med-clinic-page .med-case-steps li > div { display: flex; flex-direction: column; gap: 2px; }
-.med-clinic-page .med-case-steps li small { color: #9ba8a3; font-size:10px; font-weight: 900; letter-spacing: .08em; }
+.med-clinic-page .med-case-steps li small { color: #9ba8a3; font-size:11.5px; font-weight: 900; letter-spacing: .08em; }
 .med-clinic-page .med-case-steps li strong { font-size:12.5px; }
 .med-clinic-page .med-case-steps li.active { background: #e9f1ed; color: #315f52; }
 .med-clinic-page .med-case-steps li.done { color: #4f776c; }
@@ -1960,7 +1960,7 @@
 .med-hide-sensitive { position: absolute; top: 13px; right: 13px; z-index: 3; margin: 0; background: rgba(22, 37, 32, .68); }
 .med-case-visual > footer { position: absolute; right: 13px; bottom: 13px; left: 13px; z-index: 3; display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 10px 12px; border: 1px solid rgba(255, 255, 255, .2); border-radius: 12px; background: rgba(17, 29, 25, .72); color: #e3ebe8; backdrop-filter: blur(14px); }
 .med-case-visual > footer span { font-size:11px; line-height: 1.45; }
-.med-case-visual > footer b { flex: 0 0 auto; color: #9cc6b8; font-size:10px; letter-spacing: .07em; }
+.med-case-visual > footer b { flex: 0 0 auto; color: #9cc6b8; font-size:11.5px; letter-spacing: .07em; }
 
 .med-case-findings { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 24px 30px; border-bottom: 1px solid var(--med-line); background: #f8faf8; }
 .med-case-findings > div { display: grid; min-height: 58px; grid-template-columns: 30px 1fr; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid rgba(61, 101, 90, .09); border-radius: 13px; background: #fff; }
@@ -1971,11 +1971,11 @@
 .med-case-data > header { display: flex; align-items: center; gap: 9px; }
 .med-case-data > header svg { width: 19px; color: #4f7e70; }
 .med-case-data > header div { display: flex; flex-direction: column; }
-.med-case-data > header small { color: #789087; font-size:10px; font-weight: 900; letter-spacing: .08em; }
+.med-case-data > header small { color: #789087; font-size:11.5px; font-weight: 900; letter-spacing: .08em; }
 .med-case-data > header strong { margin-top: 3px; color: #36584e; font-size:12.5px; }
 .med-case-data > div { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
 .med-case-data > div > div { display: flex; min-width: 0; flex-direction: column; padding: 9px; border: 1px solid rgba(63, 101, 90, .1); border-radius: 10px; background: #fff; }
-.med-case-data small { color: #83948e; font-size:10px; font-weight: 850; }
+.med-case-data small { color: #83948e; font-size:11.5px; font-weight: 850; }
 .med-case-data strong { overflow: hidden; margin-top: 3px; color: #39584f; font-size:11.5px; text-overflow: ellipsis; white-space: nowrap; }
 .med-case-data .attention strong { color: #946a30; }
 .med-case-data .critical { border-color: rgba(176, 81, 71, .16); background: #fff6f3; }
@@ -2017,10 +2017,10 @@
 .med-case-workspace > footer > div { display: flex; min-width: 0; align-items: center; gap: 9px; }
 .med-case-workspace > footer > div > svg { width: 17px; flex: 0 0 auto; color: #557c71; }
 .med-case-workspace > footer > div span { display: flex; min-width: 0; flex-direction: column; }
-.med-case-workspace > footer small { color: #8a9994; font-size:10px; font-weight: 900; letter-spacing: .07em; }
+.med-case-workspace > footer small { color: #8a9994; font-size:11.5px; font-weight: 900; letter-spacing: .07em; }
 .med-case-workspace > footer strong { overflow: hidden; max-width: 300px; margin-top: 2px; font-size:11.5px; text-overflow: ellipsis; white-space: nowrap; }
 .med-case-workspace > footer > .med-case-unlock { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; }
-.med-case-workspace > footer > .med-case-unlock > span { display: flex; align-items: center; gap: 4px; padding: 4px 7px; border-radius: 999px; background: #e9eeeb; color: #8a9994; font-size:10px; font-weight: 850; flex-direction: row; }
+.med-case-workspace > footer > .med-case-unlock > span { display: flex; align-items: center; gap: 4px; padding: 4px 7px; border-radius: 999px; background: #e9eeeb; color: #8a9994; font-size:11.5px; font-weight: 850; flex-direction: row; }
 .med-case-workspace > footer > .med-case-unlock > span.done { background: #e0efe7; color: #3e715c; }
 .med-case-unlock svg { width: 9px; }
 .med-case-workspace > footer button, .med-case-completion > button { display: flex; min-height: 44px; align-items: center; justify-content: center; gap: 7px; padding: 0 16px; border-radius: 12px; background: #477668; color: #fff; font-size:11.5px; font-weight: 900; box-shadow: 0 8px 20px rgba(58, 105, 91, .18); }
@@ -2429,7 +2429,7 @@
   color: #264d42;
   backdrop-filter: blur(12px);
 }
-.med-development-compare figcaption small { font-size:10px; font-weight: 900; letter-spacing: .1em; }
+.med-development-compare figcaption small { font-size:11.5px; font-weight: 900; letter-spacing: .1em; }
 .med-development-compare figcaption strong { margin-top: 3px; font-size:13px; }
 .med-development-compare figcaption span { margin-top: 2px; overflow: hidden; font-size:11px; text-overflow: ellipsis; white-space: nowrap; }
 .med-development-compare > i { position: absolute; top: 50%; left: 50%; z-index: 4; display: grid; width: 40px; height: 40px; place-items: center; transform: translate(-50%,-50%); border: 4px solid rgba(255,255,255,.75); border-radius: 50%; background: #3f7163; color: white; box-shadow: 0 12px 30px rgba(21,49,41,.24); }
@@ -2462,7 +2462,7 @@
 .med-development-immersive-header > div { display: flex; align-items: center; gap: 10px; }
 .med-development-immersive-header > div:first-child > svg { width: 22px; color: #8eb5a8; }
 .med-development-immersive-header > div:first-child > span { display: flex; flex-direction: column; }
-.med-development-immersive-header small { color: #80a396; font-size:10px; font-weight: 900; letter-spacing: .12em; }
+.med-development-immersive-header small { color: #80a396; font-size:11.5px; font-weight: 900; letter-spacing: .12em; }
 .med-development-immersive-header strong { margin-top: 2px; font-family: Georgia,serif; font-size: 15px; font-weight: 500; }
 .med-development-immersive-header > div:last-child > span { color: #88a097; font-size:11px; }
 .med-development-immersive-header button { display: grid; width: 36px; height: 36px; place-items: center; border-radius: 10px; background: rgba(255,255,255,.08); }
