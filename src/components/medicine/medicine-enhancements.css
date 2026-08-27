@@ -1631,9 +1631,13 @@
   .med-anatomy-focus-canvas { height: 395px; min-height: 395px; }
   .med-anatomy-focus-visual > footer button { font-size:11.5px; }
   .med-anatomy-focus-info { padding: 22px 18px; }
-  .med-practice-zoom-controls { right: 8px; left: 8px; flex-wrap: wrap; justify-content: center; }
-  .med-practice-zoom-controls button.wide { flex: 1; }
+  .med-practice-zoom-controls { top: 10px; right: 8px; left: 8px; flex-wrap: wrap; justify-content: center; gap: 4px; padding: 5px; }
+  .med-practice-zoom-controls button.wide { flex: 1 1 auto; min-width: 0; white-space: nowrap; }
   .med-practice-drag-help { display: none; }
+  .med-practice-visual > span,.med-practice-visual > small { right: 12px; left: 12px; text-align: center; letter-spacing: .08em; }
+  .med-practice-prompt h2 { font-size: 27px; line-height: 1.15; }
+  .med-practice-prompt { padding: 22px 18px; }
+
   .med-system-hero { padding: 22px 18px; }
   .med-system-hero-copy h2 { font-size: 40px; }
   .med-system-hero-stats { gap: 4px; }
@@ -2747,11 +2751,14 @@
 }
 
 @media (max-width: 620px) {
-  .med-review-summary,.med-competency-overview > div { grid-template-columns: 1fr; }
-  .med-review-summary > div { grid-column: auto; }
+  .med-review-summary,.med-competency-overview > div { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .med-review-summary > div { grid-column: 1 / -1; }
+  .med-review-summary > article { padding: 12px 13px; }
+  .med-review-summary article strong { margin-top: 4px; font-size: 17px; }
   .med-review-groups article { grid-template-columns: 30px minmax(0,1fr); }
   .med-review-groups article > button { grid-column: 2; justify-self: start; }
 }
+
 
 @media (max-width: 360px) {
   .med-header { gap: 3px; padding-inline: 7px; }
