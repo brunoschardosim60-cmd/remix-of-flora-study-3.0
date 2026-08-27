@@ -2747,11 +2747,14 @@
 }
 
 @media (max-width: 620px) {
-  .med-review-summary,.med-competency-overview > div { grid-template-columns: 1fr; }
-  .med-review-summary > div { grid-column: auto; }
+  .med-review-summary,.med-competency-overview > div { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .med-review-summary > div { grid-column: 1 / -1; }
+  .med-review-summary > article { padding: 12px 13px; }
+  .med-review-summary article strong { margin-top: 4px; font-size: 17px; }
   .med-review-groups article { grid-template-columns: 30px minmax(0,1fr); }
   .med-review-groups article > button { grid-column: 2; justify-self: start; }
 }
+
 
 @media (max-width: 360px) {
   .med-header { gap: 3px; padding-inline: 7px; }
