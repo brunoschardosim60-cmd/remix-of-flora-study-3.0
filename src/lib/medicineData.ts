@@ -308,6 +308,14 @@ export const medicalSources: Record<string, MedicalSource> = {
     license: "CC BY-NC-SA 4.0",
     attribution: "Access for free at openstax.org.",
   },
+  nihHraHeart3D: {
+    title: "3D Reference Organ for Heart, Female v1.2",
+    organization: "Human Reference Atlas / NIH 3D",
+    url: "https://3d.nih.gov/entries/3DPX-020966",
+    reviewedAt: "2026-08-28",
+    license: "CC BY 4.0",
+    attribution: "Kristen Browne; Heidi Schlehlein. 2022. 3D Reference Organ for Heart, Female v1.2. https://doi.org/10.48539/HBM384.VWVH.465.",
+  },
   openstaxCardiacCycle: {
     title: "Ciclo cardíaco",
     organization: "OpenStax, Rice University",

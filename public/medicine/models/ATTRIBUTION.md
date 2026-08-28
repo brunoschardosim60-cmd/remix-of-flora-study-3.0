@@ -14,6 +14,23 @@ O ativo derivado permanece disponibilizado sob CC BY-SA 4.0. A licença do model
 
 Os arquivos em `draco/` são os decodificadores distribuídos com Three.js e usados apenas para abrir a malha comprimida no navegador.
 
+## `nih-hra-heart-interior-v1.glb`
+
+- Nome original: **3D Reference Organ for Heart, Female v1.2** (`VH_F_Heart.glb`).
+- Autoras: Kristen Browne e Heidi Schlehlein.
+- Instituição/projeto: Human Reference Atlas (HRA), disponibilizado pelo NIH 3D.
+- Entrada oficial: [NIH 3D 3DPX-020966](https://3d.nih.gov/entries/3DPX-020966).
+- DOI informado na atribuição da entrada: [`10.48539/HBM384.VWVH.465`](https://doi.org/10.48539/HBM384.VWVH.465).
+- Arquivo original obtido pela API oficial do NIH 3D: [`/api/files/742112`](https://3d.nih.gov/api/files/742112).
+- Data de acesso: 28 de agosto de 2026.
+- Licença da entrada: [Creative Commons Attribution 4.0 International](https://creativecommons.org/licenses/by/4.0/).
+- Atribuição solicitada pela fonte: “Kristen Browne; Heidi Schlehlein. 2022. 3D Reference Organ for Heart, Female v1.2. https://doi.org/10.48539/HBM384.VWVH.465.”
+- Conteúdo usado: quatro câmaras cardíacas, septo interventricular, valvas aórtica, pulmonar, mitral e tricúspide e cinco músculos papilares, preservados como 14 malhas selecionáveis.
+- Alterações neste projeto: somente renomeação do arquivo; centralização, escala, materiais, transparência, corte, destaque e seleção são aplicados em tempo de execução. A geometria original não foi simplificada nem remodelada.
+- SHA-256 do arquivo usado: `9AFDFB2CCF926869813582CFE150DCE8CB28377417A968A4F29A5B8DC060428B`.
+
+O coração NIH é carregado apenas ao abrir a anatomia interna. Ele complementa, sem substituir, `zanatomy-organ-heart-v1.glb`: o modelo Z-Anatomy mantém a parede externa, aorta, coronárias direitas e veias cavas; o modelo HRA fornece as estruturas internas realmente segmentadas.
+
 ## `zanatomy-circulatory-v1.glb`, `zanatomy-nervous-v1.glb` e `zanatomy-organs-v1.glb`
 
 - Fonte imediata e conversão para GLB: [Anatomi Simülatörü](https://github.com/DrMuratAltun/anatomi-simulatoru), de Dr. Murat Altun.
