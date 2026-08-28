@@ -648,21 +648,47 @@
 
 .med-anatomy-pin {
   z-index: 2;
-  width: 15px;
-  height: 15px;
-  border-width: 1.5px;
-  background: rgba(255, 255, 255, .82);
-  box-shadow: 0 2px 7px rgba(31, 70, 59, .18), 0 0 0 3px rgba(76, 133, 114, .08);
-  transition: width .15s ease, height .15s ease, box-shadow .15s ease;
+  width: 32px;
+  height: 32px;
+  transform: translate(-50%, -50%) scale(var(--atlas-pin-counter-scale, 1));
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  transition: transform .15s ease;
 }
 
-.med-anatomy-pin span { width: 5px; height: 5px; }
+.med-anatomy-pin::before {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 15px;
+  height: 15px;
+  transform: translate(-50%, -50%) scale(var(--atlas-pin-visual-scale, 1));
+  border: 1.5px solid rgba(255, 255, 255, .94);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .88);
+  box-shadow: 0 2px 7px rgba(31, 70, 59, .18), 0 0 0 3px rgba(76, 133, 114, .08);
+  content: "";
+  transition: width .15s ease, height .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+
+.med-anatomy-pin span {
+  position: relative;
+  z-index: 1;
+  width: 5px;
+  height: 5px;
+  transform: scale(var(--atlas-pin-visual-scale, 1));
+  pointer-events: none;
+}
+
 .med-anatomy-pin:hover,
-.med-anatomy-pin.active { z-index: 5; width: 22px; height: 22px; }
+.med-anatomy-pin.active { z-index: 5; background: transparent; box-shadow: none; }
+.med-anatomy-pin:hover::before,
+.med-anatomy-pin.active::before { width: 22px; height: 22px; box-shadow: 0 3px 10px rgba(31, 70, 59, .24), 0 0 0 5px rgba(76, 133, 114, .12); }
 
 .med-anatomy-pin::after {
   position: absolute;
-  bottom: calc(100% + 8px);
+  bottom: calc(50% + 16px);
   left: 50%;
   width: max-content;
   max-width: 180px;
@@ -683,7 +709,8 @@
 }
 
 .med-anatomy-pin:hover::after,
-.med-anatomy-pin:focus-visible::after { transform: translate(-50%, 0); opacity: 1; }
+.med-anatomy-pin:focus-visible::after,
+.med-anatomy-pin.active::after { transform: translate(-50%, 0); opacity: 1; }
 
 .med-atlas-density-note {
   position: absolute;
@@ -2868,9 +2895,7 @@
 
 /* Alvos de toque: pinos e controles densos ficavam abaixo de 24 px em telas pequenas. */
 @media (pointer: coarse) {
-  .med-anatomy-pin { width: 30px; height: 30px; }
-  .med-anatomy-pin span { width: 9px; height: 9px; }
-  .med-anatomy-pin:hover, .med-anatomy-pin.active { width: 38px; height: 38px; }
+  .med-anatomy-pin { width: 44px; height: 44px; }
   .med-app :where(.pathology-hotspot, .pathology-compare button) { min-width: 40px; min-height: 40px; }
 }
 
@@ -2976,9 +3001,7 @@
 
   .med-atlas-controls button.wide { width: auto; }
 
-  .med-anatomy-pin { width: 30px; height: 30px; }
-  .med-anatomy-pin span { width: 9px; height: 9px; }
-  .med-anatomy-pin:hover, .med-anatomy-pin.active { width: 38px; height: 38px; }
+  .med-anatomy-pin { width: 44px; height: 44px; }
 
   .med-app :where(
     .med-3d-region-strip button,

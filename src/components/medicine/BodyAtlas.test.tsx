@@ -2,7 +2,7 @@ import { useState } from "react";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { anatomyStructures, type AnatomyStructure } from "@/lib/medicineData";
-import { BodyAtlas } from "./BodyAtlas";
+import { atlasCanvasStructures, atlasPinLimitForZoom, BodyAtlas } from "./BodyAtlas";
 
 function AtlasHarness() {
   const initial = anatomyStructures.find((structure) => structure.id === "heart") as AnatomyStructure;
@@ -61,6 +61,27 @@ function dispatchPointer(target: Element, type: string, values: { pointerId: num
 }
 
 describe("BodyAtlas selection flow", () => {
+  it("prioritizes large anatomical structures before fine details", () => {
+    const anteriorSkeleton = anatomyStructures.filter((structure) => structure.layer === "skeletal" && structure.positions?.anterior);
+    const prioritized = atlasCanvasStructures(anteriorSkeleton, 28, false).map((structure) => structure.id);
+
+    expect(prioritized).toContain("femur");
+    expect(prioritized).toContain("humerus");
+    expect(prioritized).toContain("tibia");
+    expect(prioritized).not.toContain("stapes");
+  });
+
+  it("reveals fine structures progressively across the zoom range", () => {
+    const base = atlasPinLimitForZoom(18, 80, 1);
+    const intermediate = atlasPinLimitForZoom(18, 80, 1.3);
+    const maximum = atlasPinLimitForZoom(18, 80, 1.5);
+
+    expect(base).toBe(18);
+    expect(intermediate).toBeGreaterThan(base);
+    expect(intermediate).toBeLessThan(maximum);
+    expect(maximum).toBe(80);
+  });
+
   it("selects a structure without opening the detail dialog", () => {
     render(<AtlasHarness />);
 
@@ -98,6 +119,23 @@ describe("BodyAtlas selection flow", () => {
     fireEvent.wheel(stage, { deltaY: -100 });
     expect(screen.getByText("130%")).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: /^Selecionar / }).length).toBeGreaterThan(initialMarkerCount);
+  });
+
+  it("counter-scales markers and reduces their visible size while zooming", () => {
+    render(<AtlasHarness />);
+    const stage = screen.getByLabelText(/use a roda do mouse para controlar o zoom/i);
+    const marker = screen.getAllByRole("button", { name: /^Selecionar / })[0] as HTMLElement;
+
+    expect(marker.style.getPropertyValue("--atlas-pin-counter-scale")).toBe("1");
+    expect(marker.style.getPropertyValue("--atlas-pin-visual-scale")).toBe("1");
+
+    fireEvent.wheel(stage, { deltaY: -100 });
+    fireEvent.wheel(stage, { deltaY: -100 });
+    fireEvent.wheel(stage, { deltaY: -100 });
+
+    const zoomedMarker = screen.getAllByRole("button", { name: /^Selecionar / })[0] as HTMLElement;
+    expect(Number(zoomedMarker.style.getPropertyValue("--atlas-pin-counter-scale"))).toBeCloseTo(1 / 1.3);
+    expect(Number(zoomedMarker.style.getPropertyValue("--atlas-pin-visual-scale"))).toBeLessThan(1);
   });
 
   it("keeps the layer count synchronized with markers shown for each level", () => {
@@ -175,7 +213,7 @@ describe("BodyAtlas selection flow", () => {
 
     expect(screen.queryByRole("button", { name: "Homem" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Mulher" })).not.toBeInTheDocument();
-    expect(screen.getByText("28 na imagem · 41 nesta vista")).toBeInTheDocument();
+    expect(screen.getByText("18 na imagem · 41 nesta vista")).toBeInTheDocument();
     expect(screen.getByAltText(/referência adulta/)).toHaveAttribute("src", "/medicine/atlas/surface-anterior-v3.png");
   });
 

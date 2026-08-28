@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
 import { createPortal } from "react-dom";
 import { Box, ChevronLeft, ChevronRight, ExternalLink, Info, Maximize2, Move, Rotate3D, RotateCcw, Search, Volume2, X, ZoomIn, ZoomOut } from "lucide-react";
 import { organ3DStructureForAtlasId } from "@/lib/anatomy3DModel";
@@ -32,16 +32,61 @@ interface BodyAtlasProps {
 
 const levelOrder: MedicineLevel[] = ["Iniciante", "Ciclo básico", "Ciclo clínico", "Internato", "Residência"];
 
+// O corpo inteiro precisa apresentar primeiro estruturas com grande extensão
+// anatômica. Detalhes pequenos entram conforme o zoom aumenta, em vez de
+// substituírem ossos longos, grandes músculos, troncos vasculares e órgãos.
+const primaryAtlasStructureIds = new Set([
+  // Superfície
+  "skin", "scalp", "sternal-region", "abdominal-region", "dorsal-region", "brachial-region", "antebrachial-region",
+  "palmar-region", "gluteal-region", "femoral-region", "patellar-region", "crural-region", "sural-region", "plantar-region",
+  // Músculos
+  "deltoid", "trapezius", "pectoralis-major", "rectus-abdominis", "external-oblique", "latissimus-dorsi", "erector-spinae",
+  "biceps-brachii", "triceps-brachii", "gluteus-maximus", "gluteus-medius", "rectus-femoris", "biceps-femoris",
+  "tibialis-anterior", "gastrocnemius", "soleus",
+  // Esqueleto
+  "frontal-bone", "parietal-bone", "temporal-bone", "occipital-bone", "mandible", "clavicle", "scapula", "sternum",
+  "humerus", "radius", "ulna", "hip-bone", "sacrum", "femur", "patella", "tibia", "fibula", "calcaneus",
+  // Vasos
+  "aorta", "pulmonary-trunk", "pulmonary-arteries", "pulmonary-veins", "ascending-aorta", "aortic-arch", "thoracic-aorta",
+  "abdominal-aorta", "common-carotid-artery", "subclavian-artery", "brachial-artery", "radial-artery", "ulnar-artery",
+  "superior-vena-cava", "inferior-vena-cava", "internal-jugular-vein", "hepatic-portal-vein", "femoral-artery", "femoral-vein",
+  "anterior-tibial-artery", "posterior-tibial-artery", "great-saphenous-vein",
+  // Nervos
+  "sciatic", "cerebrum", "cerebellum", "brainstem", "spinal-cord", "vagus-nerve", "brachial-plexus", "lumbar-plexus",
+  "sacral-plexus", "median-nerve", "ulnar-nerve", "radial-nerve", "femoral-nerve", "tibial-nerve", "common-fibular-nerve",
+  // Órgãos
+  "brain", "heart", "lungs", "liver", "kidneys", "eyes", "tongue", "pharynx", "larynx", "thyroid-gland", "trachea",
+  "main-bronchi", "diaphragm", "stomach", "pancreas", "spleen", "duodenum", "jejunum", "ileum", "ascending-colon",
+  "transverse-colon", "descending-colon", "urinary-bladder", "uterus", "testes",
+]);
+
+const fineAtlasStructurePattern = /(?:^|\b)(?:c[1-7]|t(?:[1-9]|1[0-2])|l[1-5]|s[1-5]|co[1-4]|costela|falange|metacarp|metatars|carp|tars|valva|ramo|ducto|glândula|linfonodo|epitélio|retina|córnea|íris|cristalino|alvéolo|bronquíolo|nervo .*\([ivx]+\))/iu;
+const fineAtlasStructureIds = new Set(["malleus", "incus", "stapes", "lacrimal-bone", "inferior-nasal-concha", "vomer", "taste-buds"]);
+
+export function atlasStructureDisplayPriority(structure: AnatomyStructure) {
+  if (primaryAtlasStructureIds.has(structure.id)) return 0;
+  if (fineAtlasStructureIds.has(structure.id) || fineAtlasStructurePattern.test(`${structure.id} ${structure.name}`)) return 2;
+  return 1;
+}
+
+export function atlasPinLimitForZoom(baseLimit: number, total: number, zoom: number) {
+  if (total <= baseLimit) return total;
+  const progress = Math.min(1, Math.max(0, (zoom - 1) / 0.5));
+  const easedProgress = Math.pow(progress, 1.25);
+  return Math.min(total, Math.max(baseLimit, Math.round(baseLimit + (total - baseLimit) * easedProgress)));
+}
+
 export function atlasCanvasStructures(
   structures: AnatomyStructure[],
   pinLimit: number,
   revealAll: boolean,
 ) {
   if (revealAll || structures.length <= pinLimit) return structures;
-  const slots = Math.max(pinLimit, 1);
-  return Array.from({ length: Math.min(slots, structures.length) }, (_, index) => (
-    structures[Math.min(Math.floor(index * structures.length / slots), structures.length - 1)]
-  ));
+  return structures
+    .map((structure, index) => ({ structure, index, priority: atlasStructureDisplayPriority(structure) }))
+    .sort((a, b) => a.priority - b.priority || a.index - b.index)
+    .slice(0, Math.max(pinLimit, 1))
+    .map(({ structure }) => structure);
 }
 
 export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelect, onOpen3D }: BodyAtlasProps) {
@@ -89,21 +134,25 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
   const levelProfile = medicineLevelProfiles[level];
   const levelRank = levelOrder.indexOf(level);
   const activeCoverage = atlasCoverageByLayer[activeLayer];
-  const canvasPinLimit = [28, 36, 46, 58, 72][Math.max(levelRank, 0)];
+  const canvasPinLimit = [18, 26, 36, 48, 60][Math.max(levelRank, 0)];
   const layerStatistics = useMemo(() => new Map(bodyLayers.map((layer) => {
     const catalogued = anatomyStructures.filter((structure) => structure.layer === layer.id && structureMatchesBodyProfile(structure, bodyProfile));
     const inCurrentView = catalogued.filter((structure) => anatomyPositionFor(structure, view));
     const candidates = layer.id === activeLayer ? filteredStructures : inCurrentView;
-    const revealAll = zoom >= 1.25 || (layer.id === activeLayer && Boolean(query.trim()));
+    const revealAll = layer.id === activeLayer && Boolean(query.trim());
+    const zoomPinLimit = atlasPinLimitForZoom(canvasPinLimit, candidates.length, zoom);
     return [layer.id, {
       catalogued: catalogued.length,
       inCurrentView: inCurrentView.length,
-      displayed: atlasCanvasStructures(candidates, canvasPinLimit, revealAll).length,
+      displayed: atlasCanvasStructures(candidates, zoomPinLimit, revealAll).length,
     }];
   })), [activeLayer, bodyProfile, canvasPinLimit, filteredStructures, query, view, zoom]);
   const canvasStructures = useMemo(() => {
-    return atlasCanvasStructures(filteredStructures, canvasPinLimit, Boolean(query.trim()) || zoom >= 1.25);
+    const zoomPinLimit = atlasPinLimitForZoom(canvasPinLimit, filteredStructures.length, zoom);
+    return atlasCanvasStructures(filteredStructures, zoomPinLimit, Boolean(query.trim()));
   }, [canvasPinLimit, filteredStructures, query, zoom]);
+  const pinCounterScale = 1 / zoom;
+  const pinVisualScale = Math.max(0.74, 1 - Math.max(0, zoom - 1) * 0.5);
 
   const constrainAtlasPan = useCallback((candidate: { x: number; y: number }, atZoom: number) => {
     const viewport = atlasViewportRef.current;
@@ -439,7 +488,12 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
               return <button
                 key={structure.id}
                 className={`med-anatomy-pin ${selectedInProfile?.id === structure.id ? "active" : ""}`}
-                style={{ left: `${position.x}%`, top: `${position.y}%` }}
+                style={{
+                  left: `${position.x}%`,
+                  top: `${position.y}%`,
+                  "--atlas-pin-counter-scale": pinCounterScale,
+                  "--atlas-pin-visual-scale": pinVisualScale,
+                } as CSSProperties}
                 onClick={() => onSelect(structure)}
                 aria-label={`Selecionar ${structure.name}`}
                 data-label={structure.name}
