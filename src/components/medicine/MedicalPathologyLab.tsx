@@ -23,6 +23,7 @@ import {
 import { preloadMedicalImages } from "@/lib/medicineMedia";
 
 interface MedicalPathologyLabProps {
+  initialPathologyId?: string;
   onOpenNotebook: (context: { label: string; summary: string; image: string; imageAlt: string }) => void;
   onLearningEvent?: (event: { id: string; label: string; correct: boolean }) => void;
 }
@@ -30,10 +31,11 @@ interface MedicalPathologyLabProps {
 type DetailTab = "changes" | "progression" | "practice";
 
 export function MedicalPathologyLab({
+  initialPathologyId,
   onOpenNotebook,
   onLearningEvent,
 }: MedicalPathologyLabProps) {
-  const [activeId, setActiveId] = useState(medicalPathologies[0].id);
+  const [activeId, setActiveId] = useState(() => medicalPathologies.find((item) => item.id === initialPathologyId)?.id ?? medicalPathologies[0].id);
   const [split, setSplit] = useState(50);
   const [stage, setStage] = useState(0);
   const [tab, setTab] = useState<DetailTab>("changes");
@@ -49,6 +51,10 @@ export function MedicalPathologyLab({
     pathology.hotspots.find((item) => item.id === hotspotId) ??
     pathology.hotspots[0];
   const activeVisual = pathology.visuals.find((item) => item.id === visualId) ?? pathology.visuals[0];
+
+  useEffect(() => {
+    if (initialPathologyId && medicalPathologies.some((item) => item.id === initialPathologyId)) setActiveId(initialPathologyId);
+  }, [initialPathologyId]);
 
   useEffect(() => {
     setSplit(50);

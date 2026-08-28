@@ -1,4 +1,4 @@
-import { useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import {
   Activity, ArrowRight, BookOpenCheck, Check, CheckCircle2, ChevronRight, ClipboardList,
   FileHeart, HeartPulse, Info, Lightbulb, ListChecks, LockKeyhole, MessageCircleHeart,
@@ -46,14 +46,17 @@ function sourceTitle(id: string) {
   return medicalSources[id]?.title ?? id;
 }
 
-export function SemiologyAcademy({ level, onNavigate, onLearningEvent }: {
+export function SemiologyAcademy({ level, initialModuleId, onNavigate, onLearningEvent }: {
   level: MedicineLevel;
+  initialModuleId?: string;
   onNavigate: (destination: Destination) => void;
   onLearningEvent?: (event: { id: string; label: string; correct: boolean }) => void;
 }) {
   const [tab, setTab] = useState<AcademyTab>("trail");
   const [completed, setCompleted] = useState<string[]>(loadCompleted);
-  const [activeId, setActiveId] = useState(() => semiologyModules.find((module) => !completed.includes(module.id))?.id ?? semiologyModules[0].id);
+  const [activeId, setActiveId] = useState(() => semiologyModules.find((module) => module.id === initialModuleId)?.id
+    ?? semiologyModules.find((module) => !completed.includes(module.id))?.id
+    ?? semiologyModules[0].id);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [termQuery, setTermQuery] = useState("");
   const [techniqueOrder, setTechniqueOrder] = useState<string[]>([]);
@@ -67,6 +70,12 @@ export function SemiologyAcademy({ level, onNavigate, onLearningEvent }: {
     if (!normalized) return semiologyTerms;
     return semiologyTerms.filter(([term, definition]) => `${term} ${definition}`.toLocaleLowerCase("pt-BR").includes(normalized));
   }, [termQuery]);
+
+  useEffect(() => {
+    if (!initialModuleId || !semiologyModules.some((module) => module.id === initialModuleId)) return;
+    setActiveId(initialModuleId);
+    setTab("trail");
+  }, [initialModuleId]);
 
   const persistCompletion = (next: string[]) => {
     const unique = Array.from(new Set(next));

@@ -271,6 +271,46 @@ export const anatomy3DStructures: Anatomy3DStructure[] = [
     parts: [sphere([-0.08, 1.42, 0.25], [0.38, 0.5, 0.34])],
   },
   {
+    id: "organ-heart-right-atrium", name: "Átrio direito", latin: "Atrium dextrum", layer: "organs", regionId: "thorax", region: "Base direita do coração", system: "Cardiovascular",
+    summary: "Câmara superior direita do coração, relacionada ao retorno venoso sistêmico.", function: "Recebe sangue das veias cavas e do seio coronário e o direciona ao ventrículo direito pela valva tricúspide.", sourceId: "openstaxHeart", focus: [0.114, 2.105, 0.131], focusDistance: 1.6, color: "#a33f58",
+    parts: [sphere([-0.2, 1.58, 0.24], [0.16, 0.18, 0.14])],
+  },
+  {
+    id: "organ-heart-left-atrium", name: "Átrio esquerdo", latin: "Atrium sinistrum", layer: "organs", regionId: "thorax", region: "Base posterior do coração", system: "Cardiovascular",
+    summary: "Câmara superior esquerda do coração, situada predominantemente na base posterior.", function: "Recebe sangue oxigenado das veias pulmonares e o direciona ao ventrículo esquerdo pela valva mitral.", sourceId: "openstaxHeart", focus: [0.114, 2.105, 0.131], focusDistance: 1.6, color: "#b5475d",
+    parts: [sphere([0.08, 1.6, 0.12], [0.16, 0.17, 0.13])],
+  },
+  {
+    id: "organ-heart-right-ventricle", name: "Ventrículo direito", latin: "Ventriculus dexter", layer: "organs", regionId: "thorax", region: "Face anterior do coração", system: "Cardiovascular",
+    summary: "Câmara inferior direita que forma grande parte da face anterior do coração.", function: "Ejeta sangue para o tronco pulmonar através da valva pulmonar.", sourceId: "openstaxHeart", focus: [0.114, 2.105, 0.131], focusDistance: 1.55, color: "#a73c50",
+    parts: [sphere([-0.13, 1.32, 0.3], [0.2, 0.28, 0.17])],
+  },
+  {
+    id: "organ-heart-left-ventricle", name: "Ventrículo esquerdo", latin: "Ventriculus sinister", layer: "organs", regionId: "thorax", region: "Face esquerda e ápice do coração", system: "Cardiovascular",
+    summary: "Câmara inferior esquerda de parede espessa que participa da formação do ápice.", function: "Ejeta sangue para a aorta através da valva aórtica e sustenta a circulação sistêmica.", sourceId: "openstaxHeart", focus: [0.114, 2.105, 0.131], focusDistance: 1.55, color: "#b93d50",
+    parts: [sphere([0.05, 1.28, 0.22], [0.22, 0.3, 0.18])],
+  },
+  {
+    id: "organ-heart-tricuspid-valve", name: "Valva tricúspide", latin: "Valva atrioventricularis dextra", layer: "organs", regionId: "thorax", region: "Óstio atrioventricular direito", system: "Cardiovascular",
+    summary: "Valva atrioventricular entre o átrio direito e o ventrículo direito.", function: "Permite o fluxo atrioventricular direito e limita o refluxo para o átrio durante a sístole ventricular.", sourceId: "openstaxHeart", focus: [0.114, 2.105, 0.131], focusDistance: 1.4, color: "#c07075",
+    parts: [torus([-0.12, 1.45, 0.27], [0.09, 0.09, 0.04], [Math.PI / 2, 0, 0])],
+  },
+  {
+    id: "organ-heart-mitral-valve", name: "Valva mitral", latin: "Valva atrioventricularis sinistra", layer: "organs", regionId: "thorax", region: "Óstio atrioventricular esquerdo", system: "Cardiovascular",
+    summary: "Valva atrioventricular entre o átrio esquerdo e o ventrículo esquerdo.", function: "Permite o fluxo atrioventricular esquerdo e limita o refluxo para o átrio durante a sístole ventricular.", sourceId: "openstaxHeart", focus: [0.114, 2.105, 0.131], focusDistance: 1.4, color: "#c9767a",
+    parts: [torus([0.05, 1.45, 0.2], [0.09, 0.09, 0.04], [Math.PI / 2, 0, 0])],
+  },
+  {
+    id: "organ-heart-pulmonary-valve", name: "Valva pulmonar", latin: "Valva trunci pulmonalis", layer: "organs", regionId: "thorax", region: "Saída do ventrículo direito", system: "Cardiovascular",
+    summary: "Valva semilunar na transição entre o ventrículo direito e o tronco pulmonar.", function: "Permite a ejeção para o tronco pulmonar e limita o refluxo para o ventrículo direito após a ejeção.", sourceId: "openstaxHeart", focus: [0.114, 2.105, 0.131], focusDistance: 1.4, color: "#b86b72",
+    parts: [torus([-0.08, 1.61, 0.31], [0.075, 0.075, 0.035], [Math.PI / 2, 0, 0])],
+  },
+  {
+    id: "organ-heart-aortic-valve", name: "Valva aórtica", latin: "Valva aortae", layer: "organs", regionId: "thorax", region: "Saída do ventrículo esquerdo", system: "Cardiovascular",
+    summary: "Valva semilunar na transição entre o ventrículo esquerdo e a aorta.", function: "Permite a ejeção para a aorta e limita o refluxo para o ventrículo esquerdo após a ejeção.", sourceId: "openstaxHeart", focus: [0.114, 2.105, 0.131], focusDistance: 1.4, color: "#c16d72",
+    parts: [torus([0.04, 1.61, 0.22], [0.075, 0.075, 0.035], [Math.PI / 2, 0, 0])],
+  },
+  {
     id: "organ-liver", name: "Fígado", latin: "Hepar", layer: "organs", regionId: "abdomen", region: "Hipocôndrio direito e epigástrio", system: "Digestório",
     summary: "Grande órgão abdominal predominantemente à direita, logo abaixo do diafragma.", function: "Participa do metabolismo, armazenamento, síntese de proteínas plasmáticas e produção de bile.", sourceId: "openstaxDigestive", focus: [-0.092, 1.487, 0.108], focusDistance: 3.2, color: "#8c5147",
     parts: [sphere([-0.28, 0.45, 0.18], [0.72, 0.38, 0.42])],

@@ -105,12 +105,13 @@ describe("anatomy3DModel", () => {
     const guided = structuresFor3D("organs", "whole");
     const heart = guided.find((item) => item.id === "organ-heart")!;
     const detailedHeart = { ...heart, id: "model:organs:12", name: "Coração" };
-    const detailedValve = { ...heart, id: "model:organs:13", name: "Valva mitral" };
-    const merged = mergeGuidedAndDetailedStructures(guided, [detailedHeart, detailedValve]);
+    const detailedStructure = { ...heart, id: "model:organs:13", name: "Seio coronário" };
+    const merged = mergeGuidedAndDetailedStructures(guided, [detailedHeart, detailedStructure]);
 
     expect(merged[0]).toBe(guided[0]);
     expect(merged.filter((item) => item.name === "Coração")).toHaveLength(1);
-    expect(merged).toContainEqual(detailedValve);
+    expect(merged.filter((item) => item.name === "Valva mitral")).toHaveLength(1);
+    expect(merged).toContainEqual(detailedStructure);
   });
 
   it("compõe os catálogos detalhados em Todas as camadas", () => {

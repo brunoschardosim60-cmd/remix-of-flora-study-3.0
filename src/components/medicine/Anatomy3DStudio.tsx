@@ -5,6 +5,7 @@ import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import { ACESFilmicToneMapping, Box3, BufferAttribute, Color, DoubleSide, Mesh, MeshPhysicalMaterial, MeshStandardMaterial, Object3D, PCFSoftShadowMap, Plane, SRGBColorSpace, Vector2, Vector3 } from "three";
 import { mergeGeometries, mergeVertices } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import {
+  Activity,
   Box,
   Brain,
   Check,
@@ -13,8 +14,11 @@ import {
   ExternalLink,
   Eye,
   Focus,
+  FileHeart,
   HeartPulse,
+  ListChecks,
   Maximize2,
+  Microscope,
   Minus,
   MousePointer2,
   Pause,
@@ -25,6 +29,7 @@ import {
   Search,
   ShieldCheck,
   Sparkles,
+  Stethoscope,
   Volume2,
 } from "lucide-react";
 import {
@@ -45,6 +50,12 @@ import {
 } from "@/lib/anatomy3DModel";
 import { medicalSources, type MedicineLevel } from "@/lib/medicineData";
 import { organRealismProfile, organTissueVertexColors } from "@/lib/organRealism";
+import {
+  integratedJourneyForContext,
+  resolveIntegratedJourneyStructure,
+  type IntegratedMedicineContext,
+  type IntegratedMedicineStep,
+} from "@/lib/medicineIntegratedJourney";
 
 type CameraView = "perspective" | "front" | "back" | "left" | "right";
 type OrganViewMode = "context" | "isolated" | "section" | "transparent";
@@ -54,6 +65,9 @@ type AnatomyAppearance = "educational" | "realistic";
 interface Anatomy3DStudioProps {
   level: MedicineLevel;
   initialStructureId?: string | null;
+  journeyContext?: IntegratedMedicineContext | null;
+  journeyVisitedStepIds?: string[];
+  onOpenJourneyStep?: (step: IntegratedMedicineStep, structure: Anatomy3DStructure) => void;
 }
 
 const layerOpacity: Record<Exclude<Anatomy3DSystemId, "all">, number> = {
@@ -92,9 +106,11 @@ const anatomyLevelGuidance: Record<MedicineLevel, string> = {
   Internato: "Detalhamento regional extenso para revisão aplicada e correlação por sistemas.",
   Residência: "Catálogo tridimensional completo, incluindo as malhas anatômicas detalhadas disponíveis.",
 };
-export function Anatomy3DStudio({ level, initialStructureId }: Anatomy3DStudioProps) {
-  const initialStructure = anatomy3DStructures.find((item) => item.id === initialStructureId);
-  const initialSystem: Anatomy3DSystemId = initialStructure?.layer ?? "surface";
+export function Anatomy3DStudio({ level, initialStructureId, journeyContext, journeyVisitedStepIds = [], onOpenJourneyStep }: Anatomy3DStudioProps) {
+  const contextRestoreId = journeyContext?.structure.restore3DStructureId;
+  const initialStructure = anatomy3DStructures.find((item) => item.id === initialStructureId)
+    ?? anatomy3DStructures.find((item) => item.id === contextRestoreId);
+  const initialSystem: Anatomy3DSystemId = journeyContext ? "organs" : initialStructure?.layer ?? "surface";
   const startsWithOrgan = initialSystem === "organs";
   const [system, setSystem] = useState<Anatomy3DSystemId>(initialSystem);
   const [appearance, setAppearance] = useState<AnatomyAppearance>("educational");
@@ -116,6 +132,7 @@ export function Anatomy3DStudio({ level, initialStructureId }: Anatomy3DStudioPr
   const [sectionOffset, setSectionOffset] = useState(0);
   const [detailedCatalogs, setDetailedCatalogs] = useState<Partial<Record<Anatomy3DSystemId, Anatomy3DStructure[]>>>({});
   const rootRef = useRef<HTMLElement>(null);
+  const restoredJourneyContextRef = useRef<string | null>(null);
 
   const regionMeta = anatomy3DRegions.find((item) => item.id === region) ?? anatomy3DRegions[0];
   const registerDetailedCatalog = useCallback((catalogSystem: Anatomy3DSystemId, catalog: Anatomy3DStructure[]) => {
@@ -145,6 +162,12 @@ export function Anatomy3DStudio({ level, initialStructureId }: Anatomy3DStudioPr
     return levelVisibleStructures.filter((item) => normalize(`${item.name} ${item.latin ?? ""} ${item.region} ${item.system} ${item.function}`).includes(normalized));
   }, [guidedStructures, level, levelVisibleStructures, query, system]);
   const selected = anatomy3DStructures.find((item) => item.id === selectedId) ?? modelSelection;
+  const selectedJourneyResolution = resolveIntegratedJourneyStructure({ id: selected?.id, name: selected?.name });
+  const contextJourney = integratedJourneyForContext(journeyContext);
+  const contextStructure = contextJourney?.structures.find((item) => item.id === journeyContext?.structure.id);
+  const prefersSelectedStructure = selectedJourneyResolution?.structure.id !== "heart" || journeyContext?.structure.id === "heart";
+  const integratedJourney = contextJourney ?? selectedJourneyResolution?.journey;
+  const integratedStructure = prefersSelectedStructure ? selectedJourneyResolution?.structure : contextStructure;
   const selectedIsVisible = Boolean(selected && (
     modelSelection?.id === selected.id
     || levelVisibleStructures.some((item) => item.id === selected.id || normalize(item.name) === normalize(selected.name))
@@ -227,6 +250,24 @@ export function Anatomy3DStudio({ level, initialStructureId }: Anatomy3DStudioPr
   }, [detailedCatalogs, realistic, system]);
 
   useEffect(() => {
+    if (!journeyContext || system !== "organs") return;
+    const contextKey = `${journeyContext.journeyId}:${journeyContext.structure.id}:${journeyContext.structure.source3DId}`;
+    if (restoredJourneyContextRef.current === contextKey) return;
+    const currentCanonicalId = resolveIntegratedJourneyStructure({ id: selected?.id, name: selected?.name })?.structure.id;
+    if (currentCanonicalId === journeyContext.structure.id) {
+      restoredJourneyContextRef.current = contextKey;
+      return;
+    }
+    const matchingStructure = levelVisibleStructures.find((candidate) =>
+      resolveIntegratedJourneyStructure({ id: candidate.id, name: candidate.name })?.structure.id === journeyContext.structure.id,
+    );
+    if (matchingStructure) {
+      restoredJourneyContextRef.current = contextKey;
+      selectStructure(matchingStructure);
+    }
+  }, [journeyContext, levelVisibleStructures, selectStructure, selected?.id, selected?.name, system]);
+
+  useEffect(() => {
     const guided = anatomy3DStructures.find((item) => item.id === selectedId);
     if (!guided) return;
     const replacement = detailedStructureForGuided(guided, detailedCatalogs, realistic);
@@ -295,6 +336,15 @@ export function Anatomy3DStudio({ level, initialStructureId }: Anatomy3DStudioPr
     setFocusKey((value) => value + 1);
   };
 
+  const openJourneyStep = (step: IntegratedMedicineStep) => {
+    if (!selected) return;
+    if (step.kind === "action" && step.action === "open-interior") changeOrganView("transparent");
+    const journeyStructure = journeyContext && integratedStructure?.id === journeyContext.structure.id
+      ? { ...selected, id: journeyContext.structure.source3DId, name: journeyContext.structure.label }
+      : selected;
+    onOpenJourneyStep?.(step, journeyStructure);
+  };
+
   return (
     <section ref={rootRef} className="med-3d-studio" aria-label="Atlas anatômico tridimensional">
       <header className="med-3d-heading">
@@ -327,6 +377,33 @@ export function Anatomy3DStudio({ level, initialStructureId }: Anatomy3DStudioPr
         {anatomy3DRegions.map((item) => <button key={item.id} className={region === item.id ? "active" : ""} disabled={!regionAvailability[item.id]} title={!regionAvailability[item.id] ? `Sem estruturas de ${anatomy3DSystemMeta.find((meta) => meta.id === system)?.label.toLocaleLowerCase("pt-BR")} nesta região` : undefined} onClick={() => changeRegion(item.id)}>{item.shortLabel}</button>)}
       </div>
       <div className="med-3d-level-scope"><Sparkles /><span><strong>{level}</strong>{anatomyLevelGuidance[level]}</span><b>{levelVisibleStructures.length} disponíveis neste nível</b></div>
+
+      {integratedJourney && <section className="med-3d-integration" aria-label={integratedJourney.title}>
+        <div className="med-3d-integration-copy">
+          <span><HeartPulse /> CONTEÚDO CONECTADO</span>
+          <strong>{integratedJourney.title}</strong>
+          <b>{integratedStructure?.label ?? selected?.name} · {integratedJourney.systemLabel}</b>
+          <p>{integratedJourney.description}</p>
+        </div>
+        <div className="med-3d-integration-steps">
+          {integratedJourney.steps.map((step, index) => {
+            const destination = step.kind === "destination" ? step.destination : undefined;
+            const Icon = destination === "systems" ? Activity
+              : destination === "histology" || destination === "pathology" ? Microscope
+                : destination === "semiology" ? Stethoscope
+                  : destination === "anamnesis" || destination === "clinic" ? FileHeart
+                    : destination === "questions" || destination === "review" ? ListChecks
+                      : Eye;
+            const visited = journeyVisitedStepIds.includes(step.id);
+            const active = journeyContext?.journeyId === integratedJourney.id && journeyContext.activeStepId === step.id;
+            return <button key={step.id} className={`${visited ? "visited" : ""} ${active ? "active" : ""}`.trim()} onClick={() => openJourneyStep(step)} title={step.description} aria-current={active ? "step" : undefined}>
+              <i>{visited ? <Check /> : <Icon />}</i>
+              <span><small>{active ? `ETAPA ATUAL · ${step.eyebrow}` : `${index + 1}. ${step.eyebrow}`}</small><strong>{step.label}</strong></span>
+              <ChevronRight />
+            </button>;
+          })}
+        </div>
+      </section>}
 
       <div className="med-3d-workspace">
         <aside className="med-3d-index">
@@ -775,7 +852,14 @@ function DetailedOrgansModel({ integrated = false, realistic, bodyProfile, selec
     onCatalogReady("organs", prioritizeAnatomyCatalog(completeCatalog, "organs"));
   }, [completeCatalog, onCatalogReady]);
 
-  const selectedSupplement = supplements.find((item) => item.structure.id === selectedId) ?? null;
+  const selectedSupplement = useMemo(() => {
+    const exact = supplements.find((item) => item.structure.id === selectedId);
+    if (exact) return exact;
+    const selectedJourneyStructure = resolveIntegratedJourneyStructure({ id: selectedId });
+    return selectedJourneyStructure?.journey.organId === "heart"
+      ? supplements.find((item) => item.structure.id === "model:organs:supplement:heart") ?? null
+      : null;
+  }, [selectedId, supplements]);
 
   const selectedIndexes = useMemo(() => {
     const exact = prepared.catalog.findIndex((item) => item.id === selectedId);

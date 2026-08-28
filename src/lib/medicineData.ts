@@ -316,6 +316,24 @@ export const medicalSources: Record<string, MedicalSource> = {
     license: "CC BY-NC-SA 4.0",
     attribution: "Access for free at openstax.org.",
   },
+  ahaAcs2025: {
+    title: "Guideline for the Management of Patients With Acute Coronary Syndromes",
+    organization: "American Heart Association / American College of Cardiology",
+    url: "https://professional.heart.org/en/guidelines-statements/2025-accahaacepnaemspscai-guideline-for-the-management-of-patients-with-acutecir0000000000001309",
+    reviewedAt: "2026-08-28",
+  },
+  ahaHeartAttackDiagnosis: {
+    title: "Diagnosing a Heart Attack",
+    organization: "American Heart Association",
+    url: "https://www.heart.org/en/health-topics/heart-attack/diagnosing-a-heart-attack",
+    reviewedAt: "2026-08-28",
+  },
+  ahaChestPain2021: {
+    title: "Chest Pain Guideline — Top Things to Know",
+    organization: "American Heart Association / American College of Cardiology",
+    url: "https://professional.heart.org/en/science-news/2021-guideline-for-the-evaluation-and-diagnosis-of-chest-pain/top-things-to-know",
+    reviewedAt: "2026-08-28",
+  },
   openstaxMuscleContraction: {
     title: "Contração e relaxamento da fibra muscular",
     organization: "OpenStax, Rice University",

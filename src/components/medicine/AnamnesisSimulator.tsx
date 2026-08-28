@@ -57,8 +57,8 @@ async function blobToBase64(blob: Blob) {
   });
 }
 
-export function AnamnesisSimulator({ level, onLearningEvent }: { level: MedicineLevel; onLearningEvent?: (event: MedicineLearningEvent) => void }) {
-  const [caseId, setCaseId] = useState(anamnesisCases[0].id);
+export function AnamnesisSimulator({ level, initialCaseId, onLearningEvent }: { level: MedicineLevel; initialCaseId?: string; onLearningEvent?: (event: MedicineLearningEvent) => void }) {
+  const [caseId, setCaseId] = useState(() => anamnesisCases.find((item) => item.id === initialCaseId)?.id ?? anamnesisCases[0].id);
   const clinicalCase = anamnesisCases.find((item) => item.id === caseId) ?? anamnesisCases[0];
   const [messages, setMessages] = useState<ChatMessage[]>([openingMessage(clinicalCase)]);
   const [coveredIds, setCoveredIds] = useState<string[]>([]);
@@ -111,6 +111,14 @@ export function AnamnesisSimulator({ level, onLearningEvent }: { level: Medicine
     setSummary(""); setEvaluated(false); setCrisisActive(false); setCrisisResolved(false); setInteractionError(null);
     setSensitiveAccepted(!nextCase.sensitive);
   }, [clinicalCase, stopVoice]);
+
+  useEffect(() => {
+    if (!initialCaseId || initialCaseId === caseId) return;
+    const nextCase = anamnesisCases.find((item) => item.id === initialCaseId);
+    if (!nextCase) return;
+    setCaseId(nextCase.id);
+    resetSession(nextCase);
+  }, [caseId, initialCaseId, resetSession]);
 
   const selectCase = (nextCase: AnamnesisCase) => { setCaseId(nextCase.id); resetSession(nextCase); };
 

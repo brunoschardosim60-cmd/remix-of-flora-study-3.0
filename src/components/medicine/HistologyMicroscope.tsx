@@ -23,6 +23,9 @@ import "./histology-microscope.css";
 
 interface HistologyMicroscopeProps {
   level: MedicineLevel;
+  initialJourney?: SensoryJourneyId;
+  initialDepth?: number;
+  initialSpecimenId?: string;
   onLearningEvent: (event: { id: string; label: string; correct: boolean }) => void;
   onOpenNotebook: (context: { label: string; summary?: string; image?: string; imageAlt?: string; sourceId?: string }) => void;
 }
@@ -49,12 +52,12 @@ function loadCompleted() {
   catch { return [] as string[]; }
 }
 
-export function HistologyMicroscope({ level, onLearningEvent, onOpenNotebook }: HistologyMicroscopeProps) {
-  const [journey, setJourney] = useState<SensoryJourneyId>("eye");
-  const [depth, setDepth] = useState(8);
+export function HistologyMicroscope({ level, initialJourney = "eye", initialDepth = 8, initialSpecimenId, onLearningEvent, onOpenNotebook }: HistologyMicroscopeProps) {
+  const [journey, setJourney] = useState<SensoryJourneyId>(initialJourney);
+  const [depth, setDepth] = useState(initialDepth);
   const stage = stageForDepth(depth);
   const [viewId, setViewId] = useState("eye-external");
-  const [specimenId, setSpecimenId] = useState("retina");
+  const [specimenId, setSpecimenId] = useState(() => histologySpecimens.find((item) => item.id === initialSpecimenId)?.id ?? "retina");
   const [objective, setObjective] = useState<(typeof objectives)[number]>("4x");
   const [selected, setSelected] = useState<SelectedDetail | null>(sensoryStructureById("eyelids") ?? null);
   const [focusChanging, setFocusChanging] = useState(false);
@@ -87,15 +90,21 @@ export function HistologyMicroscope({ level, onLearningEvent, onOpenNotebook }: 
   const notebookSourceId = selected?.sourceId ?? (showing3D ? activeModel?.sourceId : stage === "micro" ? microscopeLevel.sourceId : journey === "cell" && stage === "macro" ? cellMacroSourceId : activeView?.sourceId);
 
   useEffect(() => {
+    setJourney(initialJourney);
+    setDepth(initialDepth);
+    if (initialSpecimenId && histologySpecimens.some((item) => item.id === initialSpecimenId)) setSpecimenId(initialSpecimenId);
+  }, [initialDepth, initialJourney, initialSpecimenId]);
+
+  useEffect(() => {
     if (journey === "eye") { setViewId(stage === "macro" ? "eye-external" : "eye-anatomy"); setSpecimenId("retina"); setModelId("eye-globe"); }
     else if (journey === "oral") { setViewId(stage === "macro" ? "oral-external" : "oral-cavity"); setModelId("oral-cavity-3d"); if (specimen.category !== "oral") setSpecimenId("salivary-gland"); }
     else {
       setModelId("heart-3d");
-      if (specimen.category !== "tecido básico") setSpecimenId("nervous-tissue");
+      if (specimen.category !== "tecido básico") setSpecimenId(initialSpecimenId ?? "nervous-tissue");
     }
     if (stage === "meso" && availableModels.length) setAnatomyMode("model");
     setIdentifyMode(false); setTargetId(null); setAnswered(null); setSelected(null);
-  }, [availableModels.length, journey, specimen.category, stage]);
+  }, [availableModels.length, initialSpecimenId, journey, specimen.category, stage]);
 
   useEffect(() => {
     const paths = journey === "cell"
