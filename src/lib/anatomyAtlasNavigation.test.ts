@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { findAtlasSnapTarget, preserveAtlasSnapPan } from "./anatomyAtlasNavigation";
+import { atlasCoordinateAtReticle, findAtlasSnapTarget, preserveAtlasSnapPan } from "./anatomyAtlasNavigation";
 
 const points = [
   { id: "heart", x: 50, y: 34 },
@@ -8,6 +8,14 @@ const points = [
 ];
 
 describe("findAtlasSnapTarget", () => {
+  it("tracks the anatomical point underneath the reticle while the image moves", () => {
+    expect(atlasCoordinateAtReticle({
+      focusedPoint: { id: "humerus", x: 26, y: 31 },
+      pan: { x: 0, y: 120 },
+      imageSize: { width: 900, height: 1500 },
+    })).toEqual({ x: 26, y: 23 });
+  });
+
   it("keeps the focused structure locked when it is under the reticle", () => {
     expect(findAtlasSnapTarget({
       points,

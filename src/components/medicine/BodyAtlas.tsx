@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, 
 import { createPortal } from "react-dom";
 import { Box, ChevronLeft, ChevronRight, ExternalLink, Info, Maximize2, Move, Rotate3D, RotateCcw, Search, Volume2, X, ZoomIn, ZoomOut } from "lucide-react";
 import { organ3DStructureForAtlasId } from "@/lib/anatomy3DModel";
-import { findAtlasSnapTarget, preserveAtlasSnapPan } from "@/lib/anatomyAtlasNavigation";
+import { atlasCoordinateAtReticle, findAtlasSnapTarget, preserveAtlasSnapPan } from "@/lib/anatomyAtlasNavigation";
 import { preloadMedicalImages } from "@/lib/medicineMedia";
 import {
   anatomyPositionFor,
@@ -106,6 +106,7 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
   const detailDragRef = useRef<{ pointerId: number; x: number; y: number } | null>(null);
   const detailPanRef = useRef({ x: 0, y: 0 });
   const detailImageRef = useRef<HTMLImageElement | null>(null);
+  const detailImageMaskRef = useRef<{ src: string; context: CanvasRenderingContext2D; width: number; height: number } | null>(null);
   const atlasStageRef = useRef<HTMLDivElement | null>(null);
   const atlasViewportRef = useRef<HTMLDivElement | null>(null);
   const atlasPanRef = useRef({ x: 0, y: 0 });
@@ -350,19 +351,70 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
   const canChangeDetailView = Boolean(focused && otherDetailView && anatomyPositionFor(focused.structure, otherDetailView));
   const focused3DStructureId = focused ? organ3DStructureForAtlasId(focused.structure.id) : null;
 
+  const isDetailArtworkAt = (point: { x: number; y: number }) => {
+    const image = detailImageRef.current;
+    if (!image?.complete || image.naturalWidth <= 0 || image.naturalHeight <= 0) return false;
+    if (point.x < 0 || point.x > 100 || point.y < 0 || point.y > 100) return false;
+
+    const src = image.currentSrc || image.src;
+    let mask = detailImageMaskRef.current;
+    if (!mask || mask.src !== src || mask.width !== image.naturalWidth || mask.height !== image.naturalHeight) {
+      const canvas = document.createElement("canvas");
+      canvas.width = image.naturalWidth;
+      canvas.height = image.naturalHeight;
+      const context = canvas.getContext("2d", { willReadFrequently: true });
+      if (!context) return false;
+      try {
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      } catch {
+        return false;
+      }
+      mask = { src, context, width: canvas.width, height: canvas.height };
+      detailImageMaskRef.current = mask;
+    }
+
+    const centerX = Math.round((point.x / 100) * (mask.width - 1));
+    const centerY = Math.round((point.y / 100) * (mask.height - 1));
+    // A amostra acompanha a área visual do alvo, não apenas o pixel central.
+    // Isso preserva o nome em estruturas curvas ou estreitas durante o arrasto.
+    const radiusX = Math.max(3, Math.round(mask.width * .012));
+    const radiusY = Math.max(3, Math.round(mask.height * .012));
+    const left = Math.max(0, centerX - radiusX);
+    const top = Math.max(0, centerY - radiusY);
+    const width = Math.min(mask.width - left, radiusX * 2 + 1);
+    const height = Math.min(mask.height - top, radiusY * 2 + 1);
+
+    try {
+      const pixels = mask.context.getImageData(left, top, width, height).data;
+      for (let index = 3; index < pixels.length; index += 4) {
+        if (pixels[index] >= 48) return true;
+      }
+    } catch {
+      return false;
+    }
+    return false;
+  };
+
   const findDetailSnapCandidate = (pan: { x: number; y: number }) => {
     if (!focused || !focusedPosition || !detailImageRef.current) return null;
+    const imageSize = { width: detailImageRef.current.offsetWidth, height: detailImageRef.current.offsetHeight };
     const points = anatomyStructures.flatMap((structure) => {
       if (structure.layer !== focused.structure.layer || !structureMatchesBodyProfile(structure, bodyProfile)) return [];
       const position = anatomyPositionFor(structure, focused.view);
       return position ? [{ ...position, id: structure.id, structure }] : [];
     });
+    const reticlePoint = atlasCoordinateAtReticle({
+      focusedPoint: { id: focused.structure.id, ...focusedPosition },
+      pan,
+      imageSize,
+    });
+    const reticleIsOnArtwork = Boolean(reticlePoint && isDetailArtworkAt(reticlePoint));
     return findAtlasSnapTarget({
       points,
       focusedPoint: { id: focused.structure.id, ...focusedPosition },
       pan,
-      imageSize: { width: detailImageRef.current.offsetWidth, height: detailImageRef.current.offsetHeight },
-      threshold: 68,
+      imageSize,
+      threshold: reticleIsOnArtwork ? Number.POSITIVE_INFINITY : 68,
     })?.structure ?? null;
   };
 
@@ -613,6 +665,7 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
                   src={atlasImageFor(focused.structure.layer, focused.view, bodyProfile)}
                   alt={`Ampliação anatômica educacional de ${focused.structure.name}`}
                   decoding="async"
+                  onLoad={() => { detailImageMaskRef.current = null; }}
                   style={{
                     height: `${detailZoom * 100}%`,
                     left: `calc(50% + ${detailPan.x}px)`,
@@ -622,7 +675,7 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
                   draggable={false}
                 />
                 <div className={`med-anatomy-focus-reticle ${snapCandidate ? "is-locked" : ""}`} aria-hidden="true"><span /><i /><strong>{snapCandidate?.name ?? "Procure uma estrutura"}</strong></div>
-                <div id="med-anatomy-drag-help" className={`med-anatomy-focus-drag-help ${snapCandidate ? "is-locked" : ""}`} aria-live="polite"><Move /> {isDetailPanning ? (snapCandidate ? `Solte para abrir ${snapCandidate.name}` : "Aproxime o alvo de uma estrutura") : "Arraste; o alvo gruda na estrutura mais próxima"}</div>
+                <div id="med-anatomy-drag-help" className={`med-anatomy-focus-drag-help ${snapCandidate ? "is-locked" : ""}`} aria-live="polite"><Move /> {isDetailPanning ? (snapCandidate ? `${snapCandidate.name} sob o alvo · solte para centralizar` : "Mantenha o alvo sobre a anatomia") : "Arraste; o nome acompanha a estrutura sob o alvo"}</div>
                 <div className="med-anatomy-focus-caption"><strong>{focused.structure.name}</strong><span>{focused.structure.region}</span></div>
               </div>
 

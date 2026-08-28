@@ -27,6 +27,21 @@ interface FindAtlasSnapTargetOptions<T extends AtlasSnapPoint> {
   threshold?: number;
 }
 
+interface AtlasCoordinateAtReticleOptions {
+  focusedPoint: AtlasSnapPoint;
+  pan: { x: number; y: number };
+  imageSize: { width: number; height: number };
+}
+
+/** Converts the centered viewport reticle into a percentage coordinate on the atlas image. */
+export function atlasCoordinateAtReticle({ focusedPoint, pan, imageSize }: AtlasCoordinateAtReticleOptions) {
+  if (imageSize.width <= 0 || imageSize.height <= 0) return null;
+  return {
+    x: focusedPoint.x - (pan.x / imageSize.width) * 100,
+    y: focusedPoint.y - (pan.y / imageSize.height) * 100,
+  };
+}
+
 /**
  * Finds the anatomical marker closest to the viewport reticle.
  * Positions are percentages of the full atlas image; pan is measured in pixels.
