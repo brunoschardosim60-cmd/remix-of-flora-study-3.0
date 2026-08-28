@@ -139,6 +139,7 @@
   z-index: 1;
   display: flex;
   width: min(1240px, calc(100vw - 40px));
+  height: min(730px, calc(100dvh - 40px));
   max-height: calc(100dvh - 40px);
   flex-direction: column;
   overflow: hidden;
@@ -197,7 +198,7 @@
 .med-anatomy-focus-visual {
   display: flex;
   min-width: 0;
-  min-height: 590px;
+  min-height: 0;
   flex-direction: column;
   padding: 14px;
   background: #e9f0ec;
@@ -420,6 +421,33 @@
 
 @keyframes med-detail-dialog-in { from { transform: translateY(14px) scale(.975); opacity: 0; } }
 @keyframes med-detail-pulse { 50% { transform: scale(1.2); opacity: .25; } }
+
+/* A barra do navegador reduz a altura útil sem alterar a largura da tela.
+   Nessa situação, o modal compacta o cabeçalho e os espaçamentos, mantendo
+   canvas, navegação e ações visíveis dentro do viewport real. */
+@media (min-width: 821px) and (max-height: 700px) {
+  .med-anatomy-focus-root { padding: 12px; }
+  .med-anatomy-focus-dialog {
+    height: calc(100dvh - 24px);
+    max-height: calc(100dvh - 24px);
+  }
+  .med-anatomy-focus-dialog > header {
+    min-height: 96px;
+    padding: 12px 20px 12px 24px;
+  }
+  .med-anatomy-focus-dialog > header h2 { margin-top: 2px; font-size: 26px; }
+  .med-anatomy-focus-visual { padding: 10px 12px; }
+  .med-anatomy-focus-toolbar { min-height: 40px; padding-bottom: 7px; }
+  .med-anatomy-focus-visual > footer { min-height: 43px; padding-top: 6px; }
+  .med-anatomy-focus-info { padding: 18px 22px; }
+  .med-anatomy-focus-info h3 { margin: 5px 0 9px; }
+  .med-anatomy-focus-info > p { line-height: 1.55; }
+  .med-anatomy-focus-info dl { margin-top: 11px; }
+  .med-anatomy-focus-info dl > div { padding: 9px 0; }
+  .med-anatomy-focus-info dd { line-height: 1.45; }
+  .med-anatomy-focus-actions { margin-top: 11px; }
+  .med-anatomy-focus-info > small { margin-top: 8px; }
+}
 
 .med-body-viewport {
   width: 400px;
