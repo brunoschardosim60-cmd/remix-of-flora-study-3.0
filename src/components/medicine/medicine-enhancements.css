@@ -3012,3 +3012,11 @@
     .med-practice-answer button
   ) { min-height: 44px; }
 }
+
+/* No toque, a área interativa continua ampla, mas o desenho não cobre a anatomia. */
+@media (pointer: coarse), (max-width: 820px) {
+  .med-anatomy-pin::before { width: 10px; height: 10px; box-shadow: 0 2px 5px rgba(31, 70, 59, .14), 0 0 0 1px rgba(76, 133, 114, .07); }
+  .med-anatomy-pin span { width: 3px; height: 3px; }
+  .med-anatomy-pin:hover::before,
+  .med-anatomy-pin.active::before { width: 14px; height: 14px; box-shadow: 0 2px 7px rgba(31, 70, 59, .18), 0 0 0 2px rgba(76, 133, 114, .08); }
+}
