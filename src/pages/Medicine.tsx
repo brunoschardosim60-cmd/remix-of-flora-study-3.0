@@ -413,7 +413,7 @@ export default function Medicine() {
   };
   const openFlora = (prompt?: string) => {
     const sectionLabel = NAV.find((item) => item.id === section)?.label ?? "Medicina";
-    setFloraPrompt(prompt ?? `Estou estudando ${sectionLabel} no nível ${level}. Ajude-me a revisar este conteúdo de Medicina com linguagem clara, base científica e foco educacional. Não invente dados clínicos e diferencie informação geral de orientação médica individual.`);
+    setFloraPrompt(prompt ?? `Estou estudando ${sectionLabel} no nível ${level}. Explique esta tela com clareza e com base nas fontes do módulo. Sinalize limites; não invente dados nem faça diagnóstico.`);
     setFloraMounted(true);
     setFloraOpen(true);
   };
@@ -526,7 +526,7 @@ export default function Medicine() {
           </Suspense>
         </main>
       </div>
-      {floraMounted && <Suspense fallback={null}><FloraChatPanel isOpen={floraOpen} onClose={() => setFloraOpen(false)} initialMessage={floraPrompt} /></Suspense>}
+      {floraMounted && <Suspense fallback={null}><FloraChatPanel isOpen={floraOpen} onClose={() => setFloraOpen(false)} initialMessage={floraPrompt} variant="medicine" contextLabel={NAV.find((item) => item.id === section)?.label ?? "Medicina"} /></Suspense>}
     </div>
   );
 }

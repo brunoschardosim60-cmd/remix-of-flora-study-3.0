@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
-import { Send, X, Camera, Loader2, Mic, Square, StopCircle, RefreshCw, Copy, Check, Volume2, VolumeX, Maximize2, Minimize2, MessageSquarePlus, History, Trash2, Pencil, Search } from "lucide-react";
+import { Send, X, Camera, Loader2, Mic, Square, StopCircle, RefreshCw, Copy, Check, Volume2, VolumeX, Maximize2, Minimize2, MessageSquarePlus, History, Trash2, Pencil, Search, BookOpenCheck, ShieldCheck, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { FloraQuotaIndicator } from "@/components/FloraQuotaIndicator";
@@ -10,14 +10,17 @@ import ReactMarkdown from "react-markdown";
 import { getSuggestionChips } from "@/lib/floraChat";
 import { useFloraChatStream } from "@/hooks/useFloraChatStream";
 import { floraTTS } from "@/lib/floraTTS";
+import "./flora-chat-panel.css";
 
 interface FloraChat {
   isOpen: boolean;
   onClose: () => void;
   initialMessage?: string;
+  variant?: "default" | "medicine";
+  contextLabel?: string;
 }
 
-export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
+export function FloraChatPanel({ isOpen, onClose, initialMessage, variant = "default", contextLabel }: FloraChat) {
   const { messages, input, setInput, isSending, objetivo, send, stop, regenerate, resetChat, threadId, threads, selectThread, deleteThread, renameThread } = useFloraChatStream({ isOpen, onClose });
   const scrollRef = useRef<HTMLDivElement>(null);
   const photoRef = useRef<HTMLInputElement>(null);
@@ -35,6 +38,7 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
   const [renameDraft, setRenameDraft] = useState("");
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const isMedicine = variant === "medicine";
 
   async function blobToBase64(blob: Blob): Promise<string> {
     const buf = new Uint8Array(await blob.arrayBuffer());
@@ -136,6 +140,13 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
     if (isOpen && initialMessage) setInput(initialMessage);
   }, [isOpen, initialMessage, setInput]);
 
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    textarea.style.height = "auto";
+    textarea.style.height = `${Math.min(textarea.scrollHeight, 120)}px`;
+  }, [input]);
+
   // Sticky-to-bottom: só auto-scroll se já está no fundo
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
@@ -211,47 +222,62 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
   const lastMsg = messages[messages.length - 1];
   const showFollowupChips =
     !isSending && messages.length > 0 && lastMsg?.role === "assistant";
+  const hasPreparedPrompt = Boolean(
+    isMedicine && initialMessage && messages.length === 0 && input.trim() === initialMessage.trim(),
+  );
+  const medicineChips = ["Resuma esta tela", "Explique estrutura e função", "Crie perguntas de revisão"];
+  const visibleChips = isMedicine ? medicineChips : chips;
+  const panelLayout = expanded
+    ? "fixed inset-4 sm:top-8 sm:bottom-8 sm:left-1/2 sm:-translate-x-1/2 sm:right-auto sm:w-[min(760px,calc(100vw-4rem))] sm:h-auto z-50 rounded-2xl border border-border bg-card shadow-2xl flex flex-col overflow-hidden"
+    : "fixed bottom-0 right-0 w-full h-[72vh] sm:bottom-20 sm:right-4 sm:w-[340px] sm:h-[460px] sm:max-w-[calc(100vw-2rem)] sm:max-h-[calc(100vh-6rem)] z-50 sm:rounded-2xl rounded-t-2xl border border-border bg-card shadow-2xl flex flex-col overflow-hidden";
 
   const panel = (
     <>
       {/* Backdrop: clique fora fecha o chat */}
       <div
-        className="fixed inset-0 z-40 bg-black/10 sm:bg-transparent"
+        className={`flora-chat-backdrop fixed inset-0 z-40 bg-black/10 sm:bg-transparent ${isMedicine ? "flora-chat-backdrop--medicine" : ""}`}
         onClick={onClose}
         aria-hidden
       />
       <div
         onClick={(e) => e.stopPropagation()}
-        className={
-          expanded
-            ? "fixed inset-4 sm:top-8 sm:bottom-8 sm:left-1/2 sm:-translate-x-1/2 sm:right-auto sm:w-[min(760px,calc(100vw-4rem))] sm:h-auto z-50 rounded-2xl border border-border bg-card shadow-2xl flex flex-col overflow-hidden"
-            : "fixed bottom-0 right-0 w-full h-[72vh] sm:bottom-20 sm:right-4 sm:w-[340px] sm:h-[460px] sm:max-w-[calc(100vw-2rem)] sm:max-h-[calc(100vh-6rem)] z-50 sm:rounded-2xl rounded-t-2xl border border-border bg-card shadow-2xl flex flex-col overflow-hidden"
-        }
+        role="dialog"
+        aria-modal="true"
+        aria-label={isMedicine ? `Flora Medicina · ${contextLabel || "Medicina"}` : "Chat da Flora"}
+        className={`${panelLayout} flora-chat-panel ${expanded ? "flora-chat-panel--expanded" : ""} ${isMedicine ? "flora-chat-panel--medicine" : ""}`}
       >
       {/* Header */}
-      <div className="flex items-center gap-2 p-4 border-b border-border bg-primary/5">
-        <FloraIcon className="w-6 h-6 text-primary" />
-        <div className="flex-1 min-w-0">
-          <p className="font-heading font-semibold text-sm">Flora</p>
-          <p className="text-xs text-muted-foreground">Sua professora parceira</p>
+      <div className="flora-chat-header flex items-center gap-2 p-4 border-b border-border bg-primary/5">
+        <span className="flora-chat-brand-icon"><FloraIcon className="w-6 h-6 text-primary" /></span>
+        <div className="flora-chat-heading flex-1 min-w-0">
+          <p className="font-heading font-semibold text-sm">{isMedicine ? "Flora Medicina" : "Flora"}</p>
+          <p className="text-xs text-muted-foreground">{isMedicine ? "Assistente de estudo do módulo" : "Sua professora parceira"}</p>
         </div>
         <FloraQuotaIndicator action="chat" />
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowThreads((v) => !v)} aria-label="Histórico de conversas" title="Histórico">
+        <Button variant="ghost" size="icon" className="flora-chat-header-action h-8 w-8" onClick={() => setShowThreads((v) => !v)} aria-label="Histórico de conversas" title="Histórico">
           <History className="w-4 h-4" />
         </Button>
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleNewChat} aria-label="Nova conversa" title="Nova conversa">
+        <Button variant="ghost" size="icon" className="flora-chat-header-action h-8 w-8" onClick={handleNewChat} aria-label="Nova conversa" title="Nova conversa">
           <MessageSquarePlus className="w-4 h-4" />
         </Button>
-        <Button variant="ghost" size="icon" className="h-8 w-8 hidden sm:inline-flex" onClick={() => setExpanded((v) => !v)} aria-label={expanded ? "Reduzir painel" : "Expandir painel"} title={expanded ? "Reduzir" : "Expandir"}>
+        <Button variant="ghost" size="icon" className="flora-chat-header-action h-8 w-8 hidden sm:inline-flex" onClick={() => setExpanded((v) => !v)} aria-label={expanded ? "Reduzir painel" : "Expandir painel"} title={expanded ? "Reduzir" : "Expandir"}>
           {expanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
         </Button>
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose} aria-label="Fechar chat da Flora">
+        <Button variant="ghost" size="icon" className="flora-chat-header-action h-8 w-8" onClick={onClose} aria-label="Fechar chat da Flora">
           <X className="w-4 h-4" />
         </Button>
       </div>
 
+      {isMedicine && (
+        <div className="flora-chat-med-context">
+          <span><BookOpenCheck /></span>
+          <div><small>CONTEXTO ATIVO</small><strong>{contextLabel || "Medicina"}</strong></div>
+          <em><ShieldCheck /> Apoio textual</em>
+        </div>
+      )}
+
       {showThreads && (
-        <div className="border-b border-border bg-muted/30 flex flex-col max-h-64">
+        <div className="flora-chat-threads border-b border-border bg-muted/30 flex flex-col max-h-64">
           <div className="px-3 py-2 border-b border-border/60">
             <div className="relative">
               <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
@@ -327,28 +353,42 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
       )}
 
       {/* Messages */}
-      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div ref={scrollRef} onScroll={handleScroll} className="flora-chat-messages flex-1 overflow-y-auto p-4 space-y-3">
         {messages.length === 0 && (
-          <div className="text-center py-6 space-y-3 px-2">
-            <FloraIcon className="w-10 h-10 text-primary mx-auto" />
-            <div className="text-sm text-foreground space-y-2 text-left bg-muted rounded-xl px-3 py-3 mr-8">
-              <p className="font-semibold">Oi! Eu sou a Flora, sua professora parceira.</p>
-              <p>Estou aqui pra te ajudar de verdade. Posso:</p>
-              <ul className="list-disc list-inside space-y-0.5 text-muted-foreground">
-                <li>Montar seu cronograma semanal</li>
-                <li>Criar quizzes e flashcards</li>
-                <li>Escrever redações e provas</li>
-                <li>Tirar dúvidas de qualquer matéria</li>
-                <li>Organizar suas revisões</li>
-              </ul>
-              <p>Me diz: por onde quer começar?</p>
+          <div className="flora-chat-empty text-center py-6 space-y-3 px-2">
+            <span className="flora-chat-empty-icon"><FloraIcon className="w-10 h-10 text-primary mx-auto" /></span>
+            <div className="flora-chat-empty-card text-sm text-foreground space-y-2 text-left bg-muted rounded-xl px-3 py-3 mr-8">
+              <p className="font-semibold">{isMedicine ? "Vamos estudar esta tela juntos." : "Oi! Eu sou a Flora, sua professora parceira."}</p>
+              {isMedicine ? (
+                <>
+                  <p>Posso organizar o conteúdo que já está no módulo e ajudar você a:</p>
+                  <ul className="space-y-1 text-muted-foreground">
+                    <li><Check /> entender estrutura e função</li>
+                    <li><Check /> revisar termos e relações</li>
+                    <li><Check /> praticar com perguntas curtas</li>
+                  </ul>
+                  <p className="flora-chat-safety-note"><ShieldCheck /> Uso educacional. Não substitui as fontes do atlas nem orientação profissional.</p>
+                </>
+              ) : (
+                <>
+                  <p>Estou aqui pra te ajudar de verdade. Posso:</p>
+                  <ul className="list-disc list-inside space-y-0.5 text-muted-foreground">
+                    <li>Montar seu cronograma semanal</li>
+                    <li>Criar quizzes e flashcards</li>
+                    <li>Escrever redações e provas</li>
+                    <li>Tirar dúvidas de qualquer matéria</li>
+                    <li>Organizar suas revisões</li>
+                  </ul>
+                  <p>Me diz: por onde quer começar?</p>
+                </>
+              )}
             </div>
             <div className="flex flex-wrap gap-1.5 justify-center mt-2">
-              {chips.map((q) => (
+              {visibleChips.map((q) => (
                 <button
                   key={q}
                   onClick={() => setInput(q)}
-                  className="text-xs px-2.5 py-1.5 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                  className="flora-chat-chip text-xs px-2.5 py-1.5 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
                 >
                   {q}
                 </button>
@@ -359,10 +399,10 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
 
         {messages.map((msg, i) => (
           <div key={i} className="animate-fade-in group">
-            <div className={`rounded-xl px-3 py-2 text-sm overflow-hidden break-words ${
+            <div className={`flora-chat-bubble rounded-xl px-3 py-2 text-sm overflow-hidden break-words ${
               msg.role === "user"
-                ? "bg-primary text-primary-foreground ml-8"
-                : "bg-muted mr-8"
+                ? "flora-chat-bubble--user bg-primary text-primary-foreground ml-8"
+                : "flora-chat-bubble--assistant bg-muted mr-8"
             }`}>
               {(msg as any).metadata?.thumb && (
                 <img
@@ -413,7 +453,7 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
         ))}
 
         {isSending && messages[messages.length - 1]?.role === "user" && (
-          <div className="bg-muted rounded-xl px-3 py-3 mr-8 animate-fade-in">
+          <div className="flora-chat-thinking bg-muted rounded-xl px-3 py-3 mr-8 animate-fade-in">
             <div className="flex items-center gap-1.5">
               <FloraIcon className="w-4 h-4 text-primary" />
               <span className="text-xs text-muted-foreground">Flora pensando</span>
@@ -428,11 +468,11 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
 
         {showFollowupChips && (
           <div className="flex flex-wrap gap-1.5 mr-8 pt-1">
-            {chips.slice(0, 3).map((q) => (
+            {visibleChips.slice(0, 3).map((q) => (
               <button
                 key={q}
                 onClick={() => setInput(q)}
-                className="text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                className="flora-chat-chip text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
               >
                 {q}
               </button>
@@ -442,7 +482,8 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
       </div>
 
       {/* Input */}
-      <div className="p-3 border-t border-border">
+      <div className="flora-chat-composer p-3 border-t border-border">
+        {hasPreparedPrompt && <div className="flora-chat-prepared"><Sparkles /><span><strong>Pergunta preparada</strong><small>Revise o texto ou envie como está.</small></span></div>}
         <form onSubmit={(e) => { e.preventDefault(); send(); }} className="flex items-end gap-2">
           <input
             ref={photoRef}
@@ -456,11 +497,11 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
             type="button"
             variant="ghost"
             size="icon"
-            className="shrink-0"
+            className="flora-chat-composer-action shrink-0"
             onClick={() => photoRef.current?.click()}
             disabled={ocrLoading || isSending || recording || transcribing}
-            aria-label="Explica essa foto"
-            title="Explica essa foto"
+            aria-label={isMedicine ? "Ler texto de uma imagem" : "Explica essa foto"}
+            title={isMedicine ? "Ler texto de uma imagem" : "Explica essa foto"}
           >
             {ocrLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
           </Button>
@@ -469,7 +510,7 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
               type="button"
               variant={recording ? "destructive" : "ghost"}
               size="icon"
-              className="shrink-0"
+              className="flora-chat-composer-action shrink-0"
               onClick={recording ? stopRecording : startRecording}
               disabled={ocrLoading || isSending}
               aria-label={recording ? "Parar gravação" : "Gravar áudio"}
@@ -489,18 +530,18 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
             }}
-            placeholder={isSending ? "Flora pensando..." : "Fala comigo..."}
-            className="flex-1 text-sm resize-none rounded-md border border-input bg-background px-3 py-2 ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-default disabled:opacity-100"
+            placeholder={isSending ? "Flora pensando..." : isMedicine ? "Pergunte sobre esta tela..." : "Fala comigo..."}
+            className="flora-chat-input flex-1 text-sm resize-none rounded-md border border-input bg-background px-3 py-2 ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-default disabled:opacity-100"
             disabled={isSending}
             rows={1}
-            style={{ minHeight: "38px", maxHeight: "120px" }}
+            style={{ minHeight: hasPreparedPrompt ? "82px" : "38px", maxHeight: "120px" }}
           />
           {isSending ? (
             <Button
               type="button"
               size="icon"
               variant="destructive"
-              className="shrink-0"
+              className="flora-chat-send flora-chat-composer-action shrink-0"
               onClick={stop}
               aria-label="Parar geração"
               title="Parar geração"
@@ -508,7 +549,7 @@ export function FloraChatPanel({ isOpen, onClose, initialMessage }: FloraChat) {
               <StopCircle className="w-4 h-4" />
             </Button>
           ) : (
-            <Button type="submit" size="icon" className="shrink-0" disabled={!input.trim()} aria-label="Enviar mensagem">
+            <Button type="submit" size="icon" className="flora-chat-send flora-chat-composer-action shrink-0" disabled={!input.trim()} aria-label="Enviar mensagem">
               <Send className="w-4 h-4" />
             </Button>
           )}
