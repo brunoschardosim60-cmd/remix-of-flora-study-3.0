@@ -32,6 +32,18 @@ interface BodyAtlasProps {
 
 const levelOrder: MedicineLevel[] = ["Iniciante", "Ciclo básico", "Ciclo clínico", "Internato", "Residência"];
 
+export function atlasCanvasStructures(
+  structures: AnatomyStructure[],
+  pinLimit: number,
+  revealAll: boolean,
+) {
+  if (revealAll || structures.length <= pinLimit) return structures;
+  const slots = Math.max(pinLimit, 1);
+  return Array.from({ length: Math.min(slots, structures.length) }, (_, index) => (
+    structures[Math.min(Math.floor(index * structures.length / slots), structures.length - 1)]
+  ));
+}
+
 export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelect, onOpen3D }: BodyAtlasProps) {
   const [bodyProfile, setBodyProfile] = useState<AtlasBodyProfile>("male");
   const [zoom, setZoom] = useState(1);
@@ -77,20 +89,20 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
   const levelProfile = medicineLevelProfiles[level];
   const levelRank = levelOrder.indexOf(level);
   const activeCoverage = atlasCoverageByLayer[activeLayer];
+  const canvasPinLimit = [28, 36, 46, 58, 72][Math.max(levelRank, 0)];
   const layerStatistics = useMemo(() => new Map(bodyLayers.map((layer) => {
     const catalogued = anatomyStructures.filter((structure) => structure.layer === layer.id && structureMatchesBodyProfile(structure, bodyProfile));
+    const inCurrentView = catalogued.filter((structure) => anatomyPositionFor(structure, view));
+    const candidates = layer.id === activeLayer ? filteredStructures : inCurrentView;
+    const revealAll = zoom >= 1.25 || (layer.id === activeLayer && Boolean(query.trim()));
     return [layer.id, {
       catalogued: catalogued.length,
-      inCurrentView: catalogued.filter((structure) => anatomyPositionFor(structure, view)).length,
+      inCurrentView: inCurrentView.length,
+      displayed: atlasCanvasStructures(candidates, canvasPinLimit, revealAll).length,
     }];
-  })), [bodyProfile, view]);
-  const canvasPinLimit = [28, 36, 46, 58, 72][Math.max(levelRank, 0)];
+  })), [activeLayer, bodyProfile, canvasPinLimit, filteredStructures, query, view, zoom]);
   const canvasStructures = useMemo(() => {
-    if (query.trim() || zoom >= 1.25 || filteredStructures.length <= canvasPinLimit) return filteredStructures;
-    const slots = Math.max(canvasPinLimit, 1);
-    return Array.from({ length: Math.min(slots, filteredStructures.length) }, (_, index) => (
-      filteredStructures[Math.min(Math.floor(index * filteredStructures.length / slots), filteredStructures.length - 1)]
-    ));
+    return atlasCanvasStructures(filteredStructures, canvasPinLimit, Boolean(query.trim()) || zoom >= 1.25);
   }, [canvasPinLimit, filteredStructures, query, zoom]);
 
   const constrainAtlasPan = useCallback((candidate: { x: number; y: number }, atZoom: number) => {
@@ -362,14 +374,14 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
               return <button key={layer.id} className={activeLayer === layer.id ? "active" : ""} onClick={() => selectLayer(layer.id)}>
                 <span className="dot" style={{ background: layer.color }} />
                 <span><strong>{layer.label}</strong><small>{layer.description}</small></span>
-                <b title={`${statistics.catalogued} estruturas catalogadas; ${statistics.inCurrentView} disponíveis na vista ${view}`}><strong>{statistics.catalogued}</strong><small>estruturas</small></b>
+                <b aria-label={`${statistics.displayed} estruturas visíveis na imagem`} title={`${statistics.displayed} marcadores visíveis na imagem; ${statistics.inCurrentView} estruturas disponíveis na vista ${view}; ${statistics.catalogued} catalogadas`}><strong>{statistics.displayed}</strong><small>na imagem</small></b>
               </button>;
             })}
           </div>
           <div className="med-atlas-coverage-note" aria-live="polite">
             <Info />
             <div>
-              <strong>{structuresInLayer.length} catalogadas · {visibleStructures.length} nesta vista</strong>
+              <strong>{canvasStructures.length} na imagem · {visibleStructures.length} nesta vista</strong>
               <span>{activeCoverage.humanReference} {activeCoverage.catalogNote}</span>
               <div>{activeCoverage.sourceIds.map((sourceId, index) => <a key={sourceId} href={medicalSources[sourceId].url} target="_blank" rel="noreferrer">{index === 0 ? "Referência" : `Fonte ${index + 1}`} <ExternalLink /></a>)}</div>
             </div>

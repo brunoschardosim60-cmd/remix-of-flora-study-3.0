@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { anatomyStructures, type AnatomyStructure } from "@/lib/medicineData";
 import { BodyAtlas } from "./BodyAtlas";
@@ -28,6 +28,25 @@ function SurfaceAtlasHarness() {
     selected={selected}
     onSelect={setSelected}
   />;
+}
+
+function LevelAtlasHarness() {
+  const initial = (anatomyStructures.find((structure) => structure.id === "aorta")
+    ?? anatomyStructures.find((structure) => structure.layer === "vascular")) as AnatomyStructure;
+  const [selected, setSelected] = useState<AnatomyStructure | null>(initial);
+  const [level, setLevel] = useState<"Iniciante" | "Residência">("Iniciante");
+
+  return <>
+    <button onClick={() => setLevel("Iniciante")}>Nível Iniciante</button>
+    <button onClick={() => setLevel("Residência")}>Nível Residência</button>
+    <BodyAtlas
+      level={level}
+      activeLayer="vascular"
+      onLayerChange={() => undefined}
+      selected={selected}
+      onSelect={setSelected}
+    />
+  </>;
 }
 
 function dispatchPointer(target: Element, type: string, values: { pointerId: number; button?: number; clientX?: number; clientY?: number }) {
@@ -79,6 +98,22 @@ describe("BodyAtlas selection flow", () => {
     fireEvent.wheel(stage, { deltaY: -100 });
     expect(screen.getByText("130%")).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: /^Selecionar / }).length).toBeGreaterThan(initialMarkerCount);
+  });
+
+  it("keeps the layer count synchronized with markers shown for each level", () => {
+    render(<LevelAtlasHarness />);
+    const vesselsButton = screen.getByRole("button", { name: /^Vasos/ });
+    const beginnerMarkers = screen.getAllByRole("button", { name: /^Selecionar / }).length;
+
+    expect(within(vesselsButton).getByLabelText(`${beginnerMarkers} estruturas visíveis na imagem`)).toBeInTheDocument();
+    expect(screen.getByText(`${beginnerMarkers} na imagem · 59 nesta vista`)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Nível Residência" }));
+    const residencyMarkers = screen.getAllByRole("button", { name: /^Selecionar / }).length;
+
+    expect(residencyMarkers).toBeGreaterThan(beginnerMarkers);
+    expect(within(vesselsButton).getByLabelText(`${residencyMarkers} estruturas visíveis na imagem`)).toBeInTheDocument();
+    expect(screen.getByText(`${residencyMarkers} na imagem · 59 nesta vista`)).toBeInTheDocument();
   });
 
   it("pans the zoomed atlas while keeping the body inside its limits", () => {
@@ -140,7 +175,7 @@ describe("BodyAtlas selection flow", () => {
 
     expect(screen.queryByRole("button", { name: "Homem" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Mulher" })).not.toBeInTheDocument();
-    expect(screen.getByText("54 catalogadas · 41 nesta vista")).toBeInTheDocument();
+    expect(screen.getByText("28 na imagem · 41 nesta vista")).toBeInTheDocument();
     expect(screen.getByAltText(/referência adulta/)).toHaveAttribute("src", "/medicine/atlas/surface-anterior-v3.png");
   });
 
