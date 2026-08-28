@@ -88,7 +88,7 @@
 .med-surgery-case-library button p { display: -webkit-box; overflow: hidden; margin-top: 7px; color: #748780; font-size:11px; line-height: 1.5; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
 .med-surgery-case-library button footer { display: flex; align-items: center; justify-content: space-between; gap: 7px; margin-top: 10px; }
 .med-surgery-case-library button footer em { overflow: hidden; color: #60776f; font-size:11.5px; font-style: normal; font-weight: 850; text-overflow: ellipsis; white-space: nowrap; }
-.med-surgery-case-library button footer b { display: flex; flex: 0 0 auto; align-items: center; gap: 3px; padding: 4px 5px; border-radius: 7px; background: #f5eadc; color: #8a673f; font-size: 5.5px; }
+.med-surgery-case-library button footer b { display: flex; flex: 0 0 auto; align-items: center; gap: 3px; padding: 4px 5px; border-radius: 7px; background: #f5eadc; color: #8a673f; font-size: 11px; }
 .med-surgery-case-library button footer b.intense { background: #f5dfdc; color: #9b514b; }
 .med-surgery-case-library button footer svg { width: 8px; }
 .med-surgery-case-library > div > button > svg { width: 13px; color: #3f7a66; }
@@ -168,7 +168,7 @@
 .med-surgery-monitor > span { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 10px; background: rgba(255, 255, 255, .12); color: #a8d5c5; }
 .med-surgery-monitor svg { width: 16px; }
 .med-surgery-monitor > div { display: flex; min-width: 0; flex-direction: column; }
-.med-surgery-monitor small { color: #a9c6bc; font-size: 5.5px; font-weight: 950; letter-spacing: .1em; }
+.med-surgery-monitor small { color: #a9c6bc; font-size: 11.5px; font-weight: 950; letter-spacing: .1em; }
 .med-surgery-monitor strong { overflow: hidden; margin-top: 3px; font-size:11.5px; text-overflow: ellipsis; white-space: nowrap; }
 .med-surgery-monitor b { padding: 6px 8px; border: 1px solid rgba(255, 255, 255, .13); border-radius: 8px; color: #d9e8e2; font-size:11.5px; }
 
@@ -285,7 +285,7 @@
 .med-surgery-realism { position: absolute; bottom: 12px; left: 15px; z-index: 12; display: flex; align-items: center; gap: 8px; padding: 7px 10px; border: 1px solid rgba(255, 255, 255, .34); border-radius: 12px; background: rgba(24, 55, 47, .72); color: #fff; pointer-events: none; backdrop-filter: blur(10px); }
 .med-surgery-realism > svg { width: 14px; color: #bce2d5; }
 .med-surgery-realism > span { display: flex; flex-direction: column; }
-.med-surgery-realism small { color: #b6d7cc; font-size: 5px; font-weight: 950; letter-spacing: .09em; }
+.med-surgery-realism small { color: #b6d7cc; font-size: 11px; font-weight: 950; letter-spacing: .09em; }
 .med-surgery-realism strong { margin-top: 2px; font-size: 11.5px; }
 .med-surgery-caption { position: absolute; right: 15px; bottom: 12px; z-index: 12; padding: 6px 9px; border-radius: 999px; background: rgba(27, 59, 50, .68); color: #fff; font-size:11.5px; font-weight: 850; backdrop-filter: blur(9px); }
 
@@ -295,7 +295,7 @@
 .med-surgery-anatomy-brief article.risk > span { background: #f4e6e2; color: #9a5850; }
 .med-surgery-anatomy-brief svg { width: 15px; }
 .med-surgery-anatomy-brief article > div { min-width: 0; }
-.med-surgery-anatomy-brief small { color: #81918c; font-size: 5.5px; font-weight: 950; letter-spacing: .09em; }
+.med-surgery-anatomy-brief small { color: #81918c; font-size: 11.5px; font-weight: 950; letter-spacing: .09em; }
 .med-surgery-anatomy-brief strong { display: block; margin-top: 5px; color: #3c5f55; font-size: 11.5px; line-height: 1.5; }
 .med-surgery-anatomy-brief p { margin-top: 5px; color: #7b8b86; font-size:11.5px; line-height: 1.45; }
 
@@ -317,7 +317,7 @@
 .med-surgery-patient { display: flex; align-items: flex-start; gap: 9px; margin-top: 14px; padding: 12px; border: 1px solid rgba(65, 112, 97, .13); border-radius: 12px; background: #f2f6f3; color: #477666; }
 .med-surgery-patient > svg { width: 16px; flex: 0 0 auto; }
 .med-surgery-patient > span { min-width: 0; }
-.med-surgery-patient small { display: block; color: #6f857d; font-size: 5.5px; font-weight: 950; letter-spacing: .08em; }
+.med-surgery-patient small { display: block; color: #6f857d; font-size: 11.5px; font-weight: 950; letter-spacing: .08em; }
 .med-surgery-patient p { margin-top: 4px; color: #5f756d; font-size:11px; line-height: 1.55; }
 .med-surgery-guidance { display: flex; align-items: center; gap: 8px; margin-top: 15px; padding: 11px; border-radius: 11px; background: #edf5f1; color: #517367; font-size:11.5px; }
 .med-surgery-guidance svg { width: 14px; }

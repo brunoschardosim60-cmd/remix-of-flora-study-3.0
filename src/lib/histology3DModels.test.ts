@@ -32,7 +32,7 @@ describe("histology3DModels", () => {
   it("oferece mais de um modelo nas jornadas anatômicas", () => {
     expect(histology3DModelsFor("eye").length).toBeGreaterThanOrEqual(2);
     expect(histology3DModelsFor("oral").length).toBeGreaterThanOrEqual(4);
-    expect(histology3DModelsFor("cell")).toEqual([]);
+    expect(histology3DModelsFor("cell").length).toBeGreaterThanOrEqual(8);
   });
 
   it("usa filtros explícitos nos modelos compostos", () => {

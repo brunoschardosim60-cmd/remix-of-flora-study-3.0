@@ -1280,6 +1280,33 @@ const anatomyNameDictionary: Record<string, string> = {
   "vermiform appendix": "Apêndice vermiforme",
   "mucosa of stomach": "Mucosa do estômago",
   "mucosa of nasal cavity": "Mucosa da cavidade nasal",
+  "inferior vena cava abdominal part": "Parte abdominal da veia cava inferior",
+  "inferior vena cava thoracic part": "Parte torácica da veia cava inferior",
+  "superior vena cava": "Veia cava superior",
+  "inferior vena cava": "Veia cava inferior",
+  "brachiocephalic trunk": "Tronco braquiocefálico",
+  "portal vein": "Veia porta",
+  "basilar artery": "Artéria basilar",
+  "sciatic nerve": "Nervo isquiático",
+  "medulla oblongata": "Bulbo",
+  midbrain: "Mesencéfalo",
+  pons: "Ponte",
+  thalamus: "Tálamo",
+  hypothalamus: "Hipotálamo",
+  hippocampus: "Hipocampo",
+  putamen: "Putâmen",
+  cochlea: "Cóclea",
+  vestibule: "Vestíbulo",
+  nasopharynx: "Nasofaringe",
+  oropharynx: "Orofaringe",
+  laryngopharynx: "Laringofaringe",
+  adenohypophysis: "Adeno-hipófise",
+  neurohypophysis: "Neuro-hipófise",
+  "ductus deferens": "Ducto deferente",
+  epididymis: "Epidídimo",
+  "renal pelvis": "Pelve renal",
+  "meso appendix": "Mesoapêndice",
+  "cingulate gyrus posteroventral part": "Parte posteroventral do giro do cíngulo",
 };
 
 const anatomyWordDictionary: Record<string, string> = {
@@ -1303,7 +1330,7 @@ const anatomyWordDictionary: Record<string, string> = {
   phrenic: "frênico", suprarenal: "suprarrenal", epigastric: "epigástrico", gluteal: "glúteo", pudendal: "pudendo",
   plantar: "plantar", dorsal: "dorsal", palmar: "palmar", digital: "digital", cutaneous: "cutâneo", collateral: "colateral",
   genicular: "genicular", interosseous: "interósseo", metatarsal: "metatarsal", saphenous: "safeno", venous: "venoso",
-  facial: "facial", mental: "mentual", mandibular: "mandibular", maxillary: "maxilar", ophthalmic: "oftálmico",
+  facial: "facial", mental: "mentoniano", mandibular: "mandibular", maxillary: "maxilar", ophthalmic: "oftálmico",
   meningeal: "meníngeo", lacrimal: "lacrimal", optic: "óptico", oculomotor: "oculomotor", trigeminal: "trigêmeo",
   vestibular: "vestibular", cochlear: "coclear", vagus: "vago", hypoglossal: "hipoglosso", abducens: "abducente",
   trochlear: "troclear", olfactory: "olfatório", lingual: "lingual", cervical: "cervical", temporal: "temporal",
@@ -1312,6 +1339,75 @@ const anatomyWordDictionary: Record<string, string> = {
   testicular: "testicular", muscular: "muscular", parotid: "parótido", sublingual: "sublingual", submandibular: "submandibular",
   pancreatic: "pancreático", bile: "biliar", urinary: "urinário", pineal: "pineal", thyroid: "tireóideo",
   parathyroid: "paratireóideo", seminal: "seminal", nasal: "nasal", cavity: "cavidade", right: "direito", left: "esquerdo",
+  iliolumbar: "iliolombar", labial: "labial", alveolar: "alveolar", ethmoidal: "etmoidal", humeral: "umeral",
+  penis: "pênis", angular: "angular", basilar: "basilar", carpal: "carpal", retromandibular: "retromandibular",
+  jugular: "jugular", median: "mediano", subcostal: "subcostal", intrarenal: "intrarrenal", sigmoid: "sigmoide",
+  submental: "submentoniano", sphenopalatine: "esfenopalatino", ciliary: "ciliar", callosomarginal: "calosomarginal",
+  striate: "estriado", pontine: "pontino", vertebral: "vertebral", musculophrenic: "musculofrênico",
+  suprascapular: "supraescapular", acromial: "acromial", thoracodorsal: "toracodorsal", metacarpal: "metacarpal",
+  anastomosis: "anastomose", recurrent: "recorrente", calcaneal: "calcâneo", popliteal: "poplíteo",
+  petrosal: "petroso", scapular: "escapular", subscapular: "subescapular", palatine: "palatino",
+  papillary: "papilar", great: "magno", brachiocephalic: "braquiocefálico", aorta: "aorta", sacral: "sacral",
+  azygos: "ázigos", vena: "veia", cava: "cava", atrioventricular: "atrioventricular", semilunar: "semilunar",
+  interventricular: "interventricular", splenic: "esplênico", pancreaticoduodenal: "pancreatoduodenal",
+  abdominal: "abdominal", pharyngeal: "faríngeo", mylohyoid: "milo-hióideo", pterygoid: "pterigóideo",
+  retinal: "retiniano", supratrochlear: "supratroclear", pericallosal: "pericaloso", orbitofrontal: "orbitofrontal",
+  proximal: "proximal", distal: "distal", insular: "insular", prefrontal: "pré-frontal", frontobasal: "frontobasal",
+  arterial: "arterial", thyrocervical: "tireocervical", first: "primeiro", second: "segundo",
+  costocervical: "costocervical", pectoral: "peitoral", arcuate: "arqueado", dorsalis: "dorsal", pedis: "do pé",
+  tarsal: "tarsal", patellar: "patelar", auricular: "auricular", sagittal: "sagital", network: "rede",
+  cephalic: "cefálico", cubital: "cubital", antebrachial: "antebraquial", basilic: "basílico",
+  intercapitular: "intercapitular", small: "pequeno", gastro: "gástrico", omental: "omental",
+  supreme: "supremo", intercavernous: "intercavernoso", buccal: "bucal", infra: "infra", greater: "maior",
+  obturator: "obturatório", atrium: "átrio", cavernous: "cavernoso", coeliac: "celíaco", gastric: "gástrico",
+  gastroduodenal: "gastroduodenal", portal: "porta", anorectal: "anorretal", sural: "sural",
+  genitofemoral: "genitofemoral", sympathetic: "simpático", vermis: "vérmis", occipitotemporal: "occipitotemporal",
+  fasciculus: "fascículo", forearm: "antebraço", medulla: "bulbo", oblongata: "oblongo", salivatory: "salivatório",
+  motor: "motor", quadrangular: "quadrangular", flocculus: "flóculo", stria: "estria", paracentral: "paracentral",
+  insula: "ínsula", proprius: "próprio", intermediate: "intermediário", midbrain: "mesencéfalo", gracile: "grácil",
+  geniculate: "geniculado", commissure: "comissura", pole: "polo", white: "branca", matter: "substância",
+  chorda: "corda", tympani: "do tímpano", vestibulocochlear: "vestibulococlear", glossopharyngeal: "glossofaríngeo",
+  musculocutaneous: "musculocutâneo", iliohypogastric: "ílio-hipogástrico", inguinal: "inguinal",
+  infrapatellar: "infrapatelar", crural: "crural", genital: "genital", sciatic: "isquiático", piriformis: "piriforme",
+  quadratus: "quadrado", femoris: "femoral", olive: "oliva", pyramid: "pirâmide", ambiguus: "ambíguo",
+  solitary: "solitário", colliculus: "colículo", pons: "ponte", biventral: "biventral", tonsil: "tonsila",
+  chiasm: "quiasma", thalamus: "tálamo", caudate: "caudado", putamen: "putâmen", globus: "globo",
+  pallidus: "pálido", lentiform: "lentiforme", opercular: "opercular", subcentral: "subcentral",
+  circular: "circular", hippocampus: "hipocampo", calcarine: "calcarino", cuneus: "cúneo", precuneus: "pré-cúneo",
+  intraparietal: "intraparietal", supramarginal: "supramarginal", parahippocampal: "para-hipocampal",
+  terminalis: "terminal", fornix: "fórnix", telencephalon: "telencéfalo", tentorium: "tentório", cerebelli: "do cerebelo",
+  choroid: "coroide", horn: "corno", corticospinal: "corticoespinal", vestibulospinal: "vestibuloespinal",
+  reticulospinal: "reticuloespinal", spinothalamic: "espinotalâmico", spinocerebellar: "espinocerebelar",
+  ganglia: "gânglios", sensory: "sensitivo", tympanic: "timpânico", membrane: "membrana", cochlea: "cóclea",
+  vestibule: "vestíbulo", auditory: "auditivo", tube: "tuba", canaliculus: "canalículo", suspensory: "suspensor",
+  ligament: "ligamento", chamber: "câmara", zonular: "zonular", colon: "cólon", taenia: "tênia",
+  ureter: "ureter", ductus: "ducto", deferens: "deferente", ejaculatory: "ejaculatório", omentum: "omento",
+  appendix: "apêndice", corpus: "corpo", testis: "testículo", pelvis: "pelve", oesophagus: "esôfago",
+  jejunum: "jejuno", urethra: "uretra", anteromedial: "anteromedial", lesser: "menor", mesocolon: "mesocolo",
+  mesocolic: "mesocólico", vermiform: "vermiforme", duodenum: "duodeno", circle: "círculo", stomach: "estômago",
+  gallbladder: "vesícula biliar", laryngopharynx: "laringofaringe", nasopharynx: "nasofaringe", oropharynx: "orofaringe",
+  pharynx: "faringe", uvula: "úvula", pancreas: "pâncreas", adenohypophysis: "adeno-hipófise",
+  neurohypophysis: "neuro-hipófise", cavernosum: "cavernoso", spongiosum: "esponjoso", glans: "glande",
+  prostate: "próstata", epiglottis: "epiglote", mucosa: "mucosa", trachea: "traqueia", pleura: "pleura",
+  bladder: "bexiga", main: "principal", appendicular: "apendicular", amygdaloid: "amigdaloide",
+  aqueduct: "aqueduto", cornea: "córnea", callosum: "caloso", cuneate: "cuneiforme", dura: "dura-máter",
+  process: "processo", hippocampal: "hipocampal", straight: "reto", frontomarginal: "frontomarginal",
+  frontopolar: "frontopolar", posteroventral: "posteroventral", rectus: "reto",
+  amygdala: "amígdala", ampulla: "ampola",
+  thoraco: "toraco", iliacus: "ilíaco", short: "curto", supra: "supra", temporo: "temporo", parieto: "parieto",
+  hemi: "hemi", apicoposterior: "apicoposterior", inferolateral: "inferolateral", aortic: "aórtico", ileal: "ileal",
+  marginal: "marginal", non: "não", ant: "anterior", lat: "lateral", fis: "fissura", post: "posterior",
+  cerebellum: "cerebelo", base: "base", red: "vermelho", wing: "asa", medullaris: "medular", thalami: "do tálamo",
+  shaped: "formato", fibres: "fibras", iris: "íris", lens: "cristalino", vitreous: "vítreo", retina: "retina",
+  sclera: "esclera", cauda: "cauda", equina: "equina", fourth: "quarto", interpeduncular: "interpeduncular",
+  fossa: "fossa", culmen: "cúlmen", declive: "declive", folium: "fólio", lingula: "língula", nodule: "nódulo",
+  pyramis: "pirâmide", tuber: "túber", habenula: "habênula", hypothalamus: "hipotálamo", mamillary: "mamilar",
+  third: "terceiro", horizont: "horizontal", vertical: "vertical", triangular: "triangular", subparietal: "subparietal",
+  interm: "intermediário", prim: "primário", lunate: "semilunar", plane: "plano", septum: "septo",
+  pellucidum: "pelúcido", falx: "foice", cerebri: "do cérebro", intermediolateral: "intermediolateral",
+  intermediomedial: "intermediomedial", substance: "substância", reticular: "reticular", tectospinal: "tectoespinal",
+  spinotectal: "espinotectal", rubrospinal: "rubroespinal", posterolateral: "posterolateral", sac: "saco",
+  nasolacrimal: "nasolacrimal", soft: "mole",
   to: "para", and: "e", the: "o",
 };
 
@@ -1329,7 +1425,69 @@ const anatomyHeadNouns: Record<string, { translated: string; gender: "m" | "f"; 
   sinus: { translated: "seio", gender: "m" }, gyrus: { translated: "giro", gender: "m" }, gyri: { translated: "giros", gender: "m", plural: true },
   sulcus: { translated: "sulco", gender: "m" }, sulci: { translated: "sulcos", gender: "m", plural: true }, nucleus: { translated: "núcleo", gender: "m" },
   tract: { translated: "trato", gender: "m" }, muscle: { translated: "músculo", gender: "m" }, body: { translated: "corpo", gender: "m" },
+  aorta: { translated: "aorta", gender: "f" }, colon: { translated: "cólon", gender: "m" }, penis: { translated: "pênis", gender: "m" },
+  atrium: { translated: "átrio", gender: "m" }, valve: { translated: "valva", gender: "f" }, network: { translated: "rede", gender: "f" },
+  commissure: { translated: "comissura", gender: "f" }, matter: { translated: "substância", gender: "f" }, membrane: { translated: "membrana", gender: "f" },
+  fasciculus: { translated: "fascículo", gender: "m" }, ganglia: { translated: "gânglios", gender: "m", plural: true },
+  taenia: { translated: "tênia", gender: "f" }, pelvis: { translated: "pelve", gender: "f" },
+  leaflet: { translated: "folheto", gender: "m" }, canaliculus: { translated: "canalículo", gender: "m" },
+  chamber: { translated: "câmara", gender: "f" }, eyeball: { translated: "bulbo ocular", gender: "m" },
+  horn: { translated: "corno", gender: "m" }, corpus: { translated: "corpo", gender: "m" }, dura: { translated: "dura-máter", gender: "f" },
+  fibres: { translated: "fibras", gender: "f", plural: true }, iris: { translated: "íris", gender: "f" }, lens: { translated: "cristalino", gender: "m" },
+  retina: { translated: "retina", gender: "f" }, sclera: { translated: "esclera", gender: "f" }, fossa: { translated: "fossa", gender: "f" },
+  nodule: { translated: "nódulo", gender: "m" }, septum: { translated: "septo", gender: "m" }, substance: { translated: "substância", gender: "f" },
+  sac: { translated: "saco", gender: "m" },
+  arch: { translated: "arco", gender: "m" }, cord: { translated: "cordão", gender: "m" },
+  part: { translated: "parte", gender: "f" }, nuclei: { translated: "núcleos", gender: "m", plural: true },
+  tube: { translated: "tuba", gender: "f" }, peduncle: { translated: "pedúnculo", gender: "m" },
+  chorda: { translated: "corda", gender: "f" }, cornea: { translated: "córnea", gender: "f" },
+  cuneus: { translated: "cúneo", gender: "m" }, stria: { translated: "estria", gender: "f" },
+  flocculus: { translated: "flóculo", gender: "m" }, fornix: { translated: "fórnix", gender: "m" },
+  globus: { translated: "globo", gender: "m" }, colliculus: { translated: "colículo", gender: "m" },
+  fis: { translated: "fissura", gender: "f" }, pole: { translated: "polo", gender: "m" },
+  olive: { translated: "oliva", gender: "f" }, chiasm: { translated: "quiasma", gender: "m" },
+  pyramid: { translated: "pirâmide", gender: "f" }, precuneus: { translated: "pré-cúneo", gender: "m" },
+  telencephalon: { translated: "telencéfalo", gender: "m" },
 };
+
+const anatomyAdjectiveKeys = new Set([
+  "superior", "inferior", "anterior", "posterior", "medial", "lateral", "internal", "external", "common", "deep", "superficial", "middle",
+  "central", "proper", "long", "free", "accessory", "ascending", "descending", "communicating", "perforating", "circumflex", "segmental", "lobar",
+  "basal", "apical", "lingular", "septal", "pulmonary", "coronary", "cardiac", "cerebral", "cerebellar", "spinal", "brachial", "femoral", "ulnar",
+  "radial", "tibial", "fibular", "axillary", "iliac", "renal", "hepatic", "mesenteric", "carotid", "subclavian", "intercostal", "thoracic",
+  "lumbar", "phrenic", "suprarenal", "epigastric", "gluteal", "pudendal", "plantar", "dorsal", "palmar", "digital", "cutaneous", "collateral",
+  "genicular", "interosseous", "metatarsal", "saphenous", "venous", "facial", "mental", "mandibular", "maxillary", "ophthalmic", "meningeal",
+  "lacrimal", "optic", "oculomotor", "trigeminal", "vestibular", "cochlear", "lingual", "cervical", "temporal", "frontal", "parietal", "occipital",
+  "orbital", "cingulate", "precentral", "postcentral", "transverse", "colic", "ileocolic", "testicular", "muscular", "parotid", "sublingual",
+  "submandibular", "pancreatic", "urinary", "thyroid", "parathyroid", "seminal", "nasal", "iliolumbar", "labial", "alveolar", "ethmoidal",
+  "humeral", "angular", "basilar", "carpal", "retromandibular", "jugular", "median", "subcostal", "intrarenal", "sigmoid", "submental",
+  "sphenopalatine", "ciliary", "callosomarginal", "striate", "pontine", "vertebral", "musculophrenic", "suprascapular", "acromial",
+  "thoracodorsal", "metacarpal", "recurrent", "calcaneal", "popliteal", "petrosal", "scapular", "subscapular", "palatine", "papillary",
+  "brachiocephalic", "sacral", "atrioventricular", "semilunar", "interventricular", "splenic", "pancreaticoduodenal", "abdominal", "pharyngeal",
+  "retinal", "proximal", "distal", "insular", "prefrontal", "frontobasal", "arterial", "pectoral", "arcuate", "tarsal", "patellar", "auricular",
+  "sagittal", "cephalic", "cubital", "antebrachial", "basilic", "buccal", "obturator", "cavernous", "coeliac", "gastric", "gastroduodenal",
+  "anorectal", "sural", "genitofemoral", "sympathetic", "occipitotemporal", "salivatory", "motor", "quadrangular", "paracentral", "intermediate",
+  "gracile", "geniculate", "vestibulocochlear", "glossopharyngeal", "musculocutaneous", "iliohypogastric", "inguinal", "infrapatellar", "crural",
+  "genital", "sciatic", "biventral", "opercular", "subcentral", "circular", "calcarine", "intraparietal", "supramarginal", "parahippocampal",
+  "terminalis", "corticospinal", "vestibulospinal", "reticulospinal", "spinothalamic", "spinocerebellar", "sensory", "tympanic", "auditory",
+  "suspensory", "zonular", "ejaculatory", "mesocolic", "omental", "vermiform", "anteromedial",
+]);
+
+function agreeAnatomyAdjective(rawWord: string, translated: string, head: { gender: "m" | "f"; plural?: boolean } | undefined) {
+  if (!head || !anatomyAdjectiveKeys.has(rawWord)) return translated;
+  const feminine = head.gender === "f";
+  const plural = Boolean(head.plural);
+  if (/o$/i.test(translated)) return translated.replace(/o$/i, feminine ? (plural ? "as" : "a") : (plural ? "os" : "o"));
+  if (/a$/i.test(translated)) return plural ? `${translated}s` : translated;
+  if (!plural) return translated;
+  if (/al$/i.test(translated)) return translated.replace(/al$/i, "ais");
+  if (/el$/i.test(translated)) return translated.replace(/el$/i, "éis");
+  if (/il$/i.test(translated)) return translated.replace(/il$/i, "is");
+  if (/r$/i.test(translated)) return `${translated}es`;
+  if (/m$/i.test(translated)) return translated.replace(/m$/i, "ns");
+  if (/z$/i.test(translated)) return `${translated}es`;
+  return `${translated}s`;
+}
 
 function translatedArticle(head: { gender: "m" | "f"; plural?: boolean } | undefined) {
   if (!head) return "de";
@@ -1347,8 +1505,13 @@ function translateSimpleAnatomyPhrase(value: string) {
   }
   const rawHead = headIndex >= 0 ? words[headIndex].toLocaleLowerCase("en-US") : null;
   const head = rawHead ? anatomyHeadNouns[rawHead] : undefined;
-  const ordered = headIndex >= 0 ? [words[headIndex], ...words.slice(0, headIndex), ...words.slice(headIndex + 1)] : words;
-  const translated = ordered.map((word) => anatomyWordDictionary[word.toLocaleLowerCase("en-US")] ?? word).join(" ");
+  const exact = anatomyNameDictionary[words.join(" ").toLocaleLowerCase("en-US")];
+  if (exact && !side) return exact;
+  const ordered = headIndex >= 0 ? [words[headIndex], ...words.slice(0, headIndex).reverse(), ...words.slice(headIndex + 1)] : words;
+  const translated = ordered.map((word) => {
+    const normalizedWord = word.toLocaleLowerCase("en-US");
+    return agreeAnatomyAdjective(normalizedWord, anatomyWordDictionary[normalizedWord] ?? word, head);
+  }).join(" ");
   if (!side) return translated;
   const feminine = head?.gender === "f";
   const plural = Boolean(head?.plural);
@@ -1370,15 +1533,44 @@ function translateCompoundAnatomyPhrase(value: string) {
   return translated;
 }
 
-function translateAnatomyName(rawName: string, layer: DenseAnatomyLayer | "organs", index: number) {
-  const cleaned = rawName.replace(/[_]+/g, " ").replace(/\s+/g, " ").replace(/^\((.*)\)$/, "$1").replace(/\.[a-z]$/i, (suffix) => /\.[lr]/i.test(suffix) ? suffix : "").trim();
-  const explicitSide = cleaned.match(/\.([lr])$/i)?.[1];
-  const compactSide = cleaned.match(/(?:artery|arteries|vein|veins|nerve|nerves|branch|trunk|sinus|plexus|ganglion|kidney|lung|gland|lobe)([lr])$/i)?.[1];
+export function translateAnatomyName(rawName: string, layer: DenseAnatomyLayer | "organs", index: number) {
+  const rawSide = rawName.match(/(?:[._*\s)]([lr]))[.\s]*$/i)?.[1];
+  const cleaned = rawName
+    .replace(/(?:[._*\s)]([lr]))[.\s]*$/i, "")
+    .replace(/[._][a-z]$/i, "")
+    .replace(/\*/g, "")
+    .replace(/[.]+$/g, "")
+    .replace(/[_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .replace(/^\((.*)\)$/, "$1")
+    .trim();
+  const explicitSide = rawSide;
+  const compactCandidate = cleaned.match(/([lr])$/i);
+  const compactCandidateBase = compactCandidate ? cleaned.slice(0, -1).trim() : "";
+  const compactCandidateWords = compactCandidateBase.replace(/[()'"-]/g, " ").trim().split(/\s+/).map((word) => word.toLocaleLowerCase("en-US"));
+  const compactCandidateLastWord = compactCandidateWords.at(-1) ?? "";
+  const compactCandidateHasHead = compactCandidateWords.some((word) => Boolean(anatomyHeadNouns[word]));
+  const compactSide = compactCandidate && (compactCandidateHasHead || anatomyHeadNouns[compactCandidateLastWord] || anatomyNameDictionary[compactCandidateBase.toLocaleLowerCase("en-US")]) ? compactCandidate[1] : undefined;
   const sideCode = explicitSide ?? compactSide;
-  const side = sideCode?.toLocaleLowerCase() === "l" ? " esquerdo" : sideCode?.toLocaleLowerCase() === "r" ? " direito" : "";
-  const withoutSide = explicitSide ? cleaned.slice(0, -2) : compactSide ? cleaned.slice(0, -1) : cleaned;
-  const exact = anatomyNameDictionary[withoutSide.toLocaleLowerCase("en-US")];
+  const withoutSide = compactSide ? cleaned.slice(0, -1) : cleaned;
+  const sideWords = withoutSide.replace(/[()'"-]/g, " ").trim().split(/\s+/);
+  const sideHead = [...sideWords].reverse().map((word) => anatomyHeadNouns[word.toLocaleLowerCase("en-US")]).find(Boolean);
+  const feminineSide = sideHead?.gender === "f";
+  const pluralSide = Boolean(sideHead?.plural);
+  const side = sideCode?.toLocaleLowerCase() === "l"
+    ? ` ${feminineSide ? (pluralSide ? "esquerdas" : "esquerda") : (pluralSide ? "esquerdos" : "esquerdo")}`
+    : sideCode?.toLocaleLowerCase() === "r"
+      ? ` ${feminineSide ? (pluralSide ? "direitas" : "direita") : (pluralSide ? "direitos" : "direito")}`
+      : "";
+  const exactKey = withoutSide.replace(/[()'"]/g, "").replace(/\s+/g, " ").trim().toLocaleLowerCase("en-US");
+  const exact = anatomyNameDictionary[exactKey];
   if (exact) return `${exact}${side}`;
+  const segment = withoutSide.replace(/[()'"]/g, "").match(/^(.*?)\s+([a-z]+\d+)-segment$/i);
+  if (segment) {
+    const translatedBase = translateCompoundAnatomyPhrase(segment[1]);
+    const capitalizedBase = `${translatedBase.charAt(0).toLocaleUpperCase("pt-BR")}${translatedBase.slice(1)}`;
+    return `${capitalizedBase} — segmento ${segment[2].toLocaleUpperCase("pt-BR")}${side}`;
+  }
   if (/^mesh(?:\.\d+)?$/i.test(withoutSide)) return layer === "organs" ? `Estrutura visceral ${index + 1}` : `Estrutura anatômica ${index + 1}`;
   const translated = translateCompoundAnatomyPhrase(withoutSide);
   return `${translated.charAt(0).toLocaleUpperCase("pt-BR")}${translated.slice(1)}${side}`;

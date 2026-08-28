@@ -46,6 +46,7 @@ const InstrumentsStudio = lazy(() => import("@/components/medicine/InstrumentsSt
 const SurgerySimulator = lazy(() => import("@/components/medicine/SurgerySimulator").then((module) => ({ default: module.SurgerySimulator })));
 const MedicalPathologyLab = lazy(() => import("@/components/medicine/MedicalPathologyLab").then((module) => ({ default: module.MedicalPathologyLab })));
 const HistologyMicroscope = lazy(() => import("@/components/medicine/HistologyMicroscope").then((module) => ({ default: module.HistologyMicroscope })));
+const FloraChatPanel = lazy(() => import("@/components/FloraChatPanel").then((module) => ({ default: module.FloraChatPanel })));
 
 type MedicineSection = "home" | "atlas" | "atlas3d" | "histology" | "instruments" | "surgery" | "systems" | "pathology" | "development" | "practice" | "questions" | "review" | "semiology" | "anamnesis" | "clinic" | "plan" | "notebook" | "sources";
 
@@ -235,6 +236,9 @@ export default function Medicine() {
   const [resumeSection, setResumeSection] = useState<MedicineSection>(() => loadMedicineState("last_section", "home"));
   const [initial3DStructureId, setInitial3DStructureId] = useState<string | null>(null);
   const [sectionMediaReady, setSectionMediaReady] = useState(() => (SECTION_IMAGE_WARMUPS[section] ?? []).every(isMedicalImageReady));
+  const [floraMounted, setFloraMounted] = useState(false);
+  const [floraOpen, setFloraOpen] = useState(false);
+  const [floraPrompt, setFloraPrompt] = useState("");
 
   const levelProfile = medicineLevelProfiles[level];
   const filteredQuestions = useMemo(() => medicalQuestions.filter((item) => item.level === level), [level]);
@@ -407,6 +411,12 @@ export default function Medicine() {
     saveMedicineState("level", next);
     toast.success(`${next} ativado`, { description: medicineLevelProfiles[next].focus });
   };
+  const openFlora = (prompt?: string) => {
+    const sectionLabel = NAV.find((item) => item.id === section)?.label ?? "Medicina";
+    setFloraPrompt(prompt ?? `Estou estudando ${sectionLabel} no nível ${level}. Ajude-me a revisar este conteúdo de Medicina com linguagem clara, base científica e foco educacional. Não invente dados clínicos e diferencie informação geral de orientação médica individual.`);
+    setFloraMounted(true);
+    setFloraOpen(true);
+  };
   const toggleFavorite = (id: string) => {
     const next = favoriteIds.includes(id) ? favoriteIds.filter((item) => item !== id) : [...favoriteIds, id];
     setFavoriteIds(next); saveMedicineState("favorites", next);
@@ -440,6 +450,7 @@ export default function Medicine() {
         <div className="med-header-actions">
           <button className={`med-focus-toggle ${focusMode ? "active" : ""}`} onClick={() => setFocusMode((value) => !value)} aria-label={focusMode ? "Sair do modo foco" : "Entrar no modo foco"}><PanelLeftClose /></button>
           {section !== "notebook" && <button className="med-send-notebook" onPointerEnter={() => void warmMedicineSection("notebook")} onFocus={() => void warmMedicineSection("notebook")} onClick={() => navigate("/notebooks")} title="Abrir meus cadernos"><NotebookPen /><span>Abrir Caderno</span></button>}
+          <button className="med-flora-button" onClick={() => openFlora()} title={`Estudar ${NAV.find((item) => item.id === section)?.label ?? "Medicina"} com a Flora`}><Sparkles /><span>Flora</span></button>
           <div className="med-level-chip" title={levelProfile.focus}><span>Nível</span><select aria-label="Nível de estudo" value={level} onChange={(event) => updateLevel(event.target.value as MedicineLevel)}>{levelOrder.map((item) => <option key={item}>{item}</option>)}</select></div>
           <button className={`med-source-status ${cloudSyncError ? "sync-error" : ""}`} onClick={() => go("sources")} title={cloudSyncError ? "O progresso continua salvo neste dispositivo e será reenviado na próxima alteração." : undefined}><ShieldCheck /> {cloudSyncError ? "Sincronização pendente" : cloudReady ? "Progresso protegido" : "Conteúdo rastreável"}</button>
           <button className="med-menu-button" onClick={() => setMobileNav((value) => !value)} aria-label={mobileNav ? "Fechar navegação" : "Abrir navegação"} aria-expanded={mobileNav} aria-controls="medicine-navigation">{mobileNav ? <X /> : <Menu />}</button>
@@ -476,7 +487,7 @@ export default function Medicine() {
           {!sectionMediaReady && <div className="med-media-loading" role="status" aria-live="polite"><span><Sparkles /></span><div><strong>Preparando imagens em alta definição</strong><small>Os arquivos originais estão sendo carregados sem compressão nem redução de qualidade.</small></div></div>}
           <Suspense fallback={<div className="med-3d-route-loading"><Sparkles /><strong>Preparando o módulo…</strong><span>Carregando apenas os recursos necessários para esta atividade.</span></div>}>
           {section === "home" && <MedicineHome level={level} progress={progress} competencies={competencyProgress} wrongCount={pendingReviews.length} resumeSection={resumeSection} onGo={go} />}
-          {section === "atlas" && <div className="med-section-wrap"><BodyAtlas level={level} activeLayer={activeLayer} onLayerChange={setActiveLayer} selected={selectedStructure} onSelect={setSelectedStructure} onOpen3D={(structureId) => { setInitial3DStructureId(structureId); go("atlas3d"); }} />{selectedStructure && <div className="med-atlas-actions"><button onClick={() => toggleFavorite(selectedStructure.id)}>{favoriteIds.includes(selectedStructure.id) ? <Check /> : <BookOpen />}{favoriteIds.includes(selectedStructure.id) ? "Salva para revisão" : "Salvar para revisão"}</button><button onClick={() => go("questions")}><ListChecks /> Questões relacionadas</button><button onClick={() => go("pathology")}><Microscope /> Comparar alterações</button><button onClick={() => sendToNotebook({ section: "atlas", label: selectedStructure.name, structureId: selectedStructure.id })}><NotebookPen /> Enviar ao Caderno</button><button onClick={() => toast.info("A Flora deve explicar apenas com base nas fontes exibidas nesta estrutura.")}><Sparkles /> Explicar com a Flora</button></div>}</div>}
+          {section === "atlas" && <div className="med-section-wrap"><BodyAtlas level={level} activeLayer={activeLayer} onLayerChange={setActiveLayer} selected={selectedStructure} onSelect={setSelectedStructure} onOpen3D={(structureId) => { setInitial3DStructureId(structureId); go("atlas3d"); }} />{selectedStructure && <div className="med-atlas-actions"><button onClick={() => toggleFavorite(selectedStructure.id)}>{favoriteIds.includes(selectedStructure.id) ? <Check /> : <BookOpen />}{favoriteIds.includes(selectedStructure.id) ? "Salva para revisão" : "Salvar para revisão"}</button><button onClick={() => go("questions")}><ListChecks /> Questões relacionadas</button><button onClick={() => go("pathology")}><Microscope /> Comparar alterações</button><button onClick={() => sendToNotebook({ section: "atlas", label: selectedStructure.name, structureId: selectedStructure.id })}><NotebookPen /> Enviar ao Caderno</button><button onClick={() => { const source = medicalSources[selectedStructure.sourceId]; openFlora(`Explique a estrutura anatômica ${selectedStructure.name}${selectedStructure.latin ? ` (${selectedStructure.latin})` : ""}, no nível ${level}. Use como base estes dados revisados do Atlas Flora: região: ${selectedStructure.region}; sistema: ${selectedStructure.system}; descrição: ${selectedStructure.summary}; função: ${selectedStructure.function}; relações: ${selectedStructure.relations}. Fonte indicada: ${source?.organization ?? "fonte científica cadastrada"} — ${source?.title ?? selectedStructure.sourceId}. Se algo não estiver sustentado por esses dados, diga claramente que precisa ser conferido na fonte. Uso exclusivamente educacional; não faça diagnóstico nem prescrição.`); }}><Sparkles /> Explicar com a Flora</button></div>}</div>}
           {section === "atlas3d" && <Suspense fallback={<div className="med-3d-route-loading"><Rotate3D /><strong>Carregando o ambiente tridimensional…</strong><span>Preparando iluminação, câmera e estruturas.</span></div>}><Anatomy3DStudio level={level} initialStructureId={initial3DStructureId} /></Suspense>}
           {section === "histology" && <Suspense fallback={<div className="med-3d-route-loading"><Microscope /><strong>Preparando o laboratório visual…</strong><span>Carregando as imagens licenciadas sem reduzir a resolução.</span></div>}><HistologyMicroscope level={level} onLearningEvent={(event) => recordLearning({ ...event, category: "histologia", competency: "fisiologia", sourceSection: "histology" })} onOpenNotebook={(context) => sendToNotebook({ section: "histology", ...context })} /></Suspense>}
           {section === "instruments" && <InstrumentsStudio level={level} onLearningEvent={(event) => recordLearning({ ...event, category: "instrumentos", competency: "instrumentos", sourceSection: "instruments" })} onOpenSurgery={(instrumentId) => { saveMedicineState("surgery_instrument", instrumentId); go("surgery"); }} />}
@@ -515,6 +526,7 @@ export default function Medicine() {
           </Suspense>
         </main>
       </div>
+      {floraMounted && <Suspense fallback={null}><FloraChatPanel isOpen={floraOpen} onClose={() => setFloraOpen(false)} initialMessage={floraPrompt} /></Suspense>}
     </div>
   );
 }
