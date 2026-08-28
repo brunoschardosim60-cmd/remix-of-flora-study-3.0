@@ -2766,6 +2766,7 @@
 @media (max-width: 360px) {
   .med-header { gap: 3px; padding-inline: 7px; }
   .med-back { width: 34px; }
+  /* nota: substituído por 44px no bloco de alvos de toque abaixo */
   .med-brand { gap: 7px; }
   .med-brand > span { width: 35px; height: 35px; }
   .med-level-chip { max-width: 104px; }
@@ -2915,7 +2916,10 @@
   .med-back,
   .med-menu-button,
   .med-atlas-controls button,
-  .med-anatomy-focus-close { width: 44px; height: 44px; }
+  .med-anatomy-focus-close { flex: 0 0 auto; width: 44px; min-width: 44px; height: 44px; }
+
+  .med-header { gap: 8px; }
+  .med-header > :where(h1, div:not([class])) { min-width: 0; }
 
   .med-atlas-controls button.wide { width: auto; }
 
