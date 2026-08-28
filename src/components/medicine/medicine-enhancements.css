@@ -1082,6 +1082,8 @@
 .med-systems-workspace .med-system-list button > div { min-width: 0; }
 .med-systems-workspace .med-system-list button > span { width: 36px; height: 36px; border-radius: 11px; font-size:12.5px; }
 .med-systems-workspace .med-system-list strong { display: block; overflow: hidden; font-size:13px; text-overflow: ellipsis; white-space: nowrap; }
+.med-systems-workspace .med-system-list button > div > strong,
+.med-systems-workspace .med-system-list button > div > small { min-width: 0; max-width: 100%; }
 .med-systems-workspace .med-system-list small { overflow: hidden; font-size:11.5px; line-height: 1.4; text-overflow: ellipsis; white-space: nowrap; }
 
 .med-system-studio {
@@ -2916,6 +2918,10 @@
   .med-anatomy-focus-close { width: 44px; height: 44px; }
 
   .med-atlas-controls button.wide { width: auto; }
+
+  .med-anatomy-pin { width: 30px; height: 30px; }
+  .med-anatomy-pin span { width: 9px; height: 9px; }
+  .med-anatomy-pin:hover, .med-anatomy-pin.active { width: 38px; height: 38px; }
 
   .med-app :where(
     .med-3d-region-strip button,
