@@ -114,6 +114,25 @@ describe("anatomy3DModel", () => {
     expect(merged).toContainEqual(detailedStructure);
   });
 
+  it("troca uma valva guiada pela malha cardíaca real e preserva a fonte NIH", () => {
+    const guided = anatomy3DStructures.find((item) => item.id === "organ-heart-mitral-valve")!;
+    const realMesh = {
+      ...guided,
+      id: "model:heart:mitral-valve",
+      sourceId: "nihHraHeart3D",
+      summary: "Valva mitral segmentada como malha anatômica independente no coração NIH.",
+      function: "Permite o fluxo atrioventricular esquerdo e reduz o refluxo durante a sístole.",
+      focus: [.06, 2.06, .11] as [number, number, number],
+      focusDistance: 1.55,
+    };
+    const resolved = detailedStructureForGuided(guided, { organs: [realMesh] }, true);
+
+    expect(resolved.id).toBe("model:heart:mitral-valve");
+    expect(resolved.sourceId).toBe("nihHraHeart3D");
+    expect(resolved.focusDistance).toBe(1.55);
+    expect(medicalSources[resolved.sourceId]?.url).toContain("3DPX-020966");
+  });
+
   it("compõe os catálogos detalhados em Todas as camadas", () => {
     const template = anatomy3DStructures.find((item) => item.id === "organ-heart")!;
     const vascular = { ...template, id: "model:vascular:2", layer: "vascular" as const, name: "Aorta" };

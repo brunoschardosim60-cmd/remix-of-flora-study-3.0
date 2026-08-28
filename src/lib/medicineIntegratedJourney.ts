@@ -101,7 +101,7 @@ const heartStructures: IntegratedMedicineStructure[] = [
 ];
 
 const heartSteps: IntegratedMedicineStep[] = [
-  { id: "heart-interior", eyebrow: "ANATOMIA 3D", label: "Abrir o interior", description: "Torne a parede translúcida e examine câmaras, septos e valvas no mesmo modelo.", kind: "action", action: "open-interior", sourceIds: ["openstaxHeart", "zanatomy-models"] },
+  { id: "heart-interior", eyebrow: "ANATOMIA 3D", label: "Abrir o interior", description: "Separe a parede externa e examine câmaras, septo, músculos papilares e valvas em malhas anatômicas reais.", kind: "action", action: "open-interior", sourceIds: ["openstaxHeart", "nihHraHeart3D", "zAnatomyOrgan3D"] },
   { id: "heart-physiology", eyebrow: "FISIOLOGIA", label: "Seguir o fluxo", description: "Relacione câmaras, valvas, ciclo cardíaco e circulação sistêmica.", kind: "destination", destination: "systems", target: { systemId: "cardiovascular" }, sourceIds: ["openstaxHeart", "openstaxCardiacCycle"] },
   { id: "heart-histology", eyebrow: "HISTOLOGIA", label: "Ver músculo cardíaco", description: "Passe do órgão para o tecido muscular cardíaco e suas características microscópicas.", kind: "destination", destination: "histology", target: { journeyId: "cell", depth: 78, specimenId: "muscular" }, sourceIds: ["openstax-tissues"] },
   { id: "heart-pathology", eyebrow: "PATOLOGIA", label: "Comparar pós-infarto", description: "Compare miocárdio preservado e cicatriz após infarto sem confundir imagem com diagnóstico.", kind: "destination", destination: "pathology", target: { pathologyId: "heart" }, sourceIds: ["openstaxHeart", "ahaAcs2025"] },

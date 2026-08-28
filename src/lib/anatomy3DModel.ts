@@ -490,9 +490,18 @@ export function detailedStructureForGuided(
   const patterned = pattern ? catalog.find((item) => pattern.test(normalizedStructureName(item.name))) : undefined;
   const match = (preferSupplement ? supplemental : undefined) ?? exact ?? patterned ?? supplemental;
   if (!match) return structure;
+  const realHeartMesh = match.id.startsWith("model:heart:");
   return {
     ...structure,
     id: match.id,
+    ...(realHeartMesh ? {
+      latin: match.latin ?? structure.latin,
+      region: match.region,
+      system: match.system,
+      summary: match.summary,
+      function: match.function,
+      sourceId: match.sourceId,
+    } : {}),
     focus: match.focus,
     focusDistance: match.focusDistance,
     color: match.color,

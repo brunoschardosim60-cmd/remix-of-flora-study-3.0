@@ -1,4 +1,4 @@
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Component, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { ContactShadows, Environment, Grid, Lightformer, OrbitControls, useGLTF } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
@@ -51,6 +51,15 @@ import {
 import { medicalSources, type MedicineLevel } from "@/lib/medicineData";
 import { organRealismProfile, organTissueVertexColors } from "@/lib/organRealism";
 import {
+  anatomy3DAssets,
+  heartAnatomyForId,
+  heartAnatomyForMeshName,
+  heartInteriorMeshDefinitions,
+  heartRepresentationForAvailability,
+  isHeartInteriorStructureId,
+  type HeartMeshDefinition,
+} from "@/lib/anatomy3DAssetRegistry";
+import {
   integratedJourneyForContext,
   resolveIntegratedJourneyStructure,
   type IntegratedMedicineContext,
@@ -61,6 +70,22 @@ type CameraView = "perspective" | "front" | "back" | "left" | "right";
 type OrganViewMode = "context" | "isolated" | "section" | "transparent";
 type SectionAxis = "x" | "y" | "z";
 type AnatomyAppearance = "educational" | "realistic";
+
+class ThreeModelErrorBoundary extends Component<{ children: ReactNode; onError: () => void }, { failed: boolean }> {
+  state = { failed: false };
+
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+
+  componentDidCatch() {
+    this.props.onError();
+  }
+
+  render() {
+    return this.state.failed ? null : this.props.children;
+  }
+}
 
 interface Anatomy3DStudioProps {
   level: MedicineLevel;
@@ -79,14 +104,14 @@ const layerOpacity: Record<Exclude<Anatomy3DSystemId, "all">, number> = {
   organs: 0.92,
 };
 
-const REAL_MODEL_PATH = "/medicine/models/zanatomy-musculoskeletal-v1.glb";
-const REAL_SKIN_PATH = "/medicine/models/bodyparts3d-skin-v1.glb";
+const REAL_MODEL_PATH = anatomy3DAssets.bodyBase.path;
+const REAL_SKIN_PATH = anatomy3DAssets.skinBase.path;
 const REAL_ORGANS_PATH = "/medicine/models/bodyparts3d-organs-v1.glb";
-const DETAILED_CIRCULATORY_PATH = "/medicine/models/zanatomy-circulatory-v1.glb";
-const DETAILED_NERVOUS_PATH = "/medicine/models/zanatomy-nervous-v1.glb";
-const DETAILED_ORGANS_PATH = "/medicine/models/zanatomy-organs-v1.glb";
+const DETAILED_CIRCULATORY_PATH = anatomy3DAssets.cardiovascular.path;
+const DETAILED_NERVOUS_PATH = anatomy3DAssets.nervous.path;
+const DETAILED_ORGANS_PATH = anatomy3DAssets.organs.path;
 const SUPPLEMENTAL_ORGAN_PATHS = {
-  heart: "/medicine/models/zanatomy-organ-heart-v1.glb",
+  heart: anatomy3DAssets.heartExterior.path,
   brain: "/medicine/models/zanatomy-organ-brain-v1.glb",
   spleen: "/medicine/models/zanatomy-organ-spleen-v1.glb",
   eye: "/medicine/models/zanatomy-organ-eye-v1.glb",
@@ -136,7 +161,14 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
 
   const regionMeta = anatomy3DRegions.find((item) => item.id === region) ?? anatomy3DRegions[0];
   const registerDetailedCatalog = useCallback((catalogSystem: Anatomy3DSystemId, catalog: Anatomy3DStructure[]) => {
-    setDetailedCatalogs((current) => current[catalogSystem]?.length === catalog.length ? current : { ...current, [catalogSystem]: catalog });
+    setDetailedCatalogs((current) => {
+      const existing = current[catalogSystem] ?? [];
+      const mergedById = new Map(existing.map((item) => [item.id, item]));
+      catalog.forEach((item) => mergedById.set(item.id, item));
+      const merged = [...mergedById.values()];
+      const unchanged = merged.length === existing.length && merged.every((item, index) => item === existing[index]);
+      return unchanged ? current : { ...current, [catalogSystem]: merged };
+    });
   }, []);
   const guidedStructures = useMemo(
     () => structuresFor3D(system, region).filter((structure) => structureMatchesBodyProfile(structure, bodyProfile)),
@@ -834,6 +866,7 @@ function DetailedOrgansModel({ integrated = false, realistic, bodyProfile, selec
   onSelect: (structure: Anatomy3DStructure) => void;
   onCatalogReady: (system: Anatomy3DSystemId, catalog: Anatomy3DStructure[]) => void;
 }) {
+  const [heartDetailFailed, setHeartDetailFailed] = useState(false);
   const gltf = useGLTF(DETAILED_ORGANS_PATH);
   const heartGltf = useGLTF(SUPPLEMENTAL_ORGAN_PATHS.heart, "/medicine/models/draco/");
   const brainGltf = useGLTF(SUPPLEMENTAL_ORGAN_PATHS.brain, "/medicine/models/draco/");
@@ -846,20 +879,24 @@ function DetailedOrgansModel({ integrated = false, realistic, bodyProfile, selec
     prepareSupplementalOrgan(spleenGltf.scene, "spleen"),
     prepareSupplementalOrgan(eyeGltf.scene, "eye"),
   ], [brainGltf.scene, eyeGltf.scene, heartGltf.scene, spleenGltf.scene]);
-  const completeCatalog = useMemo(() => [...prepared.catalog, ...supplements.map((item) => item.structure)], [prepared.catalog, supplements]);
+  const completeCatalog = useMemo(() => [...prepared.catalog, ...supplements.flatMap((item) => item.catalog)], [prepared.catalog, supplements]);
 
   useEffect(() => {
     onCatalogReady("organs", prioritizeAnatomyCatalog(completeCatalog, "organs"));
   }, [completeCatalog, onCatalogReady]);
 
   const selectedSupplement = useMemo(() => {
-    const exact = supplements.find((item) => item.structure.id === selectedId);
+    const exact = supplements.find((item) => item.catalog.some((structure) => structure.id === selectedId));
     if (exact) return exact;
     const selectedJourneyStructure = resolveIntegratedJourneyStructure({ id: selectedId });
     return selectedJourneyStructure?.journey.organId === "heart"
       ? supplements.find((item) => item.structure.id === "model:organs:supplement:heart") ?? null
       : null;
   }, [selectedId, supplements]);
+  const selectedHeartResolution = useMemo(() => resolveIntegratedJourneyStructure({ id: selectedId }), [selectedId]);
+  const wantsDetailedHeart = selectedHeartResolution?.journey.organId === "heart"
+    && (organView === "transparent" || organView === "section" || isHeartInteriorStructureId(selectedId));
+  const showDetailedHeart = heartRepresentationForAvailability(wantsDetailedHeart, !heartDetailFailed) === "interior";
 
   const selectedIndexes = useMemo(() => {
     const exact = prepared.catalog.findIndex((item) => item.id === selectedId);
@@ -901,6 +938,8 @@ function DetailedOrgansModel({ integrated = false, realistic, bodyProfile, selec
     });
     supplements.forEach((supplement) => {
       const active = supplement === selectedSupplement && organView !== "context";
+      const selectedSupplementMesh = supplement.catalog.some((structure) => structure.id === selectedId)
+        && selectedId !== supplement.structure.id;
       const isHeartOverview = !integrated
         && organView === "context"
         && supplement.structure.id === "model:organs:supplement:heart";
@@ -908,12 +947,16 @@ function DetailedOrgansModel({ integrated = false, realistic, bodyProfile, selec
       // substituem a antiga geometria simplificada mesmo no modo contextual.
       // O arquivo principal de vísceras não contém uma malha cardíaca utilizável;
       // por isso o coração suplementar também compõe a visão geral entre os pulmões.
-      supplement.root.visible = active || isHeartOverview || (integrated && supplement === selectedSupplement);
+      supplement.root.visible = !showDetailedHeart && (active || isHeartOverview || (integrated && supplement === selectedSupplement));
       supplement.root.traverse((object) => {
         if (!(object instanceof Mesh)) return;
         const material = object.material as MeshPhysicalMaterial;
-        applyOrganAppearance(object, supplement.structure.name, realistic, active, String(object.userData.didacticColor ?? supplement.structure.color));
-        material.opacity = active && organView === "transparent" ? .36 : 1;
+        const meshStructure = supplement.catalog[Number(object.userData.supplementCatalogIndex)] ?? supplement.structure;
+        const meshActive = meshStructure.id === selectedId || (active && supplement.structure.id === selectedId);
+        applyOrganAppearance(object, meshStructure.name, realistic, meshActive, String(object.userData.didacticColor ?? meshStructure.color));
+        material.opacity = active && organView === "transparent"
+          ? .36
+          : selectedSupplementMesh && !meshActive ? .24 : 1;
         material.transparent = material.opacity < 1;
         material.depthWrite = material.opacity > .7;
         material.clippingPlanes = active && organView === "section" && sectionPlane ? [sectionPlane] : [];
@@ -921,7 +964,7 @@ function DetailedOrgansModel({ integrated = false, realistic, bodyProfile, selec
         material.needsUpdate = true;
       });
     });
-  }, [bodyProfile, integrated, organView, prepared.meshes, realistic, sectionPlane, selectedIndexes, selectedSupplement, supplements]);
+  }, [bodyProfile, integrated, organView, prepared.meshes, realistic, sectionPlane, selectedId, selectedIndexes, selectedSupplement, showDetailedHeart, supplements]);
 
   const selectOrgan = useCallback((mesh: Mesh) => {
     const structure = prepared.catalog[Number(mesh.userData.catalogIndex)];
@@ -934,14 +977,97 @@ function DetailedOrgansModel({ integrated = false, realistic, bodyProfile, selec
     selectOrgan(event.object);
   }, [selectOrgan]);
 
+  const selectSupplementStructure = useCallback((supplement: ReturnType<typeof prepareSupplementalOrgan>, event: ThreeEvent<MouseEvent>) => {
+    if (!(event.object instanceof Mesh)) return;
+    const structure = supplement.catalog[Number(event.object.userData.supplementCatalogIndex)] ?? supplement.structure;
+    event.stopPropagation();
+    onSelect(structure);
+  }, [onSelect]);
+
   return <group>
     <primitive object={prepared.root} onClick={integrated ? selectIntegratedOrgan : undefined} />
     {supplements.map((supplement) => <primitive
       key={supplement.structure.id}
       object={supplement.root}
+      onClick={(event: ThreeEvent<MouseEvent>) => selectSupplementStructure(supplement, event)}
     />)}
+    {showDetailedHeart && <ThreeModelErrorBoundary onError={() => setHeartDetailFailed(true)}>
+      <DetailedHeartModel
+        realistic={realistic}
+        selectedId={selectedId}
+        organView={organView}
+        sectionAxis={sectionAxis}
+        sectionOffset={sectionOffset}
+        onSelect={onSelect}
+        onCatalogReady={onCatalogReady}
+      />
+    </ThreeModelErrorBoundary>}
     <NativeMeshPicker active={!integrated && !selectedSupplement} root={prepared.root} onPick={selectOrgan} />
   </group>;
+}
+
+function DetailedHeartModel({ realistic, selectedId, organView, sectionAxis, sectionOffset, onSelect, onCatalogReady }: {
+  realistic: boolean;
+  selectedId: string | null;
+  organView: OrganViewMode;
+  sectionAxis: SectionAxis;
+  sectionOffset: number;
+  onSelect: (structure: Anatomy3DStructure) => void;
+  onCatalogReady: (system: Anatomy3DSystemId, catalog: Anatomy3DStructure[]) => void;
+}) {
+  const gltf = useGLTF(anatomy3DAssets.heartInterior.path);
+  const prepared = useMemo(() => prepareDetailedHeart(gltf.scene), [gltf.scene]);
+
+  useEffect(() => {
+    onCatalogReady("organs", prepared.catalog);
+  }, [onCatalogReady, prepared.catalog]);
+
+  const sectionPlane = useMemo(() => {
+    if (organView !== "section") return null;
+    const bounds = new Box3().setFromObject(prepared.root);
+    const center = bounds.getCenter(new Vector3());
+    const size = bounds.getSize(new Vector3());
+    const normal = sectionAxis === "x" ? new Vector3(1, 0, 0) : sectionAxis === "y" ? new Vector3(0, 1, 0) : new Vector3(0, 0, 1);
+    const axisSize = sectionAxis === "x" ? size.x : sectionAxis === "y" ? size.y : size.z;
+    return new Plane().setFromNormalAndCoplanarPoint(normal, center.clone().addScaledVector(normal, sectionOffset * axisSize * .5));
+  }, [organView, prepared.root, sectionAxis, sectionOffset]);
+
+  useEffect(() => {
+    const selectedDefinition = heartAnatomyForId(selectedId);
+    prepared.meshes.forEach((mesh) => {
+      const definition = mesh.userData.heartDefinition as HeartMeshDefinition;
+      const active = definition.anatomicalId === selectedId;
+      const material = mesh.material as MeshPhysicalMaterial;
+      mesh.visible = true;
+      applyOrganAppearance(mesh, definition.name, realistic, active, definition.color);
+
+      const chamberWall = definition.kind === "chamber";
+      const contextOpacity = selectedDefinition
+        ? active ? 1 : chamberWall ? .022 : .12
+        : chamberWall ? .4 : 1;
+      material.opacity = organView === "transparent" ? contextOpacity : active ? 1 : chamberWall ? .68 : 1;
+      material.transparent = material.opacity < 1;
+      material.depthWrite = material.opacity > .72;
+      material.clippingPlanes = organView === "section" && sectionPlane && (chamberWall || definition.kind === "septum") ? [sectionPlane] : [];
+      material.clipShadows = material.clippingPlanes.length > 0;
+      if (active) {
+        material.color.set("#ffd16a");
+        material.emissive.set("#ffad3d");
+      }
+      material.emissiveIntensity = active ? .58 : realistic ? .012 : .04;
+      material.needsUpdate = true;
+    });
+  }, [organView, prepared.meshes, realistic, sectionPlane, selectedId]);
+
+  const selectHeartStructure = useCallback((event: ThreeEvent<MouseEvent>) => {
+    if (!(event.object instanceof Mesh)) return;
+    const structure = prepared.catalog[Number(event.object.userData.catalogIndex)];
+    if (!structure) return;
+    event.stopPropagation();
+    onSelect(structure);
+  }, [onSelect, prepared.catalog]);
+
+  return <primitive object={prepared.root} onClick={selectHeartStructure} />;
 }
 
 function DenseSystemPicker({ active, mesh, onPick }: { active: boolean; mesh: Mesh; onPick: (index: number) => void }) {
@@ -1135,6 +1261,7 @@ function prepareSupplementalOrgan(source: Object3D, kind: keyof typeof SUPPLEMEN
   const scale = settings.size / Math.max(visualExtent, .001);
   root.scale.setScalar(scale);
   root.position.set(settings.target[0] - visualCenter.x * scale, settings.target[1] - visualCenter.y * scale, settings.target[2] - visualCenter.z * scale);
+  const meshes: Mesh[] = [];
   root.traverse((object) => {
     if (!(object instanceof Mesh)) return;
     if (!object.geometry.getAttribute("normal")) object.geometry.computeVertexNormals();
@@ -1142,6 +1269,7 @@ function prepareSupplementalOrgan(source: Object3D, kind: keyof typeof SUPPLEMEN
     object.userData.didacticColor = settings.color;
     object.castShadow = true;
     object.receiveShadow = true;
+    meshes.push(object);
   });
   root.visible = false;
   root.updateMatrixWorld(true);
@@ -1157,11 +1285,111 @@ function prepareSupplementalOrgan(source: Object3D, kind: keyof typeof SUPPLEMEN
     function: settings.function,
     sourceId: "zAnatomyOrgan3D",
     focus: settings.target,
-    focusDistance: kind === "eye" ? 1.25 : kind === "spleen" ? 1.65 : kind === "heart" ? 3.35 : 2.45,
+    focusDistance: kind === "eye" ? 1.25 : kind === "spleen" ? 1.65 : kind === "heart" ? 1.65 : 2.45,
     color: settings.color,
     parts: [],
   };
-  return { root, structure };
+  const catalog = [structure];
+  if (kind === "heart") {
+    meshes.forEach((mesh) => {
+      const definition = heartAnatomyForMeshName(mesh.name);
+      if (!definition || definition.sourceId !== "zAnatomyOrgan3D") return;
+      const bounds = new Box3().setFromObject(mesh);
+      const center = bounds.getCenter(new Vector3());
+      const size = bounds.getSize(new Vector3());
+      const meshStructure: Anatomy3DStructure = {
+        id: definition.anatomicalId,
+        name: definition.name,
+        latin: definition.latin,
+        layer: "organs",
+        regionId: "thorax",
+        region: definition.region,
+        system: "Cardiovascular",
+        summary: definition.summary,
+        function: definition.function,
+        sourceId: definition.sourceId,
+        focus: [center.x, center.y, center.z],
+        focusDistance: Math.max(definition.kind === "vessel" ? 1.55 : 1.35, Math.max(size.x, size.y, size.z) * 3.4),
+        color: definition.color,
+        parts: [definition.kind],
+      };
+      mesh.userData.supplementCatalogIndex = catalog.length;
+      mesh.userData.didacticColor = definition.color;
+      catalog.push(meshStructure);
+    });
+  }
+  return { root, structure, catalog, meshes };
+}
+
+function prepareDetailedHeart(source: Object3D) {
+  const root = source.clone(true);
+  const target = new Vector3(.1, 2.06, .16);
+  root.updateMatrixWorld(true);
+  const sourceBounds = new Box3().setFromObject(root);
+  const sourceCenter = sourceBounds.getCenter(new Vector3());
+  const sourceSize = sourceBounds.getSize(new Vector3());
+  const scale = .52 / Math.max(sourceSize.x, sourceSize.y, sourceSize.z, .001);
+  root.scale.setScalar(scale);
+  root.position.set(target.x - sourceCenter.x * scale, target.y - sourceCenter.y * scale, target.z - sourceCenter.z * scale);
+  root.updateMatrixWorld(true);
+
+  const catalog: Anatomy3DStructure[] = [];
+  const meshes: Mesh[] = [];
+  root.traverse((object) => {
+    if (!(object instanceof Mesh)) return;
+    const definition = heartAnatomyForMeshName(object.name);
+    if (!definition || definition.sourceId !== "nihHraHeart3D") {
+      object.visible = false;
+      return;
+    }
+    object.geometry = object.geometry.clone();
+    if (!object.geometry.getAttribute("normal")) object.geometry.computeVertexNormals();
+    object.material = new MeshPhysicalMaterial({
+      color: definition.color,
+      emissive: definition.color,
+      emissiveIntensity: .06,
+      roughness: definition.kind === "valve" ? .58 : .48,
+      metalness: 0,
+      clearcoat: definition.kind === "valve" ? .08 : .03,
+      clearcoatRoughness: .6,
+      side: DoubleSide,
+    });
+    object.castShadow = true;
+    object.receiveShadow = true;
+    object.userData.catalogIndex = catalog.length;
+    object.userData.rawAnatomyName = definition.meshName;
+    object.userData.didacticColor = definition.color;
+    object.userData.heartDefinition = definition;
+    const bounds = new Box3().setFromObject(object);
+    const center = bounds.getCenter(new Vector3());
+    const size = bounds.getSize(new Vector3());
+    catalog.push({
+      id: definition.anatomicalId,
+      name: definition.name,
+      latin: definition.latin,
+      layer: "organs",
+      regionId: "thorax",
+      region: definition.region,
+      system: "Cardiovascular",
+      summary: definition.summary,
+      function: definition.function,
+      sourceId: definition.sourceId,
+      focus: [center.x, center.y, center.z],
+      focusDistance: definition.kind === "valve" || definition.kind === "papillary-muscle"
+        ? Math.max(1.55, Math.max(size.x, size.y, size.z) * 4.8)
+        : Math.max(.9, Math.max(size.x, size.y, size.z) * 3.5),
+      color: definition.color,
+      parts: [definition.kind],
+    });
+    meshes.push(object);
+  });
+
+  if (catalog.length !== heartInteriorMeshDefinitions.length) {
+    throw new Error(`O coração NIH carregou ${catalog.length} de ${heartInteriorMeshDefinitions.length} malhas anatômicas esperadas.`);
+  }
+  root.name = "nih-hra-heart-interior";
+  root.updateMatrixWorld(true);
+  return { root, catalog, meshes };
 }
 
 function applyOrganAppearance(mesh: Mesh, name: string, realistic: boolean, active: boolean, didacticColor: string) {
@@ -1616,6 +1844,8 @@ function translateCompoundAnatomyPhrase(value: string) {
   return translated;
 }
 
+// Exportada para os testes de nomenclatura; não é um componente React.
+// eslint-disable-next-line react-refresh/only-export-components
 export function translateAnatomyName(rawName: string, layer: DenseAnatomyLayer | "organs", index: number) {
   const rawSide = rawName.match(/(?:[._*\s)]([lr]))[.\s]*$/i)?.[1];
   const cleaned = rawName
@@ -1785,14 +2015,14 @@ function organViewLabel(mode: OrganViewMode) {
   if (mode === "context") return "Órgão em contexto";
   if (mode === "isolated") return "Exterior isolado";
   if (mode === "section") return "Corte geométrico ajustável";
-  return "Exploração translúcida";
+  return "Anatomia interna segmentada";
 }
 
 function organViewDescription(mode: OrganViewMode) {
   if (mode === "context") return "Mantém os demais órgãos para estudar relações espaciais.";
   if (mode === "isolated") return "Remove o entorno e permite rotação livre de toda a superfície da malha.";
   if (mode === "section") return "Recorta a malha pelo plano escolhido. Só revela volumes realmente presentes no arquivo 3D.";
-  return "Reduz a opacidade para comparar superfícies sobrepostas; não cria câmaras ausentes do modelo.";
+  return "No coração, troca a superfície pelo modelo NIH segmentado em câmaras, septo, valvas e músculos papilares reais.";
 }
 
 function organColor(semantic: string) {
