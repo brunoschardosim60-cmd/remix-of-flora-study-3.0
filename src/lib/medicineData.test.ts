@@ -90,7 +90,7 @@ describe("medicine content integrity", () => {
     expect(audit).toEqual([
       { camada: "surface", catalogadas: 54, anterior: 41, posterior: 32 },
       { camada: "muscular", catalogadas: 80, anterior: 47, posterior: 36 },
-      { camada: "skeletal", catalogadas: 123, anterior: 31, posterior: 108 },
+      { camada: "skeletal", catalogadas: 123, anterior: 43, posterior: 108 },
       { camada: "vascular", catalogadas: 68, anterior: 59, posterior: 68 },
       { camada: "nervous", catalogadas: 52, anterior: 29, posterior: 52 },
       { camada: "organs", catalogadas: 88, anterior: 83, posterior: 88 },
@@ -363,6 +363,11 @@ describe("medicine content integrity", () => {
       expect(structure, id).toBeDefined();
       expect(structure?.layer, id).toBe("skeletal");
       expect(anatomyPositionFor(structure!, "posterior"), `${id} posterior marker`).not.toBeNull();
+    }
+
+    for (let number = 1; number <= 12; number += 1) {
+      const rib = anatomyStructures.find((item) => item.id === `rib-${number}`);
+      expect(anatomyPositionFor(rib!, "anterior"), `rib-${number} anterior marker`).not.toBeNull();
     }
 
     for (const digit of [1, 2, 3, 4, 5]) {

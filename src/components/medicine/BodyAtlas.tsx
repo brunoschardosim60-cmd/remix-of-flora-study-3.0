@@ -45,7 +45,7 @@ const primaryAtlasStructureIds = new Set([
   "tibialis-anterior", "gastrocnemius", "soleus",
   // Esqueleto
   "frontal-bone", "parietal-bone", "temporal-bone", "occipital-bone", "mandible", "clavicle", "scapula", "sternum",
-  "humerus", "radius", "ulna", "hip-bone", "sacrum", "femur", "patella", "tibia", "fibula", "calcaneus",
+  "rib-1", "humerus", "radius", "ulna", "hip-bone", "sacrum", "femur", "patella", "tibia", "fibula", "calcaneus",
   // Vasos
   "aorta", "pulmonary-trunk", "pulmonary-arteries", "pulmonary-veins", "ascending-aorta", "aortic-arch", "thoracic-aorta",
   "abdominal-aorta", "common-carotid-artery", "subclavian-artery", "brachial-artery", "radial-artery", "ulnar-artery",

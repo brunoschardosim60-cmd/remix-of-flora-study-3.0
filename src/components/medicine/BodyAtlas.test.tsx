@@ -61,14 +61,24 @@ function dispatchPointer(target: Element, type: string, values: { pointerId: num
 }
 
 describe("BodyAtlas selection flow", () => {
-  it("prioritizes large anatomical structures before fine details", () => {
-    const anteriorSkeleton = anatomyStructures.filter((structure) => structure.layer === "skeletal" && structure.positions?.anterior);
-    const prioritized = atlasCanvasStructures(anteriorSkeleton, 28, false).map((structure) => structure.id);
+  it("prioritizes the main visible structures in every atlas layer", () => {
+    const expectedByLayer = {
+      surface: ["skin", "sternal-region", "abdominal-region"],
+      muscular: ["deltoid", "pectoralis-major", "rectus-abdominis"],
+      skeletal: ["rib-1", "humerus", "femur", "tibia"],
+      vascular: ["aorta", "superior-vena-cava", "femoral-artery"],
+      nervous: ["cerebrum", "vagus-nerve", "median-nerve"],
+      organs: ["heart", "lungs", "liver", "kidneys"],
+    } as const;
 
-    expect(prioritized).toContain("femur");
-    expect(prioritized).toContain("humerus");
-    expect(prioritized).toContain("tibia");
-    expect(prioritized).not.toContain("stapes");
+    for (const [layer, expectedIds] of Object.entries(expectedByLayer)) {
+      const visible = anatomyStructures.filter((structure) => structure.layer === layer && structure.positions?.anterior);
+      const prioritized = atlasCanvasStructures(visible, 18, false).map((structure) => structure.id);
+      for (const id of expectedIds) expect(prioritized, `${layer}: ${id}`).toContain(id);
+    }
+
+    const anteriorSkeleton = anatomyStructures.filter((structure) => structure.layer === "skeletal" && structure.positions?.anterior);
+    expect(atlasCanvasStructures(anteriorSkeleton, 18, false).map((structure) => structure.id)).not.toContain("stapes");
   });
 
   it("reveals fine structures progressively across the zoom range", () => {

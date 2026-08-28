@@ -264,12 +264,13 @@ const individualVertebraRows: CatalogRow[] = [
 
 const individualRibRows: CatalogRow[] = Array.from({ length: 12 }, (_, index) => {
   const number = index + 1;
+  const y = 21 + index * 1.35;
   return [
     `rib-${number}`,
     `${number}ª costela`,
-    "caixa torácica posterior",
+    "caixa torácica",
     "Protege as vísceras torácicas, oferece inserções musculares e participa da mecânica respiratória.",
-    posterior(58.5 + (index % 2) * 1.1, 21 + index * 1.35),
+    both(41.5 - (index % 2) * 1.1, y, 58.5 + (index % 2) * 1.1, y),
     `Costa ${number}`,
     [`costela ${number}`, `${number}ª costela`],
   ];
