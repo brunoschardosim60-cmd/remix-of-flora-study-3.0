@@ -445,7 +445,7 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
           {selectedInProfile ? <>
             <span className="med-eyebrow">{selectedInProfile.region}</span>
             <h3>{selectedInProfile.name}</h3>
-            {selectedInProfile.latin && levelRank >= 1 && <em>{selectedInProfile.latin}</em>}
+            {selectedInProfile.latin && levelRank >= 1 && <em lang="la" title="Termo anatômico em latim"><span className="med-latin-tag">Latim</span>{selectedInProfile.latin}</em>}
             <p>{selectedInProfile.summary}</p>
             <dl>
               <div><dt>Função</dt><dd>{selectedInProfile.function}</dd></div>
@@ -465,7 +465,7 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
             <div>
               <span className="med-eyebrow">{focusedLayer?.label} · vista {focused.view}</span>
               <h2 id="med-anatomy-focus-title">{focused.structure.name}</h2>
-              {focused.structure.latin && <em>{focused.structure.latin}</em>}
+              {focused.structure.latin && <em lang="la" title="Termo anatômico em latim"><span className="med-latin-tag">Latim</span>{focused.structure.latin}</em>}
             </div>
             <button className="med-anatomy-focus-close" onClick={() => setFocused(null)} aria-label="Fechar detalhe"><X /></button>
           </header>
