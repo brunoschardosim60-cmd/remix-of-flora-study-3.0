@@ -1081,7 +1081,7 @@
 .med-systems-workspace .med-system-list button { min-width: 0; padding: 10px; border-radius: 13px; }
 .med-systems-workspace .med-system-list button > div { min-width: 0; }
 .med-systems-workspace .med-system-list button > span { width: 36px; height: 36px; border-radius: 11px; font-size:12.5px; }
-.med-systems-workspace .med-system-list strong { font-size:13px; }
+.med-systems-workspace .med-system-list strong { display: block; overflow: hidden; font-size:13px; text-overflow: ellipsis; white-space: nowrap; }
 .med-systems-workspace .med-system-list small { overflow: hidden; font-size:11.5px; line-height: 1.4; text-overflow: ellipsis; white-space: nowrap; }
 
 .med-system-studio {
@@ -2920,11 +2920,12 @@
   .med-3d-organ-modes button,
   .med-layer-list > button { position: relative; min-height: 44px; }
 
-  .med-back::after,
-  .med-menu-button::after,
-  .med-atlas-controls button::after,
-  .med-anatomy-focus-close::after,
-  .med-3d-selection-nav button::after { position: absolute; top: 50%; left: 50%; width: 44px; height: 44px; transform: translate(-50%, -50%); content: ""; }
+  .med-back,
+  .med-menu-button,
+  .med-atlas-controls button,
+  .med-anatomy-focus-close { width: 44px; height: 44px; }
+
+  .med-atlas-controls button.wide { width: auto; }
 
   .med-anatomy-pin { width: 32px; height: 32px; }
 }
