@@ -385,7 +385,6 @@ export function Anatomy3DStudio({ level, initialStructureId }: Anatomy3DStudioPr
               <Canvas shadows dpr={[1, 1.8]} camera={{ position: [4.2, 1.4, 9.5], fov: 36, near: 0.1, far: 80 }} gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }} onCreated={({ gl }) => { gl.localClippingEnabled = true; }}>
                 <RendererAppearance realistic={realistic} />
                 <color attach="background" args={[realistic ? "#1b1a19" : "#edf3f0"]} />
-                <fog attach="fog" args={[realistic ? "#1b1a19" : "#edf3f0", 13, 24]} />
                 <ambientLight intensity={realistic ? .28 : 1.1} />
                 <hemisphereLight args={[realistic ? "#fff3e9" : "#f9fffc", realistic ? "#171918" : "#40554e", realistic ? .55 : 1.35]} />
                 <directionalLight position={[5, 9, 7]} intensity={realistic ? 2.15 : 2.3} color={realistic ? "#fff0e5" : "#ffffff"} castShadow shadow-mapSize={[2048, 2048]} shadow-bias={-.0002} />
