@@ -11,6 +11,39 @@ export interface AnchoredAnamnesisPayload {
   crisis?: { narrative: string; patientResponse: string };
 }
 
+export type AnchoredInteractionIntent = "question" | "greeting" | "rapport" | "clarification" | "closing";
+
+export interface AnchoredConversationTurn {
+  role: "student" | "patient";
+  text: string;
+}
+
+export interface AnchoredReplyContext {
+  studentMessage?: string;
+  conversation?: AnchoredConversationTurn[];
+  interactionIntent?: AnchoredInteractionIntent;
+  previouslyCoveredQuestionIds?: string[];
+}
+
+function normalize(value: string) {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9\s]/g, " ");
+}
+
+function chooseVariant(options: string[], seed: string) {
+  const score = [...seed].reduce((total, character) => total + character.charCodeAt(0), 0);
+  return options[score % options.length];
+}
+
+export function detectAnchoredInteractionIntent(message: string): AnchoredInteractionIntent {
+  const clean = normalize(message).trim();
+  if (/\b(pode repetir|repita|nao entendi|como assim|diga de novo|fale de novo)\b/.test(clean)) return "clarification";
+  if (/^(oi|ola|bom dia|boa tarde|boa noite)\b/.test(clean) && !/\b(o que|quando|onde|como|qual|quais|quem|quanto|tem|teve|sente|sentiu|usa|usou|esta|houve|pode|consegue)\b/.test(clean)) return "greeting";
+  if (/\b(tchau|ate logo|vamos encerrar|encerrar a conversa|obrigad[oa] por tudo)\b/.test(clean)) return "closing";
+  if (message.includes("?") || /^(quando|onde|como|qual|quais|quem|quanto|conte|descreva|explique|fale|tem|teve|sente|sentiu|usa|usou|esta|houve|ja teve|pode me contar|consegue)\b/.test(clean)) return "question";
+  if (/\b(entendo|compreendo|certo|tudo bem|sinto muito|obrigad[oa]|calma|vou ajudar|estou aqui|pode ficar tranquil[oa])\b/.test(clean)) return "rapport";
+  return "question";
+}
+
 export function sanitizeAnamnesisPayload(value: unknown): AnchoredAnamnesisPayload | null {
   if (!value || typeof value !== "object") return null;
   const raw = value as Record<string, unknown>;
@@ -73,20 +106,70 @@ VERDADE ÚNICA DO CASO:
 - Crise cadastrada: ${JSON.stringify(payload.crisis ?? null)}
 - Perguntas permitidas: ${JSON.stringify(payload.questions.map(({ id, text, answer, value, redFlag }) => ({ id, text, answer, value, redFlag })))}
 
-Retorne SOMENTE JSON: {"matchedQuestionIds":["id"]}.
-Use no máximo 2 IDs. Só inclua IDs existentes. Uma formulação livre, sinônimo ou pergunta equivalente pode corresponder. Se a fala for acolhimento, comentário, diagnóstico, conduta, pergunta fora do caso ou não tiver correspondência segura, retorne {"matchedQuestionIds":[]}.`;
+Retorne SOMENTE JSON: {"matchedQuestionIds":["id"],"interactionIntent":"question"}.
+Use no máximo 2 IDs. Só inclua IDs existentes. Uma formulação livre, sinônimo ou pergunta equivalente pode corresponder. Se a fala for acolhimento, comentário, diagnóstico, conduta, pergunta fora do caso ou não tiver correspondência segura, retorne IDs vazios e o interactionIntent correspondente.
+interactionIntent deve ser um destes valores: "question", "greeting", "rapport", "clarification" ou "closing". Cumprimentos, acolhimento e comentários não devem revelar novamente uma resposta clínica já dada.`;
 }
 
 export function composeServerAnchoredReply(
   payload: AnchoredAnamnesisPayload,
   matchedQuestionIds: string[],
   crisisActive: boolean,
+  context: AnchoredReplyContext = {},
 ) {
   const validIds = new Set(matchedQuestionIds);
   const answers = payload.questions.filter((question) => validIds.has(question.id)).map((question) => question.answer);
   const crisisReply = crisisActive ? payload.crisis?.patientResponse : undefined;
-  if (crisisReply && answers.length) return `${crisisReply} ${answers.join(" ")}`;
-  if (crisisReply) return crisisReply;
-  if (answers.length) return answers.join(" ");
-  return "Não sei dizer ou não me lembro de algo além do que já contei. Pode perguntar de outra forma?";
+  const conversation = context.conversation ?? [];
+  const patientTurns = conversation.filter((turn) => turn.role === "patient").map((turn) => turn.text);
+  const alreadySaid = (text: string) => patientTurns.some((turn) => normalize(turn).includes(normalize(text)));
+  const seed = `${context.studentMessage ?? ""}:${conversation.length}`;
+  const intent = context.interactionIntent ?? detectAnchoredInteractionIntent(context.studentMessage ?? "");
+
+  if (crisisReply && !alreadySaid(crisisReply)) return answers.length ? `${crisisReply} ${answers.join(" ")}` : crisisReply;
+
+  if (intent === "clarification") {
+    const lastPatientTurn = patientTurns.at(-1);
+    if (lastPatientTurn) {
+      const cleanLastTurn = lastPatientTurn.replace(/^(Claro\. Posso repetir:|Posso repetir:)\s*/i, "");
+      return `Claro. Posso repetir: ${cleanLastTurn}`;
+    }
+  }
+  if (intent === "greeting") return chooseVariant([
+    "Olá. Pode perguntar; vou responder o que eu souber.",
+    "Oi. Estou ouvindo, pode começar.",
+    "Olá. Pode conduzir a entrevista.",
+  ], seed);
+  if (intent === "rapport") return chooseVariant([
+    "Obrigado por me ouvir. Pode continuar.",
+    "Certo. Estou acompanhando; pode perguntar.",
+    "Tudo bem. Pode continuar a entrevista.",
+  ], seed);
+  if (intent === "closing") return chooseVariant([
+    "Certo, obrigado por me ouvir.",
+    "Tudo bem. Obrigado pela conversa.",
+    "Obrigado. Espero ter conseguido explicar.",
+  ], seed);
+
+  if (answers.length) {
+    const answerText = answers.join(" ");
+    const previouslyCovered = new Set(context.previouslyCoveredQuestionIds ?? []);
+    const repeated = (matchedQuestionIds.length > 0 && matchedQuestionIds.every((id) => previouslyCovered.has(id))) || answers.every(alreadySaid);
+    if (repeated) return chooseVariant([
+      `Posso repetir: ${answerText}`,
+      `É o mesmo que contei antes: ${answerText}`,
+      `Não tenho outro detalhe sobre isso. O que lembro é: ${answerText}`,
+    ], seed);
+    return chooseVariant([
+      answerText,
+      `Sobre isso: ${answerText}`,
+      `O que consigo contar é o seguinte: ${answerText}`,
+    ], seed);
+  }
+
+  return chooseVariant([
+    "Não sei responder isso com segurança. Pode perguntar de outra forma?",
+    "Não tenho certeza sobre isso. Se quiser, faça uma pergunta mais específica.",
+    "Não me lembro de algo sobre isso além do que já contei. Pode tentar de outro jeito?",
+  ], seed);
 }

@@ -12,7 +12,7 @@ import {
   type PatientVisualState,
 } from "@/lib/anamnesisSimulation";
 import {
-  composeAnchoredPatientReply, createAnamnesisPatientPayload, matchAnamnesisQuestionsLocally,
+  composeAnchoredPatientReply, createAnamnesisPatientPayload, detectAnamnesisInteractionIntent, matchAnamnesisQuestionsLocally,
   shouldTriggerAnamnesisCrisis, type AnamnesisConversationTurn, type AnamnesisPatientResponse,
 } from "@/lib/anamnesisPatient";
 import type { MedicineLearningEvent, MedicineLevel } from "@/lib/medicineData";
@@ -122,24 +122,37 @@ export function AnamnesisSimulator({ level, onLearningEvent }: { level: Medicine
     setMessages((current) => [...current, { id: `student-${Date.now()}`, role: "student", text }]);
 
     try {
-      const { data, error } = await supabase.functions.invoke("flora-engine", { body: { action: "anamnesis_patient", data: { case: createAnamnesisPatientPayload(clinicalCase), studentMessage: text, conversation: priorConversation, crisisActive: false } } });
+      const { data, error } = await supabase.functions.invoke("flora-engine", { body: { action: "anamnesis_patient", data: { case: createAnamnesisPatientPayload(clinicalCase), studentMessage: text, conversation: priorConversation, coveredQuestionIds: coveredIds, crisisActive } } });
       if (error || !data?.anchored || !Array.isArray(data?.coveredQuestionIds)) throw error ?? new Error("Resposta não ancorada.");
       const response = data as AnamnesisPatientResponse;
       const nextCovered = [...new Set([...coveredIds, ...response.coveredQuestionIds])];
+      const newlyCovered = response.coveredQuestionIds.filter((id) => !coveredIds.includes(id));
       const triggerNow = !crisisActive && shouldTriggerAnamnesisCrisis(clinicalCase, studentTurnCount + 1, nextCovered);
-      const reply = triggerNow ? composeAnchoredPatientReply(clinicalCase, response.coveredQuestionIds, true) : response.reply;
+      const reply = triggerNow ? composeAnchoredPatientReply(clinicalCase, response.coveredQuestionIds, true, {
+        studentMessage: text,
+        conversation: priorConversation,
+        interactionIntent: response.interactionIntent,
+        previouslyCoveredQuestionIds: coveredIds,
+      }) : response.reply;
       if (triggerNow) setCrisisActive(true);
       setCoveredIds(nextCovered);
-      setMessages((current) => [...current, { id: `patient-${Date.now()}`, role: "patient", text: reply, coveredQuestionIds: response.coveredQuestionIds }]);
-      if (autoVoice) void speak(reply, currentState === "distressed" ? "padrao" : "amiga");
+      setMessages((current) => [...current, { id: `patient-${Date.now()}`, role: "patient", text: reply, coveredQuestionIds: newlyCovered }]);
+      if (autoVoice) void speak(reply, triggerNow || currentState === "distressed" ? "padrao" : "amiga");
     } catch {
+      const interactionIntent = detectAnamnesisInteractionIntent(text);
       const localIds = matchAnamnesisQuestionsLocally(text, clinicalCase);
       const nextCovered = [...new Set([...coveredIds, ...localIds])];
+      const newlyCovered = localIds.filter((id) => !coveredIds.includes(id));
       const triggerNow = !crisisActive && shouldTriggerAnamnesisCrisis(clinicalCase, studentTurnCount + 1, nextCovered);
-      const reply = composeAnchoredPatientReply(clinicalCase, localIds, triggerNow);
+      const reply = composeAnchoredPatientReply(clinicalCase, localIds, triggerNow || crisisActive, {
+        studentMessage: text,
+        conversation: priorConversation,
+        interactionIntent,
+        previouslyCoveredQuestionIds: coveredIds,
+      });
       if (triggerNow) setCrisisActive(true);
       setCoveredIds(nextCovered);
-      setMessages((current) => [...current, { id: `patient-fallback-${Date.now()}`, role: "patient", text: reply, coveredQuestionIds: localIds, fallback: true }]);
+      setMessages((current) => [...current, { id: `patient-fallback-${Date.now()}`, role: "patient", text: reply, coveredQuestionIds: newlyCovered, fallback: true }]);
       setInteractionError("A IA ficou indisponível; a entrevista continuou no modo local seguro, usando apenas o caso cadastrado.");
       if (autoVoice) void speak(reply, "padrao");
     } finally { setIsResponding(false); }
@@ -183,7 +196,7 @@ export function AnamnesisSimulator({ level, onLearningEvent }: { level: Medicine
   };
 
   return <div className="med-page med-anamnesis-page">
-    <header className="med-page-heading med-anamnesis-heading"><div><span className="med-eyebrow">CONSULTA SIMULADA · {level.toLocaleUpperCase("pt-BR")}</span><h1>Anamnese imersiva</h1><p>Converse livremente. O paciente responde somente com os fatos clínicos validados deste caso.</p></div><div className="med-anamnesis-mode"><MessageCircle /><span><strong>Paciente dinâmico e ancorado</strong><small>IA para compreender a pergunta; dados estruturados para responder.</small></span></div></header>
+    <header className="med-page-heading med-anamnesis-heading"><div><span className="med-eyebrow">CONSULTA SIMULADA · {level.toLocaleUpperCase("pt-BR")}</span><h1>Anamnese imersiva</h1><p>Converse livremente. O paciente responde somente com os fatos clínicos validados deste caso.</p></div><div className="med-anamnesis-mode"><MessageCircle /><span><strong>Conversa natural e ancorada</strong><small>Entende acolhimento, seguimentos e reformulações sem inventar fatos.</small></span></div></header>
     <section className="med-anamnesis-safety"><ShieldCheck /><div><strong>Todos os pacientes, sinais vitais e acontecimentos são fictícios</strong><span>Treino educacional de entrevista e priorização. Não diagnostica pessoas reais, não orienta atendimento e não substitui supervisão clínica.</span></div></section>
     <section className="med-anamnesis-library"><header><div><span className="med-eyebrow">SITUAÇÕES IMERSIVAS</span><h2>Escolha quem você vai entrevistar</h2></div><strong>{anamnesisCases.length} casos completos</strong></header><div>{anamnesisCases.map((item) => <button key={item.id} className={item.id === clinicalCase.id ? "active" : ""} onClick={() => selectCase(item)}><span><UserRound /></span><div><small>{item.specialty} · {item.difficulty}</small><strong>{item.title}</strong><p>{item.patient.alias} · {item.patient.age}</p></div>{item.sensitive ? <b><AlertTriangle /> Sensível</b> : <ChevronRight />}</button>)}</div></section>
 

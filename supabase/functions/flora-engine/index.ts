@@ -15,7 +15,7 @@ import {
 import { FloraPersonality, ExplanationStyle, getSystemPromptWithPersona } from "../_shared/flora_persona.ts";
 import { checkQuota, logAIUsage, quotaExceededResponse } from "../_shared/usage.ts";
 import { cacheLookup as sharedCacheLookup, cacheStore as sharedCacheStore, buildCacheKey as sharedBuildCacheKey, normCacheStr as sharedNormCacheStr } from "../_shared/cache.ts";
-import { buildAnamnesisMatcherPrompt, composeServerAnchoredReply, sanitizeAnamnesisPayload } from "../_shared/anamnesis_patient.ts";
+import { buildAnamnesisMatcherPrompt, composeServerAnchoredReply, detectAnchoredInteractionIntent, sanitizeAnamnesisPayload, type AnchoredInteractionIntent } from "../_shared/anamnesis_patient.ts";
 
 // ─── Cache em memória do contexto do aluno ──────────────────────────────────
 // Várias ações da Flora (chat → quiz → flashcards → lesson) carregam o mesmo
@@ -333,16 +333,31 @@ serve(async (req) => {
       };
 
       const raw = await runTaskChain(opts, "lite", "flora:anamnesis_patient", { supabase, userId, actionType: "chat" });
-      const parsed = parseAIJSON(raw) as { matchedQuestionIds?: unknown };
+      const parsed = parseAIJSON(raw) as { matchedQuestionIds?: unknown; interactionIntent?: unknown };
       const allowedIds = new Set(clinicalCase.questions.map((question) => question.id));
-      const matchedQuestionIds = Array.isArray(parsed?.matchedQuestionIds)
+      const allowedIntents = new Set<AnchoredInteractionIntent>(["question", "greeting", "rapport", "clarification", "closing"]);
+      const localIntent = detectAnchoredInteractionIntent(studentMessage);
+      const modelIntent = allowedIntents.has(parsed?.interactionIntent as AnchoredInteractionIntent)
+        ? parsed.interactionIntent as AnchoredInteractionIntent
+        : localIntent;
+      const interactionIntent = localIntent === "question" ? modelIntent : localIntent;
+      const matchedQuestionIds = interactionIntent === "question" && Array.isArray(parsed?.matchedQuestionIds)
         ? [...new Set(parsed.matchedQuestionIds.map(String).filter((id: string) => allowedIds.has(id)))].slice(0, 2)
+        : [];
+      const previouslyCoveredQuestionIds = Array.isArray(data?.coveredQuestionIds)
+        ? [...new Set(data.coveredQuestionIds.map(String).filter((id: string) => allowedIds.has(id)))].slice(0, 30)
         : [];
 
       return jsonResponse({
-        reply: composeServerAnchoredReply(clinicalCase, matchedQuestionIds, crisisActive),
+        reply: composeServerAnchoredReply(clinicalCase, matchedQuestionIds, crisisActive, {
+          studentMessage,
+          conversation: recentConversation,
+          interactionIntent,
+          previouslyCoveredQuestionIds,
+        }),
         coveredQuestionIds: matchedQuestionIds,
         anchored: true,
+        interactionIntent,
       });
     }
 
