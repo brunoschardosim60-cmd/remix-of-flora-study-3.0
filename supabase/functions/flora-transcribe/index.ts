@@ -8,8 +8,11 @@ const corsHeaders = {
 
 const MAX_BASE64_BYTES = 10 * 1024 * 1024;
 
+const GEMINI_AUDIO_MODEL = "gemini-3.6-flash";
+const OPENAI_AUDIO_MODEL = "gpt-4o-mini-transcribe";
+
 async function callGeminiAudio(audioBase64: string, mimeType: string, apiKey: string): Promise<string> {
-  const model = "gemini-2.0-flash";
+  const model = GEMINI_AUDIO_MODEL;
   const r = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
     {
@@ -31,6 +34,33 @@ async function callGeminiAudio(audioBase64: string, mimeType: string, apiKey: st
   }
   const d = await r.json();
   return d?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+}
+
+function audioExtension(mimeType: string) {
+  if (mimeType.includes("mp4")) return "m4a";
+  if (mimeType.includes("ogg")) return "ogg";
+  if (mimeType.includes("wav")) return "wav";
+  return "webm";
+}
+
+async function callOpenAIAudio(audioBase64: string, mimeType: string, apiKey: string): Promise<string> {
+  const bytes = Uint8Array.from(atob(audioBase64), (character) => character.charCodeAt(0));
+  const form = new FormData();
+  form.append("file", new Blob([bytes], { type: mimeType }), `pergunta.${audioExtension(mimeType)}`);
+  form.append("model", OPENAI_AUDIO_MODEL);
+  form.append("language", "pt");
+  form.append("response_format", "json");
+  const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}` },
+    body: form,
+  });
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(`OpenAI ${response.status}: ${detail.slice(0, 200)}`);
+  }
+  const data = await response.json();
+  return typeof data?.text === "string" ? data.text : "";
 }
 
 serve(async (req) => {
@@ -66,13 +96,28 @@ serve(async (req) => {
       });
     }
 
-    const apiKey = Deno.env.get("GEMINI_API_KEY");
-    if (!apiKey) throw new Error("GEMINI_API_KEY missing");
+    const geminiKey = Deno.env.get("GEMINI_API_KEY");
+    const openaiKey = Deno.env.get("OPENAI_API_KEY");
+    if (!geminiKey && !openaiKey) throw new Error("Nenhum provedor de transcrição configurado");
 
-    const text = await callGeminiAudio(audio, mimeType, apiKey);
+    let text = "";
+    let model = GEMINI_AUDIO_MODEL;
+    try {
+      if (!geminiKey) throw new Error("GEMINI_API_KEY missing");
+      text = await callGeminiAudio(audio, mimeType, geminiKey);
+      if (!text.trim()) throw new Error("Transcrição vazia do Gemini");
+    } catch (geminiError) {
+      console.warn("Gemini transcription unavailable, using OpenAI fallback", geminiError);
+      if (!openaiKey) throw geminiError;
+      text = await callOpenAIAudio(audio, mimeType, openaiKey);
+      model = OPENAI_AUDIO_MODEL;
+    }
+
+    text = text.trim();
+    if (!text) throw new Error("Não foi possível reconhecer fala no áudio");
 
     await supabase.from("ai_usage_logs").insert({
-      user_id: userId, action_type: "chat_audio", model: "gemini-2.0-flash", success: !!text,
+      user_id: userId, action_type: "chat_audio", model, success: true,
     });
 
     return new Response(JSON.stringify({ text }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
