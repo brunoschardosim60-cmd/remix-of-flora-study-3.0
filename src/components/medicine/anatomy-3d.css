@@ -1,6 +1,7 @@
 .med-3d-studio{--med3d-ink:#183f35;--med3d-muted:#687d76;--med3d-line:rgba(43,82,70,.14);position:relative;min-height:calc(100vh - 70px);padding:28px 30px 38px;background:radial-gradient(circle at 75% 5%,rgba(134,181,165,.15),transparent 28%),#f7f8f4;color:var(--med3d-ink)}
 .med-3d-route-loading{display:grid;min-height:calc(100vh - 70px);place-items:center;align-content:center;gap:9px;background:#f4f7f4;color:#4c776a}.med-3d-route-loading svg{width:34px;animation:med3d-spin 1.8s linear infinite}.med-3d-route-loading strong{font-family:Georgia,serif;font-size:18px;font-weight:500}.med-3d-route-loading span{color:#82918c;font-size:12.5px}
 .med-3d-studio:fullscreen{overflow:auto;padding:24px;background:#f7f8f4}
+.med-3d-studio.is-fullscreen-fallback{position:fixed;z-index:10000;inset:0;overflow:auto;min-height:100dvh;padding:24px;background:#f7f8f4}
 .med-3d-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;max-width:1540px;margin:0 auto 22px}
 .med-3d-heading .med-eyebrow{display:flex;align-items:center;gap:7px;color:#4d8373;font-size:12.5px;font-weight:900;letter-spacing:.13em;text-transform:uppercase}.med-3d-heading .med-eyebrow svg{width:14px}
 .med-3d-heading h1{margin:9px 0 6px;color:#173d34;font-family:Georgia,"Times New Roman",serif;font-size:43px;font-weight:500;letter-spacing:-.04em;line-height:1}.med-3d-heading h1 em{color:#4d8373;font-weight:400}
