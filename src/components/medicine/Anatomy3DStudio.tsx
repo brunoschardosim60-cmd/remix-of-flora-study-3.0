@@ -52,11 +52,14 @@ import { medicalSources, type MedicineLevel } from "@/lib/medicineData";
 import { organRealismProfile, organTissueVertexColors } from "@/lib/organRealism";
 import {
   anatomy3DAssets,
+  detailedOrganKindsForSelection,
   heartAnatomyForId,
   heartAnatomyForMeshName,
   heartInteriorMeshDefinitions,
   heartRepresentationForAvailability,
   isHeartInteriorStructureId,
+  hraDetailedOrganAssets,
+  type HraDetailedOrganKind,
   type HeartMeshDefinition,
 } from "@/lib/anatomy3DAssetRegistry";
 import {
@@ -78,7 +81,8 @@ class ThreeModelErrorBoundary extends Component<{ children: ReactNode; onError: 
     return { failed: true };
   }
 
-  componentDidCatch() {
+  componentDidCatch(error: Error) {
+    console.error("Falha ao carregar modelo anatômico 3D detalhado.", error);
     this.props.onError();
   }
 
@@ -204,10 +208,39 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
     modelSelection?.id === selected.id
     || levelVisibleStructures.some((item) => item.id === selected.id || normalize(item.name) === normalize(selected.name))
   ));
+  const normalizedSelectedName = normalize(selected?.name ?? "");
+  const detailedCameraKindsByName: HraDetailedOrganKind[] = normalizedSelectedName === "encefalo" || normalizedSelectedName === "cerebro"
+    ? ["brain"]
+    : normalizedSelectedName === "pulmoes"
+      ? ["lungs"]
+      : normalizedSelectedName === "figado"
+        ? ["liver"]
+        : normalizedSelectedName === "rins"
+          ? ["kidney-left", "kidney-right"]
+          : [];
+  const directDetailedCameraKinds = selected && !selected.id.startsWith("model:hra:")
+    ? detailedOrganKindsForSelection(selected.id)
+    : [];
+  const detailedCameraKinds = organView !== "context" && selected
+    ? (directDetailedCameraKinds.length ? directDetailedCameraKinds : detailedCameraKindsByName)
+    : [];
+  const detailedCameraDefinitions = detailedCameraKinds.map((kind) => hraDetailedOrganAssets[kind]);
+  const detailedCameraFocus: [number, number, number] | null = detailedCameraDefinitions.length
+    ? [
+      detailedCameraDefinitions.reduce((sum, item) => sum + item.target[0], 0) / detailedCameraDefinitions.length,
+      detailedCameraDefinitions.reduce((sum, item) => sum + item.target[1], 0) / detailedCameraDefinitions.length,
+      detailedCameraDefinitions.reduce((sum, item) => sum + item.target[2], 0) / detailedCameraDefinitions.length,
+    ]
+    : null;
+  const detailedCameraDistance = detailedCameraDefinitions.length
+    ? detailedCameraDefinitions.length > 1
+      ? 3.15
+      : Math.max(2.45, Math.max(...detailedCameraDefinitions.map((item) => item.size)) * 2.75 + .42)
+    : null;
   const baseCameraFocus = focusSelected && selected && selectedIsVisible ? selected.focus : regionMeta.focus;
   const baseCameraDistance = focusSelected && selected && selectedIsVisible ? selected.focusDistance : regionMeta.distance;
-  const cameraFocus = baseCameraFocus;
-  const cameraDistance = baseCameraDistance;
+  const cameraFocus = detailedCameraFocus ?? baseCameraFocus;
+  const cameraDistance = detailedCameraDistance ?? baseCameraDistance;
   const realistic = appearance === "realistic";
   const regionAvailability = useMemo(() => Object.fromEntries(anatomy3DRegions.map((item) => {
     if (item.id === "whole" || system === "all") return [item.id, true];
@@ -506,7 +539,7 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
                 </Environment>}
                 <group>
                   {(system === "all" || system === "surface") && <RealBodyPartsModel system={system} selectedId={selected?.id ?? null} skinOpacity={skinOpacity} skinTone={STANDARD_SKIN_TONE} organView={organView} sectionAxis={sectionAxis} sectionOffset={sectionOffset} onSelect={selectStructure} />}
-                  {(system === "all" || system === "muscular" || system === "skeletal") && <RealMusculoskeletalModel system={system} selectedId={selected?.id ?? null} onSelect={selectStructure} />}
+                  {(system === "all" || system === "muscular" || system === "skeletal") && <RealMusculoskeletalModel system={system} selectedId={selected?.id ?? null} onSelect={selectStructure} onCatalogReady={registerDetailedCatalog} />}
                   {(system === "all" || system === "vascular") && <DenseAnatomySystemModel integrated={system === "all"} path={DETAILED_CIRCULATORY_PATH} layer="vascular" selectedId={selected?.id ?? null} onSelect={selectStructure} onCatalogReady={registerDetailedCatalog} />}
                   {(system === "all" || system === "nervous") && <DenseAnatomySystemModel integrated={system === "all"} path={DETAILED_NERVOUS_PATH} layer="nervous" selectedId={selected?.id ?? null} onSelect={selectStructure} onCatalogReady={registerDetailedCatalog} />}
                   {(system === "all" || system === "organs") && <DetailedOrgansModel integrated={system === "all"} realistic={realistic} bodyProfile={bodyProfile} selectedId={selected?.id ?? null} organView={organView} sectionAxis={sectionAxis} sectionOffset={sectionOffset} onSelect={selectStructure} onCatalogReady={registerDetailedCatalog} />}
@@ -720,7 +753,12 @@ function prepareBodyPartsRoot(source: Object3D, kind: "skin" | "organs") {
   return clone;
 }
 
-function RealMusculoskeletalModel({ system, selectedId, onSelect }: { system: Anatomy3DSystemId; selectedId: string | null; onSelect: (structure: Anatomy3DStructure) => void }) {
+function RealMusculoskeletalModel({ system, selectedId, onSelect, onCatalogReady }: {
+  system: Anatomy3DSystemId;
+  selectedId: string | null;
+  onSelect: (structure: Anatomy3DStructure) => void;
+  onCatalogReady: (system: Anatomy3DSystemId, catalog: Anatomy3DStructure[]) => void;
+}) {
   const gltf = useGLTF(REAL_MODEL_PATH, "/medicine/models/draco/");
   const model = useMemo(() => {
     const clone = gltf.scene.clone(true);
@@ -741,6 +779,26 @@ function RealMusculoskeletalModel({ system, selectedId, onSelect }: { system: An
     return clone;
   }, [gltf.scene]);
 
+  const catalogs = useMemo(() => {
+    const skeletal: Anatomy3DStructure[] = [];
+    const muscular: Anatomy3DStructure[] = [];
+    model.traverse((object) => {
+      if (!(object instanceof Mesh)) return;
+      const structure = catalogStructureFromRealMesh(object);
+      if (structure.layer === "skeletal") skeletal.push(structure);
+      else muscular.push(structure);
+    });
+    return {
+      skeletal: annotateBilateralStructures(skeletal),
+      muscular: annotateBilateralStructures(muscular),
+    };
+  }, [model]);
+
+  useEffect(() => {
+    onCatalogReady("skeletal", catalogs.skeletal);
+    onCatalogReady("muscular", catalogs.muscular);
+  }, [catalogs, onCatalogReady]);
+
   useEffect(() => {
     model.traverse((object) => {
       if (!(object instanceof Mesh)) return;
@@ -759,27 +817,7 @@ function RealMusculoskeletalModel({ system, selectedId, onSelect }: { system: An
   }, [model, selectedId, system]);
 
   const selectRealMesh = useCallback((mesh: Mesh) => {
-    const type = mesh.userData.type === "bone" ? "bone" : "muscle";
-    const bounds = new Box3().setFromObject(mesh);
-    const center = bounds.getCenter(new Vector3());
-    const size = bounds.getSize(new Vector3());
-    const detailName = String(mesh.userData.nameDetail || mesh.userData.name || mesh.name || (type === "bone" ? "Estrutura óssea" : "Estrutura muscular"));
-    const description = cleanModelDescription(String(mesh.userData.description || ""), detailName, type);
-    onSelect({
-      id: `model:${mesh.uuid}`,
-      name: detailName,
-      layer: type === "bone" ? "skeletal" : "muscular",
-      regionId: regionFromPoint(center),
-      region: "Malha anatômica detalhada",
-      system: type === "bone" ? "Esquelético" : "Muscular",
-      summary: description,
-      function: type === "bone" ? "Integra o esqueleto, oferecendo suporte, proteção ou alavanca conforme sua posição e articulações." : "Contribui para movimento, estabilização ou controle postural conforme suas origens, inserções e inervação.",
-      sourceId: "zAnatomy3D",
-      focus: [center.x, center.y, center.z],
-      focusDistance: Math.min(4.4, Math.max(1.15, Math.max(size.x, size.y, size.z) * 3.2)),
-      color: type === "bone" ? "#d8c9aa" : "#b94d4f",
-      parts: [],
-    });
+    onSelect(catalogStructureFromRealMesh(mesh));
   }, [onSelect]);
 
   const selectIntegratedMesh = useCallback((event: ThreeEvent<MouseEvent>) => {
@@ -867,6 +905,7 @@ function DetailedOrgansModel({ integrated = false, realistic, bodyProfile, selec
   onCatalogReady: (system: Anatomy3DSystemId, catalog: Anatomy3DStructure[]) => void;
 }) {
   const [heartDetailFailed, setHeartDetailFailed] = useState(false);
+  const [failedHraKinds, setFailedHraKinds] = useState<HraDetailedOrganKind[]>([]);
   const gltf = useGLTF(DETAILED_ORGANS_PATH);
   const heartGltf = useGLTF(SUPPLEMENTAL_ORGAN_PATHS.heart, "/medicine/models/draco/");
   const brainGltf = useGLTF(SUPPLEMENTAL_ORGAN_PATHS.brain, "/medicine/models/draco/");
@@ -897,6 +936,19 @@ function DetailedOrgansModel({ integrated = false, realistic, bodyProfile, selec
   const wantsDetailedHeart = selectedHeartResolution?.journey.organId === "heart"
     && (organView === "transparent" || organView === "section" || isHeartInteriorStructureId(selectedId));
   const showDetailedHeart = heartRepresentationForAvailability(wantsDetailedHeart, !heartDetailFailed) === "interior";
+  const detailedHraKinds = useMemo(() => {
+    const direct = detailedOrganKindsForSelection(selectedId);
+    if (direct.length) return direct;
+    const selectedIndex = prepared.catalog.findIndex((item) => item.id === selectedId);
+    const rawName = selectedIndex >= 0 ? String(prepared.meshes[selectedIndex]?.userData.rawAnatomyName ?? "") : "";
+    if (guidedOrganMeshMatches("organ-brain", rawName)) return ["brain"] as HraDetailedOrganKind[];
+    if (guidedOrganMeshMatches("organ-lungs", rawName)) return ["lungs"] as HraDetailedOrganKind[];
+    if (guidedOrganMeshMatches("organ-liver", rawName)) return ["liver"] as HraDetailedOrganKind[];
+    if (guidedOrganMeshMatches("organ-kidneys", rawName)) return ["kidney-left", "kidney-right"] as HraDetailedOrganKind[];
+    return [];
+  }, [prepared.catalog, prepared.meshes, selectedId]);
+  const availableHraKinds = useMemo(() => detailedHraKinds.filter((kind) => !failedHraKinds.includes(kind)), [detailedHraKinds, failedHraKinds]);
+  const showDetailedHra = organView !== "context" && availableHraKinds.length > 0;
 
   const selectedIndexes = useMemo(() => {
     const exact = prepared.catalog.findIndex((item) => item.id === selectedId);
@@ -926,7 +978,7 @@ function DetailedOrgansModel({ integrated = false, realistic, bodyProfile, selec
       const rawName = String(mesh.userData.rawAnatomyName ?? mesh.name);
       const visibleInOverview = !integrated || active || isIntegratedOverviewOrgan(rawName);
       const belongsToProfile = raw3DNameMatchesBodyProfile(rawName, bodyProfile);
-      mesh.visible = belongsToProfile && (!isolates || active) && visibleInOverview;
+      mesh.visible = !showDetailedHra && belongsToProfile && (!isolates || active) && visibleInOverview;
       const material = mesh.material as MeshPhysicalMaterial;
       applyOrganAppearance(mesh, rawName, realistic, active, String(mesh.userData.didacticColor ?? "#a86c79"));
       material.opacity = organView === "transparent" && active ? .34 : integrated ? .8 : 1;
@@ -947,7 +999,7 @@ function DetailedOrgansModel({ integrated = false, realistic, bodyProfile, selec
       // substituem a antiga geometria simplificada mesmo no modo contextual.
       // O arquivo principal de vísceras não contém uma malha cardíaca utilizável;
       // por isso o coração suplementar também compõe a visão geral entre os pulmões.
-      supplement.root.visible = !showDetailedHeart && (active || isHeartOverview || (integrated && supplement === selectedSupplement));
+      supplement.root.visible = !showDetailedHeart && !showDetailedHra && (active || isHeartOverview || (integrated && supplement === selectedSupplement));
       supplement.root.traverse((object) => {
         if (!(object instanceof Mesh)) return;
         const material = object.material as MeshPhysicalMaterial;
@@ -964,7 +1016,7 @@ function DetailedOrgansModel({ integrated = false, realistic, bodyProfile, selec
         material.needsUpdate = true;
       });
     });
-  }, [bodyProfile, integrated, organView, prepared.meshes, realistic, sectionPlane, selectedId, selectedIndexes, selectedSupplement, showDetailedHeart, supplements]);
+  }, [bodyProfile, integrated, organView, prepared.meshes, realistic, sectionPlane, selectedId, selectedIndexes, selectedSupplement, showDetailedHeart, showDetailedHra, supplements]);
 
   const selectOrgan = useCallback((mesh: Mesh) => {
     const structure = prepared.catalog[Number(mesh.userData.catalogIndex)];
@@ -1002,8 +1054,63 @@ function DetailedOrgansModel({ integrated = false, realistic, bodyProfile, selec
         onCatalogReady={onCatalogReady}
       />
     </ThreeModelErrorBoundary>}
+    {showDetailedHra && availableHraKinds.map((kind) => <ThreeModelErrorBoundary key={kind} onError={() => setFailedHraKinds((current) => current.includes(kind) ? current : [...current, kind])}>
+      <DetailedHraOrganModel
+        kind={kind}
+        realistic={realistic}
+        selectedId={selectedId}
+        organView={organView}
+        sectionAxis={sectionAxis}
+        sectionOffset={sectionOffset}
+        onSelect={onSelect}
+        onCatalogReady={onCatalogReady}
+      />
+    </ThreeModelErrorBoundary>)}
     <NativeMeshPicker active={!integrated && !selectedSupplement} root={prepared.root} onPick={selectOrgan} />
   </group>;
+}
+
+function catalogStructureFromRealMesh(mesh: Mesh): Anatomy3DStructure {
+  const type = mesh.userData.type === "bone" ? "bone" : "muscle";
+  const bounds = new Box3().setFromObject(mesh);
+  const center = bounds.getCenter(new Vector3());
+  const size = bounds.getSize(new Vector3());
+  const rawDetailName = String(mesh.userData.nameDetail || mesh.userData.name || mesh.name || (type === "bone" ? "Estrutura óssea" : "Estrutura muscular"));
+  const detailName = translateAnatomyName(rawDetailName, "organs", 0);
+  const description = cleanModelDescription(String(mesh.userData.description || ""), detailName, type);
+  return {
+    id: `model:${mesh.uuid}`,
+    name: detailName,
+    layer: type === "bone" ? "skeletal" : "muscular",
+    regionId: regionFromPoint(center),
+    region: "Malha anatômica detalhada",
+    system: type === "bone" ? "Esquelético" : "Muscular",
+    summary: description,
+    function: type === "bone" ? "Integra o esqueleto, oferecendo suporte, proteção ou alavanca conforme sua posição e articulações." : "Contribui para movimento, estabilização ou controle postural conforme suas origens, inserções e inervação.",
+    sourceId: "zAnatomy3D",
+    focus: [center.x, center.y, center.z],
+    focusDistance: Math.min(4.4, Math.max(1.15, Math.max(size.x, size.y, size.z) * 3.2)),
+    color: type === "bone" ? "#d8c9aa" : "#b94d4f",
+    parts: [String(mesh.name || detailName)],
+  };
+}
+
+function annotateBilateralStructures(catalog: Anatomy3DStructure[]) {
+  const groups = new Map<string, Anatomy3DStructure[]>();
+  catalog.forEach((item) => {
+    const key = normalize(item.name);
+    groups.set(key, [...(groups.get(key) ?? []), item]);
+  });
+  return catalog.map((item) => {
+    if (/\b(esquerd|direit)[oa]s?\b/i.test(item.name)) return item;
+    const pair = groups.get(normalize(item.name));
+    if (pair?.length !== 2) return item;
+    const [first, second] = pair;
+    if (Math.abs(first.focus[0]) < .02 || Math.abs(second.focus[0]) < .02 || first.focus[0] * second.focus[0] >= 0) return item;
+    const feminine = /^(patela|escápula|clavícula|costela|falange|tíbia|fíbula|ulna|pelve|mandíbula|maxila|bainha|articulação)\b/i.test(item.name);
+    const side = item.focus[0] < 0 ? (feminine ? "esquerda" : "esquerdo") : (feminine ? "direita" : "direito");
+    return { ...item, name: `${item.name} ${side}` };
+  });
 }
 
 function DetailedHeartModel({ realistic, selectedId, organView, sectionAxis, sectionOffset, onSelect, onCatalogReady }: {
@@ -1068,6 +1175,69 @@ function DetailedHeartModel({ realistic, selectedId, organView, sectionAxis, sec
   }, [onSelect, prepared.catalog]);
 
   return <primitive object={prepared.root} onClick={selectHeartStructure} />;
+}
+
+function DetailedHraOrganModel({ kind, realistic, selectedId, organView, sectionAxis, sectionOffset, onSelect, onCatalogReady }: {
+  kind: HraDetailedOrganKind;
+  realistic: boolean;
+  selectedId: string | null;
+  organView: OrganViewMode;
+  sectionAxis: SectionAxis;
+  sectionOffset: number;
+  onSelect: (structure: Anatomy3DStructure) => void;
+  onCatalogReady: (system: Anatomy3DSystemId, catalog: Anatomy3DStructure[]) => void;
+}) {
+  const definition = hraDetailedOrganAssets[kind];
+  const gltf = useGLTF(definition.asset.path);
+  const prepared = useMemo(() => prepareHraDetailedOrgan(gltf.scene, kind), [gltf.scene, kind]);
+
+  useEffect(() => {
+    onCatalogReady("organs", prepared.catalog);
+  }, [onCatalogReady, prepared.catalog]);
+
+  const sectionPlane = useMemo(() => {
+    if (organView !== "section") return null;
+    const bounds = new Box3().setFromObject(prepared.root);
+    const center = bounds.getCenter(new Vector3());
+    const size = bounds.getSize(new Vector3());
+    const normal = sectionAxis === "x" ? new Vector3(1, 0, 0) : sectionAxis === "y" ? new Vector3(0, 1, 0) : new Vector3(0, 0, 1);
+    const axisSize = sectionAxis === "x" ? size.x : sectionAxis === "y" ? size.y : size.z;
+    return new Plane().setFromNormalAndCoplanarPoint(normal, center.clone().addScaledVector(normal, sectionOffset * axisSize * .5));
+  }, [organView, prepared.root, sectionAxis, sectionOffset]);
+
+  useEffect(() => {
+    const selectingPart = Boolean(selectedId?.startsWith(`model:hra:${kind}:`));
+    prepared.meshes.forEach((mesh) => {
+      const structure = prepared.catalog[Number(mesh.userData.catalogIndex)];
+      const active = structure?.id === selectedId;
+      const material = mesh.material as MeshPhysicalMaterial;
+      mesh.visible = true;
+      applyOrganAppearance(mesh, structure?.name ?? definition.name, realistic, active, String(mesh.userData.didacticColor ?? definition.color));
+      material.opacity = organView === "transparent"
+        ? selectingPart ? active ? 1 : .1 : .42
+        : selectingPart ? active ? 1 : .2 : 1;
+      material.transparent = material.opacity < 1;
+      material.depthWrite = material.opacity > .7;
+      material.clippingPlanes = organView === "section" && sectionPlane ? [sectionPlane] : [];
+      material.clipShadows = material.clippingPlanes.length > 0;
+      if (active) {
+        material.color.set("#ffd16a");
+        material.emissive.set("#ffad3d");
+        material.emissiveIntensity = .52;
+      }
+      material.needsUpdate = true;
+    });
+  }, [definition.color, definition.name, kind, organView, prepared.catalog, prepared.meshes, realistic, sectionPlane, selectedId]);
+
+  const selectStructure = useCallback((mesh: Mesh) => {
+    const structure = prepared.catalog[Number(mesh.userData.catalogIndex)];
+    if (structure) onSelect(structure);
+  }, [onSelect, prepared.catalog]);
+
+  return <group>
+    <primitive object={prepared.root} />
+    <NativeMeshPicker active root={prepared.root} onPick={selectStructure} />
+  </group>;
 }
 
 function DenseSystemPicker({ active, mesh, onPick }: { active: boolean; mesh: Mesh; onPick: (index: number) => void }) {
@@ -1319,6 +1489,102 @@ function prepareSupplementalOrgan(source: Object3D, kind: keyof typeof SUPPLEMEN
     });
   }
   return { root, structure, catalog, meshes };
+}
+
+function prepareHraDetailedOrgan(source: Object3D, kind: HraDetailedOrganKind) {
+  const definition = hraDetailedOrganAssets[kind];
+  const root = source.clone(true);
+  root.updateMatrixWorld(true);
+  const sourceBounds = new Box3().setFromObject(root);
+  const sourceCenter = sourceBounds.getCenter(new Vector3());
+  const sourceSize = sourceBounds.getSize(new Vector3());
+  const scale = definition.size / Math.max(sourceSize.x, sourceSize.y, sourceSize.z, .001);
+  root.scale.setScalar(scale);
+  root.position.set(
+    definition.target[0] - sourceCenter.x * scale,
+    definition.target[1] - sourceCenter.y * scale,
+    definition.target[2] - sourceCenter.z * scale,
+  );
+  root.updateMatrixWorld(true);
+
+  const catalog: Anatomy3DStructure[] = [];
+  const meshes: Mesh[] = [];
+  root.traverse((object) => {
+    if (!(object instanceof Mesh)) return;
+    const rawName = String(object.name || `estrutura-${catalog.length + 1}`);
+    const cleanName = rawName.replace(/^VH_[FM]_/, "").replace(/^Allen_/, "");
+    const color = hraOrganMeshColor(kind, cleanName, definition.color);
+    object.geometry = object.geometry.clone();
+    if (!object.geometry.getAttribute("normal")) object.geometry.computeVertexNormals();
+    object.material = new MeshPhysicalMaterial({
+      color,
+      emissive: color,
+      emissiveIntensity: .035,
+      roughness: kind === "lungs" ? .64 : kind.startsWith("kidney") ? .5 : .56,
+      metalness: 0,
+      clearcoat: realisticClearcoatForOrgan(kind),
+      clearcoatRoughness: .72,
+      side: DoubleSide,
+    });
+    object.castShadow = true;
+    object.receiveShadow = true;
+    object.userData.catalogIndex = catalog.length;
+    object.userData.rawAnatomyName = rawName;
+    object.userData.didacticColor = color;
+    const bounds = new Box3().setFromObject(object);
+    const center = bounds.getCenter(new Vector3());
+    const size = bounds.getSize(new Vector3());
+    const name = translateAnatomyName(cleanName, kind === "brain" ? "nervous" : "organs", catalog.length);
+    catalog.push({
+      id: `model:hra:${kind}:${stableMeshSlug(rawName)}`,
+      name,
+      latin: undefined,
+      layer: "organs",
+      regionId: definition.regionId,
+      region: definition.region,
+      system: definition.system,
+      summary: `${name} segmentado como malha anatômica independente no modelo de referência HRA.`,
+      function: `Permite estudar a posição e as relações tridimensionais de ${name.toLocaleLowerCase("pt-BR")} dentro de ${definition.name.toLocaleLowerCase("pt-BR")}.`,
+      sourceId: definition.asset.sourceId,
+      focus: [center.x, center.y, center.z],
+      focusDistance: Math.max(.72, Math.max(size.x, size.y, size.z) * 4.1),
+      color,
+      parts: [rawName],
+    });
+    meshes.push(object);
+  });
+
+  if (catalog.length !== definition.asset.meshCount) {
+    throw new Error(`${definition.name} carregou ${catalog.length} de ${definition.asset.meshCount} malhas esperadas.`);
+  }
+  root.name = `nih-hra-${kind}-detalhado`;
+  return { root, catalog, meshes };
+}
+
+function stableMeshSlug(value: string) {
+  return value.toLocaleLowerCase("en-US").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
+function realisticClearcoatForOrgan(kind: HraDetailedOrganKind) {
+  return kind === "liver" || kind.startsWith("kidney") ? .08 : .025;
+}
+
+function hraOrganMeshColor(kind: HraDetailedOrganKind, rawName: string, fallback: string) {
+  const name = normalize(rawName);
+  if (kind === "brain") {
+    if (/ventricle|aqueduct|canal/.test(name)) return "#76a6b4";
+    if (/white matter|corpus callosum|fornix|tract|radiation/.test(name)) return "#e4d6bd";
+    if (/cerebell/.test(name)) return "#b97678";
+    if (/brainstem|pons|medulla|midbrain|tegmentum/.test(name)) return "#b98966";
+    return /cortex|gyrus|lobule|pole/.test(name) ? "#c9878e" : "#b27682";
+  }
+  if (kind === "lungs") return /bronch|cartilage/.test(name) ? "#d7bea0" : /hilum/.test(name) ? "#9b6f69" : "#9f6670";
+  if (kind === "liver") return /ligament/.test(name) ? "#d2b59c" : /impression|porta/.test(name) ? "#9c6253" : "#7f4037";
+  if (/pyramid/.test(name)) return "#9d5365";
+  if (/cortex/.test(name)) return "#b96b75";
+  if (/column/.test(name)) return "#c78385";
+  if (/capsule/.test(name)) return "#d1a0a4";
+  return fallback;
 }
 
 function prepareDetailedHeart(source: Object3D) {
@@ -1618,10 +1884,27 @@ const anatomyNameDictionary: Record<string, string> = {
   "renal pelvis": "Pelve renal",
   "meso appendix": "Mesoapêndice",
   "cingulate gyrus posteroventral part": "Parte posteroventral do giro do cíngulo",
+  "olfactory bulb": "Bulbo olfatório",
+  "piriform region": "Região piriforme",
+  "porta hepatis": "Porta do fígado",
+  "ligamentum venosum": "Ligamento venoso",
+  "superomedial segment 1": "Segmento I superomedial",
+  "inferior nasal concha bone": "Osso da concha nasal inferior",
+  "tendon sheath": "Bainha tendínea",
+  "common tendon sheath": "Bainha tendínea comum",
+  "plantar tendon sheath": "Bainha tendínea plantar",
+  "fibrous sheath": "Bainha fibrosa",
 };
 
 const anatomyWordDictionary: Record<string, string> = {
   bifurcation: "bifurcação", artery: "artéria", arteries: "artérias", vein: "veia", veins: "veias",
+  bone: "osso", bones: "ossos", tendon: "tendão", tendons: "tendões", sheath: "bainha", sheaths: "bainhas", muscles: "músculos",
+  fibrous: "fibroso", digit: "dedo", digits: "dedos", extensor: "extensor", flexor: "flexor",
+  tibialis: "tibial", fibularis: "fibular", hallucis: "do hálux", digitorum: "dos dedos", longus: "longo",
+  brevis: "curto", carpi: "do carpo", ulnaris: "ulnar", radialis: "radial", cruciform: "cruciforme",
+  deltoid: "deltoide", pectoralis: "peitoral", biceps: "bíceps", triceps: "tríceps", abdominis: "abdominal",
+  gluteus: "glúteo", maximus: "máximo", medius: "médio", quadriceps: "quadríceps",
+  gastrocnemius: "gastrocnêmio", soleus: "sóleo", trapezius: "trapézio", latissimus: "latíssimo", dorsi: "do dorso",
   nerve: "nervo", nerves: "nervos", branch: "ramo", branches: "ramos", trunk: "tronco", root: "raiz", roots: "raízes",
   plexus: "plexo", ganglion: "gânglio", division: "divisão", part: "parte", segment: "segmento", leaflet: "folheto",
   valve: "valva", arch: "arco", sinus: "seio", canal: "canal", tract: "trato", nucleus: "núcleo", nuclei: "núcleos",
@@ -1629,7 +1912,8 @@ const anatomyWordDictionary: Record<string, string> = {
   gland: "glândula", glands: "glândulas", duct: "ducto", bronchus: "brônquio", lung: "pulmão", kidney: "rim",
   liver: "fígado", heart: "coração", muscle: "músculo", body: "corpo", cord: "cordão", eyeball: "bulbo ocular",
   ventricle: "ventrículo", foot: "pé", hand: "mão", palate: "palato", tongue: "língua", gingiva: "gengiva",
-  superior: "superior", inferior: "inferior", anterior: "anterior", posterior: "posterior", medial: "medial", lateral: "lateral",
+  superior: "superior", inferior: "inferior", upper: "superior", lower: "inferior",
+  anterior: "anterior", posterior: "posterior", medial: "medial", lateral: "lateral",
   internal: "interno", external: "externo", common: "comum", deep: "profundo", superficial: "superficial", middle: "médio",
   central: "central", proper: "próprio", long: "longo", free: "livre", accessory: "acessório", ascending: "ascendente",
   descending: "descendente", communicating: "comunicante", perforating: "perfurante", circumflex: "circunflexo",
@@ -1705,15 +1989,29 @@ const anatomyWordDictionary: Record<string, string> = {
   process: "processo", hippocampal: "hipocampal", straight: "reto", frontomarginal: "frontomarginal",
   frontopolar: "frontopolar", posteroventral: "posteroventral", rectus: "reto",
   amygdala: "amígdala", ampulla: "ampola",
+  bulb: "bulbo", region: "região", area: "área", cortex: "córtex", complex: "complexo", group: "grupo",
+  head: "cabeça", tail: "cauda", accumbens: "accumbens", forebrain: "prosencéfalo", hindbrain: "rombencéfalo",
+  claustrum: "claustro", habenular: "habenular",
+  zona: "zona", incerta: "incerta", supraoptic: "supraóptica", preoptic: "pré-óptica", tuberal: "tuberal",
+  mammillothalamic: "mamilotalâmico", ventricular: "ventricular",
+  agranular: "agranular", operculum: "opérculo", planum: "plano", polare: "polar",
+  fusiform: "fusiforme", subcallosal: "subcaloso",
+  ambiens: "ambiente", perirhinal: "perirrinal", pretectal: "pré-tectal", substantia: "substância", nigra: "negra",
+  tegmentum: "tegmento", pyramidal: "piramidal", radiation: "radiação",
+  subthalamic: "subtalâmico", mammillary: "mamilar", bronchopulmonary: "broncopulmonar", hilum: "hilo",
+  cartilage: "cartilagem", tertiary: "terciário", lingula: "língula", impression: "impressão", capsule: "cápsula",
+  bare: "nua", diaphragmatic: "diafragmática", surface: "superfície", quadrate: "quadrado",
+  falciform: "falciforme", round: "redondo", outer: "externo", column: "coluna",
+  esophageal: "esofágico", hepataduodenal: "hepatoduodenal",
   thoraco: "toraco", iliacus: "ilíaco", short: "curto", supra: "supra", temporo: "temporo", parieto: "parieto",
   hemi: "hemi", apicoposterior: "apicoposterior", inferolateral: "inferolateral", aortic: "aórtico", ileal: "ileal",
   marginal: "marginal", non: "não", ant: "anterior", lat: "lateral", fis: "fissura", post: "posterior",
   cerebellum: "cerebelo", base: "base", red: "vermelho", wing: "asa", medullaris: "medular", thalami: "do tálamo",
   shaped: "formato", fibres: "fibras", iris: "íris", lens: "cristalino", vitreous: "vítreo", retina: "retina",
   sclera: "esclera", cauda: "cauda", equina: "equina", fourth: "quarto", interpeduncular: "interpeduncular",
-  fossa: "fossa", culmen: "cúlmen", declive: "declive", folium: "fólio", lingula: "língula", nodule: "nódulo",
-  pyramis: "pirâmide", tuber: "túber", habenula: "habênula", hypothalamus: "hipotálamo", mamillary: "mamilar",
-  third: "terceiro", horizont: "horizontal", vertical: "vertical", triangular: "triangular", subparietal: "subparietal",
+  fossa: "fossa", culmen: "cúlmen", declive: "declive", folium: "fólio", nodule: "nódulo",
+  pyramis: "pirâmide", tuber: "túber", habenula: "habênula", mamillary: "mamilar",
+  third: "terceiro", horizont: "horizontal", vertical: "vertical", subparietal: "subparietal",
   interm: "intermediário", prim: "primário", lunate: "semilunar", plane: "plano", septum: "septo",
   pellucidum: "pelúcido", falx: "foice", cerebri: "do cérebro", intermediolateral: "intermediolateral",
   intermediomedial: "intermediomedial", substance: "substância", reticular: "reticular", tectospinal: "tectoespinal",
@@ -1759,10 +2057,22 @@ const anatomyHeadNouns: Record<string, { translated: string; gender: "m" | "f"; 
   olive: { translated: "oliva", gender: "f" }, chiasm: { translated: "quiasma", gender: "m" },
   pyramid: { translated: "pirâmide", gender: "f" }, precuneus: { translated: "pré-cúneo", gender: "m" },
   telencephalon: { translated: "telencéfalo", gender: "m" },
+  bulb: { translated: "bulbo", gender: "m" }, region: { translated: "região", gender: "f" },
+  area: { translated: "área", gender: "f" }, cortex: { translated: "córtex", gender: "m" },
+  complex: { translated: "complexo", gender: "m" }, group: { translated: "grupo", gender: "m" },
+  surface: { translated: "superfície", gender: "f" }, impression: { translated: "impressão", gender: "f" },
+  capsule: { translated: "cápsula", gender: "f" }, column: { translated: "coluna", gender: "f" },
+  cartilage: { translated: "cartilagem", gender: "f" }, hilum: { translated: "hilo", gender: "m" },
+  liver: { translated: "fígado", gender: "m" }, ligament: { translated: "ligamento", gender: "m" },
+  bone: { translated: "osso", gender: "m" }, bones: { translated: "ossos", gender: "m", plural: true },
+  tendon: { translated: "tendão", gender: "m" }, tendons: { translated: "tendões", gender: "m", plural: true },
+  sheath: { translated: "bainha", gender: "f" }, sheaths: { translated: "bainhas", gender: "f", plural: true },
+  digit: { translated: "dedo", gender: "m" }, digits: { translated: "dedos", gender: "m", plural: true },
+  muscles: { translated: "músculos", gender: "m", plural: true },
 };
 
 const anatomyAdjectiveKeys = new Set([
-  "superior", "inferior", "anterior", "posterior", "medial", "lateral", "internal", "external", "common", "deep", "superficial", "middle",
+  "superior", "inferior", "upper", "lower", "anterior", "posterior", "medial", "lateral", "internal", "external", "common", "deep", "superficial", "middle",
   "central", "proper", "long", "free", "accessory", "ascending", "descending", "communicating", "perforating", "circumflex", "segmental", "lobar",
   "basal", "apical", "lingular", "septal", "pulmonary", "coronary", "cardiac", "cerebral", "cerebellar", "spinal", "brachial", "femoral", "ulnar",
   "radial", "tibial", "fibular", "axillary", "iliac", "renal", "hepatic", "mesenteric", "carotid", "subclavian", "intercostal", "thoracic",
@@ -1782,6 +2092,9 @@ const anatomyAdjectiveKeys = new Set([
   "genital", "sciatic", "biventral", "opercular", "subcentral", "circular", "calcarine", "intraparietal", "supramarginal", "parahippocampal",
   "terminalis", "corticospinal", "vestibulospinal", "reticulospinal", "spinothalamic", "spinocerebellar", "sensory", "tympanic", "auditory",
   "suspensory", "zonular", "ejaculatory", "mesocolic", "omental", "vermiform", "anteromedial",
+  "olfactory", "piriform", "bronchopulmonary", "diaphragmatic", "falciform", "outer", "bare", "round",
+  "esophageal", "hepataduodenal", "tibialis", "fibularis",
+  "deltoid", "pectoralis", "gluteus", "maximus", "medius",
 ]);
 
 function agreeAnatomyAdjective(rawWord: string, translated: string, head: { gender: "m" | "f"; plural?: boolean } | undefined) {
@@ -1807,7 +2120,7 @@ function translatedArticle(head: { gender: "m" | "f"; plural?: boolean } | undef
 }
 
 function translateSimpleAnatomyPhrase(value: string) {
-  const words = value.replace(/[()'"]/g, "").trim().split(/\s+/).filter(Boolean);
+  const words = value.replace(/[()'"]/g, "").trim().split(/\s+/).filter((word) => Boolean(word) && !/^(the|a|an)$/i.test(word));
   const sideIndex = words.findIndex((word) => /^(left|right)$/i.test(word));
   const side = sideIndex >= 0 ? words.splice(sideIndex, 1)[0].toLocaleLowerCase("en-US") : null;
   let headIndex = -1;
@@ -1847,25 +2160,35 @@ function translateCompoundAnatomyPhrase(value: string) {
 // Exportada para os testes de nomenclatura; não é um componente React.
 // eslint-disable-next-line react-refresh/only-export-components
 export function translateAnatomyName(rawName: string, layer: DenseAnatomyLayer | "organs", index: number) {
-  const rawSide = rawName.match(/(?:[._*\s)]([lr]))[.\s]*$/i)?.[1];
-  const cleaned = rawName
+  const normalizedSourceName = rawName.replace(/^VH_[FM]_/i, "").replace(/^Allen_/i, "");
+  const rawSide = normalizedSourceName.match(/(?:[._*\s)]([lr]))[.\s]*$/i)?.[1];
+  const cleaned = normalizedSourceName
     .replace(/(?:[._*\s)]([lr]))[.\s]*$/i, "")
-    .replace(/[._][a-z]$/i, "")
     .replace(/\*/g, "")
     .replace(/[.]+$/g, "")
     .replace(/[_]+/g, " ")
     .replace(/\s+/g, " ")
+    .replace(/\buppe\b/gi, "upper")
+    .replace(/\blowe\b/gi, "lower")
+    .replace(/\bsegmennt\b|\bsegm\b/gi, "segment")
+    .replace(/\bsegment(\d+)\b/gi, "segment $1")
+    .replace(/\bbronchi\b/gi, "bronchus")
     .replace(/^\((.*)\)$/, "$1")
     .trim();
   const explicitSide = rawSide;
-  const compactCandidate = cleaned.match(/([lr])$/i);
+  const compactCandidate = explicitSide ? null : cleaned.match(/([lr])$/i);
   const compactCandidateBase = compactCandidate ? cleaned.slice(0, -1).trim() : "";
   const compactCandidateWords = compactCandidateBase.replace(/[()'"-]/g, " ").trim().split(/\s+/).map((word) => word.toLocaleLowerCase("en-US"));
   const compactCandidateLastWord = compactCandidateWords.at(-1) ?? "";
-  const compactCandidateHasHead = compactCandidateWords.some((word) => Boolean(anatomyHeadNouns[word]));
-  const compactSide = compactCandidate && (compactCandidateHasHead || anatomyHeadNouns[compactCandidateLastWord] || anatomyNameDictionary[compactCandidateBase.toLocaleLowerCase("en-US")]) ? compactCandidate[1] : undefined;
+  const compactSide = compactCandidate && (anatomyHeadNouns[compactCandidateLastWord] || anatomyNameDictionary[compactCandidateBase.toLocaleLowerCase("en-US")]) ? compactCandidate[1] : undefined;
   const sideCode = explicitSide ?? compactSide;
   const withoutSide = compactSide ? cleaned.slice(0, -1) : cleaned;
+  const indexedRenalPyramid = withoutSide.match(/^renal pyramid ([lr])(?: ([a-z]))?$/i);
+  if (indexedRenalPyramid) {
+    const sideName = indexedRenalPyramid[1].toLocaleLowerCase("en-US") === "l" ? "esquerda" : "direita";
+    const suffix = indexedRenalPyramid[2] ? ` ${indexedRenalPyramid[2].toLocaleUpperCase("pt-BR")}` : "";
+    return `Pirâmide renal ${sideName}${suffix}`;
+  }
   const sideWords = withoutSide.replace(/[()'"-]/g, " ").trim().split(/\s+/);
   const sideHead = [...sideWords].reverse().map((word) => anatomyHeadNouns[word.toLocaleLowerCase("en-US")]).find(Boolean);
   const feminineSide = sideHead?.gender === "f";
@@ -2045,7 +2368,8 @@ function cleanModelDescription(value: string, name: string, type: "bone" | "musc
     .replace(/\s+/g, " ")
     .trim()
     .replace(new RegExp(`^${escapeRegExp(name)}\\s*`, "i"), "");
-  if (cleaned.length > 80) return `${cleaned.slice(0, 360).trim()}${cleaned.length > 360 ? "…" : ""}`;
+  const sourceIsEnglish = /\b(the|is|are|of|and|which|bone|muscle)\b/i.test(cleaned);
+  if (cleaned.length > 80 && !sourceIsEnglish) return `${cleaned.slice(0, 360).trim()}${cleaned.length > 360 ? "…" : ""}`;
   return type === "bone" ? "Malha óssea individual do modelo anatômico aberto Z-Anatomy/BodyParts3D." : "Malha muscular individual do modelo anatômico aberto Z-Anatomy/BodyParts3D.";
 }
 
