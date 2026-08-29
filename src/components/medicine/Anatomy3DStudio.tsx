@@ -237,8 +237,10 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
       ? 3.15
       : Math.max(2.45, Math.max(...detailedCameraDefinitions.map((item) => item.size)) * 2.75 + .42)
     : null;
-  const baseCameraFocus = focusSelected && selected && selectedIsVisible ? selected.focus : regionMeta.focus;
-  const baseCameraDistance = focusSelected && selected && selectedIsVisible ? selected.focusDistance : regionMeta.distance;
+  const wholeBodySystemFocus: [number, number, number] = region === "whole" && system === "organs" ? [0, .65, 0] : regionMeta.focus;
+  const baseCameraFocus = focusSelected && selected && selectedIsVisible ? selected.focus : wholeBodySystemFocus;
+  const wholeBodySystemDistance = region === "whole" && system === "organs" ? 9.6 : regionMeta.distance;
+  const baseCameraDistance = focusSelected && selected && selectedIsVisible ? selected.focusDistance : wholeBodySystemDistance;
   const cameraFocus = detailedCameraFocus ?? baseCameraFocus;
   const cameraDistance = detailedCameraDistance ?? baseCameraDistance;
   const realistic = appearance === "realistic";
@@ -658,7 +660,7 @@ function RealBodyPartsModel({ system, selectedId, skinOpacity, skinTone, organVi
   const selectSkinModel = useCallback(() => {
     onSelect({
       id: "model:skin", name: "Superfície corporal", latin: "Integumentum commune", layer: "surface", regionId: "whole", region: "Corpo completo", system: "Tegumentar",
-      summary: "Malha tridimensional contínua da superfície corporal, derivada do conjunto anatômico aberto BodyParts3D.", function: "Oferece referência externa para orientação regional, proporções e relações entre a superfície e estruturas profundas.", sourceId: "bodyParts3D", focus: [0, -0.15, 0], focusDistance: 15.2, color: "#d8a88c", parts: [],
+      summary: "Superfície corporal HD formada por 256 regiões anatômicas reais do atlas aberto Z-Anatomy.", function: "Oferece referência externa para orientação regional, proporções e relações entre a superfície e estruturas profundas.", sourceId: "zAnatomy3D", focus: [0, -0.15, 0], focusDistance: 15.2, color: "#d8a88c", parts: [],
     });
   }, [onSelect]);
 
@@ -687,12 +689,16 @@ function RealBodyPartsModel({ system, selectedId, skinOpacity, skinTone, organVi
 
 function prepareBodyPartsRoot(source: Object3D, kind: "skin" | "organs") {
   const clone = source.clone(true);
-  const sourceSize = BODY_PARTS_SOURCE_BOUNDS.getSize(new Vector3());
-  const sourceCenter = BODY_PARTS_SOURCE_BOUNDS.getCenter(new Vector3());
-  const scale = 8.55 / sourceSize.y;
-  clone.scale.setScalar(scale);
-  clone.position.set(-sourceCenter.x * scale, -sourceCenter.y * scale - 0.08, -sourceCenter.z * scale);
-  clone.updateMatrixWorld(true);
+  if (kind === "skin") {
+    alignZAnatomyRoot(clone);
+  } else {
+    const sourceSize = BODY_PARTS_SOURCE_BOUNDS.getSize(new Vector3());
+    const sourceCenter = BODY_PARTS_SOURCE_BOUNDS.getCenter(new Vector3());
+    const scale = 8.55 / sourceSize.y;
+    clone.scale.setScalar(scale);
+    clone.position.set(-sourceCenter.x * scale, -sourceCenter.y * scale - 0.08, -sourceCenter.z * scale);
+    clone.updateMatrixWorld(true);
+  }
 
   if (kind === "skin") {
     const geometries: Mesh["geometry"][] = [];
@@ -767,7 +773,7 @@ function RealMusculoskeletalModel({ system, selectedId, onSelect, onCatalogReady
       if (!(object instanceof Mesh)) return;
       const original = Array.isArray(object.material) ? object.material[0] : object.material;
       const material = original instanceof MeshStandardMaterial ? original.clone() : new MeshStandardMaterial();
-      const type = object.userData.type === "bone" ? "bone" : "muscle";
+      const type = realMeshAnatomyType(object);
       material.color.set(type === "bone" ? "#e3d8bf" : "#a9343b");
       material.roughness = type === "bone" ? 0.72 : 0.56;
       material.metalness = 0;
@@ -802,7 +808,7 @@ function RealMusculoskeletalModel({ system, selectedId, onSelect, onCatalogReady
   useEffect(() => {
     model.traverse((object) => {
       if (!(object instanceof Mesh)) return;
-      const type = object.userData.type;
+      const type = realMeshAnatomyType(object);
       object.visible = system === "all" || (system === "muscular" && type === "muscle") || (system === "skeletal" && type === "bone");
       const material = object.material as MeshStandardMaterial;
       const active = selectedId === `model:${object.uuid}`;
@@ -844,7 +850,7 @@ function DenseAnatomySystemModel({ integrated = false, path, layer, selectedId, 
   onSelect: (structure: Anatomy3DStructure) => void;
   onCatalogReady: (system: Anatomy3DSystemId, catalog: Anatomy3DStructure[]) => void;
 }) {
-  const gltf = useGLTF(path);
+  const gltf = useGLTF(path, "/medicine/models/draco/");
   const prepared = useMemo(() => prepareDenseAnatomySystem(gltf.scene, layer), [gltf.scene, layer]);
 
   useEffect(() => {
@@ -906,7 +912,7 @@ function DetailedOrgansModel({ integrated = false, realistic, bodyProfile, selec
 }) {
   const [heartDetailFailed, setHeartDetailFailed] = useState(false);
   const [failedHraKinds, setFailedHraKinds] = useState<HraDetailedOrganKind[]>([]);
-  const gltf = useGLTF(DETAILED_ORGANS_PATH);
+  const gltf = useGLTF(DETAILED_ORGANS_PATH, "/medicine/models/draco/");
   const heartGltf = useGLTF(SUPPLEMENTAL_ORGAN_PATHS.heart, "/medicine/models/draco/");
   const brainGltf = useGLTF(SUPPLEMENTAL_ORGAN_PATHS.brain, "/medicine/models/draco/");
   const spleenGltf = useGLTF(SUPPLEMENTAL_ORGAN_PATHS.spleen, "/medicine/models/draco/");
@@ -1071,11 +1077,11 @@ function DetailedOrgansModel({ integrated = false, realistic, bodyProfile, selec
 }
 
 function catalogStructureFromRealMesh(mesh: Mesh): Anatomy3DStructure {
-  const type = mesh.userData.type === "bone" ? "bone" : "muscle";
+  const type = realMeshAnatomyType(mesh);
   const bounds = new Box3().setFromObject(mesh);
   const center = bounds.getCenter(new Vector3());
   const size = bounds.getSize(new Vector3());
-  const rawDetailName = String(mesh.userData.nameDetail || mesh.userData.name || mesh.name || (type === "bone" ? "Estrutura óssea" : "Estrutura muscular"));
+  const rawDetailName = realMeshAnatomyName(mesh) || (type === "bone" ? "Estrutura óssea" : "Estrutura muscular");
   const detailName = translateAnatomyName(rawDetailName, "organs", 0);
   const description = cleanModelDescription(String(mesh.userData.description || ""), detailName, type);
   return {
@@ -1091,7 +1097,7 @@ function catalogStructureFromRealMesh(mesh: Mesh): Anatomy3DStructure {
     focus: [center.x, center.y, center.z],
     focusDistance: Math.min(4.4, Math.max(1.15, Math.max(size.x, size.y, size.z) * 3.2)),
     color: type === "bone" ? "#d8c9aa" : "#b94d4f",
-    parts: [String(mesh.name || detailName)],
+    parts: [rawDetailName],
   };
 }
 
@@ -1350,7 +1356,7 @@ function prepareDenseAnatomySystem(source: Object3D, layer: DenseAnatomyLayer) {
 
   clone.traverse((object) => {
     if (!(object instanceof Mesh)) return;
-    const rawName = String(object.name || `Estrutura ${catalog.length + 1}`);
+    const rawName = realMeshAnatomyName(object) || `Estrutura ${catalog.length + 1}`;
     if (!isUsableAnatomyMeshName(rawName)) return;
     const geometry = object.geometry.clone();
     geometry.applyMatrix4(object.matrixWorld);
@@ -1393,7 +1399,7 @@ function prepareDetailedOrgans(source: Object3D) {
   const meshes: Mesh[] = [];
   root.traverse((object) => {
     if (!(object instanceof Mesh)) return;
-    const rawName = String(object.name || `Estrutura visceral ${catalog.length + 1}`);
+    const rawName = realMeshAnatomyName(object) || `Estrutura visceral ${catalog.length + 1}`;
     if (!isUsableAnatomyMeshName(rawName)) return;
     if (!object.geometry.getAttribute("normal")) object.geometry.computeVertexNormals();
     const color = anatomyColorForRawName("organs", rawName);
@@ -2288,8 +2294,16 @@ function guidedModelMeshMatches(selectedId: string | null, mesh: Mesh) {
   if (!selectedId || selectedId.startsWith("model:")) return false;
   const patterns = guidedModelPatterns[selectedId];
   if (!patterns) return false;
-  const modelName = normalize(`${mesh.userData.nameDetail ?? ""} ${mesh.userData.name ?? ""} ${mesh.name}`);
+  const modelName = normalize(`${mesh.userData.nameDetail ?? ""} ${mesh.userData.name ?? ""} ${realMeshAnatomyName(mesh)}`);
   return patterns.some((pattern) => modelName.includes(pattern));
+}
+
+function realMeshAnatomyName(mesh: Mesh) {
+  return String(mesh.userData.anatomyName || mesh.userData.nameDetail || mesh.userData.name || mesh.name || "");
+}
+
+function realMeshAnatomyType(mesh: Mesh): "bone" | "muscle" {
+  return (mesh.userData.anatomyType || mesh.userData.type) === "bone" ? "bone" : "muscle";
 }
 
 function meshIsEffectivelyVisible(mesh: Mesh, root: Object3D) {

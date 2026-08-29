@@ -2,15 +2,16 @@
 
 Data: 28 de agosto de 2026.
 
-## Assets mantidos
+## Corpo-base substituído por exportações HD oficiais
 
 | Asset | MB | Malhas | Triângulos | Classificação | Motivo |
 |---|---:|---:|---:|---|---|
-| `bodyparts3d-skin-v1.glb` | 0,17 | 1 | 94.966 | KEEP | Superfície leve e proporcional; adequada como camada externa. |
-| `zanatomy-musculoskeletal-v1.glb` | 7,87 | 826 | 290.886 | KEEP | Ossos e músculos realmente separados, incluindo ossículos, dentes e estruturas regionais. |
-| `zanatomy-circulatory-v1.glb` | 7,51 | 676 | 448.731 | KEEP | Rede arterial e venosa extensa e selecionável. |
-| `zanatomy-nervous-v1.glb` | 7,69 | 549 | 436.608 | KEEP | Nervos cranianos, medula, plexos e nervos periféricos separados. |
-| `zanatomy-organs-v1.glb` | 4,60 | 117 | 261.853 | KEEP/IMPROVE | Boa relação espacial e digestório extenso; órgãos prioritários recebem LOD HRA. |
+| `zanatomy-surface-hd-v2.glb` | 0,81 | 256 | 135.204 | REPLACE/ACTIVE | Substitui a pele única de baixa resolução por regiões anatômicas oficiais separadas. |
+| `zanatomy-musculoskeletal-hd-v2.glb` | 10,90 | 960 | 2.952.925 | REPLACE/ACTIVE | Exportação direta do atlas oficial: 277 ossos/cartilagens/dentes e 683 músculos, com aproximadamente 10 vezes mais triângulos que a base anterior. |
+| `zanatomy-cardiovascular-hd-v2.glb` | 4,79 | 672 | 1.353.740 | REPLACE/ACTIVE | Mesma rede anatômica completa com curvas convertidas e cerca de 3 vezes mais geometria efetiva; vasos intrarrenais NC excluídos. |
+| `zanatomy-nervous-hd-v2.glb` | 4,21 | 572 | 1.208.218 | REPLACE/ACTIVE | Mais estruturas e aproximadamente 2,8 vezes mais geometria; subconjunto NC de ouvido interno excluído. |
+| `zanatomy-organs-hd-v2.glb` | 1,83 | 116 | 706.289 | REPLACE/ACTIVE | Vísceras oficiais em resolução integral disponível; rins NC excluídos e substituídos pelos LODs HRA CC BY. |
+| `bodyparts3d-skin-v1.glb` e sistemas `zanatomy-*-v1.glb` | — | — | — | LEGACY/FALLBACK | Permanecem no repositório para rastreabilidade, mas não são mais apontados pelo registro ativo do Corpo 3D. |
 | `bodyparts3d-organs-v1.glb` | 0,30 | 16 | 143.202 | KEEP | Contexto corporal leve e fallback. |
 | `zanatomy-organ-heart-v1.glb` | 1,61 | 9 | 538.040 | KEEP | Parede e grandes vasos externos; complementado pelo interior HRA. |
 | `nih-hra-heart-interior-v1.glb` | 1,66 | 14 | 85.914 | KEEP | Câmaras, septo, valvas e músculos papilares reais. |
@@ -33,7 +34,7 @@ Data: 28 de agosto de 2026.
 | Fonte/asset | Decisão | Motivo |
 |---|---|---|
 | HRA/NIH 3D | APROVADO por entrada | Fonte acadêmica, revisão especializada, licença CC BY explícita e segmentação anatômica. |
-| Z-Anatomy atual | APROVADO | CC BY-SA 4.0 documentada; elevada segmentação corporal. |
+| Z-Anatomy oficial `Startup.blend` | APROVADO com exclusões | CC BY-SA 4.0 documentada; fonte oficial, alta segmentação e exportação reproduzível. Rim Cowley e ouvido interno Dundee foram excluídos por licenças NC. |
 | BodyParts3D atual | APROVADO com licença histórica preservada | Os derivados locais declaram CC BY-SA 2.1 JP e não foram rel licenciados. |
 | HRA pulmão v1.3 como sistema respiratório completo | RECUSADO | A própria fonte informa ausência de laringe, traqueia e brônquios principais; usado somente como LOD pulmonar. |
 | NIH CT heart 3DPX-002636 | RECUSADO | A descrição alerta que válvulas não transferem bem; inferior ao coração HRA segmentado já integrado. |
@@ -42,10 +43,17 @@ Data: 28 de agosto de 2026.
 
 ## Arquitetura e budgets
 
-- Entrada: pele (0,17 MB) e musculoesquelético (7,87 MB), dentro do budget inicial de 10 MB.
-- Sistemas densos: 4,60–7,69 MB e carregamento por sistema.
+- Entrada ativa: superfície HD (0,81 MB) e musculoesquelético HD (10,90 MB). A compressão Draco mantém a transferência total em 11,71 MB apesar do salto de 290.886 para 2.952.925 triângulos no musculoesquelético.
+- Sistemas densos HD: 1,83–4,80 MB e carregamento somente ao abrir a camada correspondente.
 - LODs de órgão: carregados somente ao isolar cérebro, pulmões, fígado ou rins.
 - Exceções justificadas: pulmões (22,18 MB) e cérebro (11,42 MB), preservados sem redução destrutiva por sua segmentação didática. Nenhum deles entra no carregamento inicial.
 - As 394 novas malhas permanecem separadas para seleção. Não houve merge que destruísse identidade anatômica.
-- As 826 malhas musculoesqueléticas existentes agora também alimentam o índice pesquisável: 263 ósseas e 563 musculares. O nível Iniciante continua mostrando somente o recorte introdutório; a Residência expõe o catálogo segmentado.
+- As 960 malhas musculoesqueléticas oficiais alimentam o índice pesquisável: 277 ósseas/cartilaginosas/dentárias e 683 musculares. O nível Iniciante continua mostrando somente o recorte introdutório; a Residência expõe o catálogo segmentado.
 - Nomes técnicos originalmente em inglês são traduzidos em tempo de execução sem alterar os metadados do GLB. Descrições longas em inglês não são exibidas como conteúdo médico em português; o atlas usa um resumo educacional neutro e mantém a fonte rastreável.
+
+## Reprodutibilidade da substituição
+
+- Fonte: `Z-Anatomy.zip` do repositório oficial `Z-Anatomy/Models-of-human-anatomy`, acesso em 28 de agosto de 2026.
+- SHA-256 do ZIP de origem: `E029688545627BD0214B269E1063143ABB580AAD72B2C2445D6D8A9A0D9DA736`.
+- Exportador: `scripts/export_zanatomy_web_hd.py`, Blender 4.5 LTS, Draco nível 6, nomes e camadas preservados em `extras`.
+- Relatório de cada exportação: `zanatomy-web-hd-v2.export.json`.

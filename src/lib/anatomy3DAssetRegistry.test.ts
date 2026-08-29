@@ -24,6 +24,16 @@ function glbMeshNames(file: Buffer) {
   return (document.meshes as Array<{ name?: string }>).map((mesh) => mesh.name ?? "");
 }
 
+function glbDocument(file: Buffer) {
+  expect(file.toString("ascii", 0, 4)).toBe("glTF");
+  const jsonLength = file.readUInt32LE(12);
+  return JSON.parse(file.toString("utf8", 20, 20 + jsonLength)) as {
+    meshes?: Array<{ name?: string }>;
+    nodes?: Array<{ extras?: { anatomyName?: string; anatomyType?: string } }>;
+    extensionsUsed?: string[];
+  };
+}
+
 describe("anatomy3DAssetRegistry", () => {
   it("mantém assets progressivos, existentes e ligados a fontes licenciadas", () => {
     for (const asset of Object.values(anatomy3DAssets)) {
@@ -35,6 +45,46 @@ describe("anatomy3DAssetRegistry", () => {
     expect(anatomy3DAssets.bodyBase.loadMode).toBe("base");
     expect(anatomy3DAssets.cardiovascular.loadMode).toBe("system");
     expect(anatomy3DAssets.heartInterior.loadMode).toBe("organ");
+  });
+
+  it("usa as cinco novas exportações oficiais Z-Anatomy HD como base do corpo", () => {
+    const expectedHashes: Record<string, string> = {
+      "body-base": "83104B45CF80E5F42B82F18E7D50BEED750DADB7E323B51276DC99C84359864D",
+      "skin-base": "7850312D8CB22250AE57AE807D59CE6E1DFA7E3BBB3C5830AC97E1A7862268F3",
+      cardiovascular: "371B5CC6F5E6BB213F554EF389E055F495AF8F6C152898E7E3FA5794B82A95B6",
+      nervous: "B14DC4354E8F4CADD84C7876C143098C6913C59E77B38E0AB487E90D339C582A",
+      organs: "982D1CEAEDC1368BB77D141736E23A8E274E2B18B11DDD479FA54950F59A39D4",
+    };
+    const primary = [
+      anatomy3DAssets.bodyBase,
+      anatomy3DAssets.skinBase,
+      anatomy3DAssets.cardiovascular,
+      anatomy3DAssets.nervous,
+      anatomy3DAssets.organs,
+    ];
+
+    for (const asset of primary) {
+      const path = resolve(process.cwd(), "public", asset.path.replace(/^\//, ""));
+      const file = readFileSync(path);
+      const document = glbDocument(file);
+      const extras = document.nodes?.flatMap((node) => node.extras ? [node.extras] : []) ?? [];
+      expect(createHash("sha256").update(file).digest("hex").toUpperCase(), asset.id).toBe(expectedHashes[asset.id]);
+      expect(document.meshes, asset.id).toHaveLength(asset.meshCount);
+      expect(extras, asset.id).toHaveLength(asset.meshCount);
+      expect(extras.every((item) => Boolean(item.anatomyName && item.anatomyType)), asset.id).toBe(true);
+      expect(document.extensionsUsed, asset.id).toContain("KHR_draco_mesh_compression");
+    }
+
+    const bodyPath = resolve(process.cwd(), "public", anatomy3DAssets.bodyBase.path.replace(/^\//, ""));
+    const bodyExtras = glbDocument(readFileSync(bodyPath)).nodes?.flatMap((node) => node.extras ? [node.extras] : []) ?? [];
+    expect(bodyExtras.filter((item) => item.anatomyType === "bone")).toHaveLength(277);
+    expect(bodyExtras.filter((item) => item.anatomyType === "muscle")).toHaveLength(683);
+
+    const redistributedNames = primary.flatMap((asset) => {
+      const path = resolve(process.cwd(), "public", asset.path.replace(/^\//, ""));
+      return glbDocument(readFileSync(path)).nodes?.flatMap((node) => node.extras?.anatomyName ? [node.extras.anatomyName] : []) ?? [];
+    });
+    expect(redistributedNames.join(" ")).not.toMatch(/\b(kidney|renal pelvis|cochlea|semicircular (?:canal|duct)|organ of corti)\b/i);
   });
 
   it("valida integridade e as 14 malhas reais do coração NIH", () => {

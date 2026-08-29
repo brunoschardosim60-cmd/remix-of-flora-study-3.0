@@ -2,6 +2,20 @@
 
 > O modelo `zanatomy-organ-eye-v1.glb` também é reutilizado no módulo **Histologia e Sentidos**. A aparência do globo ocular usa o mesmo perfil `eye` de `src/lib/organRealism.ts`; nenhuma segunda malha artificial foi criada.
 
+## Exportações oficiais Z-Anatomy HD v2 (corpo ativo)
+
+Arquivos: `zanatomy-surface-hd-v2.glb`, `zanatomy-musculoskeletal-hd-v2.glb`, `zanatomy-cardiovascular-hd-v2.glb`, `zanatomy-nervous-hd-v2.glb` e `zanatomy-organs-hd-v2.glb`.
+
+- Fonte direta: [`Z-Anatomy/Models-of-human-anatomy`](https://github.com/Z-Anatomy/Models-of-human-anatomy), arquivo oficial `Z-Anatomy.zip` / `Startup.blend`.
+- Autores e base anatômica: Z-Anatomy (Gauthier Kervyn e colaboradores) e BodyParts3D, Database Center for Life Science. A lista completa de autores permanece no `License.txt` da fonte.
+- Licença do conjunto exportado: [Creative Commons Attribution-ShareAlike 4.0 International](https://creativecommons.org/licenses/by-sa/4.0/). As derivações GLB permanecem sob a mesma licença.
+- Data de acesso e exportação: 28 de agosto de 2026.
+- SHA-256 do `Z-Anatomy.zip` oficial: `E029688545627BD0214B269E1063143ABB580AAD72B2C2445D6D8A9A0D9DA736`.
+- Alterações: avaliação dos modificadores e curvas do Blender, conversão para meshes separadas, redução controlada apenas nos sistemas acima do orçamento web, exportação GLB com Draco e inclusão de `anatomyName`, `anatomyType` e coleção de origem em metadados glTF. Materiais, cores, seleção, transparência e iluminação são aplicados em tempo de execução.
+- Exportação reproduzível: `scripts/export_zanatomy_web_hd.py`; métricas por arquivo em `zanatomy-web-hd-v2.export.json`.
+
+Exclusões de licença: a fonte declara o modelo renal de Lissie Cowley como CC BY-NC 4.0 e o ouvido interno da University of Dundee como CC BY-NC-SA 4.0. Nomes relacionados a esses subconjuntos foram removidos das exportações redistribuíveis. Os rins mostrados em detalhe no Flora vêm dos modelos HRA/NIH CC BY 4.0 descritos abaixo.
+
 ## `zanatomy-musculoskeletal-v1.glb`
 
 - Fonte imediata: [Body Anatomy 3D Viewer](https://github.com/hpfrei/body-anatomy-3d-viewer), de hpfrei.

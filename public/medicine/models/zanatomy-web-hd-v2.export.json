@@ -1,0 +1,38 @@
+[
+  {
+    "file": "zanatomy-surface-hd-v2.glb",
+    "bytes": 814276,
+    "layers": [
+      { "collection": "9: Regions of human body", "anatomyType": "surface", "objects": 256, "curvesConverted": 0, "sourceTriangles": 135204, "targetTriangles": 650000, "estimatedExportTriangles": 135204, "decimateRatio": 1.0 }
+    ]
+  },
+  {
+    "file": "zanatomy-musculoskeletal-hd-v2.glb",
+    "bytes": 10895808,
+    "layers": [
+      { "collection": "1: Skeletal system", "anatomyType": "bone", "objects": 277, "curvesConverted": 0, "sourceTriangles": 702015, "targetTriangles": 1250000, "estimatedExportTriangles": 702015, "decimateRatio": 1.0 },
+      { "collection": "4: Muscular system", "anatomyType": "muscle", "objects": 683, "curvesConverted": 0, "sourceTriangles": 2323599, "targetTriangles": 2250000, "estimatedExportTriangles": 2250910, "decimateRatio": 0.968325 }
+    ]
+  },
+  {
+    "file": "zanatomy-cardiovascular-hd-v2.glb",
+    "bytes": 4786696,
+    "layers": [
+      { "collection": "5: Cardiovascular system", "anatomyType": "vascular", "objects": 672, "curvesConverted": 650, "sourceTriangles": 3755640, "targetTriangles": 1350000, "estimatedExportTriangles": 1353740, "decimateRatio": 0.359459 }
+    ]
+  },
+  {
+    "file": "zanatomy-nervous-hd-v2.glb",
+    "bytes": 4213216,
+    "layers": [
+      { "collection": "7: Nervous system & Sense organs", "anatomyType": "nervous", "objects": 572, "curvesConverted": 246, "sourceTriangles": 2372344, "targetTriangles": 1200000, "estimatedExportTriangles": 1208218, "decimateRatio": 0.505829 }
+    ]
+  },
+  {
+    "file": "zanatomy-organs-hd-v2.glb",
+    "bytes": 1828400,
+    "layers": [
+      { "collection": "8: Visceral systems", "anatomyType": "organ", "objects": 116, "curvesConverted": 44, "sourceTriangles": 706289, "targetTriangles": 1100000, "estimatedExportTriangles": 706289, "decimateRatio": 1.0 }
+    ]
+  }
+]

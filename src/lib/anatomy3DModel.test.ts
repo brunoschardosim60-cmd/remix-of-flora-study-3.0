@@ -70,10 +70,11 @@ describe("anatomy3DModel", () => {
 
   it("mantém as malhas anatômicas licenciadas disponíveis no pacote público", () => {
     const assets = [
-      ["zanatomy-musculoskeletal-v1.glb", 8_000_000],
-      ["zanatomy-circulatory-v1.glb", 7_800_000],
-      ["zanatomy-nervous-v1.glb", 8_000_000],
-      ["zanatomy-organs-v1.glb", 4_700_000],
+      ["zanatomy-surface-hd-v2.glb", 800_000],
+      ["zanatomy-musculoskeletal-hd-v2.glb", 10_800_000],
+      ["zanatomy-cardiovascular-hd-v2.glb", 4_750_000],
+      ["zanatomy-nervous-hd-v2.glb", 4_180_000],
+      ["zanatomy-organs-hd-v2.glb", 1_800_000],
       ["zanatomy-organ-heart-v1.glb", 1_600_000],
       ["zanatomy-organ-brain-v1.glb", 1_300_000],
       ["zanatomy-organ-spleen-v1.glb", 90_000],
@@ -86,7 +87,7 @@ describe("anatomy3DModel", () => {
       const asset = resolve(process.cwd(), "public", "medicine", "models", filename);
       expect(statSync(asset).size, filename).toBeGreaterThan(minimumBytes);
     }
-    expect(medicalSources.zAnatomy3D?.url).toContain("body-anatomy-3d-viewer");
+    expect(medicalSources.zAnatomy3D?.url).toContain("Z-Anatomy/Models-of-human-anatomy");
     expect(medicalSources.zAnatomySystems3D?.url).toContain("anatomi-simulatoru");
     expect(medicalSources.zAnatomyOrgan3D?.url).toContain("anatomy-atlas");
     expect(medicalSources.bodyParts3D?.url).toContain("bodyparts3d");

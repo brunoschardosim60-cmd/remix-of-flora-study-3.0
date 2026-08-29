@@ -570,12 +570,12 @@ export const medicalSources: Record<string, MedicalSource> = {
     attribution: "Licença e atribuição variam por atlas; consulte a página de cada conjunto antes de reutilizar imagens.",
   },
   zAnatomy3D: {
-    title: "Z-Anatomy / BodyParts3D — modelo musculoesquelético 3D",
-    organization: "Z-Anatomy, BodyParts3D e hpfrei",
-    url: "https://github.com/hpfrei/body-anatomy-3d-viewer",
-    reviewedAt: "2026-08-24",
+    title: "Z-Anatomy — atlas humano 3D aberto",
+    organization: "Z-Anatomy / BodyParts3D",
+    url: "https://github.com/Z-Anatomy/Models-of-human-anatomy",
+    reviewedAt: "2026-08-28",
     license: "CC BY-SA 4.0",
-    attribution: "Modelo derivado de Z-Anatomy/BodyParts3D, otimizado por hpfrei. Alterações de integração e materiais indicadas no arquivo de atribuição do projeto.",
+    attribution: "Exportação web direta do Startup.blend oficial do Z-Anatomy. Conversão, segmentação, compressão Draco e exclusões de componentes com licença não comercial estão documentadas no arquivo de atribuição do projeto.",
   },
   zAnatomySystems3D: {
     title: "Z-Anatomy / BodyParts3D — sistemas anatômicos completos para web",
