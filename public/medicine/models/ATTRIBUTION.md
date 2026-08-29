@@ -31,13 +31,54 @@ Os arquivos em `draco/` são os decodificadores distribuídos com Three.js e usa
 
 O coração NIH é carregado apenas ao abrir a anatomia interna. Ele complementa, sem substituir, `zanatomy-organ-heart-v1.glb`: o modelo Z-Anatomy mantém a parede externa, aorta, coronárias direitas e veias cavas; o modelo HRA fornece as estruturas internas realmente segmentadas.
 
+## Órgãos de referência HRA adicionados ao atlas completo
+
+Todos os arquivos abaixo foram obtidos pela API oficial do NIH 3D em 28 de agosto de 2026. A geometria não foi remodelada nem simplificada. Centralização, escala, materiais PBR, transparência, corte, destaque e seleção são aplicados em tempo de execução. Eles são carregados somente quando o órgão correspondente é isolado.
+
+### `nih-hra-brain-female-v1.glb`
+
+- Original: `3d-vh-f-allen-brain.glb`; API [`/api/files/741980`](https://3d.nih.gov/api/files/741980); entrada [3DPX-020959](https://3d.nih.gov/entries/3DPX-020959).
+- Autoras: Kristen Browne e Heidi Schlehlein; Human Reference Atlas / NIH 3D.
+- Atribuição: “Kristen Browne; Heidi Schlehlein. 2023. 3D Reference Organ for Brain, Female v1.3. https://doi.org/10.48539/HBM425.NDKM.969.”
+- Licença: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+- Conteúdo: 283 malhas, incluindo giros, núcleos, tálamo, hipotálamo, hipocampo, ventrículos, cerebelo e tronco encefálico; 656.268 triângulos.
+- SHA-256: `C5711A1A8BC62CA930B8BCF076DEF15315C11F5AD9BC7901E51F698406D38DBC`.
+
+### `nih-hra-lung-female-v1.glb`
+
+- Original: `3d-vh-f-lung.glb`; API [`/api/files/742064`](https://3d.nih.gov/api/files/742064); entrada [3DPX-020974](https://3d.nih.gov/entries/3DPX-020974).
+- Autoras: Kristen Browne e Heidi Schlehlein; Human Reference Atlas / NIH 3D.
+- Atribuição: “Kristen Browne; Heidi Schlehlein. 2023. 3D Reference Organ for Lung, Female v1.3. https://doi.org/10.48539/HBM794.PKQV.978.”
+- Licença: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+- Conteúdo: 56 malhas de segmentos broncopulmonares, hilos, brônquios lobares e segmentares; 297.097 triângulos. A própria fonte informa que laringe, traqueia e brônquios principais não integram esta versão.
+- SHA-256: `323D27BB76BA2C5B140FF31AD5190627EEB8D4E37CD220E4B541655D67789C1A`.
+
+### `nih-hra-liver-female-v1.glb`
+
+- Original: `VH_F_Liver.glb`; API [`/api/files/742070`](https://3d.nih.gov/api/files/742070); entrada [3DPX-020973](https://3d.nih.gov/entries/3DPX-020973).
+- Autora: Kristen Browne; Human Reference Atlas / NIH 3D.
+- Atribuição: “Kristen Browne. 2021. 3D Reference Organ for Liver, Female v1.1. https://doi.org/10.48539/HBM798.JZZM.649.”
+- Licença: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+- Conteúdo: 26 malhas, incluindo segmentos, lobos, cápsula, porta hepatis, superfícies, impressões e ligamentos; 93.303 triângulos.
+- SHA-256: `AD9B0BE0FF253E7BFE31BFFFC00017DAFCE226D4F3E7804A81CBB4C2E269D598`.
+
+### `nih-hra-kidney-left-female-v1.glb` e `nih-hra-kidney-right-female-v1.glb`
+
+- Originais: `VH_F_Kidney_L.glb` e `VH_F_Kidney_R.glb`; APIs [`/api/files/742106`](https://3d.nih.gov/api/files/742106) e [`/api/files/742100`](https://3d.nih.gov/api/files/742100); entradas [3DPX-020967](https://3d.nih.gov/entries/3DPX-020967) e [3DPX-020968](https://3d.nih.gov/entries/3DPX-020968).
+- Autoras: Kristen Browne e Heidi Schlehlein; Human Reference Atlas / NIH 3D.
+- Atribuição e DOI: “3D Reference Organ for Kidney, Female, Left v1.2”, `10.48539/HBM898.QGVV.734`; “Right v1.2”, `10.48539/HBM487.ZGCW.688`.
+- Licença: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+- Conteúdo: 29 malhas combinadas de cápsulas, hilos, córtex, colunas e pirâmides renais; 147.071 triângulos.
+- SHA-256 esquerdo: `8AC1228E4DB8C07CBF9F6C6DC7CA522C5B8D61F641927233A29AE6609B577403`.
+- SHA-256 direito: `A67508E6948723D34A29FEA2BC8C96931A8FE2F8A08293FD1C3161CFCF13968E`.
+
 ## `zanatomy-circulatory-v1.glb`, `zanatomy-nervous-v1.glb` e `zanatomy-organs-v1.glb`
 
 - Fonte imediata e conversão para GLB: [Anatomi Simülatörü](https://github.com/DrMuratAltun/anatomi-simulatoru), de Dr. Murat Altun.
 - Dados anatômicos originais: [Z-Anatomy](https://www.z-anatomy.com/) e [BodyParts3D](https://dbarchive.biosciencedbc.jp/en/bodyparts3d/).
 - Licença dos dados 3D: [Creative Commons Attribution-ShareAlike 4.0 International](https://creativecommons.org/licenses/by-sa/4.0/).
 - Cópia local da licença: `CC-BY-SA-4.0.txt`.
-- Conteúdo incorporado: 676 estruturas circulatórias, 582 estruturas nervosas e 120 estruturas de órgãos internos, preservadas como malhas individualmente identificáveis.
+- Conteúdo incorporado (contagem técnica dos GLBs distribuídos): 676 estruturas circulatórias, 549 estruturas nervosas e 117 estruturas de órgãos internos, preservadas como malhas individualmente identificáveis.
 - Alterações neste projeto: renomeação dos arquivos, centralização e escala, combinação das malhas densas de vasos e nervos para reduzir chamadas de desenho, atributo de identificação por vértice, materiais e cores próprios, catálogo pesquisável com tradução auxiliar para português, seleção, isolamento, corte e transparência aplicados em tempo de execução. A geometria anatômica não foi remodelada neste repositório.
 
 Esses três ativos e adaptações das próprias malhas permanecem sob CC BY-SA 4.0. Os nomes traduzidos são auxiliares; a nomenclatura original é preservada nos detalhes da estrutura.

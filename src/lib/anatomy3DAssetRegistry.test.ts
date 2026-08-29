@@ -5,12 +5,14 @@ import { describe, expect, it } from "vitest";
 import { medicalSources } from "./medicineData";
 import {
   anatomy3DAssets,
+  detailedOrganKindsForSelection,
   heartAnatomyForId,
   heartAnatomyForMeshName,
   heartExteriorMeshDefinitions,
   heartInteriorMeshDefinitions,
   heartRepresentationForAvailability,
   isHeartInteriorStructureId,
+  hraDetailedOrganAssets,
 } from "./anatomy3DAssetRegistry";
 
 function glbMeshNames(file: Buffer) {
@@ -69,5 +71,33 @@ describe("anatomy3DAssetRegistry", () => {
     expect(heartRepresentationForAvailability(true, true)).toBe("interior");
     expect(heartRepresentationForAvailability(true, false)).toBe("exterior-fallback");
     expect(heartRepresentationForAvailability(false, false)).toBe("exterior");
+  });
+
+  it("valida os modelos HRA multi-órgão e sua segmentação real", () => {
+    const expectedHashes: Record<string, string> = {
+      brain: "C5711A1A8BC62CA930B8BCF076DEF15315C11F5AD9BC7901E51F698406D38DBC",
+      lungs: "323D27BB76BA2C5B140FF31AD5190627EEB8D4E37CD220E4B541655D67789C1A",
+      liver: "AD9B0BE0FF253E7BFE31BFFFC00017DAFCE226D4F3E7804A81CBB4C2E269D598",
+      "kidney-left": "8AC1228E4DB8C07CBF9F6C6DC7CA522C5B8D61F641927233A29AE6609B577403",
+      "kidney-right": "A67508E6948723D34A29FEA2BC8C96931A8FE2F8A08293FD1C3161CFCF13968E",
+    };
+    for (const [kind, definition] of Object.entries(hraDetailedOrganAssets)) {
+      const path = resolve(process.cwd(), "public", definition.asset.path.replace(/^\//, ""));
+      const file = readFileSync(path);
+      expect(createHash("sha256").update(file).digest("hex").toUpperCase(), kind).toBe(expectedHashes[kind]);
+      expect(glbMeshNames(file), kind).toHaveLength(definition.asset.meshCount);
+      expect(definition.asset.loadMode).toBe("organ");
+      expect(definition.asset.license).toBe("CC BY 4.0");
+    }
+  });
+
+  it("resolve órgãos detalhados apenas quando a seleção pede o LOD de órgão", () => {
+    expect(detailedOrganKindsForSelection("organ-brain")).toEqual(["brain"]);
+    expect(detailedOrganKindsForSelection("organ-lungs")).toEqual(["lungs"]);
+    expect(detailedOrganKindsForSelection("organ-liver")).toEqual(["liver"]);
+    expect(detailedOrganKindsForSelection("organ-kidneys")).toEqual(["kidney-left", "kidney-right"]);
+    expect(detailedOrganKindsForSelection("model:hra:brain:allen-thalamus-l")).toEqual(["brain"]);
+    expect(detailedOrganKindsForSelection("organ-heart")).toEqual([]);
+    expect(detailedOrganKindsForSelection(null)).toEqual([]);
   });
 });

@@ -88,7 +88,87 @@ export const anatomy3DAssets = {
     meshCount: 14,
     triangleCount: 85_914,
   },
+  brainDetailed: {
+    id: "brain-detailed",
+    path: "/medicine/models/nih-hra-brain-female-v1.glb",
+    loadMode: "organ",
+    sourceId: "nihHraBrain3D",
+    license: "CC BY 4.0",
+    expectedMinimumBytes: 11_900_000,
+    meshCount: 283,
+    triangleCount: 656_268,
+  },
+  lungsDetailed: {
+    id: "lungs-detailed",
+    path: "/medicine/models/nih-hra-lung-female-v1.glb",
+    loadMode: "organ",
+    sourceId: "nihHraLung3D",
+    license: "CC BY 4.0",
+    expectedMinimumBytes: 23_200_000,
+    meshCount: 56,
+    triangleCount: 297_097,
+  },
+  liverDetailed: {
+    id: "liver-detailed",
+    path: "/medicine/models/nih-hra-liver-female-v1.glb",
+    loadMode: "organ",
+    sourceId: "nihHraLiver3D",
+    license: "CC BY 4.0",
+    expectedMinimumBytes: 1_700_000,
+    meshCount: 26,
+    triangleCount: 93_303,
+  },
+  kidneyLeftDetailed: {
+    id: "kidney-left-detailed",
+    path: "/medicine/models/nih-hra-kidney-left-female-v1.glb",
+    loadMode: "organ",
+    sourceId: "nihHraKidney3D",
+    license: "CC BY 4.0",
+    expectedMinimumBytes: 1_300_000,
+    meshCount: 15,
+    triangleCount: 72_788,
+  },
+  kidneyRightDetailed: {
+    id: "kidney-right-detailed",
+    path: "/medicine/models/nih-hra-kidney-right-female-v1.glb",
+    loadMode: "organ",
+    sourceId: "nihHraKidney3D",
+    license: "CC BY 4.0",
+    expectedMinimumBytes: 1_350_000,
+    meshCount: 14,
+    triangleCount: 74_283,
+  },
 } as const satisfies Record<string, Anatomy3DAssetDefinition>;
+
+export type HraDetailedOrganKind = "brain" | "lungs" | "liver" | "kidney-left" | "kidney-right";
+
+export const hraDetailedOrganAssets: Record<HraDetailedOrganKind, {
+  asset: Anatomy3DAssetDefinition;
+  parentId: string;
+  name: string;
+  latin: string;
+  system: string;
+  regionId: "head" | "thorax" | "abdomen";
+  region: string;
+  color: string;
+  target: [number, number, number];
+  size: number;
+}> = {
+  brain: { asset: anatomy3DAssets.brainDetailed, parentId: "organ-brain", name: "Encéfalo detalhado", latin: "Encephalon", system: "Nervoso", regionId: "head", region: "Cavidade craniana", color: "#c9878e", target: [0, 3.35, 0], size: 1.22 },
+  lungs: { asset: anatomy3DAssets.lungsDetailed, parentId: "organ-lungs", name: "Pulmões detalhados", latin: "Pulmones", system: "Respiratório", regionId: "thorax", region: "Cavidades pleurais", color: "#8e5360", target: [0, 2.25, 0], size: 1.62 },
+  liver: { asset: anatomy3DAssets.liverDetailed, parentId: "organ-liver", name: "Fígado detalhado", latin: "Hepar", system: "Digestório", regionId: "abdomen", region: "Hipocôndrio direito e epigástrio", color: "#7f4037", target: [-.24, 1.16, .04], size: 1.18 },
+  "kidney-left": { asset: anatomy3DAssets.kidneyLeftDetailed, parentId: "organ-kidneys", name: "Rim esquerdo detalhado", latin: "Ren sinister", system: "Urinário", regionId: "abdomen", region: "Retroperitônio esquerdo", color: "#80556b", target: [-.25, .72, 0], size: .72 },
+  "kidney-right": { asset: anatomy3DAssets.kidneyRightDetailed, parentId: "organ-kidneys", name: "Rim direito detalhado", latin: "Ren dexter", system: "Urinário", regionId: "abdomen", region: "Retroperitônio direito", color: "#80556b", target: [.25, .72, 0], size: .72 },
+};
+
+export function detailedOrganKindsForSelection(anatomicalId?: string | null): HraDetailedOrganKind[] {
+  if (!anatomicalId) return [];
+  if (anatomicalId === "organ-brain" || anatomicalId === "model:organs:supplement:brain" || anatomicalId.startsWith("model:hra:brain:")) return ["brain"];
+  if (anatomicalId === "organ-lungs" || anatomicalId.startsWith("model:hra:lungs:")) return ["lungs"];
+  if (anatomicalId === "organ-liver" || anatomicalId.startsWith("model:hra:liver:")) return ["liver"];
+  if (anatomicalId === "organ-kidneys" || anatomicalId.startsWith("model:hra:kidney-")) return ["kidney-left", "kidney-right"];
+  return [];
+}
 
 export const heartInteriorMeshDefinitions: HeartMeshDefinition[] = [
   {
