@@ -123,6 +123,11 @@ export function InstrumentsStudio({ level, onLearningEvent, onOpenSurgery }: {
       <div className="med-instrument-hero-stats"><article><strong>{medicalInstruments.length}</strong><span>instrumentos descritos</span></article><article><strong>{learnedAtLevel}</strong><span>adequados ao seu nível</span></article><article><strong>{reviewIds.length}</strong><span>para revisar no quiz</span></article><ShieldCheck/><small>Conteúdo educacional. Não ensina execução autônoma de procedimentos invasivos.</small></div>
     </section>
 
+    <section className="med-instrument-reference">
+      <div><img src="/medicine/references/servier/instruments-stethoscope-otoscope.png" alt="Estetoscópio e otoscópio em prancha médica" loading="lazy" decoding="async" /></div>
+      <article><span className="med-eyebrow">REFERÊNCIA VISUAL LICENCIADA</span><h2>Forma, função e comparação</h2><p>As imagens de alta definição do catálogo continuam como referência principal. Esta prancha vetorial acrescenta uma leitura limpa do contorno e das partes externas.</p><a href={medicalSources.servierMedicalArt.url} target="_blank" rel="noreferrer"><ShieldCheck /> Servier Medical Art · CC BY 4.0 <ExternalLink/></a></article>
+    </section>
+
     {mode === "catalog" ? <>
       <section className="med-instrument-filters">
         <label><Search/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar por nome, apelido ou função…"/><span>{filtered.length} resultados</span></label>

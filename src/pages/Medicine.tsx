@@ -691,7 +691,8 @@ function SystemsSection({ level, initialSystemId, onOpenAtlas, onOpen3D, onOpenQ
     const selectedIndex = medicalSystems.findIndex((system) => system.id === selected.id);
     const nextSystem = medicalSystems[(selectedIndex + 1) % medicalSystems.length];
     const anatomyPreview = activeStructure ? atlasImageForStructure(activeStructure, structureView) : null;
-    void preloadMedicalImages([selected.image, nextSystem?.image, anatomyPreview], "high");
+    const referenceImages = selected.referenceImages?.map((reference) => reference.image) ?? [];
+    void preloadMedicalImages([selected.image, ...referenceImages, nextSystem?.image, anatomyPreview], "high");
   }, [activeStructure, selected, structureView]);
 
   const nextQuestion = () => {
@@ -747,6 +748,13 @@ function SystemsSection({ level, initialSystemId, onOpenAtlas, onOpen3D, onOpenQ
               <div><span><Activity /></span><small>PROCESSOS-CHAVE</small><strong>{selected.topics.join(", ")}</strong></div>
               <div><span><ShieldCheck /></span><small>FONTE PRINCIPAL</small><strong>{source.organization}</strong><a href={source.url} target="_blank" rel="noreferrer">Conferir conteúdo <ExternalLink /></a></div>
             </section>
+            {selected.referenceImages?.length ? <section className="med-system-reference-gallery">
+              <header><div><span className="med-eyebrow">PRANCHAS MÉDICAS LICENCIADAS</span><h3>Veja a mesma anatomia por outro ângulo</h3><p>As pranchas complementam o render principal com cortes, relações e níveis de organização.</p></div><span><ShieldCheck /> CC BY 4.0</span></header>
+              <div>{selected.referenceImages.map((reference) => {
+                const referenceSource = medicalSources[reference.sourceId];
+                return <figure key={reference.image}><div><img src={reference.image} alt={reference.alt} loading="lazy" decoding="async" /></div><figcaption><span>REFERÊNCIA VISUAL</span><strong>{reference.title}</strong><p>{reference.caption}</p><a href={referenceSource.url} target="_blank" rel="noreferrer">Fonte e licença <ExternalLink /></a></figcaption></figure>;
+              })}</div>
+            </section> : null}
           </div>}
 
           {tab === "structures" && <div className="med-system-structure-explorer">
@@ -832,8 +840,8 @@ function DevelopmentSection({ onOpenNotebook, onLearningEvent }: {
 
   useEffect(() => {
     const nextStage = embryologyTimeline[Math.min(active + 1, embryologyTimeline.length - 1)];
-    void preloadMedicalImages([previousStage.image, stage.image, nextStage.image], "high");
-  }, [active, previousStage.image, stage.image]);
+    void preloadMedicalImages([previousStage.image, stage.image, stage.referenceImage?.image, nextStage.image], "high");
+  }, [active, previousStage.image, stage.image, stage.referenceImage?.image]);
 
   useEffect(() => {
     setActiveMilestone(0);
@@ -999,6 +1007,11 @@ function DevelopmentSection({ onOpenNotebook, onLearningEvent }: {
         <a href={source.url} target="_blank" rel="noreferrer"><BookOpen /> Abrir referência completa <ExternalLink /></a>
       </aside>
     </div>
+
+    {stage.referenceImage && <section className="med-development-reference" aria-label="Prancha médica complementar">
+      <div><img src={stage.referenceImage.image} alt={stage.referenceImage.alt} loading="lazy" decoding="async" /></div>
+      <article><span className="med-eyebrow">PRANCHA MÉDICA COMPLEMENTAR</span><h3>{stage.referenceImage.title}</h3><p>{stage.referenceImage.caption}</p><small>Use a ilustração principal para a sequência geral e esta prancha para aprofundar o mecanismo.</small><a href={medicalSources[stage.referenceImage.sourceId].url} target="_blank" rel="noreferrer"><ShieldCheck /> Fonte e licença CC BY 4.0 <ExternalLink /></a></article>
+    </section>}
 
     <section className="med-development-prompts">
       <div><span className="med-eyebrow">RECUPERAÇÃO ATIVA</span><h3>Consegue explicar sem reler?</h3><p>Responda com suas palavras. Se travar, volte aos marcos e confira a referência.</p></div>

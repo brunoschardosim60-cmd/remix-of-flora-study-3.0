@@ -1288,6 +1288,30 @@
 .med-system-core-grid > div > span { display: grid; width: 34px; height: 34px; place-items: center; margin-bottom: 13px; border-radius: 11px; background: color-mix(in srgb, var(--system) 10%, #fff); color: var(--system); }
 .med-system-core-grid svg { width: 16px; }
 .med-system-core-grid small { color: #84948e; font-size:11px; font-weight: 900; letter-spacing: .08em; }
+
+.med-system-reference-gallery {
+  grid-column: 1 / -1;
+  padding: 22px;
+  border: 1px solid color-mix(in srgb, var(--system) 15%, var(--med-line));
+  border-radius: 22px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--system) 5%, #fff), #fff 65%);
+}
+
+.med-system-reference-gallery > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
+.med-system-reference-gallery > header h3 { margin-top: 6px; color: #1e3e36; font-family: Georgia, serif; font-size: 25px; font-weight: 500; }
+.med-system-reference-gallery > header p { max-width: 650px; margin-top: 6px; color: #6d817a; font-size: 13px; line-height: 1.6; }
+.med-system-reference-gallery > header > span { display: flex; min-height: 36px; align-items: center; gap: 7px; padding: 0 12px; border: 1px solid color-mix(in srgb, var(--system) 16%, transparent); border-radius: 999px; color: var(--system); font-size: 12px; font-weight: 850; white-space: nowrap; }
+.med-system-reference-gallery > header svg { width: 15px; }
+.med-system-reference-gallery > div { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 12px; margin-top: 18px; }
+.med-system-reference-gallery figure { display: grid; min-width: 0; grid-template-columns: minmax(180px, .75fr) minmax(0, 1.25fr); overflow: hidden; border: 1px solid var(--med-line); border-radius: 18px; background: #fff; }
+.med-system-reference-gallery figure > div { display: grid; min-height: 260px; place-items: center; overflow: hidden; padding: 18px; background: radial-gradient(circle, color-mix(in srgb, var(--system) 8%, #fff), #f7faf8 70%); }
+.med-system-reference-gallery figure img { width: 100%; height: 230px; object-fit: contain; }
+.med-system-reference-gallery figcaption { display: flex; min-width: 0; justify-content: center; padding: 22px; flex-direction: column; }
+.med-system-reference-gallery figcaption > span { color: var(--system); font-size: 11px; font-weight: 900; letter-spacing: .08em; }
+.med-system-reference-gallery figcaption strong { margin-top: 7px; color: #284b41; font-family: Georgia, serif; font-size: 21px; font-weight: 500; }
+.med-system-reference-gallery figcaption p { margin-top: 8px; color: #667b74; font-size: 12.5px; line-height: 1.55; }
+.med-system-reference-gallery figcaption a { display: flex; width: fit-content; min-height: 44px; align-items: center; gap: 7px; margin-top: 12px; color: var(--system); font-size: 12px; font-weight: 850; }
+.med-system-reference-gallery figcaption a svg { width: 14px; }
 .med-system-core-grid strong { margin-top: 6px; color: #3d5851; font-size:12.5px; font-weight: 750; line-height: 1.55; }
 .med-system-core-grid a { display: flex; align-items: center; gap: 5px; margin-top: 10px; color: var(--system); font-size:11.5px; font-weight: 900; }
 .med-system-core-grid a svg { width: 11px; }
@@ -1544,6 +1568,8 @@
 .dark .med-system-learning-map,
 .dark .med-system-level-panel,
 .dark .med-system-core-grid > div,
+.dark .med-system-reference-gallery,
+.dark .med-system-reference-gallery figure,
 .dark .med-system-structure-explorer > aside,
 .dark .med-system-structure-explorer > article,
 .dark .med-system-flow > article,
@@ -1554,6 +1580,8 @@
 .black .med-system-learning-map,
 .black .med-system-level-panel,
 .black .med-system-core-grid > div,
+.black .med-system-reference-gallery,
+.black .med-system-reference-gallery figure,
 .black .med-system-structure-explorer > aside,
 .black .med-system-structure-explorer > article,
 .black .med-system-flow > article,
@@ -1564,6 +1592,8 @@
 .black .med-system-learning-map,
 .black .med-system-level-panel,
 .black .med-system-core-grid > div,
+.black .med-system-reference-gallery,
+.black .med-system-reference-gallery figure,
 .black .med-system-structure-explorer > aside,
 .black .med-system-structure-explorer > article,
 .black .med-system-flow > article,
@@ -1589,6 +1619,8 @@
 .dark .med-system-level-panel h3,
 .dark .med-system-route strong,
 .dark .med-system-core-grid strong,
+.dark .med-system-reference-gallery h3,
+.dark .med-system-reference-gallery figcaption strong,
 .dark .med-system-structure-list strong,
 .dark .med-system-structure-copy h3,
 .dark .med-system-flow h4,
@@ -1598,6 +1630,8 @@
 .black .med-system-level-panel h3,
 .black .med-system-route strong,
 .black .med-system-core-grid strong,
+.black .med-system-reference-gallery h3,
+.black .med-system-reference-gallery figcaption strong,
 .black .med-system-structure-list strong,
 .black .med-system-structure-copy h3,
 .black .med-system-flow h4,
@@ -1671,6 +1705,7 @@
   .med-system-content { padding: 18px; }
   .med-system-overview-grid { grid-template-columns: 1fr; }
   .med-system-core-grid { grid-template-columns: 1fr; }
+  .med-system-reference-gallery > header { flex-direction: column; }
   .med-system-structure-explorer { grid-template-columns: 1fr; }
   .med-system-structure-explorer > aside { max-height: none; }
   .med-system-structure-list { flex-direction: row; overflow-x: auto; }
@@ -1717,6 +1752,11 @@
   .med-system-physiology-footer button { justify-content: center; }
   .med-system-question { padding: 19px; }
   .med-system-question > h4 { font-size: 20px; }
+  .med-system-reference-gallery { padding: 16px; }
+  .med-system-reference-gallery figure { grid-template-columns: 1fr; }
+  .med-system-reference-gallery figure > div { min-height: 220px; }
+  .med-system-reference-gallery figure img { height: 205px; }
+  .med-system-reference-gallery figcaption { padding: 18px; }
 }
 
 /* Development journey */
@@ -1822,6 +1862,16 @@
 .med-development-processes > a { display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 43px; margin-top: auto; padding-top: 20px; color: #d9ebe5; font-size:11.5px; font-weight: 900; }
 .med-development-processes > a svg { width: 14px; }
 
+.med-development-reference { display: grid; grid-template-columns: minmax(300px, .9fr) minmax(0, 1.1fr); gap: 1px; overflow: hidden; margin-top: 14px; border: 1px solid var(--med-line); border-radius: 22px; background: var(--med-line); }
+.med-development-reference > div { display: grid; min-height: 320px; place-items: center; padding: 24px; background: radial-gradient(circle at center, #fff, #edf4f0); }
+.med-development-reference img { width: 100%; height: 280px; object-fit: contain; }
+.med-development-reference article { display: flex; justify-content: center; padding: 30px; background: #fff; flex-direction: column; }
+.med-development-reference h3 { margin-top: 7px; color: #274a40; font-family: Georgia, serif; font-size: 26px; font-weight: 500; }
+.med-development-reference p { margin-top: 10px; color: #61776f; font-size: 13px; line-height: 1.6; }
+.med-development-reference article > small { margin-top: 12px; color: #7a8c85; font-size: 11.5px; line-height: 1.5; }
+.med-development-reference a { display: flex; width: fit-content; min-height: 44px; align-items: center; gap: 7px; margin-top: 15px; color: #3f7465; font-size: 12px; font-weight: 850; }
+.med-development-reference a svg { width: 15px; }
+
 .med-development-prompts { display: grid; grid-template-columns: 320px 1fr; gap: 28px; margin-top: 14px; padding: 30px; border: 1px solid var(--med-line); border-radius: 22px; background: #fff; }
 .med-development-prompts ol { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .med-development-prompts li { display: grid; grid-template-columns: 34px 1fr; align-items: center; gap: 11px; padding: 14px; border-radius: 14px; background: #f2f5f3; }
@@ -1843,8 +1893,9 @@
 .dark .med-development-safety, .black .med-development-safety { border-color: rgba(165, 203, 190, .13); background: linear-gradient(105deg, #1d332b, #17241f); }
 .dark .med-development-safety strong, .black .med-development-safety strong { color: #cee1da; }
 .dark .med-development-safety span, .black .med-development-safety span { color: #9eafa9; }
-.dark .med-development-ribbon button, .black .med-development-ribbon button, .dark .med-development-hero, .black .med-development-hero, .dark .med-development-learning-grid > *, .black .med-development-learning-grid > *, .dark .med-development-prompts, .black .med-development-prompts, .dark .med-development-gallery, .black .med-development-gallery { background: #18211d; }
-.black .med-development-ribbon button, .black .med-development-hero, .black .med-development-learning-grid > *, .black .med-development-prompts, .black .med-development-gallery { background: #0a0e0c; }
+.dark .med-development-ribbon button, .black .med-development-ribbon button, .dark .med-development-hero, .black .med-development-hero, .dark .med-development-learning-grid > *, .black .med-development-learning-grid > *, .dark .med-development-reference article, .black .med-development-reference article, .dark .med-development-prompts, .black .med-development-prompts, .dark .med-development-gallery, .black .med-development-gallery { background: #18211d; }
+.black .med-development-ribbon button, .black .med-development-hero, .black .med-development-learning-grid > *, .black .med-development-reference article, .black .med-development-prompts, .black .med-development-gallery { background: #0a0e0c; }
+.dark .med-development-reference h3, .black .med-development-reference h3 { color: #d6e7e1; }
 .dark .med-development-ribbon button.active, .black .med-development-ribbon button.active { background: #21332c; }
 .dark .med-development-ribbon button > span, .black .med-development-ribbon button > span, .dark .med-development-source-mini, .black .med-development-source-mini, .dark .med-development-milestones article, .black .med-development-milestones article, .dark .med-development-prompts li, .black .med-development-prompts li { background: #202d27; }
 .dark .med-development-milestones article > span, .black .med-development-milestones article > span, .dark .med-development-prompts li span, .black .med-development-prompts li span { background: #2c3d35; color: #b8d0c7; }
@@ -1864,6 +1915,7 @@
   .med-development-milestones > div { grid-template-columns: 1fr; }
   .med-development-milestones article { min-height: 96px; }
   .med-development-prompts { grid-template-columns: 1fr; }
+  .med-development-reference { grid-template-columns: 1fr; }
   .med-development-gallery > div { grid-template-columns: repeat(11, 125px); }
 }
 
@@ -1876,6 +1928,9 @@
   .med-development-hero-copy h2 { font-size: 39px; }
   .med-development-hero-actions { grid-template-columns: 1fr; }
   .med-development-milestones, .med-development-processes, .med-development-prompts, .med-development-gallery { padding: 20px; }
+  .med-development-reference > div { min-height: 240px; padding: 18px; }
+  .med-development-reference img { height: 215px; }
+  .med-development-reference article { padding: 22px 20px; }
   .med-development-prompts ol { grid-template-columns: 1fr; }
   .med-development-gallery > header { align-items: flex-start; flex-direction: column; gap: 8px; }
 }

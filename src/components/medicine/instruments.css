@@ -22,3 +22,15 @@
 @media(max-width:1050px){.med-instrument-workspace{grid-template-columns:1fr}.med-instrument-detail{position:static}.med-instrument-grid-list{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:820px){.med-instrument-hero{grid-template-columns:1fr}.med-instrument-grid-list{grid-template-columns:1fr 1fr}.med-instrument-quiz-body{grid-template-columns:1fr}.med-instrument-mystery{border-right:0;border-bottom:1px solid var(--med-line)}.med-instrument-mystery .med-instrument-glyph{min-height:280px}}
 @media(max-width:560px){.med-instrument-hero>div:first-child{padding:31px 23px}.med-instrument-hero>div:first-child>div{align-items:stretch;flex-direction:column}.med-instrument-grid-list{grid-template-columns:1fr}.med-instrument-grid-list>button{min-height:145px}.med-instrument-detail-visual .med-instrument-glyph{width:calc(100% - 38px)}.med-instrument-detail-copy{padding:24px 20px}.med-instrument-detail-copy>footer{align-items:stretch;flex-direction:column}.med-instrument-detail-copy footer a{justify-content:center}.med-instrument-quiz>header{align-items:flex-start;flex-direction:column}.med-instrument-quiz>header>div:last-child{width:100%}.med-instrument-quiz>header>div:last-child span{min-width:0;flex:1}.med-instrument-quiz-body>article{padding:24px 19px}.med-instrument-quiz-options{grid-template-columns:1fr}}
+
+.med-instrument-reference{display:grid;grid-template-columns:minmax(240px,.7fr) minmax(0,1.3fr);gap:1px;overflow:hidden;margin:14px 0;border:1px solid var(--med-line);border-radius:22px;background:var(--med-line)}
+.med-instrument-reference>div{display:grid;min-height:280px;place-items:center;padding:22px;background:radial-gradient(circle,#fff,#edf4f0)}
+.med-instrument-reference img{width:100%;height:240px;object-fit:contain}
+.med-instrument-reference article{display:flex;justify-content:center;padding:30px;background:#fff;flex-direction:column}
+.med-instrument-reference h2{margin-top:7px;color:#24483e;font-family:Georgia,serif;font-size:27px;font-weight:500}
+.med-instrument-reference p{max-width:680px;margin-top:10px;color:#60766f;font-size:13px;line-height:1.6}
+.med-instrument-reference a{display:flex;width:fit-content;min-height:44px;align-items:center;gap:7px;margin-top:15px;color:#397262;font-size:12px;font-weight:850}
+.med-instrument-reference a svg{width:15px}
+.dark .med-instrument-reference article,.black .med-instrument-reference article{background:#18211d}.black .med-instrument-reference article{background:#0a0e0c}.dark .med-instrument-reference h2,.black .med-instrument-reference h2{color:#d7e7e1}
+@media(max-width:820px){.med-instrument-reference{grid-template-columns:1fr}.med-instrument-reference>div{min-height:230px}.med-instrument-reference img{height:205px}}
+@media(max-width:560px){.med-instrument-reference article{padding:22px 20px}}

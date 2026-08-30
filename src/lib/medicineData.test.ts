@@ -260,6 +260,7 @@ describe("medicine content integrity", () => {
       expect(medicalSources[system.sourceId], `source for system ${system.id}`).toBeDefined();
       expect(system.atlasStructureIds.length, `atlas links for ${system.id}`).toBeGreaterThanOrEqual(4);
       expect(system.questionSystems.length, `question links for ${system.id}`).toBeGreaterThan(0);
+      expect(system.referenceImages?.length, `licensed visual references for ${system.id}`).toBeGreaterThanOrEqual(1);
 
       for (const structureId of system.atlasStructureIds) {
         expect(anatomyStructures.some((structure) => structure.id === structureId), `${system.id} -> ${structureId}`).toBe(true);
@@ -433,10 +434,18 @@ describe("medicine content integrity", () => {
 
     for (const system of medicalSystems) {
       expect(publicAssetExists(system.image), system.image).toBe(true);
+      for (const reference of system.referenceImages ?? []) {
+        expect(publicAssetExists(reference.image), reference.image).toBe(true);
+        expect(medicalSources[reference.sourceId], `${system.id}/${reference.sourceId}`).toBeDefined();
+      }
     }
 
     for (const stage of embryologyTimeline) {
       expect(publicAssetExists(stage.image), stage.image).toBe(true);
+      if (stage.referenceImage) {
+        expect(publicAssetExists(stage.referenceImage.image), stage.referenceImage.image).toBe(true);
+        expect(medicalSources[stage.referenceImage.sourceId], `${stage.id}/${stage.referenceImage.sourceId}`).toBeDefined();
+      }
     }
 
     for (const layer of bodyLayers) {
