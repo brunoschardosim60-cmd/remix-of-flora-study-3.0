@@ -148,6 +148,14 @@ export interface MedicalClinicalCase {
 
 export const medicalSources: Record<string, MedicalSource> = {
   ...histologySources,
+  vayuAnatomy3D: {
+    title: "Vayu AI Anatomy — atlas humano 3D aberto",
+    organization: "Vayu AI; dados Z-Anatomy, SPL Abdominal Atlas e BodyParts3D",
+    url: "https://www.vayuai.ai/writing/vayu-ai-anatomy",
+    reviewedAt: "2026-08-30",
+    license: "CC BY-SA 4.0, CC BY-SA 2.1 JP e 3D Slicer License, conforme o asset de origem",
+    attribution: "Vayu AI Anatomy; Z-Anatomy; SPL Abdominal Atlas, BWH; BodyParts3D, DBCLS.",
+  },
   openstax: {
     title: "Anatomia e Fisiologia 2e",
     organization: "OpenStax, Rice University",

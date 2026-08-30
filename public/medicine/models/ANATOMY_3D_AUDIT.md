@@ -1,16 +1,31 @@
 # Auditoria técnica do atlas humano 3D
 
-Data: 28 de agosto de 2026.
+Data da revisão atual: 30 de agosto de 2026.
 
-## Corpo-base substituído por exportações HD oficiais
+## Pacotes ativos após a substituição integral
+
+| Asset | MB | Estruturas da fonte | Triângulos | Estado | Cobertura |
+|---|---:|---:|---:|---|---|
+| `vayu-zanatomy-muscular-v1.glb` | 5,43 | 692 | 2.335.895 | ACTIVE | Corpo muscular completo, incluindo músculos profundos, tendões, fáscias e retináculos. |
+| `vayu-zanatomy-skeletal-v1.glb` | 7,72 | 1.386 | 1.916.818 | ACTIVE | Ossos, costelas, dentes, cartilagens, discos, ligamentos e articulações. |
+| `vayu-zanatomy-cardiovascular-v1.glb` | 9,61 | 680 | 3.844.392 | ACTIVE | Rede arterial, venosa e estruturas cardiovasculares segmentadas. |
+| `vayu-zanatomy-nervous-sensory-v1.glb` | 5,51 | 613 | 2.396.782 | ACTIVE | Encéfalo, medula, nervos periféricos e órgãos/sistemas sensoriais. |
+| `vayu-human-internal-systems-v1.glb` | 2,97 | 275 | 1.059.085 | ACTIVE | Digestório, endócrino, linfático, respiratório, urinário e reprodutivo. |
+| `zanatomy-surface-hd-v2.glb` | 0,81 | 256 | 135.204 | ACTIVE | Superfície externa regionalizada; mantida por ser a melhor superfície aberta e verificável disponível na fonte. |
+
+O manifesto local registra 3.753 estruturas em 13 sistemas. A soma por pacote não deve ser usada como total humano único: sistemas podem conter agrupadores hierárquicos, instâncias laterais e estruturas de fontes diferentes. No navegador, após deduplicação por `structureId` e união com o catálogo didático do Flora, foram observadas 697 seleções musculares, 1.385 esqueléticas, 676 vasculares, 614 nervosas/sensoriais e 321 internas.
+
+Os pacotes anteriores `zanatomy-*-hd-v2.glb` continuam no repositório apenas para rastreabilidade e fallback; não são mais o caminho ativo de músculos, esqueleto, vasos, nervos ou órgãos. Os LODs HRA/NIH continuam ativos quando o aluno isola coração, cérebro, pulmões, fígado ou rins.
+
+## Geração anterior: exportações HD oficiais
 
 | Asset | MB | Malhas | Triângulos | Classificação | Motivo |
 |---|---:|---:|---:|---|---|
-| `zanatomy-surface-hd-v2.glb` | 0,81 | 256 | 135.204 | REPLACE/ACTIVE | Substitui a pele única de baixa resolução por regiões anatômicas oficiais separadas. |
-| `zanatomy-musculoskeletal-hd-v2.glb` | 10,90 | 960 | 2.952.925 | REPLACE/ACTIVE | Exportação direta do atlas oficial: 277 ossos/cartilagens/dentes e 683 músculos, com aproximadamente 10 vezes mais triângulos que a base anterior. |
-| `zanatomy-cardiovascular-hd-v2.glb` | 4,79 | 672 | 1.353.740 | REPLACE/ACTIVE | Mesma rede anatômica completa com curvas convertidas e cerca de 3 vezes mais geometria efetiva; vasos intrarrenais NC excluídos. |
-| `zanatomy-nervous-hd-v2.glb` | 4,21 | 572 | 1.208.218 | REPLACE/ACTIVE | Mais estruturas e aproximadamente 2,8 vezes mais geometria; subconjunto NC de ouvido interno excluído. |
-| `zanatomy-organs-hd-v2.glb` | 1,83 | 116 | 706.289 | REPLACE/ACTIVE | Vísceras oficiais em resolução integral disponível; rins NC excluídos e substituídos pelos LODs HRA CC BY. |
+| `zanatomy-surface-hd-v2.glb` | 0,81 | 256 | 135.204 | KEEP/ACTIVE | Superfície externa regionalizada. |
+| `zanatomy-musculoskeletal-hd-v2.glb` | 10,90 | 960 | 2.952.925 | LEGACY | Substituído pelos pacotes muscular e esquelético separados. |
+| `zanatomy-cardiovascular-hd-v2.glb` | 4,79 | 672 | 1.353.740 | LEGACY | Substituído pela rede cardiovascular Vayu de maior densidade. |
+| `zanatomy-nervous-hd-v2.glb` | 4,21 | 572 | 1.208.218 | LEGACY | Substituído pelo pacote combinado nervoso + sentidos. |
+| `zanatomy-organs-hd-v2.glb` | 1,83 | 116 | 706.289 | LEGACY | Substituído pelo pacote multissistêmico; LODs HRA continuam ativos. |
 | `bodyparts3d-skin-v1.glb` e sistemas `zanatomy-*-v1.glb` | — | — | — | LEGACY/FALLBACK | Permanecem no repositório para rastreabilidade, mas não são mais apontados pelo registro ativo do Corpo 3D. |
 | `bodyparts3d-organs-v1.glb` | 0,30 | 16 | 143.202 | KEEP | Contexto corporal leve e fallback. |
 | `zanatomy-organ-heart-v1.glb` | 1,61 | 9 | 538.040 | KEEP | Parede e grandes vasos externos; complementado pelo interior HRA. |
@@ -43,12 +58,12 @@ Data: 28 de agosto de 2026.
 
 ## Arquitetura e budgets
 
-- Entrada ativa: superfície HD (0,81 MB) e musculoesquelético HD (10,90 MB). A compressão Draco mantém a transferência total em 11,71 MB apesar do salto de 290.886 para 2.952.925 triângulos no musculoesquelético.
-- Sistemas densos HD: 1,83–4,80 MB e carregamento somente ao abrir a camada correspondente.
+- Entrada ativa padrão: somente a superfície HD (0,81 MB). Músculos, esqueleto, vasos, nervos/sentidos e sistemas internos são pacotes Draco independentes, carregados quando a camada é aberta.
+- Sistemas densos atuais: 2,97–9,61 MB. Separar músculos de esqueleto evita transferir os dois conjuntos quando o aluno precisa estudar apenas um deles.
 - LODs de órgão: carregados somente ao isolar cérebro, pulmões, fígado ou rins.
 - Exceções justificadas: pulmões (22,18 MB) e cérebro (11,42 MB), preservados sem redução destrutiva por sua segmentação didática. Nenhum deles entra no carregamento inicial.
 - As 394 novas malhas permanecem separadas para seleção. Não houve merge que destruísse identidade anatômica.
-- As 960 malhas musculoesqueléticas oficiais alimentam o índice pesquisável: 277 ósseas/cartilaginosas/dentárias e 683 musculares. O nível Iniciante continua mostrando somente o recorte introdutório; a Residência expõe o catálogo segmentado.
+- Os identificadores anatômicos dos cinco pacotes alimentam o índice pesquisável. O nível Iniciante continua mostrando o recorte introdutório; a Residência expõe o catálogo segmentado completo disponível para a camada.
 - Nomes técnicos originalmente em inglês são traduzidos em tempo de execução sem alterar os metadados do GLB. Descrições longas em inglês não são exibidas como conteúdo médico em português; o atlas usa um resumo educacional neutro e mantém a fonte rastreável.
 
 ## Reprodutibilidade da substituição

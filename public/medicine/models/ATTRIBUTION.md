@@ -2,9 +2,28 @@
 
 > O modelo `zanatomy-organ-eye-v1.glb` também é reutilizado no módulo **Histologia e Sentidos**. A aparência do globo ocular usa o mesmo perfil `eye` de `src/lib/organRealism.ts`; nenhuma segunda malha artificial foi criada.
 
-## Exportações oficiais Z-Anatomy HD v2 (corpo ativo)
+## Vayu AI Anatomy — corpo humano segmentado ativo
 
-Arquivos: `zanatomy-surface-hd-v2.glb`, `zanatomy-musculoskeletal-hd-v2.glb`, `zanatomy-cardiovascular-hd-v2.glb`, `zanatomy-nervous-hd-v2.glb` e `zanatomy-organs-hd-v2.glb`.
+Arquivos ativos: `vayu-zanatomy-muscular-v1.glb`, `vayu-zanatomy-skeletal-v1.glb`, `vayu-zanatomy-cardiovascular-v1.glb`, `vayu-zanatomy-nervous-sensory-v1.glb`, `vayu-human-internal-systems-v1.glb` e `vayu-human-manifest-v1.json`.
+
+- Fonte e documentação: [Vayu AI Anatomy](https://www.vayuai.ai/writing/vayu-ai-anatomy), com índice público em `https://anatomy.vayuai.ai/species/human/manifest.json`; acesso em 30 de agosto de 2026.
+- Catálogo preservado: 3.753 estruturas nomeadas, 13 sistemas e hierarquia anatômica. O Flora carrega cada sistema sob demanda e mantém `structureId`, `systemId`, fonte e caminho hierárquico para pesquisa e seleção.
+- Fontes upstream declaradas no manifesto local: Z-Anatomy, CC BY-SA 4.0; BodyParts3D/DBCLS, CC BY-SA 2.1 Japan; e SPL Abdominal Atlas/BWH, 3D Slicer License Section B. Cada estrutura mantém o identificador de sua fonte no manifesto.
+- Alterações locais: renomeação dos pacotes; união dos pacotes nervoso + sentidos e dos sistemas internos com `@gltf-transform/cli`; aplicação de materiais PBR, cores por tecido, transparência, seleção e câmera em tempo de execução. A união reorganiza os contêineres GLB, mas não remodela intencionalmente a anatomia.
+- A superfície externa continua usando `zanatomy-surface-hd-v2.glb`: a fonte aberta informa que ainda não oferece pele/face fotográfica. Os modelos HRA/NIH permanecem como LODs internos de coração, cérebro, pulmões, fígado e rins.
+
+SHA-256 dos arquivos distribuídos:
+
+- muscular: `57027A81B445431BCF5A23F35F93147C378AE9CFD7DCA08C267A8722BEB5CD2A`
+- esquelético: `736B922982BE995755B40679B09FC973D88FF3BD59493A91796BAED597E3CE36`
+- cardiovascular: `1F39C2FDD47C52D6291AE6D41C21F95EB94C0D21631633C6CD3F51ECB2497FF6`
+- nervoso + sentidos: `1A617BC8B9EA3C23E5D1F58A92E287B88AE064C2971ED3CEDE61E5092E44ECB2`
+- sistemas internos: `C91EBA7B6D59F14CFFF8506A547114F6E5B727B308E666CAA1947DA249A07A1D`
+- manifesto: `A8A0081D560D3EB2F790950C2B88EEC1F27E26860CC9D6949E958FB261A04FDE`
+
+## Exportações oficiais Z-Anatomy HD v2 (geração anterior preservada)
+
+Arquivos: `zanatomy-surface-hd-v2.glb`, `zanatomy-musculoskeletal-hd-v2.glb`, `zanatomy-cardiovascular-hd-v2.glb`, `zanatomy-nervous-hd-v2.glb` e `zanatomy-organs-hd-v2.glb`. A superfície continua ativa; os quatro pacotes sistêmicos permanecem como geração anterior rastreável.
 
 - Fonte direta: [`Z-Anatomy/Models-of-human-anatomy`](https://github.com/Z-Anatomy/Models-of-human-anatomy), arquivo oficial `Z-Anatomy.zip` / `Startup.blend`.
 - Autores e base anatômica: Z-Anatomy (Gauthier Kervyn e colaboradores) e BodyParts3D, Database Center for Life Science. A lista completa de autores permanece no `License.txt` da fonte.

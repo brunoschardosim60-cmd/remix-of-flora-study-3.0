@@ -130,7 +130,7 @@ describe("medicine content integrity", () => {
 
   it("mantém os títulos exibidos em português e as referências OpenStax na edição atual", () => {
     const untranslatedTitleWords = /\b(anatomy|physiology|functions|development|assessment|clinical|patient|safe|signs|symptoms|diagnosis|interview|examination|perception|pathways)\b/i;
-    const sourcesWithEnglishBrandNames = new Set(["openAnatomy", "zAnatomy3D", "zAnatomySystems3D", "zAnatomyOrgan3D"]);
+    const sourcesWithEnglishBrandNames = new Set(["openAnatomy", "zAnatomy3D", "zAnatomySystems3D", "zAnatomyOrgan3D", "vayuAnatomy3D"]);
     for (const [id, source] of Object.entries(medicalSources)) {
       if (sourcesWithEnglishBrandNames.has(id)) continue;
       expect(source.title, `${id} title`).not.toMatch(untranslatedTitleWords);

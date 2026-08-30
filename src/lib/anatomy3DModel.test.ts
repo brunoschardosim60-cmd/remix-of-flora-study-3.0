@@ -75,6 +75,11 @@ describe("anatomy3DModel", () => {
       ["zanatomy-cardiovascular-hd-v2.glb", 4_750_000],
       ["zanatomy-nervous-hd-v2.glb", 4_180_000],
       ["zanatomy-organs-hd-v2.glb", 1_800_000],
+      ["vayu-zanatomy-muscular-v1.glb", 5_430_000],
+      ["vayu-zanatomy-skeletal-v1.glb", 7_710_000],
+      ["vayu-zanatomy-cardiovascular-v1.glb", 9_600_000],
+      ["vayu-zanatomy-nervous-sensory-v1.glb", 5_500_000],
+      ["vayu-human-internal-systems-v1.glb", 2_970_000],
       ["zanatomy-organ-heart-v1.glb", 1_600_000],
       ["zanatomy-organ-brain-v1.glb", 1_300_000],
       ["zanatomy-organ-spleen-v1.glb", 90_000],
@@ -90,6 +95,7 @@ describe("anatomy3DModel", () => {
     expect(medicalSources.zAnatomy3D?.url).toContain("Z-Anatomy/Models-of-human-anatomy");
     expect(medicalSources.zAnatomySystems3D?.url).toContain("anatomi-simulatoru");
     expect(medicalSources.zAnatomyOrgan3D?.url).toContain("anatomy-atlas");
+    expect(medicalSources.vayuAnatomy3D?.url).toContain("vayu-ai-anatomy");
     expect(medicalSources.bodyParts3D?.url).toContain("bodyparts3d");
   });
 

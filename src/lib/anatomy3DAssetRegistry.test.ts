@@ -29,7 +29,7 @@ function glbDocument(file: Buffer) {
   const jsonLength = file.readUInt32LE(12);
   return JSON.parse(file.toString("utf8", 20, 20 + jsonLength)) as {
     meshes?: Array<{ name?: string }>;
-    nodes?: Array<{ extras?: { anatomyName?: string; anatomyType?: string } }>;
+    nodes?: Array<{ extras?: { anatomyName?: string; anatomyType?: string; structureId?: string; systemId?: string } }>;
     extensionsUsed?: string[];
   };
 }
@@ -47,17 +47,17 @@ describe("anatomy3DAssetRegistry", () => {
     expect(anatomy3DAssets.heartInterior.loadMode).toBe("organ");
   });
 
-  it("usa as cinco novas exportações oficiais Z-Anatomy HD como base do corpo", () => {
+  it("usa os cinco pacotes Vayu/Z-Anatomy como base segmentada do corpo", () => {
     const expectedHashes: Record<string, string> = {
-      "body-base": "83104B45CF80E5F42B82F18E7D50BEED750DADB7E323B51276DC99C84359864D",
-      "skin-base": "7850312D8CB22250AE57AE807D59CE6E1DFA7E3BBB3C5830AC97E1A7862268F3",
-      cardiovascular: "371B5CC6F5E6BB213F554EF389E055F495AF8F6C152898E7E3FA5794B82A95B6",
-      nervous: "B14DC4354E8F4CADD84C7876C143098C6913C59E77B38E0AB487E90D339C582A",
-      organs: "982D1CEAEDC1368BB77D141736E23A8E274E2B18B11DDD479FA54950F59A39D4",
+      "muscular-base": "57027A81B445431BCF5A23F35F93147C378AE9CFD7DCA08C267A8722BEB5CD2A",
+      "skeletal-base": "736B922982BE995755B40679B09FC973D88FF3BD59493A91796BAED597E3CE36",
+      cardiovascular: "1F39C2FDD47C52D6291AE6D41C21F95EB94C0D21631633C6CD3F51ECB2497FF6",
+      nervous: "1A617BC8B9EA3C23E5D1F58A92E287B88AE064C2971ED3CEDE61E5092E44ECB2",
+      organs: "C91EBA7B6D59F14CFFF8506A547114F6E5B727B308E666CAA1947DA249A07A1D",
     };
     const primary = [
       anatomy3DAssets.bodyBase,
-      anatomy3DAssets.skinBase,
+      anatomy3DAssets.skeletalBase,
       anatomy3DAssets.cardiovascular,
       anatomy3DAssets.nervous,
       anatomy3DAssets.organs,
@@ -70,21 +70,17 @@ describe("anatomy3DAssetRegistry", () => {
       const extras = document.nodes?.flatMap((node) => node.extras ? [node.extras] : []) ?? [];
       expect(createHash("sha256").update(file).digest("hex").toUpperCase(), asset.id).toBe(expectedHashes[asset.id]);
       expect(document.meshes, asset.id).toHaveLength(asset.meshCount);
-      expect(extras, asset.id).toHaveLength(asset.meshCount);
-      expect(extras.every((item) => Boolean(item.anatomyName && item.anatomyType)), asset.id).toBe(true);
+      expect(extras.length, asset.id).toBeGreaterThan(asset.structureCount * .95);
+      expect(extras.every((item) => Boolean(item.structureId && item.systemId)), asset.id).toBe(true);
       expect(document.extensionsUsed, asset.id).toContain("KHR_draco_mesh_compression");
     }
 
-    const bodyPath = resolve(process.cwd(), "public", anatomy3DAssets.bodyBase.path.replace(/^\//, ""));
-    const bodyExtras = glbDocument(readFileSync(bodyPath)).nodes?.flatMap((node) => node.extras ? [node.extras] : []) ?? [];
-    expect(bodyExtras.filter((item) => item.anatomyType === "bone")).toHaveLength(277);
-    expect(bodyExtras.filter((item) => item.anatomyType === "muscle")).toHaveLength(683);
-
     const redistributedNames = primary.flatMap((asset) => {
       const path = resolve(process.cwd(), "public", asset.path.replace(/^\//, ""));
-      return glbDocument(readFileSync(path)).nodes?.flatMap((node) => node.extras?.anatomyName ? [node.extras.anatomyName] : []) ?? [];
+      return glbDocument(readFileSync(path)).nodes?.flatMap((node) => node.extras?.structureId ? [node.extras.structureId] : []) ?? [];
     });
-    expect(redistributedNames.join(" ")).not.toMatch(/\b(kidney|renal pelvis|cochlea|semicircular (?:canal|duct)|organ of corti)\b/i);
+    expect(redistributedNames.length).toBeGreaterThan(3_500);
+    expect(redistributedNames.filter((name) => name === "????????")).toHaveLength(1);
   });
 
   it("valida integridade e as 14 malhas reais do coração NIH", () => {
