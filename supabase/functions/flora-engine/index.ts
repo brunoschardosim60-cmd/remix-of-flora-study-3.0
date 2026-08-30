@@ -333,8 +333,9 @@ serve(async (req) => {
       };
 
       const raw = await runTaskChain(opts, "lite", "flora:anamnesis_patient", { supabase, userId, actionType: "chat" });
-      const parsed = parseAIJSON(raw) as { matchedQuestionIds?: unknown; interactionIntent?: unknown };
+      const parsed = parseAIJSON(raw) as { matchedQuestionIds?: unknown; matchedFactIds?: unknown; interactionIntent?: unknown };
       const allowedIds = new Set(clinicalCase.questions.map((question) => question.id));
+      const allowedFactIds = new Set(clinicalCase.patientFacts.map((fact) => fact.id));
       const allowedIntents = new Set<AnchoredInteractionIntent>(["question", "greeting", "rapport", "clarification", "closing"]);
       const localIntent = detectAnchoredInteractionIntent(studentMessage);
       const modelIntent = allowedIntents.has(parsed?.interactionIntent as AnchoredInteractionIntent)
@@ -343,6 +344,9 @@ serve(async (req) => {
       const interactionIntent = localIntent === "question" ? modelIntent : localIntent;
       const matchedQuestionIds = interactionIntent === "question" && Array.isArray(parsed?.matchedQuestionIds)
         ? [...new Set(parsed.matchedQuestionIds.map(String).filter((id: string) => allowedIds.has(id)))].slice(0, 2)
+        : [];
+      const matchedFactIds = interactionIntent === "question" && Array.isArray(parsed?.matchedFactIds)
+        ? [...new Set(parsed.matchedFactIds.map(String).filter((id: string) => allowedFactIds.has(id)))].slice(0, 2)
         : [];
       const previouslyCoveredQuestionIds = Array.isArray(data?.coveredQuestionIds)
         ? [...new Set(data.coveredQuestionIds.map(String).filter((id: string) => allowedIds.has(id)))].slice(0, 30)
@@ -354,8 +358,10 @@ serve(async (req) => {
           conversation: recentConversation,
           interactionIntent,
           previouslyCoveredQuestionIds,
+          matchedFactIds,
         }),
         coveredQuestionIds: matchedQuestionIds,
+        matchedFactIds,
         anchored: true,
         interactionIntent,
       });

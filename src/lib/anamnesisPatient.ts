@@ -1,4 +1,4 @@
-import type { AnamnesisCase, AnamnesisQuestion } from "@/lib/anamnesisSimulation";
+import type { AnamnesisCase, AnamnesisPatientFact, AnamnesisQuestion } from "@/lib/anamnesisSimulation";
 
 export interface AnamnesisConversationTurn {
   role: "student" | "patient";
@@ -12,6 +12,7 @@ export interface AnamnesisReplyContext {
   conversation?: AnamnesisConversationTurn[];
   interactionIntent?: AnamnesisInteractionIntent;
   previouslyCoveredQuestionIds?: string[];
+  matchedFactIds?: string[];
 }
 
 export interface AnamnesisPatientPayload {
@@ -22,6 +23,7 @@ export interface AnamnesisPatientPayload {
   demeanor: string;
   sensitiveWarnings: string[];
   questions: Array<Pick<AnamnesisQuestion, "id" | "text" | "answer" | "value" | "redFlag">>;
+  patientFacts: Array<Pick<AnamnesisPatientFact, "id" | "label" | "questionExamples" | "answer">>;
   keyFindings: string[];
   differentials: string[];
   crisis?: {
@@ -35,6 +37,7 @@ export interface AnamnesisPatientResponse {
   coveredQuestionIds: string[];
   anchored: true;
   interactionIntent?: AnamnesisInteractionIntent;
+  matchedFactIds?: string[];
   usedFallback?: boolean;
 }
 
@@ -83,6 +86,14 @@ const INTENT_ALIASES: Record<string, string[]> = {
   means: ["acesso", "meio", "usar", "quarto"],
 };
 
+const PATIENT_FACT_PATTERNS: Record<string, RegExp> = {
+  name: /\b(nome|chama|chamar|quem voce e|quem e voce)\b/,
+  age: /\b(idade|quantos anos|qual sua idade|nasceu)\b/,
+  residence: /\b(onde mora|aonde mora|mora onde|mora com quem|mora sozinho|mora sozinha|cidade|bairro|reside|residencia|vive com quem)\b/,
+  occupation: /\b(profissao|trabalha|trabalho|ocupacao|faz da vida|aposentad[oa]|estuda)\b/,
+  "current-feeling": /\b(o que sente|esta sentindo|ta sentindo|como esta agora|como ta agora|incomodando|acontecendo agora)\b/,
+};
+
 function aliasTokens(question: AnamnesisPatientPayload["questions"][number]) {
   const suffix = question.id.split("-").slice(1).join("-");
   return Object.entries(INTENT_ALIASES)
@@ -99,6 +110,7 @@ export function createAnamnesisPatientPayload(clinicalCase: AnamnesisCase): Anam
     demeanor: clinicalCase.demeanor,
     sensitiveWarnings: clinicalCase.sensitiveWarnings ?? [],
     questions: clinicalCase.questions.map(({ id, text, answer, value, redFlag }) => ({ id, text, answer, value, redFlag })),
+    patientFacts: clinicalCase.patientFacts.map(({ id, label, questionExamples, answer }) => ({ id, label, questionExamples, answer })),
     keyFindings: clinicalCase.keyFindings,
     differentials: clinicalCase.differentials,
     crisis: clinicalCase.crisisTrigger ? {
@@ -106,6 +118,34 @@ export function createAnamnesisPatientPayload(clinicalCase: AnamnesisCase): Anam
       patientResponse: clinicalCase.crisisTrigger.patientResponse,
     } : undefined,
   };
+}
+
+export function matchAnamnesisFactsLocally(
+  message: string,
+  clinicalCase: AnamnesisCase,
+  limit = 2,
+): string[] {
+  if (detectAnamnesisInteractionIntent(message) !== "question") return [];
+  const messageTokens = new Set(tokens(message));
+  if (messageTokens.size === 0) return [];
+
+  return clinicalCase.patientFacts
+    .map((fact) => {
+      const candidateTokens = new Set(tokens([fact.label, ...fact.questionExamples].join(" ")));
+      const overlap = [...candidateTokens].filter((token) => messageTokens.has(token));
+      const phraseBonus = fact.questionExamples.some((example) => {
+        const normalizedExample = normalize(example);
+        const normalizedMessage = normalize(message);
+        return normalizedExample.includes(normalizedMessage) || normalizedMessage.includes(normalizedExample);
+      }) ? 4 : 0;
+      const factKind = Object.keys(PATIENT_FACT_PATTERNS).find((kind) => fact.id.endsWith(kind));
+      const intentBonus = factKind && PATIENT_FACT_PATTERNS[factKind].test(normalize(message)) ? 8 : 0;
+      return { id: fact.id, score: overlap.length + phraseBonus + intentBonus };
+    })
+    .filter((candidate) => candidate.score >= 1)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
+    .map((candidate) => candidate.id);
 }
 
 export function matchAnamnesisQuestionsLocally(
@@ -137,7 +177,10 @@ export function composeAnchoredPatientReply(
   context: AnamnesisReplyContext = {},
 ): string {
   const validIds = new Set(matchedQuestionIds);
-  const answers = clinicalCase.questions.filter((question) => validIds.has(question.id)).map((question) => question.answer);
+  const validFactIds = new Set(context.matchedFactIds ?? []);
+  const factAnswers = clinicalCase.patientFacts.filter((fact) => validFactIds.has(fact.id)).map((fact) => fact.answer);
+  const questionAnswers = clinicalCase.questions.filter((question) => validIds.has(question.id)).map((question) => question.answer);
+  const answers = [...factAnswers, ...questionAnswers];
   const crisisReply = crisisActive ? clinicalCase.crisisTrigger?.patientResponse : undefined;
   const conversation = context.conversation ?? [];
   const patientTurns = conversation.filter((turn) => turn.role === "patient").map((turn) => turn.text);
@@ -175,21 +218,22 @@ export function composeAnchoredPatientReply(
     const previouslyCovered = new Set(context.previouslyCoveredQuestionIds ?? []);
     const repeated = (matchedQuestionIds.length > 0 && matchedQuestionIds.every((id) => previouslyCovered.has(id))) || answers.every(alreadySaid);
     if (repeated) return chooseVariant([
-      `Posso repetir: ${answerText}`,
-      `É o mesmo que contei antes: ${answerText}`,
-      `Não tenho outro detalhe sobre isso. O que lembro é: ${answerText}`,
+      `Claro: ${answerText}`,
+      `Sim. ${answerText}`,
+      answerText,
     ], seed);
+    if (factAnswers.length > 0) return answerText;
     return chooseVariant([
       answerText,
-      `Sobre isso: ${answerText}`,
-      `O que consigo contar é o seguinte: ${answerText}`,
+      `Então... ${answerText}`,
+      `Pois é... ${answerText}`,
     ], seed);
   }
 
   return chooseVariant([
-    "Não sei responder isso com segurança. Pode perguntar de outra forma?",
-    "Não tenho certeza sobre isso. Se quiser, faça uma pergunta mais específica.",
-    "Não me lembro de algo sobre isso além do que já contei. Pode tentar de outro jeito?",
+    "Desculpe, não entendi bem. Pode me perguntar de outro jeito?",
+    "Não entendi o que você quis saber. Pode explicar melhor?",
+    "Acho que não entendi a pergunta. Pode fazer de outra forma?",
   ], seed);
 }
 

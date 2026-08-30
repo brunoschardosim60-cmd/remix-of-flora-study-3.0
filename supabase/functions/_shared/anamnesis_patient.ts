@@ -5,6 +5,7 @@ export interface AnchoredAnamnesisPayload {
   openingStatement: string;
   demeanor: string;
   sensitiveWarnings: string[];
+  patientFacts: Array<{ id: string; label: string; questionExamples: string[]; answer: string }>;
   questions: Array<{ id: string; text: string; answer: string; value: string; redFlag?: string }>;
   keyFindings: string[];
   differentials: string[];
@@ -23,6 +24,7 @@ export interface AnchoredReplyContext {
   conversation?: AnchoredConversationTurn[];
   interactionIntent?: AnchoredInteractionIntent;
   previouslyCoveredQuestionIds?: string[];
+  matchedFactIds?: string[];
 }
 
 function normalize(value: string) {
@@ -67,6 +69,15 @@ export function sanitizeAnamnesisPayload(value: unknown): AnchoredAnamnesisPaylo
     ? candidate.slice(0, limit).map((item) => String(item).slice(0, 500))
     : [];
   const crisis = raw.crisis && typeof raw.crisis === "object" ? raw.crisis as Record<string, unknown> : undefined;
+  const patientFacts = Array.isArray(raw.patientFacts) ? raw.patientFacts.slice(0, 20).map((item) => {
+    const fact = item && typeof item === "object" ? item as Record<string, unknown> : {};
+    return {
+      id: String(fact.id ?? "").slice(0, 80),
+      label: String(fact.label ?? "").slice(0, 100),
+      questionExamples: list(fact.questionExamples, 8),
+      answer: String(fact.answer ?? "").slice(0, 1000),
+    };
+  }).filter((fact) => fact.id && fact.label && fact.questionExamples.length && fact.answer) : [];
 
   return {
     id: raw.id.slice(0, 80),
@@ -80,6 +91,7 @@ export function sanitizeAnamnesisPayload(value: unknown): AnchoredAnamnesisPaylo
     openingStatement: String(raw.openingStatement ?? "").slice(0, 1000),
     demeanor: String(raw.demeanor ?? "").slice(0, 800),
     sensitiveWarnings: list(raw.sensitiveWarnings, 10),
+    patientFacts,
     questions: cleanQuestions,
     keyFindings: list(raw.keyFindings, 20),
     differentials: list(raw.differentials, 20),
@@ -104,10 +116,11 @@ VERDADE ÚNICA DO CASO:
 - Achados-chave: ${JSON.stringify(payload.keyFindings)}
 - Diferenciais educacionais: ${JSON.stringify(payload.differentials)}
 - Crise cadastrada: ${JSON.stringify(payload.crisis ?? null)}
+- Fatos pessoais permitidos: ${JSON.stringify(payload.patientFacts)}
 - Perguntas permitidas: ${JSON.stringify(payload.questions.map(({ id, text, answer, value, redFlag }) => ({ id, text, answer, value, redFlag })))}
 
-Retorne SOMENTE JSON: {"matchedQuestionIds":["id"],"interactionIntent":"question"}.
-Use no máximo 2 IDs. Só inclua IDs existentes. Uma formulação livre, sinônimo ou pergunta equivalente pode corresponder. Se a fala for acolhimento, comentário, diagnóstico, conduta, pergunta fora do caso ou não tiver correspondência segura, retorne IDs vazios e o interactionIntent correspondente.
+Retorne SOMENTE JSON: {"matchedQuestionIds":["id"],"matchedFactIds":["id"],"interactionIntent":"question"}.
+Use no máximo 2 IDs em cada lista. Só inclua IDs existentes. Uma formulação livre, sinônimo ou pergunta equivalente pode corresponder. Perguntas sobre nome, idade, moradia, profissão e estado atual devem usar os fatos pessoais correspondentes. Se a fala for acolhimento, comentário, diagnóstico, conduta, pergunta fora do caso ou não tiver correspondência segura, retorne IDs vazios e o interactionIntent correspondente.
 interactionIntent deve ser um destes valores: "question", "greeting", "rapport", "clarification" ou "closing". Cumprimentos, acolhimento e comentários não devem revelar novamente uma resposta clínica já dada.`;
 }
 
@@ -118,7 +131,10 @@ export function composeServerAnchoredReply(
   context: AnchoredReplyContext = {},
 ) {
   const validIds = new Set(matchedQuestionIds);
-  const answers = payload.questions.filter((question) => validIds.has(question.id)).map((question) => question.answer);
+  const validFactIds = new Set(context.matchedFactIds ?? []);
+  const factAnswers = payload.patientFacts.filter((fact) => validFactIds.has(fact.id)).map((fact) => fact.answer);
+  const questionAnswers = payload.questions.filter((question) => validIds.has(question.id)).map((question) => question.answer);
+  const answers = [...factAnswers, ...questionAnswers];
   const crisisReply = crisisActive ? payload.crisis?.patientResponse : undefined;
   const conversation = context.conversation ?? [];
   const patientTurns = conversation.filter((turn) => turn.role === "patient").map((turn) => turn.text);
@@ -156,20 +172,21 @@ export function composeServerAnchoredReply(
     const previouslyCovered = new Set(context.previouslyCoveredQuestionIds ?? []);
     const repeated = (matchedQuestionIds.length > 0 && matchedQuestionIds.every((id) => previouslyCovered.has(id))) || answers.every(alreadySaid);
     if (repeated) return chooseVariant([
-      `Posso repetir: ${answerText}`,
-      `É o mesmo que contei antes: ${answerText}`,
-      `Não tenho outro detalhe sobre isso. O que lembro é: ${answerText}`,
+      `Claro: ${answerText}`,
+      `Sim. ${answerText}`,
+      answerText,
     ], seed);
+    if (factAnswers.length) return answerText;
     return chooseVariant([
       answerText,
-      `Sobre isso: ${answerText}`,
-      `O que consigo contar é o seguinte: ${answerText}`,
+      `Então... ${answerText}`,
+      `Pois é... ${answerText}`,
     ], seed);
   }
 
   return chooseVariant([
-    "Não sei responder isso com segurança. Pode perguntar de outra forma?",
-    "Não tenho certeza sobre isso. Se quiser, faça uma pergunta mais específica.",
-    "Não me lembro de algo sobre isso além do que já contei. Pode tentar de outro jeito?",
+    "Desculpe, não entendi bem. Pode me perguntar de outro jeito?",
+    "Não entendi o que você quis saber. Pode explicar melhor?",
+    "Acho que não entendi a pergunta. Pode fazer de outra forma?",
   ], seed);
 }

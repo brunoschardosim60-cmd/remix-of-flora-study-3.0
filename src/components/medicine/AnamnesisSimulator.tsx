@@ -12,7 +12,7 @@ import {
   type PatientVisualState,
 } from "@/lib/anamnesisSimulation";
 import {
-  composeAnchoredPatientReply, createAnamnesisPatientPayload, detectAnamnesisInteractionIntent, matchAnamnesisQuestionsLocally,
+  composeAnchoredPatientReply, createAnamnesisPatientPayload, detectAnamnesisInteractionIntent, matchAnamnesisFactsLocally, matchAnamnesisQuestionsLocally,
   shouldTriggerAnamnesisCrisis, type AnamnesisConversationTurn, type AnamnesisPatientResponse,
 } from "@/lib/anamnesisPatient";
 import type { MedicineLearningEvent, MedicineLevel } from "@/lib/medicineData";
@@ -127,7 +127,29 @@ export function AnamnesisSimulator({ level, initialCaseId, onLearningEvent }: { 
     if (text.length < 2 || isResponding || evaluated) return;
     setInput(""); setInteractionError(null); setIsResponding(true);
     const priorConversation: AnamnesisConversationTurn[] = messages.filter((m) => m.role !== "system").map((m) => ({ role: m.role === "patient" ? "patient" : "student", text: m.text }));
+    const localFactIds = matchAnamnesisFactsLocally(text, clinicalCase);
     setMessages((current) => [...current, { id: `student-${Date.now()}`, role: "student", text }]);
+
+    if (localFactIds.length > 0) {
+      const interactionIntent = detectAnamnesisInteractionIntent(text);
+      const localIds = matchAnamnesisQuestionsLocally(text, clinicalCase);
+      const nextCovered = [...new Set([...coveredIds, ...localIds])];
+      const newlyCovered = localIds.filter((id) => !coveredIds.includes(id));
+      const triggerNow = !crisisActive && shouldTriggerAnamnesisCrisis(clinicalCase, studentTurnCount + 1, nextCovered);
+      const reply = composeAnchoredPatientReply(clinicalCase, localIds, triggerNow || crisisActive, {
+        studentMessage: text,
+        conversation: priorConversation,
+        interactionIntent,
+        previouslyCoveredQuestionIds: coveredIds,
+        matchedFactIds: localFactIds,
+      });
+      if (triggerNow) setCrisisActive(true);
+      setCoveredIds(nextCovered);
+      setMessages((current) => [...current, { id: `patient-fact-${Date.now()}`, role: "patient", text: reply, coveredQuestionIds: newlyCovered }]);
+      if (autoVoice) void speak(reply, triggerNow || currentState === "distressed" ? "padrao" : "amiga");
+      setIsResponding(false);
+      return;
+    }
 
     try {
       const { data, error } = await supabase.functions.invoke("flora-engine", { body: { action: "anamnesis_patient", data: { case: createAnamnesisPatientPayload(clinicalCase), studentMessage: text, conversation: priorConversation, coveredQuestionIds: coveredIds, crisisActive } } });
@@ -136,11 +158,15 @@ export function AnamnesisSimulator({ level, initialCaseId, onLearningEvent }: { 
       const nextCovered = [...new Set([...coveredIds, ...response.coveredQuestionIds])];
       const newlyCovered = response.coveredQuestionIds.filter((id) => !coveredIds.includes(id));
       const triggerNow = !crisisActive && shouldTriggerAnamnesisCrisis(clinicalCase, studentTurnCount + 1, nextCovered);
-      const reply = triggerNow ? composeAnchoredPatientReply(clinicalCase, response.coveredQuestionIds, true, {
+      const serverFactIds = Array.isArray(response.matchedFactIds) ? response.matchedFactIds : [];
+      const matchedFactIds = [...new Set([...serverFactIds, ...localFactIds])];
+      const needsLocalComposition = triggerNow || matchedFactIds.length !== serverFactIds.length;
+      const reply = needsLocalComposition ? composeAnchoredPatientReply(clinicalCase, response.coveredQuestionIds, triggerNow || crisisActive, {
         studentMessage: text,
         conversation: priorConversation,
         interactionIntent: response.interactionIntent,
         previouslyCoveredQuestionIds: coveredIds,
+        matchedFactIds,
       }) : response.reply;
       if (triggerNow) setCrisisActive(true);
       setCoveredIds(nextCovered);
@@ -157,6 +183,7 @@ export function AnamnesisSimulator({ level, initialCaseId, onLearningEvent }: { 
         conversation: priorConversation,
         interactionIntent,
         previouslyCoveredQuestionIds: coveredIds,
+        matchedFactIds: localFactIds,
       });
       if (triggerNow) setCrisisActive(true);
       setCoveredIds(nextCovered);

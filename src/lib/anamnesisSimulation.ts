@@ -39,6 +39,13 @@ export interface AnamnesisQuestion {
   redFlag?: string;
 }
 
+export interface AnamnesisPatientFact {
+  id: string;
+  label: string;
+  questionExamples: string[];
+  answer: string;
+}
+
 export interface AnamnesisDecision {
   id: string;
   label: string;
@@ -60,6 +67,7 @@ export interface AnamnesisCase {
     occupation: string;
     pronouns: string;
   };
+  patientFacts: AnamnesisPatientFact[];
   arrival: string;
   openingStatement: string;
   demeanor: string;
@@ -117,6 +125,13 @@ export const anamnesisCases: AnamnesisCase[] = [
     difficulty: "Inicial",
     sensitive: false,
     patient: { alias: "Carlos M.", age: "54 anos", occupation: "Motorista", pronouns: "ele/dele" },
+    patientFacts: [
+      { id: "cp-name", label: "Nome", questionExamples: ["Qual é o seu nome?", "Como posso chamar você?"], answer: "Meu nome é Carlos. Pode me chamar de Carlos." },
+      { id: "cp-age", label: "Idade", questionExamples: ["Qual é a sua idade?", "Quantos anos você tem?"], answer: "Tenho 54 anos." },
+      { id: "cp-residence", label: "Moradia", questionExamples: ["Onde você mora?", "Mora com quem?", "Em que cidade vive?"], answer: "Moro em Campinas com minha esposa e nosso filho adolescente." },
+      { id: "cp-occupation", label: "Ocupação", questionExamples: ["Qual é a sua profissão?", "Com o que você trabalha?", "O que faz da vida?"], answer: "Sou motorista e trabalho dirigindo durante boa parte do dia." },
+      { id: "cp-current-feeling", label: "Como está agora", questionExamples: ["O que você está sentindo?", "Como você está agora?", "O que está incomodando?"], answer: "Estou com uma pressão forte no meio do peito que não passa. Estou com falta de ar, enjoado, suando frio e com bastante medo." },
+    ],
     arrival: "Chegou acompanhado, está apreensivo e leva a mão ao centro do tórax.",
     openingStatement: "Doutor, começou uma pressão forte aqui no peito e não está passando. Achei que fosse nervoso, mas fiquei com medo.",
     demeanor: "Fala em frases curtas, transpira e parece desconfortável.",
@@ -163,6 +178,13 @@ export const anamnesisCases: AnamnesisCase[] = [
     difficulty: "Intermediário",
     sensitive: false,
     patient: { alias: "Lúcia A.", age: "68 anos", occupation: "Professora aposentada", pronouns: "ela/dela" },
+    patientFacts: [
+      { id: "neuro-name", label: "Nome", questionExamples: ["Qual é o seu nome?", "Como posso chamar a senhora?"], answer: "Meu nome é Lúcia." },
+      { id: "neuro-age", label: "Idade", questionExamples: ["Qual é a sua idade?", "Quantos anos a senhora tem?"], answer: "Tenho 68 anos." },
+      { id: "neuro-residence", label: "Moradia", questionExamples: ["Onde a senhora mora?", "Mora com quem?", "Em que cidade vive?"], answer: "Moro sozinha em Ribeirão Preto. Minha filha mora perto e me ajuda quando preciso." },
+      { id: "neuro-occupation", label: "Ocupação", questionExamples: ["Qual é a sua profissão?", "Com o que trabalhava?", "É aposentada?"], answer: "Sou professora aposentada." },
+      { id: "neuro-current-feeling", label: "Como está agora", questionExamples: ["O que a senhora está sentindo?", "Como está agora?", "O que aconteceu?"], answer: "Minha fala está difícil e meu braço direito está fraco. Eu entendo o que dizem, mas não consigo falar direito." },
+    ],
     arrival: "A filha responde parte das perguntas; a paciente compreende, mas tem dificuldade para articular palavras.",
     openingStatement: "Eu... estava... café... minha mão não...",
     demeanor: "Mantém-se acordada, frustrada com a fala e movimenta menos o braço direito.",
@@ -210,6 +232,13 @@ export const anamnesisCases: AnamnesisCase[] = [
     sensitive: true,
     sensitiveWarnings: ["sangramento genital", "possível perda gestacional", "sexualidade e reprodução"],
     patient: { alias: "Marina S.", age: "29 anos", occupation: "Designer", pronouns: "ela/dela" },
+    patientFacts: [
+      { id: "gyn-name", label: "Nome", questionExamples: ["Qual é o seu nome?", "Como posso chamar você?"], answer: "Meu nome é Marina. Pode me chamar assim." },
+      { id: "gyn-age", label: "Idade", questionExamples: ["Qual é a sua idade?", "Quantos anos você tem?"], answer: "Tenho 29 anos." },
+      { id: "gyn-residence", label: "Moradia", questionExamples: ["Onde você mora?", "Mora com quem?", "Em que cidade vive?"], answer: "Moro em Niterói com meu parceiro." },
+      { id: "gyn-occupation", label: "Ocupação", questionExamples: ["Qual é a sua profissão?", "Com o que você trabalha?", "O que faz da vida?"], answer: "Sou designer e trabalho em um escritório de criação." },
+      { id: "gyn-current-feeling", label: "Como está agora", questionExamples: ["O que você está sentindo?", "Como está agora?", "O que está incomodando?"], answer: "Estou com uma dor forte do lado direito da barriga, sangramento, fraqueza e tontura. Estou com medo de estar grávida e de algo estar errado." },
+    ],
     arrival: "Está pálida, ansiosa e pede que o acompanhante aguarde fora durante parte da conversa.",
     openingStatement: "Estou com uma dor forte de um lado da barriga e comecei a sangrar. Minha menstruação também está atrasada.",
     demeanor: "Responde com clareza, mas teme estar grávida e demonstra preocupação com confidencialidade.",
@@ -257,6 +286,13 @@ export const anamnesisCases: AnamnesisCase[] = [
     sensitive: true,
     sensitiveWarnings: ["ideação suicida", "autolesão", "sofrimento emocional intenso"],
     patient: { alias: "Rafael N.", age: "22 anos", occupation: "Estudante", pronouns: "ele/dele" },
+    patientFacts: [
+      { id: "mh-name", label: "Nome", questionExamples: ["Qual é o seu nome?", "Como posso chamar você?"], answer: "Meu nome é Rafael. Pode me chamar de Rafael." },
+      { id: "mh-age", label: "Idade", questionExamples: ["Qual é a sua idade?", "Quantos anos você tem?"], answer: "Tenho 22 anos." },
+      { id: "mh-residence", label: "Moradia", questionExamples: ["Onde você mora?", "Mora com quem?", "Em que cidade vive?"], answer: "Moro em uma república estudantil em Belo Horizonte. Tenho passado muito tempo sozinho no meu quarto." },
+      { id: "mh-occupation", label: "Ocupação", questionExamples: ["Qual é a sua profissão?", "Você trabalha ou estuda?", "O que faz da vida?"], answer: "Sou estudante universitário, mas tenho faltado às aulas nas últimas semanas." },
+      { id: "mh-current-feeling", label: "Como está agora", questionExamples: ["O que você está sentindo?", "Como você está agora?", "O que está acontecendo?"], answer: "Estou sem energia, sem vontade de fazer as coisas e muito sem esperança. Parece que só atrapalho as pessoas." },
+    ],
     arrival: "Veio após faltar às aulas. Mantém pouco contato visual e fala baixo.",
     openingStatement: "Eu não estou conseguindo fazer nada. Parece que só atrapalho todo mundo e não vejo mais saída.",
     demeanor: "Apresenta fala lenta, desesperança e hesita antes de responder sobre segurança.",

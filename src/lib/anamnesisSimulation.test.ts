@@ -14,7 +14,14 @@ describe("anamnesis simulation", () => {
       expect(new Set(clinicalCase.decisions.map((decision) => decision.value)).size, `${clinicalCase.id} decision values`).toBe(3);
       expect(clinicalCase.keyFindings.length, `${clinicalCase.id} findings`).toBeGreaterThanOrEqual(5);
       expect(clinicalCase.differentials.length, `${clinicalCase.id} differentials`).toBeGreaterThanOrEqual(5);
+      expect(clinicalCase.patientFacts.length, `${clinicalCase.id} patient facts`).toBeGreaterThanOrEqual(5);
+      expect(new Set(clinicalCase.patientFacts.map((fact) => fact.id)).size, `${clinicalCase.id} unique patient facts`).toBe(clinicalCase.patientFacts.length);
       expect(["neutral", "pain", "distressed", "unconscious", "stabilized"]).toContain(clinicalCase.initialState);
+
+      for (const fact of clinicalCase.patientFacts) {
+        expect(fact.questionExamples.length, fact.id).toBeGreaterThanOrEqual(2);
+        expect(fact.answer.length, fact.id).toBeGreaterThan(10);
+      }
 
       for (const question of clinicalCase.questions) {
         expect(question.text.length, question.id).toBeGreaterThan(20);

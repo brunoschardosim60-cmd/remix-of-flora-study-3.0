@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { anamnesisCases } from "./anamnesisSimulation";
 import {
-  composeAnchoredPatientReply, createAnamnesisPatientPayload, detectAnamnesisInteractionIntent, matchAnamnesisQuestionsLocally,
+  composeAnchoredPatientReply, createAnamnesisPatientPayload, detectAnamnesisInteractionIntent, matchAnamnesisFactsLocally, matchAnamnesisQuestionsLocally,
   shouldTriggerAnamnesisCrisis,
 } from "./anamnesisPatient";
 import { buildAnamnesisMatcherPrompt, composeServerAnchoredReply, detectAnchoredInteractionIntent, sanitizeAnamnesisPayload } from "../../supabase/functions/_shared/anamnesis_patient";
@@ -21,7 +21,47 @@ describe("anchored anamnesis patient", () => {
     expect(prompt).toContain(chestCase.keyFindings[0]);
     expect(prompt).toContain(chestCase.differentials[0]);
     expect(prompt).toContain(chestCase.questions[0].answer);
+    expect(prompt).toContain(chestCase.patientFacts[0].answer);
     expect(prompt).toContain(chestCase.crisisTrigger!.patientResponse);
+  });
+
+  it("answers identity, age, residence, occupation and current feeling from pre-modeled facts", () => {
+    const examples = [
+      ["Como você se chama?", "cp-name", "Carlos"],
+      ["Quantos anos você tem?", "cp-age", "54 anos"],
+      ["Onde você mora e com quem?", "cp-residence", "Campinas"],
+      ["Com o que você trabalha?", "cp-occupation", "motorista"],
+      ["O que você está sentindo agora?", "cp-current-feeling", "pressão forte"],
+      ["onde vc mora", "cp-residence", "Campinas"],
+      ["qual a sua idade", "cp-age", "54 anos"],
+    ] as const;
+
+    for (const [message, expectedId, expectedAnswer] of examples) {
+      const matchedFactIds = matchAnamnesisFactsLocally(message, chestCase);
+      expect(matchedFactIds, message).toContain(expectedId);
+      expect(composeAnchoredPatientReply(chestCase, [], false, {
+        studentMessage: message,
+        matchedFactIds,
+      })).toContain(expectedAnswer);
+    }
+  });
+
+  it("uses a human clarification instead of a clinical-safety robot message", () => {
+    const reply = composeAnchoredPatientReply(chestCase, [], false, {
+      studentMessage: "Pergunta que não existe no caso?",
+    });
+    expect(reply).toMatch(/não entendi|Não entendi/);
+    expect(reply).not.toMatch(/segurança|além do que já contei/);
+  });
+
+  it("keeps personal facts outside clinical coverage and supports the server composer", () => {
+    const payload = sanitizeAnamnesisPayload(createAnamnesisPatientPayload(chestCase))!;
+    const reply = composeServerAnchoredReply(payload, [], false, {
+      studentMessage: "Onde você mora?",
+      matchedFactIds: ["cp-residence"],
+    });
+    expect(reply).toContain("Campinas");
+    expect(payload.questions.some((question) => question.id === "cp-residence")).toBe(false);
   });
 
   it("only composes answers copied from registered case data", () => {
