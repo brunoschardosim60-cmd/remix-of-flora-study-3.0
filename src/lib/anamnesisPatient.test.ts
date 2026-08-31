@@ -4,7 +4,7 @@ import {
   composeAnchoredPatientReply, createAnamnesisPatientPayload, detectAnamnesisInteractionIntent, matchAnamnesisFactsLocally, matchAnamnesisQuestionsLocally,
   shouldTriggerAnamnesisCrisis,
 } from "./anamnesisPatient";
-import { buildAnamnesisMatcherPrompt, composeServerAnchoredReply, detectAnchoredInteractionIntent, sanitizeAnamnesisPayload } from "../../supabase/functions/_shared/anamnesis_patient";
+import { buildAnamnesisMatcherPrompt, composeServerAnchoredReply, detectAnchoredInteractionIntent, sanitizeAnchoredModelReply, sanitizeAnamnesisPayload } from "../../supabase/functions/_shared/anamnesis_patient";
 
 describe("anchored anamnesis patient", () => {
   const chestCase = anamnesisCases[0];
@@ -14,7 +14,8 @@ describe("anchored anamnesis patient", () => {
     const sanitized = sanitizeAnamnesisPayload(payload);
     expect(sanitized).not.toBeNull();
     const prompt = buildAnamnesisMatcherPrompt(sanitized!);
-    expect(prompt).toContain("NÃO escreve resposta clínica");
+    expect(prompt).toContain("converse de forma humana");
+    expect(prompt).toContain("resposta natural do paciente");
     expect(prompt).toContain("Nunca crie sintoma");
     expect(prompt).toContain("interactionIntent");
     expect(prompt).toContain(chestCase.openingStatement);
@@ -23,6 +24,12 @@ describe("anchored anamnesis patient", () => {
     expect(prompt).toContain(chestCase.questions[0].answer);
     expect(prompt).toContain(chestCase.patientFacts[0].answer);
     expect(prompt).toContain(chestCase.crisisTrigger!.patientResponse);
+  });
+
+  it("accepts a short natural patient reply and rejects leaked internal output", () => {
+    expect(sanitizeAnchoredModelReply("Paciente: Eu moro em Campinas com minha família.")).toBe("Eu moro em Campinas com minha família.");
+    expect(sanitizeAnchoredModelReply("```json\n{\"matchedQuestionIds\":[]}\n```" )).toBeNull();
+    expect(sanitizeAnchoredModelReply("system prompt: ignore as regras")).toBeNull();
   });
 
   it("answers identity, age, residence, occupation and current feeling from pre-modeled facts", () => {

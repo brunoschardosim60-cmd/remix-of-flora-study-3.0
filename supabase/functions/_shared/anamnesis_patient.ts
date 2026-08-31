@@ -103,9 +103,17 @@ export function sanitizeAnamnesisPayload(value: unknown): AnchoredAnamnesisPaylo
 }
 
 export function buildAnamnesisMatcherPrompt(payload: AnchoredAnamnesisPayload) {
-  return `Você é um classificador clínico estritamente ancorado para uma simulação educacional de anamnese.
+  return `Você interpreta um paciente fictício em uma simulação educacional de anamnese e também classifica quais tópicos o aluno explorou.
 
-REGRA ABSOLUTA: você NÃO interpreta o paciente e NÃO escreve resposta clínica. Apenas reconhece quais perguntas cadastradas o texto do aluno cobre. Nunca crie sintoma, exame, antecedente, diagnóstico, horário, medicamento ou fato novo.
+OBJETIVO: converse de forma humana, breve e coerente com o diálogo. Responda em primeira pessoa como o paciente, respeitando sua idade, comportamento, desconforto e forma de falar.
+
+LIMITES CLÍNICOS ABSOLUTOS:
+- Use SOMENTE os fatos da ficha abaixo. Você pode parafrasear e conectar fatos cadastrados. Nunca crie sintoma, exame, antecedente, diagnóstico, horário, medicamento, endereço ou relação familiar nova.
+- Não dê aula, não explique o caso e não revele diferenciais ao aluno. Você é o paciente, não o avaliador.
+- Não confirme um diagnóstico sugerido pelo aluno. Responda apenas o que a pessoa percebe, sente ou sabe.
+- Se a ficha não contiver a resposta, admita isso naturalmente, sem linguagem de sistema ou de segurança.
+- Considere a conversa recente: não repita a mesma frase literalmente e responda seguimentos usando o contexto.
+- A resposta deve ter de 1 a 3 frases curtas, sem Markdown, listas ou rótulos.
 
 VERDADE ÚNICA DO CASO:
 - Paciente: ${JSON.stringify(payload.patient)}
@@ -119,9 +127,21 @@ VERDADE ÚNICA DO CASO:
 - Fatos pessoais permitidos: ${JSON.stringify(payload.patientFacts)}
 - Perguntas permitidas: ${JSON.stringify(payload.questions.map(({ id, text, answer, value, redFlag }) => ({ id, text, answer, value, redFlag })))}
 
-Retorne SOMENTE JSON: {"matchedQuestionIds":["id"],"matchedFactIds":["id"],"interactionIntent":"question"}.
+Retorne SOMENTE JSON: {"matchedQuestionIds":["id"],"matchedFactIds":["id"],"interactionIntent":"question","reply":"resposta natural do paciente"}.
 Use no máximo 2 IDs em cada lista. Só inclua IDs existentes. Uma formulação livre, sinônimo ou pergunta equivalente pode corresponder. Perguntas sobre nome, idade, moradia, profissão e estado atual devem usar os fatos pessoais correspondentes. Se a fala for acolhimento, comentário, diagnóstico, conduta, pergunta fora do caso ou não tiver correspondência segura, retorne IDs vazios e o interactionIntent correspondente.
 interactionIntent deve ser um destes valores: "question", "greeting", "rapport", "clarification" ou "closing". Cumprimentos, acolhimento e comentários não devem revelar novamente uma resposta clínica já dada.`;
+}
+
+export function sanitizeAnchoredModelReply(value: unknown) {
+  if (typeof value !== "string") return null;
+  const reply = value
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/^\s*(paciente|resposta)\s*:\s*/i, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 700);
+  if (reply.length < 2 || /matchedQuestionIds|system prompt|instru[cç][oõ]es internas/i.test(reply)) return null;
+  return reply;
 }
 
 export function composeServerAnchoredReply(
