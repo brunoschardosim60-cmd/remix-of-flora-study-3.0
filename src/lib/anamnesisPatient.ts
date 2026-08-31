@@ -5,7 +5,7 @@ export interface AnamnesisConversationTurn {
   text: string;
 }
 
-export type AnamnesisInteractionIntent = "question" | "greeting" | "rapport" | "clarification" | "closing";
+export type AnamnesisInteractionIntent = "question" | "greeting" | "rapport" | "clarification" | "closing" | "off_topic";
 
 export interface AnamnesisReplyContext {
   studentMessage?: string;
@@ -65,6 +65,7 @@ export function detectAnamnesisInteractionIntent(message: string): AnamnesisInte
   if (/\b(pode repetir|repita|nao entendi|como assim|diga de novo|fale de novo)\b/.test(clean)) return "clarification";
   if (/^(oi|ola|bom dia|boa tarde|boa noite)\b/.test(clean) && !/\b(o que|quando|onde|como|qual|quais|quem|quanto|tem|teve|sente|sentiu|usa|usou|esta|houve|pode|consegue)\b/.test(clean)) return "greeting";
   if (/\b(tchau|ate logo|vamos encerrar|encerrar a conversa|obrigad[oa] por tudo)\b/.test(clean)) return "closing";
+  if (/\b(cachorro|cachorra|cao|cadela|gato|gata|papagaio|animal de estimacao|time de futebol|signo|horoscopo|filme favorito|serie favorita|cor favorita|comida favorita|cantor favorito|musica favorita|loteria|video game|videogame)\b/.test(clean)) return "off_topic";
   if (message.includes("?") || /^(quando|onde|como|qual|quais|quem|quanto|conte|descreva|explique|fale|tem|teve|sente|sentiu|usa|usou|esta|houve|ja teve|pode me contar|consegue)\b/.test(clean)) return "question";
   if (/\b(entendo|compreendo|certo|tudo bem|sinto muito|obrigad[oa]|calma|vou ajudar|estou aqui|pode ficar tranquil[oa])\b/.test(clean)) return "rapport";
   return "question";
@@ -212,6 +213,24 @@ export function composeAnchoredPatientReply(
     "Tudo bem. Obrigado pela conversa.",
     "Obrigado. Espero ter conseguido explicar.",
   ], seed);
+  if (intent === "off_topic") {
+    const priorWarnings = patientTurns.filter((turn) => /tem a ver com a consulta|vim por causa|foco no que estou sentindo|vai me atender|pergunta sobre o meu problema/i.test(turn)).length;
+    if (priorWarnings >= 2) return chooseVariant([
+      "Doutor, eu estou passando mal. Se o senhor não vai perguntar sobre o meu problema, por favor chame alguém que vá me atender.",
+      "Sinceramente, isso não tem nada a ver com o que estou sentindo. Eu preciso que o senhor leve meu problema a sério.",
+      "Já falei que vim por causa do que estou sentindo. Podemos parar com essas perguntas e cuidar disso?",
+    ], seed);
+    if (priorWarnings === 1) return chooseVariant([
+      "Doutor, de novo isso? Eu vim por causa do que estou sentindo. Vamos focar na consulta, por favor.",
+      "Não estou entendendo essas perguntas. Estou desconfortável e preciso que o senhor pergunte sobre o meu problema.",
+      "Isso não tem a ver com a consulta. Pode focar no que eu estou sentindo?",
+    ], seed);
+    return chooseVariant([
+      "Doutor, o que isso tem a ver com a consulta? Eu vim por causa do que estou sentindo.",
+      "Não entendi por que isso é importante agora. Podemos focar no meu problema?",
+      "Isso vai ajudar no meu atendimento? Estou preocupado com o que estou sentindo.",
+    ], seed);
+  }
 
   if (answers.length > 0) {
     const answerText = answers.join(" ");

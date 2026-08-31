@@ -337,7 +337,7 @@ serve(async (req) => {
       const parsed = parseAIJSON(raw) as { matchedQuestionIds?: unknown; matchedFactIds?: unknown; interactionIntent?: unknown; reply?: unknown };
       const allowedIds = new Set(clinicalCase.questions.map((question) => question.id));
       const allowedFactIds = new Set(clinicalCase.patientFacts.map((fact) => fact.id));
-      const allowedIntents = new Set<AnchoredInteractionIntent>(["question", "greeting", "rapport", "clarification", "closing"]);
+      const allowedIntents = new Set<AnchoredInteractionIntent>(["question", "greeting", "rapport", "clarification", "closing", "off_topic"]);
       const localIntent = detectAnchoredInteractionIntent(studentMessage);
       const modelIntent = allowedIntents.has(parsed?.interactionIntent as AnchoredInteractionIntent)
         ? parsed.interactionIntent as AnchoredInteractionIntent

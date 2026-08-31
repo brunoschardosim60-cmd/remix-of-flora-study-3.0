@@ -18,6 +18,7 @@ describe("anchored anamnesis patient", () => {
     expect(prompt).toContain("resposta natural do paciente");
     expect(prompt).toContain("Nunca crie sintoma");
     expect(prompt).toContain("interactionIntent");
+    expect(prompt).toContain('interactionIntent "off_topic"');
     expect(prompt).toContain(chestCase.openingStatement);
     expect(prompt).toContain(chestCase.keyFindings[0]);
     expect(prompt).toContain(chestCase.differentials[0]);
@@ -59,6 +60,28 @@ describe("anchored anamnesis patient", () => {
     });
     expect(reply).toMatch(/não entendi|Não entendi/);
     expect(reply).not.toMatch(/segurança|além do que já contei/);
+  });
+
+  it("gets progressively impatient with irrelevant questions without inventing an answer", () => {
+    expect(detectAnamnesisInteractionIntent("Qual o nome do seu cachorro?")).toBe("off_topic");
+    expect(detectAnchoredInteractionIntent("Qual é o seu signo?")).toBe("off_topic");
+
+    const firstReply = composeAnchoredPatientReply(chestCase, [], false, {
+      studentMessage: "Qual o nome do seu cachorro?",
+      interactionIntent: "off_topic",
+    });
+    expect(firstReply).toMatch(/consulta|atendimento|problema/);
+    expect(firstReply).not.toMatch(/meu cachorro (se chama|chama)/i);
+
+    const repeatedReply = composeAnchoredPatientReply(chestCase, [], false, {
+      studentMessage: "E qual o seu time?",
+      interactionIntent: "off_topic",
+      conversation: [
+        { role: "student", text: "Qual o nome do seu cachorro?" },
+        { role: "patient", text: "Doutor, o que isso tem a ver com a consulta? Eu vim por causa do que estou sentindo." },
+      ],
+    });
+    expect(repeatedReply).toMatch(/de novo|não estou entendendo|não tem a ver/i);
   });
 
   it("keeps personal facts outside clinical coverage and supports the server composer", () => {
