@@ -12,7 +12,7 @@ export interface AnchoredAnamnesisPayload {
   crisis?: { narrative: string; patientResponse: string };
 }
 
-export type AnchoredInteractionIntent = "question" | "greeting" | "rapport" | "clarification" | "closing" | "off_topic";
+export type AnchoredInteractionIntent = "question" | "greeting" | "rapport" | "clarification" | "closing" | "off_topic" | "diagnostic_speculation";
 
 export interface AnchoredConversationTurn {
   role: "student" | "patient";
@@ -42,6 +42,7 @@ export function detectAnchoredInteractionIntent(message: string): AnchoredIntera
   if (/^(oi|ola|bom dia|boa tarde|boa noite)\b/.test(clean) && !/\b(o que|quando|onde|como|qual|quais|quem|quanto|tem|teve|sente|sentiu|usa|usou|esta|houve|pode|consegue)\b/.test(clean)) return "greeting";
   if (/\b(tchau|ate logo|vamos encerrar|encerrar a conversa|obrigad[oa] por tudo)\b/.test(clean)) return "closing";
   if (/\b(cachorro|cachorra|cao|cadela|gato|gata|papagaio|animal de estimacao|time de futebol|signo|horoscopo|filme favorito|serie favorita|cor favorita|comida favorita|cantor favorito|musica favorita|loteria|video game|videogame)\b/.test(clean)) return "off_topic";
+  if (/\b(o que acha que (e|pode ser)|acha que (e|pode ser)|pode ser|sera que e|seria|e se for|qual o diagnostico|que doenca)\b/.test(clean)) return "diagnostic_speculation";
   if (message.includes("?") || /^(quando|onde|como|qual|quais|quem|quanto|conte|descreva|explique|fale|tem|teve|sente|sentiu|usa|usou|esta|houve|ja teve|pode me contar|consegue)\b/.test(clean)) return "question";
   if (/\b(entendo|compreendo|certo|tudo bem|sinto muito|obrigad[oa]|calma|vou ajudar|estou aqui|pode ficar tranquil[oa])\b/.test(clean)) return "rapport";
   return "question";
@@ -114,6 +115,11 @@ REAÇÃO A PERGUNTAS FORA DA CONSULTA:
 - Na primeira fuga, questione de forma curta o motivo da pergunta e redirecione para a queixa. Se o aluno insistir, fique visivelmente mais irritado e direto. Nunca use palavrão, ameaça, humilhação ou saia do papel de paciente.
 - Varie a reação conforme o comportamento cadastrado e a conversa recente; não repita uma frase pronta.
 
+CONVERSA SOBRE HIPÓTESES:
+- Quando o aluno perguntar o que o paciente acha que pode ser, sugerir uma causa ("pode ser nervoso") ou continuar a hipótese em mensagens fragmentadas ("e se for" / "nervoso"), use interactionIntent "diagnostic_speculation".
+- O paciente não sabe o diagnóstico. Reaja à hipótese com dúvida, medo, alívio ou pedido de explicação compatíveis com o caso, mas faça a conversa avançar. Não repita a fala inicial nem uma resposta anterior.
+- Use o contexto das mensagens anteriores para completar frases curtas; não trate cada mensagem isoladamente.
+
 LIMITES CLÍNICOS ABSOLUTOS:
 - Use SOMENTE os fatos da ficha abaixo. Você pode parafrasear e conectar fatos cadastrados. Nunca crie sintoma, exame, antecedente, diagnóstico, horário, medicamento, endereço ou relação familiar nova.
 - Não dê aula, não explique o caso e não revele diferenciais ao aluno. Você é o paciente, não o avaliador.
@@ -136,7 +142,7 @@ VERDADE ÚNICA DO CASO:
 
 Retorne SOMENTE JSON: {"matchedQuestionIds":["id"],"matchedFactIds":["id"],"interactionIntent":"question","reply":"resposta natural do paciente"}.
 Use no máximo 2 IDs em cada lista. Só inclua IDs existentes. Uma formulação livre, sinônimo ou pergunta equivalente pode corresponder. Perguntas sobre nome, idade, moradia, profissão e estado atual devem usar os fatos pessoais correspondentes. Se a fala for acolhimento, comentário, diagnóstico, conduta, pergunta fora do caso ou não tiver correspondência segura, retorne IDs vazios e o interactionIntent correspondente.
-interactionIntent deve ser um destes valores: "question", "greeting", "rapport", "clarification", "closing" ou "off_topic". Cumprimentos, acolhimento e comentários não devem revelar novamente uma resposta clínica já dada.`;
+interactionIntent deve ser um destes valores: "question", "greeting", "rapport", "clarification", "closing", "off_topic" ou "diagnostic_speculation". Cumprimentos, acolhimento e comentários não devem revelar novamente uma resposta clínica já dada.`;
 }
 
 export function sanitizeAnchoredModelReply(value: unknown) {
@@ -149,6 +155,21 @@ export function sanitizeAnchoredModelReply(value: unknown) {
     .slice(0, 700);
   if (reply.length < 2 || /matchedQuestionIds|system prompt|instru[cç][oõ]es internas/i.test(reply)) return null;
   return reply;
+}
+
+export function isAnchoredModelReplyRepetitive(reply: string, conversation: AnchoredConversationTurn[]) {
+  const normalizedReply = normalize(reply).replace(/\s+/g, " ").trim();
+  if (normalizedReply.length < 12) return false;
+  const replyTokens = new Set(normalizedReply.split(" ").filter((token) => token.length > 2));
+  return conversation.filter((turn) => turn.role === "patient").slice(-4).some((turn) => {
+    const normalizedTurn = normalize(turn.text).replace(/\s+/g, " ").trim();
+    if (normalizedTurn === normalizedReply) return true;
+    if (normalizedTurn.length > 24 && (normalizedTurn.includes(normalizedReply) || normalizedReply.includes(normalizedTurn))) return true;
+    const turnTokens = new Set(normalizedTurn.split(" ").filter((token) => token.length > 2));
+    const intersection = [...replyTokens].filter((token) => turnTokens.has(token)).length;
+    const union = new Set([...replyTokens, ...turnTokens]).size;
+    return union > 0 && intersection / union >= 0.72;
+  });
 }
 
 export function composeServerAnchoredReply(
@@ -209,6 +230,24 @@ export function composeServerAnchoredReply(
       "Doutor, o que isso tem a ver com a consulta? Eu vim por causa do que estou sentindo.",
       "Não entendi por que isso é importante agora. Podemos focar no meu problema?",
       "Isso vai ajudar no meu atendimento? Estou preocupado com o que estou sentindo.",
+    ], seed);
+  }
+  if (intent === "diagnostic_speculation") {
+    const priorDiagnosticTurns = patientTurns.filter((turn) => /nao sei|achei que|pode ser|o senhor acha|me explicar|saber se e grave/i.test(normalize(turn))).length;
+    if (priorDiagnosticTurns >= 2) return chooseVariant([
+      "Eu realmente não sei dizer. O senhor pode me explicar o que está pensando e se isso é grave?",
+      "Doutor, eu não tenho como saber. O que me preocupa é isso não estar passando; o senhor vai me examinar?",
+      "Pode até ser, mas continuo preocupado. Como o senhor vai verificar o que está acontecendo?",
+    ], seed);
+    if (priorDiagnosticTurns === 1) return chooseVariant([
+      "Pode ser, mas isso não está passando e eu continuo preocupado. Tem como verificar?",
+      "Se for só isso, vou ficar aliviado, mas como o senhor pode ter certeza?",
+      "Eu pensei nessa possibilidade, mas queria entender por que está tão forte e não melhora.",
+    ], seed);
+    return chooseVariant([
+      "Eu não sei dizer, doutor. O senhor acha que pode ser isso mesmo?",
+      "Foi uma possibilidade que passou pela minha cabeça, mas fiquei com medo porque não melhorou.",
+      "Pode ser, mas eu não tenho certeza. Isso explicaria o que estou sentindo?",
     ], seed);
   }
 

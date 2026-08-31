@@ -4,7 +4,7 @@ import {
   composeAnchoredPatientReply, createAnamnesisPatientPayload, detectAnamnesisInteractionIntent, matchAnamnesisFactsLocally, matchAnamnesisQuestionsLocally,
   shouldTriggerAnamnesisCrisis,
 } from "./anamnesisPatient";
-import { buildAnamnesisMatcherPrompt, composeServerAnchoredReply, detectAnchoredInteractionIntent, sanitizeAnchoredModelReply, sanitizeAnamnesisPayload } from "../../supabase/functions/_shared/anamnesis_patient";
+import { buildAnamnesisMatcherPrompt, composeServerAnchoredReply, detectAnchoredInteractionIntent, isAnchoredModelReplyRepetitive, sanitizeAnchoredModelReply, sanitizeAnamnesisPayload } from "../../supabase/functions/_shared/anamnesis_patient";
 
 describe("anchored anamnesis patient", () => {
   const chestCase = anamnesisCases[0];
@@ -82,6 +82,25 @@ describe("anchored anamnesis patient", () => {
       ],
     });
     expect(repeatedReply).toMatch(/de novo|não estou entendendo|não tem a ver/i);
+  });
+
+  it("continues diagnostic speculation without replaying the same patient answer", () => {
+    expect(detectAnamnesisInteractionIntent("O que acha que pode ser?")).toBe("diagnostic_speculation");
+    expect(detectAnchoredInteractionIntent("Pode ser nervoso?")).toBe("diagnostic_speculation");
+
+    const conversation = [
+      { role: "student" as const, text: "O que acha que pode ser?" },
+      { role: "patient" as const, text: "Eu não sei, doutor. Por isso vim aqui. Achei que era nervoso, mas estou com medo." },
+    ];
+    const reply = composeAnchoredPatientReply(chestCase, [], false, {
+      studentMessage: "Pode ser nervoso?",
+      interactionIntent: "diagnostic_speculation",
+      conversation,
+    });
+    expect(reply).not.toBe(conversation[1].text);
+    expect(reply).toMatch(/certeza|verificar|entender|preocupado|explicaria/i);
+    expect(isAnchoredModelReplyRepetitive(conversation[1].text, conversation)).toBe(true);
+    expect(isAnchoredModelReplyRepetitive("Se for só isso, vou ficar aliviado, mas como o senhor pode ter certeza?", conversation)).toBe(false);
   });
 
   it("keeps personal facts outside clinical coverage and supports the server composer", () => {

@@ -15,7 +15,7 @@ import {
 import { FloraPersonality, ExplanationStyle, getSystemPromptWithPersona } from "../_shared/flora_persona.ts";
 import { checkQuota, logAIUsage, quotaExceededResponse } from "../_shared/usage.ts";
 import { cacheLookup as sharedCacheLookup, cacheStore as sharedCacheStore, buildCacheKey as sharedBuildCacheKey, normCacheStr as sharedNormCacheStr } from "../_shared/cache.ts";
-import { buildAnamnesisMatcherPrompt, composeServerAnchoredReply, detectAnchoredInteractionIntent, sanitizeAnchoredModelReply, sanitizeAnamnesisPayload, type AnchoredInteractionIntent } from "../_shared/anamnesis_patient.ts";
+import { buildAnamnesisMatcherPrompt, composeServerAnchoredReply, detectAnchoredInteractionIntent, isAnchoredModelReplyRepetitive, sanitizeAnchoredModelReply, sanitizeAnamnesisPayload, type AnchoredInteractionIntent } from "../_shared/anamnesis_patient.ts";
 
 // ─── Cache em memória do contexto do aluno ──────────────────────────────────
 // Várias ações da Flora (chat → quiz → flashcards → lesson) carregam o mesmo
@@ -337,7 +337,7 @@ serve(async (req) => {
       const parsed = parseAIJSON(raw) as { matchedQuestionIds?: unknown; matchedFactIds?: unknown; interactionIntent?: unknown; reply?: unknown };
       const allowedIds = new Set(clinicalCase.questions.map((question) => question.id));
       const allowedFactIds = new Set(clinicalCase.patientFacts.map((fact) => fact.id));
-      const allowedIntents = new Set<AnchoredInteractionIntent>(["question", "greeting", "rapport", "clarification", "closing", "off_topic"]);
+      const allowedIntents = new Set<AnchoredInteractionIntent>(["question", "greeting", "rapport", "clarification", "closing", "off_topic", "diagnostic_speculation"]);
       const localIntent = detectAnchoredInteractionIntent(studentMessage);
       const modelIntent = allowedIntents.has(parsed?.interactionIntent as AnchoredInteractionIntent)
         ? parsed.interactionIntent as AnchoredInteractionIntent
@@ -352,7 +352,10 @@ serve(async (req) => {
       const previouslyCoveredQuestionIds = Array.isArray(data?.coveredQuestionIds)
         ? [...new Set(data.coveredQuestionIds.map(String).filter((id: string) => allowedIds.has(id)))].slice(0, 30)
         : [];
-      const modelReply = sanitizeAnchoredModelReply(parsed?.reply);
+      const sanitizedModelReply = sanitizeAnchoredModelReply(parsed?.reply);
+      const modelReply = sanitizedModelReply && !isAnchoredModelReplyRepetitive(sanitizedModelReply, recentConversation)
+        ? sanitizedModelReply
+        : null;
 
       return jsonResponse({
         reply: modelReply ?? composeServerAnchoredReply(clinicalCase, matchedQuestionIds, crisisActive, {

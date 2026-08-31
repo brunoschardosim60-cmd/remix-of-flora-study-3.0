@@ -5,7 +5,7 @@ export interface AnamnesisConversationTurn {
   text: string;
 }
 
-export type AnamnesisInteractionIntent = "question" | "greeting" | "rapport" | "clarification" | "closing" | "off_topic";
+export type AnamnesisInteractionIntent = "question" | "greeting" | "rapport" | "clarification" | "closing" | "off_topic" | "diagnostic_speculation";
 
 export interface AnamnesisReplyContext {
   studentMessage?: string;
@@ -66,6 +66,7 @@ export function detectAnamnesisInteractionIntent(message: string): AnamnesisInte
   if (/^(oi|ola|bom dia|boa tarde|boa noite)\b/.test(clean) && !/\b(o que|quando|onde|como|qual|quais|quem|quanto|tem|teve|sente|sentiu|usa|usou|esta|houve|pode|consegue)\b/.test(clean)) return "greeting";
   if (/\b(tchau|ate logo|vamos encerrar|encerrar a conversa|obrigad[oa] por tudo)\b/.test(clean)) return "closing";
   if (/\b(cachorro|cachorra|cao|cadela|gato|gata|papagaio|animal de estimacao|time de futebol|signo|horoscopo|filme favorito|serie favorita|cor favorita|comida favorita|cantor favorito|musica favorita|loteria|video game|videogame)\b/.test(clean)) return "off_topic";
+  if (/\b(o que acha que (e|pode ser)|acha que (e|pode ser)|pode ser|sera que e|seria|e se for|qual o diagnostico|que doenca)\b/.test(clean)) return "diagnostic_speculation";
   if (message.includes("?") || /^(quando|onde|como|qual|quais|quem|quanto|conte|descreva|explique|fale|tem|teve|sente|sentiu|usa|usou|esta|houve|ja teve|pode me contar|consegue)\b/.test(clean)) return "question";
   if (/\b(entendo|compreendo|certo|tudo bem|sinto muito|obrigad[oa]|calma|vou ajudar|estou aqui|pode ficar tranquil[oa])\b/.test(clean)) return "rapport";
   return "question";
@@ -229,6 +230,24 @@ export function composeAnchoredPatientReply(
       "Doutor, o que isso tem a ver com a consulta? Eu vim por causa do que estou sentindo.",
       "Não entendi por que isso é importante agora. Podemos focar no meu problema?",
       "Isso vai ajudar no meu atendimento? Estou preocupado com o que estou sentindo.",
+    ], seed);
+  }
+  if (intent === "diagnostic_speculation") {
+    const priorDiagnosticTurns = patientTurns.filter((turn) => /nao sei|achei que|pode ser|o senhor acha|me explicar|saber se e grave/i.test(normalize(turn))).length;
+    if (priorDiagnosticTurns >= 2) return chooseVariant([
+      "Eu realmente não sei dizer. O senhor pode me explicar o que está pensando e se isso é grave?",
+      "Doutor, eu não tenho como saber. O que me preocupa é isso não estar passando; o senhor vai me examinar?",
+      "Pode até ser, mas continuo preocupado. Como o senhor vai verificar o que está acontecendo?",
+    ], seed);
+    if (priorDiagnosticTurns === 1) return chooseVariant([
+      "Pode ser, mas isso não está passando e eu continuo preocupado. Tem como verificar?",
+      "Se for só isso, vou ficar aliviado, mas como o senhor pode ter certeza?",
+      "Eu pensei nessa possibilidade, mas queria entender por que está tão forte e não melhora.",
+    ], seed);
+    return chooseVariant([
+      "Eu não sei dizer, doutor. O senhor acha que pode ser isso mesmo?",
+      "Foi uma possibilidade que passou pela minha cabeça, mas fiquei com medo porque não melhorou.",
+      "Pode ser, mas eu não tenho certeza. Isso explicaria o que estou sentindo?",
     ], seed);
   }
 
