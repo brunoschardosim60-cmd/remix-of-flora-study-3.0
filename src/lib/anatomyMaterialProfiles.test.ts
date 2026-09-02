@@ -21,7 +21,7 @@ describe("anatomy material profiles", () => {
 
   it("keeps generated texture memory inside the declared web budget", () => {
     expect(estimatedTissueTextureBytes(256, 15)).toBe(11_796_480);
-    expect(estimatedTissueTextureBytes(64, 15)).toBeLessThan(1_000_000);
+    expect(estimatedTissueTextureBytes(128, 15)).toBeLessThan(3_000_000);
+    expect(estimatedTissueTextureBytes(512, 15)).toBeLessThan(48_000_000);
   });
 });
-

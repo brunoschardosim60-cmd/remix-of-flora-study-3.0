@@ -10,7 +10,7 @@ export interface AnatomyDeviceProfile {
 
 export interface AnatomyRenderPolicy {
   tier: AnatomyRenderTier;
-  textureResolution: 64 | 128 | 256;
+  textureResolution: 128 | 256 | 512;
   maxDpr: number;
   shadowMapSize: 512 | 1024 | 2048;
   environmentResolution: 64 | 128;
@@ -20,7 +20,7 @@ export interface AnatomyRenderPolicy {
 const policies: Record<AnatomyRenderTier, AnatomyRenderPolicy> = {
   economy: {
     tier: "economy",
-    textureResolution: 64,
+    textureResolution: 128,
     maxDpr: 1.1,
     shadowMapSize: 512,
     environmentResolution: 64,
@@ -28,7 +28,7 @@ const policies: Record<AnatomyRenderTier, AnatomyRenderPolicy> = {
   },
   balanced: {
     tier: "balanced",
-    textureResolution: 128,
+    textureResolution: 256,
     maxDpr: 1.45,
     shadowMapSize: 1024,
     environmentResolution: 64,
@@ -36,7 +36,7 @@ const policies: Record<AnatomyRenderTier, AnatomyRenderPolicy> = {
   },
   ultra: {
     tier: "ultra",
-    textureResolution: 256,
+    textureResolution: 512,
     maxDpr: 1.8,
     shadowMapSize: 2048,
     environmentResolution: 128,
@@ -63,4 +63,3 @@ export function detectAnatomyRenderPolicy(): AnatomyRenderPolicy {
     reducedMotion: window.matchMedia?.("(prefers-reduced-motion: reduce)").matches,
   });
 }
-
