@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity, AlertTriangle, BookOpen, Check, ChevronRight, CircleStop, ExternalLink, HeartPulse,
   Maximize2, MessageCircle, Mic, MicOff, Minimize2, RotateCcw, Send, ShieldCheck,
-  Sparkles, Stethoscope, UserRound, Volume2, VolumeX, XCircle,
+  Sparkles, Stethoscope, UserRound, Volume2, XCircle,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useFloraVoice } from "@/hooks/useFloraVoice";
@@ -73,7 +73,6 @@ export function AnamnesisSimulator({ level, initialCaseId, onLearningEvent }: { 
   const [sensitiveAccepted, setSensitiveAccepted] = useState(!clinicalCase.sensitive);
   const [crisisActive, setCrisisActive] = useState(false);
   const [crisisResolved, setCrisisResolved] = useState(false);
-  const [autoVoice, setAutoVoice] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showGuidance, setShowGuidance] = useState(level === "beginner");
   const workspaceRef = useRef<HTMLDivElement>(null);
@@ -146,7 +145,6 @@ export function AnamnesisSimulator({ level, initialCaseId, onLearningEvent }: { 
       if (triggerNow) setCrisisActive(true);
       setCoveredIds(nextCovered);
       setMessages((current) => [...current, { id: `patient-fact-${Date.now()}`, role: "patient", text: reply, coveredQuestionIds: newlyCovered }]);
-      if (autoVoice) void speak(reply, triggerNow || currentState === "distressed" ? "padrao" : "amiga");
       setIsResponding(false);
       return;
     }
@@ -171,7 +169,6 @@ export function AnamnesisSimulator({ level, initialCaseId, onLearningEvent }: { 
       if (triggerNow) setCrisisActive(true);
       setCoveredIds(nextCovered);
       setMessages((current) => [...current, { id: `patient-${Date.now()}`, role: "patient", text: reply, coveredQuestionIds: newlyCovered }]);
-      if (autoVoice) void speak(reply, triggerNow || currentState === "distressed" ? "padrao" : "amiga");
     } catch {
       const interactionIntent = detectAnamnesisInteractionIntent(text);
       const localIds = matchAnamnesisQuestionsLocally(text, clinicalCase);
@@ -189,9 +186,8 @@ export function AnamnesisSimulator({ level, initialCaseId, onLearningEvent }: { 
       setCoveredIds(nextCovered);
       setMessages((current) => [...current, { id: `patient-fallback-${Date.now()}`, role: "patient", text: reply, coveredQuestionIds: newlyCovered, fallback: true }]);
       setInteractionError("A IA ficou indisponível; a entrevista continuou no modo local seguro, usando apenas o caso cadastrado.");
-      if (autoVoice) void speak(reply, "padrao");
     } finally { setIsResponding(false); }
-  }, [autoVoice, clinicalCase, coveredIds, currentState, evaluated, input, isResponding, messages, speak, crisisActive, studentTurnCount]);
+  }, [clinicalCase, coveredIds, evaluated, input, isResponding, messages, crisisActive, studentTurnCount]);
 
   const transcribeRecording = useCallback(async (blob: Blob) => {
     setIsTranscribing(true); setInteractionError(null);
@@ -242,8 +238,8 @@ export function AnamnesisSimulator({ level, initialCaseId, onLearningEvent }: { 
       </aside>
 
       <main className="med-anamnesis-conversation">
-        {clinicalCase.sensitive && !sensitiveAccepted ? <section className="med-anamnesis-sensitive-gate"><AlertTriangle /><span>CONTEÚDO SENSÍVEL</span><h2>Esta entrevista exige cuidado</h2><p>O caso aborda {clinicalCase.sensitiveWarnings?.join(", ")}. As respostas são fictícias, não gráficas e podem causar desconforto.</p><button onClick={() => { setSensitiveAccepted(true); void speak(clinicalCase.openingStatement, "padrao"); }}><Check /> Estou ciente — iniciar entrevista</button><small>Você pode escolher outro caso na biblioteca acima.</small></section> : evaluated ? <AnamnesisReport clinicalCase={clinicalCase} questions={askedQuestions} decision={selectedDecision!} summary={summary} score={score} missedCritical={missedCritical} sources={sourceList} crisisOccurred={crisisActive} crisisResolved={crisisResolved} onRestart={() => resetSession()} /> : <>
-          <header><div><span className="med-eyebrow">CONSULTA EM ANDAMENTO</span><h2>{clinicalCase.title}</h2></div><div className="med-anamnesis-session-actions"><button onClick={() => setAutoVoice((v) => !v)} title={autoVoice ? "Desativar voz automática" : "Ativar voz automática"}>{autoVoice ? <Volume2 /> : <VolumeX />}</button><button onClick={toggleFullscreen} title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}>{isFullscreen ? <Minimize2 /> : <Maximize2 />}</button><span><Stethoscope /> {clinicalCase.setting}</span></div></header>
+        {clinicalCase.sensitive && !sensitiveAccepted ? <section className="med-anamnesis-sensitive-gate"><AlertTriangle /><span>CONTEÚDO SENSÍVEL</span><h2>Esta entrevista exige cuidado</h2><p>O caso aborda {clinicalCase.sensitiveWarnings?.join(", ")}. As respostas são fictícias, não gráficas e podem causar desconforto.</p><button onClick={() => setSensitiveAccepted(true)}><Check /> Estou ciente — iniciar entrevista</button><small>Você pode escolher outro caso na biblioteca acima.</small></section> : evaluated ? <AnamnesisReport clinicalCase={clinicalCase} questions={askedQuestions} decision={selectedDecision!} summary={summary} score={score} missedCritical={missedCritical} sources={sourceList} crisisOccurred={crisisActive} crisisResolved={crisisResolved} onRestart={() => resetSession()} /> : <>
+          <header><div><span className="med-eyebrow">CONSULTA EM ANDAMENTO</span><h2>{clinicalCase.title}</h2></div><div className="med-anamnesis-session-actions"><button onClick={toggleFullscreen} title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}>{isFullscreen ? <Minimize2 /> : <Maximize2 />}</button><span><Stethoscope /> {clinicalCase.setting}</span></div></header>
           {crisisActive && !crisisResolved && <div className="med-anamnesis-crisis"><HeartPulse /><div><strong>Mudança clínica percebida</strong><p>{clinicalCase.crisisTrigger?.narrative}</p></div></div>}
           {crisisResolved && <div className="med-anamnesis-crisis resolved"><ShieldCheck /><div><strong>Resposta de segurança reconhecida</strong><p>O cenário foi estabilizado para fins educacionais. Finalize a síntese e revise o debriefing.</p></div></div>}
           <div className="med-anamnesis-chat" aria-live="polite">{messages.map((message) => <article key={message.id} className={`${message.role} ${message.fallback ? "fallback" : ""}`}><span>{message.role === "student" ? <Stethoscope /> : <UserRound />}</span><div><small>{message.role === "student" ? "VOCÊ" : clinicalCase.patient.alias}</small><p>{message.text}</p>{message.coveredQuestionIds?.map((id) => { const question = clinicalCase.questions.find((q) => q.id === id); return question ? <aside key={id} className={valueCopy[question.value].className}><strong>{valueCopy[question.value].label}</strong><span>{question.feedback}</span></aside> : null; })}{message.fallback && <em>Resposta local ancorada</em>}</div></article>)}{isResponding && <article className="patient thinking"><span><UserRound /></span><div><small>{clinicalCase.patient.alias}</small><p><i /><i /><i /></p></div></article>}<div ref={chatEndRef} /></div>
