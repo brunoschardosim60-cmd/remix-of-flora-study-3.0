@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { StudyTopic, REVISION_INTERVALS, REVISION_PRESETS } from "@/lib/studyData";
+import { StudyTopic, REVISION_INTERVALS } from "@/lib/studyData";
 import { isPastDateLocal } from "@/lib/dateUtils";
 import { SubjectBadge } from "./SubjectBadge";
 import { StarRating } from "./StarRating";
@@ -33,7 +33,7 @@ export function RevisionTable({ topics, onToggleRevision, onRatingChange, onDele
   );
   const revisionColumns = Array.from({ length: revisionColumnCount }, (_, index) => ({
     index,
-    interval: REVISION_PRESETS.longo[index],
+    interval: REVISION_INTERVALS[index],
   }));
 
   function handlePracticeQuestions(topic: StudyTopic) {

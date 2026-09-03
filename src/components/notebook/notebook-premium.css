@@ -1035,6 +1035,19 @@
 .notebook-paper-text blockquote { margin: 22px 0; padding: 15px 18px; border-left: 3px solid #6ca18f; border-radius: 0 12px 12px 0; background: #eef5f1; color: #49665e; font-size: 13px; font-style: normal; }
 .notebook-paper-text hr { margin: 30px 0; border: 0; border-top: 1px solid #dfe6e2; }
 .notebook-paper-text img { display: block; width: min(100%, 720px); max-height: 550px; margin: 24px auto 26px; border: 1px solid #dce5e0; border-radius: 16px; background: radial-gradient(circle, #f8faf8, #e9f0ec); box-shadow: 0 14px 32px rgba(31,63,54,.09); object-fit: contain; }
+.notebook-paper-text table { width: 100%; margin: 18px 0 24px; overflow: hidden; border: 1px solid #dbe5e0 !important; border-radius: 12px; border-collapse: separate !important; border-spacing: 0; background: rgba(255,255,255,.78); font-size: 13px; }
+.notebook-paper-text th { background: #eaf2ee; color: #2f5d50; font-size: 11px; font-weight: 800; text-align: left; }
+.notebook-paper-text th,
+.notebook-paper-text td { min-width: 82px; padding: 10px 12px !important; border: 0 !important; border-right: 1px solid #e2e9e5 !important; border-bottom: 1px solid #e2e9e5 !important; vertical-align: top; }
+.notebook-paper-text tr:last-child > * { border-bottom: 0 !important; }
+.notebook-paper-text tr > *:last-child { border-right: 0 !important; }
+
+.nb-editor-container.is-medical-notebook .nb-editor-header { border-top: 3px solid var(--nb-notebook-accent, #397563); }
+.nb-editor-container.is-medical-notebook .nb-editor-identity > span { background: color-mix(in srgb, var(--nb-notebook-accent, #397563) 15%, white); color: var(--nb-notebook-accent, #397563); }
+.nb-editor-container.is-medical-notebook .nb-editor-identity small { color: var(--nb-notebook-accent, #397563); }
+.nb-editor-container.is-medical-notebook .nb-paper-frame { border-top: 3px solid color-mix(in srgb, var(--nb-notebook-accent, #397563) 68%, white); }
+.nb-editor-container.is-medical-notebook .notebook-paper-text h1 { color: color-mix(in srgb, var(--nb-notebook-accent, #397563) 72%, #173c32); }
+.nb-editor-container.is-medical-notebook .notebook-paper-text h2 { padding-bottom: 7px; border-bottom: 1px solid color-mix(in srgb, var(--nb-notebook-accent, #397563) 19%, white); }
 
 /* Floating creation dock */
 .nb-studio-dock { position: fixed; right: 22px; bottom: 18px; left: calc(158px + 22px); z-index: 38; display: flex; width: max-content; max-width: calc(100vw - 202px); min-height: 54px; align-items: center; gap: 8px; margin: auto; padding: 7px 8px; border: 1px solid rgba(38,65,57,.11); border-radius: 18px; background: rgba(255,255,255,.94); color: #536761; box-shadow: 0 20px 50px rgba(31,59,51,.18), 0 2px 8px rgba(31,59,51,.08); backdrop-filter: blur(22px) saturate(1.25); }

@@ -67,7 +67,89 @@ const linhaTempo = `
 <p><strong>Conexão entre os eventos:</strong> &nbsp;</p>
 `;
 
+const fichaAnatomica = `
+<h1>Estrutura anatômica</h1>
+<p><strong>Estrutura:</strong> &nbsp; <em>Nome em latim:</em> &nbsp;</p>
+<table style="width:100%;border-collapse:collapse" border="1">
+  <tbody>
+    <tr><th style="padding:8px;text-align:left;width:28%">Localização</th><td style="padding:8px">&nbsp;</td></tr>
+    <tr><th style="padding:8px;text-align:left">Relações</th><td style="padding:8px">Anterior: &nbsp; Posterior: &nbsp; Medial: &nbsp; Lateral:</td></tr>
+    <tr><th style="padding:8px;text-align:left">Irrigação / drenagem</th><td style="padding:8px">&nbsp;</td></tr>
+    <tr><th style="padding:8px;text-align:left">Inervação</th><td style="padding:8px">&nbsp;</td></tr>
+    <tr><th style="padding:8px;text-align:left">Função</th><td style="padding:8px">&nbsp;</td></tr>
+  </tbody>
+</table>
+<h2>Desenho e orientação espacial</h2>
+<p>Insira uma imagem do Atlas visual e use setas para identificar relações, planos e trajetos.</p>
+<h2>Aplicação clínica</h2><p>Lesão ou alteração → estrutura afetada → função comprometida → manifestação esperada.</p>
+`;
+
+const mecanismoFisiologico = `
+<h1>Mecanismo fisiológico</h1>
+<p><strong>Pergunta central:</strong> &nbsp;</p>
+<h2>Estado inicial</h2><p>Variáveis, compartimentos e valores de referência relevantes.</p>
+<h2>Sequência causal</h2>
+<p><strong>Estímulo → receptor → integração → efetor → resposta → feedback.</strong></p>
+<ol><li>&nbsp;</li><li>&nbsp;</li><li>&nbsp;</li><li>&nbsp;</li></ol>
+<h2>Se algo falhar</h2><p>Alteração → compensação → sinal/sintoma → dado que ajuda a confirmar.</p>
+`;
+
+const anamneseEstruturada = `
+<h1>Anamnese simulada</h1>
+<blockquote>Use somente casos fictícios ou anonimizados. Não registre dados identificáveis de pacientes reais.</blockquote>
+<p><strong>Identificação fictícia:</strong> &nbsp; <strong>Idade:</strong> &nbsp; <strong>Ocupação:</strong> &nbsp;</p>
+<h2>Queixa principal</h2><p>“____________________________________________________________”</p>
+<h2>História da doença atual</h2>
+<ul><li>Início, localização, irradiação e caráter:</li><li>Intensidade, duração e evolução:</li><li>Fatores de melhora e piora:</li><li>Sintomas associados:</li></ul>
+<h2>Antecedentes e contexto</h2><p>Patológicos · cirúrgicos · medicamentos · alergias · hábitos · história familiar · contexto psicossocial.</p>
+<h2>Síntese em uma frase</h2><p>&nbsp;</p>
+`;
+
+const casoClinico = `
+<h1>Caso clínico fictício</h1>
+<p><strong>Problema representado:</strong> &nbsp;</p>
+<h2>Dados-chave</h2><p>Achados positivos importantes · negativos importantes · fatores de risco · cronologia.</p>
+<h2>Hipóteses</h2>
+<table style="width:100%;border-collapse:collapse" border="1"><thead><tr><th style="padding:8px">Hipótese</th><th style="padding:8px">A favor</th><th style="padding:8px">Contra</th><th style="padding:8px">Como testar</th></tr></thead><tbody><tr><td style="padding:12px">&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr><tr><td style="padding:12px">&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr></tbody></table>
+<h2>Conduta de estudo</h2><p>Prioridade → exame ou informação → resultado esperado → como mudaria o raciocínio.</p>
+`;
+
+const mapaFarmacologico = `
+<h1>Mapa farmacológico</h1>
+<p><strong>Fármaco/classe:</strong> &nbsp; <strong>Indicação estudada:</strong> &nbsp;</p>
+<h2>Mecanismo de ação</h2><p><strong>Alvo → efeito molecular → efeito celular → efeito clínico.</strong></p>
+<h2>Farmacocinética</h2><p>Absorção · distribuição · metabolismo · eliminação.</p>
+<h2>Segurança</h2><ul><li>Efeitos adversos importantes:</li><li>Contraindicações e precauções:</li><li>Interações relevantes:</li><li>Monitorização:</li></ul>
+<blockquote>Material para estudo. Não use esta página como prescrição ou orientação individual.</blockquote>
+`;
+
 const TEMPLATES_BY_SUBJECT: Record<string, NotebookTemplate[]> = {
+  "Medicina": [
+    { id: "med-anatomia", label: "Ficha anatômica", description: "Estrutura, relações e aplicação", html: fichaAnatomica },
+    { id: "med-anamnese", label: "Anamnese simulada", description: "Entrevista clínica organizada", html: anamneseEstruturada },
+    { id: "med-caso", label: "Caso clínico", description: "Hipóteses e dados-chave", html: casoClinico },
+    { id: "med-farmaco", label: "Mapa farmacológico", description: "Mecanismo, cinética e segurança", html: mapaFarmacologico },
+  ],
+  "HAM": [
+    { id: "ham-anatomia", label: "Ficha anatômica", description: "Estrutura, relações e aplicação", html: fichaAnatomica },
+    { id: "ham-cornell", label: "Resumo de aula", description: "Perguntas, notas e síntese", html: cornell("HAM — Anatomia e morfofisiologia") },
+  ],
+  "SOI": [
+    { id: "soi-mecanismo", label: "Mecanismo fisiológico", description: "Cadeia causal e feedback", html: mecanismoFisiologico },
+    { id: "soi-caso", label: "Caso integrador", description: "Hipóteses e dados-chave", html: casoClinico },
+  ],
+  "IESC": [
+    { id: "iesc-anamnese", label: "Anamnese simulada", description: "Entrevista sem dados identificáveis", html: anamneseEstruturada },
+    { id: "iesc-caso", label: "Caso clínico", description: "Contexto, hipóteses e conduta", html: casoClinico },
+  ],
+  "PIEPE": [
+    { id: "piepe-caso", label: "Problema integrador", description: "Problema, hipóteses e objetivos", html: casoClinico },
+    { id: "piepe-fluxo", label: "Fluxograma", description: "Etapas e pontos de decisão", html: fluxograma },
+  ],
+  "MCM": [
+    { id: "mcm-mecanismo", label: "Mapa de mecanismo", description: "Causa, resposta e consequência", html: mecanismoFisiologico },
+    { id: "mcm-farmaco", label: "Mapa farmacológico", description: "Ação, cinética e segurança", html: mapaFarmacologico },
+  ],
   "Matemática": [
     { id: "math-formulario", label: "Formulário", description: "Lista de fórmulas + exemplos", html: formulario("Matemática") },
     { id: "math-cornell", label: "Cornell", description: "Palavras-chave + anotações + resumo", html: cornell("Aula de Matemática") },

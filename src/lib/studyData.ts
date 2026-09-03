@@ -98,12 +98,10 @@ export const REVISION_INTERVALS = [1, 3, 7, 14, 30, 60];
  * Presets de repetição espaçada baseados em Ebbinghaus.
  * - `curto`: reforço rápido, ideal para tópicos leves ou próximos da prova.
  * - `padrao`: cadeia padrão do app.
- * - `longo`: fixação de longo prazo, útil para bases fundamentais.
  */
 export const REVISION_PRESETS = {
   curto: [1, 3, 7],
   padrao: REVISION_INTERVALS,
-  longo: [1, 3, 7, 14, 30, 60, 120, 240],
 } as const;
 
 export type RevisionPreset = keyof typeof REVISION_PRESETS;

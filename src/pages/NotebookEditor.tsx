@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, type CSSProperties } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -16,7 +16,7 @@ import {
 import {
   ArrowLeft, Plus, Trash2, ChevronLeft, ChevronRight, Loader2, Maximize2, Minimize2, Share2,
   Brain, Sparkles, BookPlus, CheckCircle2, XCircle, ZoomIn, ZoomOut, FileText, Cloud, CloudOff, RefreshCw, Eye, Camera, Wand2,
-  LayoutTemplate, Tag as TagIcon, MoreHorizontal, Search, Download, History, FileUp, Images,
+  LayoutTemplate, Tag as TagIcon, MoreHorizontal, Search, Download, History, FileUp, Images, Stethoscope,
 } from "lucide-react";
 
 import { toast } from "sonner";
@@ -210,6 +210,7 @@ const NOTEBOOK_META_STORAGE_KEY = "studyflow.notebook.page-meta";
 const NOTEBOOK_SUMMARIES_STORAGE_KEY = "studyflow.notebook.page-summaries";
 const NOTEBOOK_TEMPLATE_STORAGE_KEY = "studyflow.notebook.page-templates";
 const NOTEBOOK_HISTORY_STORAGE_KEY = "studyflow.notebook.history";
+const MEDICAL_NOTEBOOK_SUBJECTS = new Set(["Medicina", "HAM", "SOI", "IESC", "PIEPE", "MCM"]);
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
@@ -360,6 +361,7 @@ export default function NotebookEditor() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const [pdfImporting, setPdfImporting] = useState(false);
+  const isMedicalNotebook = MEDICAL_NOTEBOOK_SUBJECTS.has(notebook?.subject || selectedSubject);
 
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const solveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -2029,8 +2031,11 @@ export default function NotebookEditor() {
   }
 
   return (
-    <div className={`nb-editor-container min-h-dvh bg-background flex flex-col ${expandedEditor ? "fixed inset-0 z-50 overflow-auto" : ""}`}
-      style={expandedEditor ? { touchAction: "pan-x pan-y pinch-zoom" } : undefined}
+    <div className={`nb-editor-container min-h-dvh bg-background flex flex-col ${isMedicalNotebook ? "is-medical-notebook" : ""} ${expandedEditor ? "fixed inset-0 z-50 overflow-auto" : ""}`}
+      style={{
+        ...(expandedEditor ? { touchAction: "pan-x pan-y pinch-zoom" } : {}),
+        "--nb-notebook-accent": notebook?.cover_color || "#397563",
+      } as CSSProperties}
     >
       {/* Floating back button + mode dock in fullscreen */}
       {expandedEditor && (
@@ -2053,7 +2058,7 @@ export default function NotebookEditor() {
             <button type="button" className="nb-editor-back" aria-label="Voltar para cadernos" onClick={() => navigate("/notebooks")}><ArrowLeft /></button>
             <div className="nb-editor-identity">
               <span><FileText /></span>
-              <div><small>{notebook?.subject || selectedSubject || "CADERNO LIVRE"}</small><input className="nb-editor-title-input" value={titleDraft} onChange={(event) => setTitleDraft(event.target.value)} onBlur={() => void saveNotebookTitle()} onKeyDown={(event) => { if (event.key === "Enter") event.currentTarget.blur(); if (event.key === "Escape") { setTitleDraft(notebook?.title || "Sem título"); event.currentTarget.blur(); } }} aria-label="Nome do caderno" title="Clique para renomear" /></div>
+              <div><small>{isMedicalNotebook ? `CADERNO MÉDICO · ${notebook?.subject || selectedSubject}` : notebook?.subject || selectedSubject || "CADERNO LIVRE"}</small><input className="nb-editor-title-input" value={titleDraft} onChange={(event) => setTitleDraft(event.target.value)} onBlur={() => void saveNotebookTitle()} onKeyDown={(event) => { if (event.key === "Enter") event.currentTarget.blur(); if (event.key === "Escape") { setTitleDraft(notebook?.title || "Sem título"); event.currentTarget.blur(); } }} aria-label="Nome do caderno" title="Clique para renomear" /></div>
             </div>
 
             <div className={`nb-save-state ${saveStatus}`}>
@@ -2103,9 +2108,9 @@ export default function NotebookEditor() {
             </div>
 
             <DropdownMenu>
-              <DropdownMenuTrigger asChild><button type="button" className="nb-study-page-button"><Brain /><span>Estudar esta página</span></button></DropdownMenuTrigger>
+              <DropdownMenuTrigger asChild><button type="button" className="nb-study-page-button">{isMedicalNotebook ? <Stethoscope /> : <Brain />}<span>{isMedicalNotebook ? "Ferramentas médicas" : "Estudar esta página"}</span></button></DropdownMenuTrigger>
               <DropdownMenuContent align="center" className="w-64">
-                <DropdownMenuLabel>Aprender com a página</DropdownMenuLabel>
+                <DropdownMenuLabel>{isMedicalNotebook ? "Estudar e estruturar a página" : "Aprender com a página"}</DropdownMenuLabel>
                 <DropdownMenuItem onClick={handleGenerateSummaryFromPage} disabled={generatingStudy !== "none"}>{generatingStudy === "summary" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Gerar resumo explicado</DropdownMenuItem>
                 <DropdownMenuItem onClick={handleGenerateFlashcardsFromPage} disabled={generatingStudy !== "none"}>{generatingStudy === "flashcards" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Gerar flashcards</DropdownMenuItem>
                 <DropdownMenuItem onClick={handleGenerateQuizFromPage} disabled={generatingStudy !== "none"}>{generatingStudy === "quiz" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Gerar quiz</DropdownMenuItem>
@@ -2114,7 +2119,7 @@ export default function NotebookEditor() {
                 <DropdownMenuItem onClick={handleGenerateQuizFromSelection} disabled={generatingStudy !== "none"}>Quiz do trecho selecionado</DropdownMenuItem>
                 <DropdownMenuItem onClick={handleSuggestTags}><TagIcon className="mr-2 h-4 w-4" />Sugerir etiquetas</DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuLabel className="text-xs opacity-70">Blocos de {selectedSubject || "estudo"}</DropdownMenuLabel>
+                <DropdownMenuLabel className="text-xs opacity-70">{isMedicalNotebook ? "Blocos médicos de" : "Blocos de"} {selectedSubject || "estudo"}</DropdownMenuLabel>
                 {getTemplatesForSubject(selectedSubject).map((template) => <DropdownMenuItem key={template.id} onClick={() => handleInsertTemplate(template.html, template.label)}><LayoutTemplate className="mr-2 h-4 w-4" />Inserir {template.label}</DropdownMenuItem>)}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => fileInputRef.current?.click()} disabled={ocrLoading}><Camera className="mr-2 h-4 w-4" />Digitalizar foto (OCR)</DropdownMenuItem>

@@ -11,7 +11,6 @@ interface AddTopicFormProps {
 const PRESET_LABELS: Record<RevisionPreset, string> = {
   curto: "Curto (3x)",
   padrao: "Padrão (6x)",
-  longo: "Longo (8x)",
 };
 
 export function AddTopicForm({ onAdd, openSignal = 0, subjects }: AddTopicFormProps) {
