@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StudyTopic } from "@/lib/studyData";
 import { OverdueRevisions } from "./OverdueRevisions";
@@ -12,12 +13,35 @@ interface RevisionsPanelProps {
   onReschedule: (topicId: string, revisionIndex: number) => void;
 }
 
+type RevisionsPanelTab = "overdue" | "today" | "upcoming";
+const REVISIONS_PANEL_TAB_KEY = "flora.revisionsPanel.activeTab";
+
+function readSavedTab(fallback: RevisionsPanelTab): RevisionsPanelTab {
+  try {
+    const saved = window.localStorage.getItem(REVISIONS_PANEL_TAB_KEY);
+    return saved === "overdue" || saved === "today" || saved === "upcoming" ? saved : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 export function RevisionsPanel({ overdue, today, upcoming, onComplete, onReschedule }: RevisionsPanelProps) {
-  const defaultTab = overdue.length > 0 ? "overdue" : today.length > 0 ? "today" : "upcoming";
+  const defaultTab: RevisionsPanelTab = overdue.length > 0 ? "overdue" : today.length > 0 ? "today" : "upcoming";
+  const [activeTab, setActiveTab] = useState<RevisionsPanelTab>(() => readSavedTab(defaultTab));
+
+  const changeTab = (value: string) => {
+    if (value !== "overdue" && value !== "today" && value !== "upcoming") return;
+    setActiveTab(value);
+    try {
+      window.localStorage.setItem(REVISIONS_PANEL_TAB_KEY, value);
+    } catch {
+      // O painel continua funcional quando o armazenamento do navegador está indisponível.
+    }
+  };
 
   return (
     <div className="glass-card rounded-xl p-4 sm:p-5">
-      <Tabs defaultValue={defaultTab} className="w-full">
+      <Tabs value={activeTab} onValueChange={changeTab} className="w-full">
         <TabsList className="w-full grid grid-cols-3 mb-4">
           <TabsTrigger value="overdue" className="gap-1.5">
             Atrasadas

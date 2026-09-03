@@ -59,6 +59,13 @@
     --subject-adm-publica: 130 50% 40%;
     --subject-contabilidade: 290 50% 50%;
 
+    /* Medicina */
+    --subject-ham: 207 72% 46%;
+    --subject-soi: 166 58% 38%;
+    --subject-iesc: 267 55% 52%;
+    --subject-piepe: 348 66% 53%;
+    --subject-mcm: 24 72% 48%;
+
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
     --sidebar-primary: 240 5.9% 10%;

@@ -21,7 +21,12 @@ export type Subject =
   | "Informática"
   | "Atualidades"
   | "Administração Pública"
-  | "Contabilidade";
+  | "Contabilidade"
+  | "HAM"
+  | "SOI"
+  | "IESC"
+  | "PIEPE"
+  | "MCM";
 
 export const SUBJECT_COLORS: Record<Subject, string> = {
   Matemática: "bg-subject-math",
@@ -43,6 +48,11 @@ export const SUBJECT_COLORS: Record<Subject, string> = {
   Atualidades: "bg-subject-atualidades",
   "Administração Pública": "bg-subject-adm-publica",
   Contabilidade: "bg-subject-contabilidade",
+  HAM: "bg-subject-ham",
+  SOI: "bg-subject-soi",
+  IESC: "bg-subject-iesc",
+  PIEPE: "bg-subject-piepe",
+  MCM: "bg-subject-mcm",
 };
 
 export const ALL_SUBJECTS: Subject[] = Object.keys(SUBJECT_COLORS) as Subject[];
@@ -75,6 +85,11 @@ export const ENEM_SUBJECTS: Subject[] = [
   "Inglês",
   "Redação",
   "Simulado",
+  "HAM",
+  "SOI",
+  "IESC",
+  "PIEPE",
+  "MCM",
 ];
 
 export const REVISION_INTERVALS = [1, 3, 7, 14, 30, 60];

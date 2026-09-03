@@ -59,6 +59,11 @@ export default {
           atualidades: "hsl(var(--subject-atualidades))",
           "adm-publica": "hsl(var(--subject-adm-publica))",
           contabilidade: "hsl(var(--subject-contabilidade))",
+          ham: "hsl(var(--subject-ham))",
+          soi: "hsl(var(--subject-soi))",
+          iesc: "hsl(var(--subject-iesc))",
+          piepe: "hsl(var(--subject-piepe))",
+          mcm: "hsl(var(--subject-mcm))",
         },
       },
       borderRadius: {

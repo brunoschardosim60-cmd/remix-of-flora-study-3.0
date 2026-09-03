@@ -91,7 +91,7 @@ type MixableAnatomyLayer = Exclude<Anatomy3DSystemId, "all">;
 type AnatomyLayerState = Record<MixableAnatomyLayer, { visible: boolean; opacity: number }>;
 type AnatomyHoverLabel = { structure: Anatomy3DStructure; x: number; y: number };
 type AnatomyHoverHandler = (structure: Anatomy3DStructure | null, point?: { x: number; y: number }) => void;
-class ThreeModelErrorBoundary extends Component<{ children: ReactNode; onError: () => void }, { failed: boolean }> {
+class ThreeModelErrorBoundary extends Component<{ children: ReactNode; onError: () => void; fallback?: ReactNode }, { failed: boolean }> {
   state = { failed: false };
 
   static getDerivedStateFromError() {
@@ -104,8 +104,35 @@ class ThreeModelErrorBoundary extends Component<{ children: ReactNode; onError: 
   }
 
   render() {
-    return this.state.failed ? null : this.props.children;
+    return this.state.failed ? this.props.fallback ?? null : this.props.children;
   }
+}
+
+function Anatomy3DLoadingFallback() {
+  const [slow, setSlow] = useState(false);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => setSlow(true), 12_000);
+    return () => window.clearTimeout(timeout);
+  }, []);
+
+  return <div className="med-3d-loading" role="status" aria-live="polite">
+    <Rotate3D />
+    <strong>{slow ? "O modelo está demorando mais que o esperado." : "Preparando o modelo tridimensional…"}</strong>
+    {slow && <>
+      <span>Isso pode acontecer logo após uma atualização ou em uma conexão instável.</span>
+      <button type="button" onClick={() => window.location.reload()}>Tentar novamente</button>
+    </>}
+  </div>;
+}
+
+function Anatomy3DLoadFailure() {
+  return <div className="med-3d-loading med-3d-loading-failed" role="alert">
+    <Rotate3D />
+    <strong>Não foi possível abrir o modelo 3D.</strong>
+    <span>Os controles e seus dados foram preservados.</span>
+    <button type="button" onClick={() => window.location.reload()}>Recarregar modelo</button>
+  </div>;
 }
 
 interface Anatomy3DStudioProps {
@@ -729,7 +756,8 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
                 <input aria-label="Posição do corte do corpo" type="range" min="-.8" max=".8" step=".05" value={sectionOffset} onChange={(event) => setSectionOffset(Number(event.target.value))} />
               </div>}
             </aside>}
-            <Suspense fallback={<div className="med-3d-loading"><Rotate3D /><strong>Preparando o modelo tridimensional…</strong></div>}>
+            <ThreeModelErrorBoundary onError={() => undefined} fallback={<Anatomy3DLoadFailure />}>
+            <Suspense fallback={<Anatomy3DLoadingFallback />}>
               <Canvas
                 shadows={!performanceComposition}
                 frameloop={autoRotate ? "always" : "demand"}
@@ -768,6 +796,7 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
                 <CameraRig focus={cameraFocus} distance={cameraDistance / zoom} focusKey={focusKey} view={cameraView} autoRotate={autoRotate} />
               </Canvas>
             </Suspense>
+            </ThreeModelErrorBoundary>
             {hoverLabel && <div className="med-3d-hover-label" style={{ left: hoverLabel.x, top: hoverLabel.y }}>
               <small>{hoverLabel.structure.system}</small>
               <strong>{hoverLabel.structure.name}</strong>
@@ -2868,6 +2897,4 @@ function speak(name: string) {
   window.speechSynthesis.speak(utterance);
 }
 
-useGLTF.preload(REAL_MODEL_PATH, "/medicine/models/draco/");
 useGLTF.preload(REAL_SKIN_PATH, "/medicine/models/draco/");
-useGLTF.preload(REAL_ORGANS_PATH, "/medicine/models/draco/");

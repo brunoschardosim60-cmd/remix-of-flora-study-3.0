@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { StudyTopic, REVISION_INTERVALS } from "@/lib/studyData";
+import { StudyTopic, REVISION_INTERVALS, REVISION_PRESETS } from "@/lib/studyData";
 import { isPastDateLocal } from "@/lib/dateUtils";
 import { SubjectBadge } from "./SubjectBadge";
 import { StarRating } from "./StarRating";
@@ -27,6 +27,14 @@ function isOverdue(iso: string | null) {
 
 export function RevisionTable({ topics, onToggleRevision, onRatingChange, onDelete, onOpenNotes, onOpenQuiz, onStartStudy }: RevisionTableProps) {
   const navigate = useNavigate();
+  const revisionColumnCount = Math.max(
+    REVISION_INTERVALS.length,
+    ...topics.map((topic) => topic.revisions.length),
+  );
+  const revisionColumns = Array.from({ length: revisionColumnCount }, (_, index) => ({
+    index,
+    interval: REVISION_PRESETS.longo[index],
+  }));
 
   function handlePracticeQuestions(topic: StudyTopic) {
     const params = new URLSearchParams();
@@ -38,15 +46,15 @@ export function RevisionTable({ topics, onToggleRevision, onRatingChange, onDele
   return (
     <div className="glass-card rounded-xl overflow-hidden">
       <div className="overflow-x-auto px-1 sm:px-0">
-        <table className="w-full min-w-[860px] text-sm">
+        <table className="w-full text-sm" style={{ minWidth: `${860 + Math.max(0, revisionColumnCount - REVISION_INTERVALS.length) * 76}px` }}>
           <thead>
             <tr className="border-b border-border bg-muted/30">
               <th className="text-left p-3 font-heading font-semibold">Tema</th>
               <th className="text-left p-3 font-heading font-semibold">Matéria</th>
               <th className="text-center p-3 font-heading font-semibold">Dia estudado</th>
-              {REVISION_INTERVALS.map((d, i) => (
-                <th key={i} className="text-center p-3 font-heading font-semibold whitespace-nowrap">
-                  R{i + 1} <span className="text-xs text-muted-foreground font-normal">({d}d)</span>
+              {revisionColumns.map(({ index, interval }) => (
+                <th key={index} className="w-[76px] min-w-[76px] text-center p-3 font-heading font-semibold whitespace-nowrap">
+                  R{index + 1} {interval !== undefined && <span className="text-xs text-muted-foreground font-normal">({interval}d)</span>}
                 </th>
               ))}
               <th className="text-center p-3 font-heading font-semibold">Domínio</th>
@@ -56,7 +64,7 @@ export function RevisionTable({ topics, onToggleRevision, onRatingChange, onDele
           <tbody>
             {topics.length === 0 && (
               <tr>
-                <td colSpan={11} className="p-8 text-center">
+                <td colSpan={revisionColumnCount + 5} className="p-8 text-center">
                   <div className="mx-auto max-w-md space-y-2">
                     <p className="font-heading text-lg font-semibold">Seu cronograma ainda está vazio</p>
                     <p className="text-sm text-muted-foreground">
@@ -83,25 +91,29 @@ export function RevisionTable({ topics, onToggleRevision, onRatingChange, onDele
                 </td>
                 <td className="p-3"><SubjectBadge subject={topic.materia} /></td>
                 <td className="p-3 text-center text-muted-foreground text-xs">{formatDate(topic.studyDate)}</td>
-                {topic.revisions.map((revision, i) => (
-                  <td key={i} className="p-3 text-center">
-                    <button
-                      onClick={() => onToggleRevision(topic.id, i)}
-                      className={`w-11 h-11 sm:w-7 sm:h-7 rounded-md border-2 transition-all flex items-center justify-center mx-auto
-                        ${revision.completed
-                          ? "bg-secondary border-secondary text-secondary-foreground"
-                          : isOverdue(revision.scheduledDate) && !revision.completed
-                            ? "border-destructive/50 bg-destructive/5"
-                            : "border-border hover:border-primary/50"
-                        }`}
-                    >
-                      {revision.completed && <Check className="w-4 h-4" />}
-                    </button>
-                    <p className={`text-[10px] mt-1 ${isOverdue(revision.scheduledDate) && !revision.completed ? "text-destructive" : "text-muted-foreground"}`}>
-                      {formatDate(revision.scheduledDate)}
-                    </p>
-                  </td>
-                ))}
+                {revisionColumns.map(({ index }) => {
+                  const revision = topic.revisions[index];
+                  if (!revision) return <td key={index} className="w-[76px] min-w-[76px] p-3" aria-label={`Revisão ${index + 1} não agendada`} />;
+
+                  return <td key={index} className="w-[76px] min-w-[76px] p-3 text-center">
+                      <button
+                        onClick={() => onToggleRevision(topic.id, index)}
+                        aria-label={`Marcar revisão ${index + 1} de ${topic.tema}`}
+                        className={`w-11 h-11 sm:w-7 sm:h-7 rounded-md border-2 transition-all flex items-center justify-center mx-auto
+                          ${revision.completed
+                            ? "bg-secondary border-secondary text-secondary-foreground"
+                            : isOverdue(revision.scheduledDate) && !revision.completed
+                              ? "border-destructive/50 bg-destructive/5"
+                              : "border-border hover:border-primary/50"
+                          }`}
+                      >
+                        {revision.completed && <Check className="w-4 h-4" />}
+                      </button>
+                      <p className={`text-[10px] mt-1 ${isOverdue(revision.scheduledDate) && !revision.completed ? "text-destructive" : "text-muted-foreground"}`}>
+                        {formatDate(revision.scheduledDate)}
+                      </p>
+                    </td>;
+                })}
                 <td className="p-3">
                   <StarRating rating={topic.rating} onChange={(r) => onRatingChange(topic.id, r)} />
                 </td>
