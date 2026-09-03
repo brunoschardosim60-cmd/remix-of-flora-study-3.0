@@ -463,14 +463,28 @@
 .med-atlas-profile-strip {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  min-height: 50px;
-  padding: 6px 13px;
+  justify-content: space-between;
+  gap: 10px 16px;
+  flex-wrap: wrap;
+  min-height: 44px;
+  padding: 5px 13px;
   border-top: 1px solid var(--med-line);
   border-bottom: 1px solid var(--med-line);
   background: linear-gradient(90deg, #f8faf7, #eef5f1);
 }
+.med-atlas-profile-strip > p {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: #6c7f79;
+  font-size: 12px;
+  line-height: 1.35;
+}
+.med-atlas-profile-strip > p strong { color: #3f6d60; font-size: 11px; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
 .med-atlas-profile-options { display: flex; align-items: center; gap: 6px; }
+
 .med-atlas-profile-options > button {
   display: grid;
   width: 36px;
