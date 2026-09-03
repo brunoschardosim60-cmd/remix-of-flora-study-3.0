@@ -461,6 +461,8 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
       </div>
 
       {activeLayer === "organs" && <div className="med-atlas-profile-strip" aria-label="Perfil reprodutivo da camada de órgãos">
+        <p><strong>Anatomia de referência</strong><span>Alterna as estruturas reprodutivas exibidas nesta camada.</span></p>
+
         <div className="med-atlas-profile-options" role="group" aria-label="Escolher anatomia masculina ou feminina">
           <button className={bodyProfile === "male" ? "active" : ""} onClick={() => changeBodyProfile("male")} aria-label="Homem" title="Homem" aria-pressed={bodyProfile === "male"}><span aria-hidden="true">♂</span></button>
           <button className={bodyProfile === "female" ? "active" : ""} onClick={() => changeBodyProfile("female")} aria-label="Mulher" title="Mulher" aria-pressed={bodyProfile === "female"}><span aria-hidden="true">♀</span></button>
