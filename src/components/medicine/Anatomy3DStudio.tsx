@@ -176,7 +176,7 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
   const startsWithOrgan = initialSystem === "organs";
   const [system, setSystem] = useState<Anatomy3DSystemId>(initialSystem);
   const [layers, setLayers] = useState<AnatomyLayerState>(() => anatomyLayerPreset(initialSystem));
-  const [layerPanelOpen, setLayerPanelOpen] = useState(true);
+  const [layerPanelOpen, setLayerPanelOpen] = useState(() => typeof window === "undefined" || window.innerWidth >= 1280);
   const [layersExploded, setLayersExploded] = useState(false);
   const [bodySectionEnabled, setBodySectionEnabled] = useState(false);
   // A aparência didática anterior é mais legível e sensivelmente mais leve.
