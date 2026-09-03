@@ -477,7 +477,7 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
               return <button key={layer.id} className={activeLayer === layer.id ? "active" : ""} onClick={() => selectLayer(layer.id)}>
                 <span className="dot" style={{ background: layer.color }} />
                 <span><strong>{layer.label}</strong><small>{layer.description}</small></span>
-                <b aria-label={`${statistics.displayed} estruturas visíveis na imagem`} title={`${statistics.displayed} marcadores visíveis na imagem; ${statistics.inCurrentView} estruturas disponíveis na vista ${view}; ${statistics.catalogued} catalogadas`}><strong>{statistics.displayed}</strong><small>na imagem</small></b>
+                <b aria-label={`${statistics.inCurrentView} estruturas nesta vista`} title={`${statistics.inCurrentView} estruturas disponíveis na vista ${view}; ${statistics.displayed} marcadores visíveis na imagem; ${statistics.catalogued} catalogadas`}><strong>{statistics.inCurrentView}</strong><small>nesta vista</small></b>
               </button>;
             })}
           </div>
