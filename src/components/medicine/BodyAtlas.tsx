@@ -461,6 +461,8 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
       </div>
 
       {activeLayer === "organs" && <div className="med-atlas-profile-strip" aria-label="Perfil reprodutivo da camada de órgãos">
+        <p><strong>Anatomia de referência</strong><span>Alterna as estruturas reprodutivas exibidas nesta camada.</span></p>
+
         <div className="med-atlas-profile-options" role="group" aria-label="Escolher anatomia masculina ou feminina">
           <button className={bodyProfile === "male" ? "active" : ""} onClick={() => changeBodyProfile("male")} aria-label="Homem" title="Homem" aria-pressed={bodyProfile === "male"}><span aria-hidden="true">♂</span></button>
           <button className={bodyProfile === "female" ? "active" : ""} onClick={() => changeBodyProfile("female")} aria-label="Mulher" title="Mulher" aria-pressed={bodyProfile === "female"}><span aria-hidden="true">♀</span></button>
@@ -475,7 +477,7 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
               return <button key={layer.id} className={activeLayer === layer.id ? "active" : ""} onClick={() => selectLayer(layer.id)}>
                 <span className="dot" style={{ background: layer.color }} />
                 <span><strong>{layer.label}</strong><small>{layer.description}</small></span>
-                <b aria-label={`${statistics.displayed} estruturas visíveis na imagem`} title={`${statistics.displayed} marcadores visíveis na imagem; ${statistics.inCurrentView} estruturas disponíveis na vista ${view}; ${statistics.catalogued} catalogadas`}><strong>{statistics.displayed}</strong><small>na imagem</small></b>
+                <b aria-label={`${statistics.inCurrentView} estruturas nesta vista`} title={`${statistics.inCurrentView} estruturas disponíveis na vista ${view}; ${statistics.displayed} marcadores visíveis na imagem; ${statistics.catalogued} catalogadas`}><strong>{statistics.inCurrentView}</strong><small>nesta vista</small></b>
               </button>;
             })}
           </div>
