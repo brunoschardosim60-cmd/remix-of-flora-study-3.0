@@ -27,6 +27,8 @@ interface RichEditorProps {
   zoom?: number;
   /** Orientação física da folha. */
   orientation?: "portrait" | "landscape";
+  /** Samsung Notes: tela contínua por padrão ou páginas físicas para impressão. */
+  pageFlow?: "continuous" | "pages";
   /** Overlay rendered on top of the paper sheet (e.g. drawing canvas, sticky notes). */
   paperOverlay?: ReactNode;
   /** When true, paper takes more horizontal space (focus/fullscreen mode). */
@@ -55,7 +57,7 @@ const TEMPLATE_CLASS: Record<string, string> = {
   essay: "notebook-essay",
 };
 
-export function RichEditor({ content, onChange, userId, notebookId, darkMode, onToggleDarkMode, template = "blank", zoom = 1, orientation = "portrait", paperOverlay, wide = false, handwriting = false, showMargin = true, backgroundImage, insertionRequest, onInsertionHandled }: RichEditorProps) {
+export function RichEditor({ content, onChange, userId, notebookId, darkMode, onToggleDarkMode, template = "blank", zoom = 1, orientation = "portrait", pageFlow = "continuous", paperOverlay, wide = false, handwriting = false, showMargin = true, backgroundImage, insertionRequest, onInsertionHandled }: RichEditorProps) {
   const isExternalUpdate = useRef(false);
   const lastInsertionId = useRef<number | null>(null);
   const [floraBusy, setFloraBusy] = useState<null | string>(null);
@@ -205,7 +207,7 @@ export function RichEditor({ content, onChange, userId, notebookId, darkMode, on
   };
 
   return (
-    <div className={`nb-rich-editor-root flex flex-col h-full ${darkMode ? "text-gray-100" : ""}`}>
+    <div className={`nb-rich-editor-root flex flex-col h-full is-${pageFlow} ${darkMode ? "text-gray-100" : ""}`}>
       {editor && (
         <BubbleMenu
           editor={editor}
@@ -260,19 +262,19 @@ export function RichEditor({ content, onChange, userId, notebookId, darkMode, on
           onToggleDarkMode={onToggleDarkMode}
         />
       </div>
-      <div className="nb-paper-viewport flex-1 py-5 sm:py-7 px-3 sm:px-6">
+      <div className={`nb-paper-viewport is-${pageFlow} flex-1 py-5 sm:py-7 px-3 sm:px-6`}>
         <div
-          className="nb-paper-zoom-stage"
+          className={`nb-paper-zoom-stage is-${pageFlow}`}
           style={{ zoom } as React.CSSProperties}
         >
         <div
-          className={`nb-paper-frame relative mx-auto overflow-hidden transition-shadow duration-300 animate-fade-in notebook-paper-realistic is-${orientation} ${wide ? "is-wide" : ""} ${showMargin ? "with-margin" : ""} ${handwriting ? "notebook-handwriting" : ""} ${
+          className={`nb-paper-frame relative mx-auto overflow-hidden transition-shadow duration-300 animate-fade-in notebook-paper-realistic is-${orientation} is-${pageFlow} ${wide ? "is-wide" : ""} ${showMargin ? "with-margin" : ""} ${handwriting ? "notebook-handwriting" : ""} ${
             darkMode
               ? "bg-gray-900 shadow-[0_8px_30px_rgba(0,0,0,0.5)] [&_.ProseMirror]:text-gray-100 [&_.ProseMirror_h1]:text-gray-50 [&_.ProseMirror_h2]:text-gray-50 [&_.ProseMirror_h3]:text-gray-50"
               : "bg-white shadow-[0_4px_24px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.08)]"
           } ${TEMPLATE_CLASS[template] || ""}`}
         >
-          <div className="nb-paper-content relative min-h-[calc(85vh-42px)] px-8 py-10 sm:px-14 sm:py-12">
+          <div className={`nb-paper-content is-${pageFlow} relative min-h-[calc(85vh-42px)] px-8 py-10 sm:px-14 sm:py-12`}>
             {backgroundImage && (
               <img src={backgroundImage} alt="Página importada do PDF" draggable={false} className="pointer-events-none absolute inset-0 h-full w-full select-none object-contain object-top opacity-100" />
             )}

@@ -16,7 +16,7 @@ import {
 import {
   ArrowLeft, Plus, Trash2, ChevronLeft, ChevronRight, Loader2, Maximize2, Minimize2, Share2,
   Brain, Sparkles, BookPlus, CheckCircle2, XCircle, ZoomIn, ZoomOut, FileText, Cloud, CloudOff, RefreshCw, Eye, Camera, Wand2,
-  LayoutTemplate, Tag as TagIcon, MoreHorizontal, Search, Download, History, FileUp, Images, Stethoscope,
+  LayoutTemplate, Tag as TagIcon, MoreHorizontal, Search, Download, History, FileUp, Images, Stethoscope, Files,
 } from "lucide-react";
 
 import { toast } from "sonner";
@@ -91,6 +91,7 @@ import DOMPurify from "dompurify";
 
 type PageTemplate = "blank" | "lined" | "grid" | "dotted" | "cornell" | "clinical" | "anatomy" | "physics" | "chemistry" | "essay";
 type ZoomMode = "manual" | "width" | "page";
+type PageFlow = "continuous" | "pages";
 const PAGE_TEMPLATES: PageTemplate[] = ["blank", "lined", "grid", "dotted", "cornell", "clinical", "anatomy", "physics", "chemistry", "essay"];
 
 function normalizePageTemplate(value: string | null | undefined): PageTemplate {
@@ -216,6 +217,7 @@ const NOTEBOOK_HISTORY_STORAGE_KEY = "studyflow.notebook.history";
 const NOTEBOOK_ZOOM_STORAGE_KEY = "studyflow.notebook.zoom";
 const NOTEBOOK_ZOOM_MODE_STORAGE_KEY = "studyflow.notebook.zoom-mode-v2";
 const NOTEBOOK_PAGES_COLLAPSED_STORAGE_KEY = "studyflow.notebook.pages-collapsed";
+const NOTEBOOK_PAGE_FLOW_STORAGE_KEY = "studyflow.notebook.page-flow";
 const NOTEBOOK_ORIENTATION_STORAGE_KEY = "studyflow.notebook.orientation";
 const NOTEBOOK_PEN_COLOR_STORAGE_KEY = "studyflow.notebook.pen-color";
 const NOTEBOOK_PEN_WIDTH_STORAGE_KEY = "studyflow.notebook.pen-width";
@@ -349,6 +351,7 @@ export default function NotebookEditor() {
     return stored === "width" || stored === "manual" ? stored : "page";
   });
   const [pagesCollapsed, setPagesCollapsed] = useState(() => loadStringStorage(NOTEBOOK_PAGES_COLLAPSED_STORAGE_KEY) === "1");
+  const [pageFlow, setPageFlow] = useState<PageFlow>(() => loadStringStorage(NOTEBOOK_PAGE_FLOW_STORAGE_KEY) === "pages" ? "pages" : "continuous");
   const [pageOrientation, setPageOrientation] = useState<"portrait" | "landscape">(() =>
     loadStringStorage(NOTEBOOK_ORIENTATION_STORAGE_KEY) === "landscape" ? "landscape" : "portrait"
   );
@@ -433,6 +436,11 @@ export default function NotebookEditor() {
   }, [pagesCollapsed]);
 
   useEffect(() => {
+    window.localStorage.setItem(NOTEBOOK_PAGE_FLOW_STORAGE_KEY, pageFlow);
+    if (pageFlow === "continuous" && zoomMode === "page") setZoomMode("width");
+  }, [pageFlow, zoomMode]);
+
+  useEffect(() => {
     window.localStorage.setItem(NOTEBOOK_ORIENTATION_STORAGE_KEY, pageOrientation);
   }, [pageOrientation]);
 
@@ -479,11 +487,11 @@ export default function NotebookEditor() {
     const visibleViewportHeight = window.innerHeight - containerTop - 94;
     const availableWidth = Math.max(280, container.clientWidth - 56);
     const availableHeight = Math.max(300, Math.min(container.clientHeight - 48, visibleViewportHeight));
-    const next = zoomMode === "width"
+    const next = zoomMode === "width" || pageFlow === "continuous"
       ? availableWidth / pageWidth
       : Math.min(availableWidth / pageWidth, availableHeight / pageHeight);
     setZoom(clamp(next, 0.35, 1.5));
-  }, [pageOrientation, zoomMode]);
+  }, [pageFlow, pageOrientation, zoomMode]);
 
   useEffect(() => {
     if (zoomMode === "manual") return;
@@ -2255,7 +2263,9 @@ export default function NotebookEditor() {
                   <DropdownMenuLabel>Papel e visual</DropdownMenuLabel>
                   <DropdownMenuItem onClick={() => setHandwritingMode((value) => !value)}><span className="mr-2 text-base font-bold" style={{ fontFamily: "Caveat, cursive" }}>Aa</span>{handwritingMode ? "Usar tipografia digital" : "Usar caligrafia manuscrita"}</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setPaperMargin((value) => !value)}><span className="mr-3 block h-4 w-0.5 rounded bg-red-400" />{paperMargin ? "Esconder margem" : "Mostrar margem"}</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setPageOrientation((value) => value === "portrait" ? "landscape" : "portrait")}><LayoutTemplate className="mr-2 h-4 w-4" />{pageOrientation === "portrait" ? "Usar folha horizontal" : "Usar folha vertical"}</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setPageFlow("continuous")}><LayoutTemplate className="mr-2 h-4 w-4" />Rolagem infinita{pageFlow === "continuous" && <CheckCircle2 className="ml-auto h-4 w-4" />}</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setPageFlow("pages")}><Files className="mr-2 h-4 w-4" />Páginas individuais{pageFlow === "pages" && <CheckCircle2 className="ml-auto h-4 w-4" />}</DropdownMenuItem>
+                  {pageFlow === "pages" && <DropdownMenuItem onClick={() => setPageOrientation((value) => value === "portrait" ? "landscape" : "portrait")}><LayoutTemplate className="mr-2 h-4 w-4" />{pageOrientation === "portrait" ? "Usar folha horizontal" : "Usar folha vertical"}</DropdownMenuItem>}
                   <DropdownMenuLabel className="mt-1 text-[10px] uppercase tracking-wide text-muted-foreground">Modelo da página</DropdownMenuLabel>
                   <div className="grid grid-cols-2 gap-1 px-1 pb-1">{PAGE_TEMPLATES.map((value) => <Button key={value} type="button" variant={pageTemplate === value ? "secondary" : "ghost"} size="sm" className="h-8 justify-start text-xs" onClick={() => changePageTemplate(value)}><LayoutTemplate className="mr-1.5 h-3.5 w-3.5" />{PAGE_TEMPLATE_LABELS[value]}</Button>)}</div>
                   <DropdownMenuSeparator />
@@ -2287,7 +2297,7 @@ export default function NotebookEditor() {
                 <DropdownMenuContent align="center" className="w-48">
                   <DropdownMenuLabel>Ajuste da folha</DropdownMenuLabel>
                   <DropdownMenuItem onClick={() => setZoomMode("width")}>Ajustar à largura{zoomMode === "width" && <CheckCircle2 className="ml-auto h-4 w-4" />}</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setZoomMode("page")}>Mostrar página inteira{zoomMode === "page" && <CheckCircle2 className="ml-auto h-4 w-4" />}</DropdownMenuItem>
+                  {pageFlow === "pages" && <DropdownMenuItem onClick={() => setZoomMode("page")}>Mostrar página inteira{zoomMode === "page" && <CheckCircle2 className="ml-auto h-4 w-4" />}</DropdownMenuItem>}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => setManualZoom(1)}>Tamanho real · 100%{zoomMode === "manual" && zoom === 1 && <CheckCircle2 className="ml-auto h-4 w-4" />}</DropdownMenuItem>
                 </DropdownMenuContent>
@@ -2299,9 +2309,12 @@ export default function NotebookEditor() {
               <DropdownMenuTrigger asChild><button type="button" className="nb-paper-style-button"><LayoutTemplate /><span>{PAGE_TEMPLATE_LABELS[pageTemplate]}</span></button></DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-56">
                 <DropdownMenuLabel>Folha</DropdownMenuLabel>
+                <DropdownMenuItem onClick={() => setPageFlow("continuous")}><LayoutTemplate className="mr-2 h-4 w-4" />Rolagem infinita{pageFlow === "continuous" && <CheckCircle2 className="ml-auto h-4 w-4" />}</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setPageFlow("pages")}><Files className="mr-2 h-4 w-4" />Páginas individuais{pageFlow === "pages" && <CheckCircle2 className="ml-auto h-4 w-4" />}</DropdownMenuItem>
+                <DropdownMenuSeparator />
                 {PAGE_TEMPLATES.map((value) => <DropdownMenuItem key={value} onClick={() => changePageTemplate(value)}><span className={`nb-paper-swatch is-${value}`} />{PAGE_TEMPLATE_LABELS[value]}{pageTemplate === value && <CheckCircle2 className="ml-auto h-4 w-4" />}</DropdownMenuItem>)}
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setPageOrientation((value) => value === "portrait" ? "landscape" : "portrait")}><LayoutTemplate className="mr-2 h-4 w-4" />{pageOrientation === "portrait" ? "Virar para horizontal" : "Virar para vertical"}</DropdownMenuItem>
+                {pageFlow === "pages" && <DropdownMenuItem onClick={() => setPageOrientation((value) => value === "portrait" ? "landscape" : "portrait")}><LayoutTemplate className="mr-2 h-4 w-4" />{pageOrientation === "portrait" ? "Virar para horizontal" : "Virar para vertical"}</DropdownMenuItem>}
               </DropdownMenuContent>
             </DropdownMenu>
 
@@ -2415,6 +2428,7 @@ export default function NotebookEditor() {
                  template={pageTemplate}
                  zoom={zoom}
                  orientation={pageOrientation}
+                 pageFlow={pageFlow}
                 wide={expandedEditor}
                 handwriting={handwritingMode}
                 showMargin={paperMargin}
@@ -2484,6 +2498,7 @@ export default function NotebookEditor() {
                 template={pageTemplate}
                 zoom={zoom}
                 orientation={pageOrientation}
+                pageFlow={pageFlow}
                 wide={expandedEditor}
                 handwriting={handwritingMode}
                 showMargin={paperMargin}

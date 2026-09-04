@@ -1421,6 +1421,34 @@
 .nb-paper-frame.with-margin .nb-paper-content { padding-left: 88px !important; }
 .nb-paper-frame.is-landscape .nb-paper-content { padding-right: 84px !important; padding-left: 84px !important; }
 
+/* Samsung Notes: o modo principal é uma tela contínua, sem recorte A4. */
+.nb-paper-area:has(.nb-rich-editor-root.is-continuous) {
+  padding-right: 0;
+  padding-left: 0;
+  background: #fffefa;
+  scrollbar-gutter: auto;
+}
+.nb-paper-area:has(.nb-rich-editor-root.is-continuous)::before { display: none; }
+.nb-paper-viewport.is-continuous {
+  width: max-content;
+  min-width: 100%;
+  padding: 0 0 104px !important;
+}
+.nb-paper-zoom-stage.is-continuous { margin-top: 0; }
+.nb-paper-frame.is-continuous {
+  min-height: calc(100dvh - 116px) !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+.nb-paper-frame.is-continuous::after { display: none; }
+.nb-paper-frame.is-continuous .nb-paper-content {
+  min-height: calc(100dvh - 160px) !important;
+  padding-top: 54px !important;
+  padding-bottom: 150px !important;
+}
+.nb-editor-container.is-medical-notebook .nb-paper-frame.is-continuous { border-top: 0 !important; }
+
 .nb-zoom-controls,
 .nb-paper-style-button {
   display: inline-flex;
