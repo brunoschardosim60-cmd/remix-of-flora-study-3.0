@@ -172,6 +172,14 @@ const SUPPLEMENTAL_ORGAN_PATHS = {
   eye: "/medicine/models/zanatomy-organ-eye-v1.glb",
 } as const;
 const STANDARD_SKIN_TONE = "#c18468";
+const SYSTEM_OVERVIEWS: Record<Exclude<Anatomy3DSystemId, "all">, Anatomy3DStructure> = {
+  surface: { id: "overview:surface", name: "Superfície corporal", layer: "surface", regionId: "whole", region: "Corpo completo", system: "Tegumentar", summary: "Visão externa completa do corpo, sem destacar uma região isolada.", function: "Serve de referência para orientação, proporções e relações entre a superfície e os planos profundos.", sourceId: "zAnatomy3D", focus: [0, -.15, 0], focusDistance: 15.8, color: "#d8a88c", parts: [] },
+  muscular: { id: "overview:muscular", name: "Sistema muscular", layer: "muscular", regionId: "whole", region: "Corpo completo", system: "Muscular", summary: "Visão bilateral do conjunto muscular, sem realce unilateral automático.", function: "Permite estudar forma, continuidade e distribuição dos grupos musculares no corpo.", sourceId: "zAnatomy3D", focus: [0, -.15, 0], focusDistance: 15.8, color: "#b94d4f", parts: [] },
+  skeletal: { id: "overview:skeletal", name: "Sistema esquelético", layer: "skeletal", regionId: "whole", region: "Corpo completo", system: "Esquelético", summary: "Visão completa dos ossos e eixos de suporte do corpo.", function: "Organiza o estudo do suporte, da proteção e das relações articulares.", sourceId: "zAnatomy3D", focus: [0, -.15, 0], focusDistance: 15.8, color: "#d8c9aa", parts: [] },
+  vascular: { id: "overview:vascular", name: "Sistema vascular", layer: "vascular", regionId: "whole", region: "Corpo completo", system: "Cardiovascular", summary: "Visão conjunta das principais artérias e veias.", function: "Mostra a distribuição vascular e suas relações espaciais da cabeça aos membros.", sourceId: "zAnatomy3D", focus: [0, -.15, 0], focusDistance: 15.8, color: "#cb4f61", parts: [] },
+  nervous: { id: "overview:nervous", name: "Sistema nervoso", layer: "nervous", regionId: "whole", region: "Corpo completo", system: "Nervoso", summary: "Visão do encéfalo, da medula e da rede nervosa periférica.", function: "Permite reconhecer a continuidade entre o sistema nervoso central e os nervos periféricos.", sourceId: "zAnatomy3D", focus: [0, -.15, 0], focusDistance: 15.8, color: "#e5a942", parts: [] },
+  organs: { id: "overview:organs", name: "Órgãos internos", layer: "organs", regionId: "whole", region: "Corpo completo", system: "Sistemas viscerais", summary: "Visão contextual dos órgãos internos no corpo, sem abrir automaticamente o cérebro ou outro órgão.", function: "Permite comparar posição, volume e relações entre vísceras antes de isolar uma estrutura.", sourceId: "zAnatomy3D", focus: [0, .65, 0], focusDistance: 9.6, color: "#8f5878", parts: [] },
+};
 const BODY_PARTS_SOURCE_BOUNDS = new Box3(new Vector3(-1.33905, -3.534865, -0.187946), new Vector3(1.33396, 3.18329, 0.971386));
 // Todos os subconjuntos Z-Anatomy compartilham o mesmo sistema de coordenadas.
 // Usar o limite de cada arquivo separadamente fazia o conjunto parcial de órgãos
@@ -391,7 +399,7 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
   const baseCameraDistance = focusSelected && selected && selectedIsVisible ? selected.focusDistance : wholeBodySystemDistance;
   const cameraFocus = detailedCameraFocus ?? baseCameraFocus;
   const cameraDistance = (detailedCameraDistance ?? baseCameraDistance)
-    * (layersExploded && activeLayerIds.length > 1 && region === "whole" ? 1.4 : 1);
+    * (layersExploded && activeLayerIds.length > 1 && region === "whole" ? 1.75 : 1);
   const realistic = appearance === "realistic";
   // Em composição cheia, preserva as cores anatômicas mas troca microtexturas
   // procedurais por materiais leves. O detalhe máximo volta ao isolar a camada.
@@ -418,10 +426,15 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
     setLayers(anatomyLayerPreset(nextSystem));
     setRegion(nextRegion);
     setQuery("");
+    const overview = nextSystem === "all" ? null : SYSTEM_OVERVIEWS[nextSystem];
     const systemStructures = structuresFor3D(nextSystem, nextRegion);
-    const next = systemStructures.find((structure) => structure.regionId === "whole") ?? systemStructures[0];
-    if (next) setSelectedId(next.id);
-    setModelSelection(null);
+    const next = overview ?? systemStructures.find((structure) => structure.regionId === "whole") ?? systemStructures[0];
+    if (next) {
+      setSelectedId(next.id);
+      setModelSelection(overview);
+    } else {
+      setModelSelection(null);
+    }
     setOrganView("context");
     setCameraView("perspective");
     setZoom(1);
@@ -814,15 +827,15 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
                 </Environment>}
                 <group>
                   <>
-                      <Suspense fallback={null}>{layers.surface.visible && <AnimatedLayerGroup exploded={layersExploded} offset={[-2.9, 0, .34]}><RealBodyPartsModel system={sceneSystem} realistic={detailedMaterials} quality={renderPolicy} selectedId={focusSelected ? selected?.id ?? null : null} skinOpacity={layers.surface.opacity} skinTone={STANDARD_SKIN_TONE} globalSectionPlane={bodySectionPlane} onSelect={selectStructure} onHover={updateHoverLabel} /></AnimatedLayerGroup>}</Suspense>
-                      <Suspense fallback={null}>{layers.muscular.visible && <AnimatedLayerGroup exploded={layersExploded} offset={[-1.74, 0, .21]}><DenseAnatomySystemModel integrated={compositeScene} opacity={layers.muscular.opacity} clipPlane={bodySectionPlane} realistic={detailedMaterials} quality={renderPolicy} path={compositeScene || renderPolicy.tier === "economy" ? MOBILE_MUSCULAR_PATH : REAL_MODEL_PATH} layer="muscular" sourceId={compositeScene || renderPolicy.tier === "economy" ? "vayuAnatomy3D" : "zAnatomy3D"} includeSupportTissue={system === "muscular" && showMuscularSupportTissues} selectedId={focusSelected ? selected?.id ?? null : null} onSelect={selectStructure} onHover={updateHoverLabel} onCatalogReady={registerDetailedCatalog} /></AnimatedLayerGroup>}</Suspense>
-                      <Suspense fallback={null}>{layers.skeletal.visible && <AnimatedLayerGroup exploded={layersExploded} offset={[-.58, 0, .07]}><DenseAnatomySystemModel integrated={compositeScene} opacity={layers.skeletal.opacity} clipPlane={bodySectionPlane} realistic={detailedMaterials} quality={renderPolicy} path={compositeScene ? COMPOSITE_SKELETAL_PATH : REAL_SKELETAL_PATH} layer="skeletal" sourceId={compositeScene ? "vayuAnatomy3D" : "zAnatomy3D"} includeSupportTissue selectedId={focusSelected ? selected?.id ?? null : null} onSelect={selectStructure} onHover={updateHoverLabel} onCatalogReady={registerDetailedCatalog} /></AnimatedLayerGroup>}</Suspense>
-                      <Suspense fallback={null}>{layers.organs.visible && <AnimatedLayerGroup exploded={layersExploded} offset={[.58, 0, -.07]}>{compositeScene
+                      <Suspense fallback={null}>{layers.surface.visible && <AnimatedLayerGroup exploded={layersExploded} offset={[-8, 0, .42]}><RealBodyPartsModel system={sceneSystem} realistic={detailedMaterials} quality={renderPolicy} selectedId={focusSelected ? selected?.id ?? null : null} skinOpacity={layers.surface.opacity} skinTone={STANDARD_SKIN_TONE} globalSectionPlane={bodySectionPlane} onSelect={selectStructure} onHover={updateHoverLabel} /></AnimatedLayerGroup>}</Suspense>
+                      <Suspense fallback={null}>{layers.muscular.visible && <AnimatedLayerGroup exploded={layersExploded} offset={[-4.8, 0, .25]}><DenseAnatomySystemModel integrated={compositeScene} opacity={layers.muscular.opacity} clipPlane={bodySectionPlane} realistic={detailedMaterials} quality={renderPolicy} path={compositeScene || renderPolicy.tier === "economy" ? MOBILE_MUSCULAR_PATH : REAL_MODEL_PATH} layer="muscular" sourceId={compositeScene || renderPolicy.tier === "economy" ? "vayuAnatomy3D" : "zAnatomy3D"} includeSupportTissue={system === "muscular" && showMuscularSupportTissues} selectedId={focusSelected ? selected?.id ?? null : null} onSelect={selectStructure} onHover={updateHoverLabel} onCatalogReady={registerDetailedCatalog} /></AnimatedLayerGroup>}</Suspense>
+                      <Suspense fallback={null}>{layers.skeletal.visible && <AnimatedLayerGroup exploded={layersExploded} offset={[-1.6, 0, .08]}><DenseAnatomySystemModel integrated={compositeScene} opacity={layers.skeletal.opacity} clipPlane={bodySectionPlane} realistic={detailedMaterials} quality={renderPolicy} path={compositeScene ? COMPOSITE_SKELETAL_PATH : REAL_SKELETAL_PATH} layer="skeletal" sourceId={compositeScene ? "vayuAnatomy3D" : "zAnatomy3D"} includeSupportTissue selectedId={focusSelected ? selected?.id ?? null : null} onSelect={selectStructure} onHover={updateHoverLabel} onCatalogReady={registerDetailedCatalog} /></AnimatedLayerGroup>}</Suspense>
+                      <Suspense fallback={null}>{layers.organs.visible && <AnimatedLayerGroup exploded={layersExploded} offset={[1.6, 0, -.08]}>{compositeScene
                         ? <CompositeOrgansModel opacity={layers.organs.opacity} clipPlane={bodySectionPlane} realistic={detailedMaterials} quality={renderPolicy} bodyProfile={bodyProfile} selectedId={focusSelected ? selected?.id ?? null : null} onSelect={selectStructure} onHover={updateHoverLabel} onCatalogReady={registerDetailedCatalog} />
                         : <DetailedOrgansModel opacity={layers.organs.opacity} globalSectionPlane={bodySectionPlane} realistic={detailedMaterials} quality={renderPolicy} bodyProfile={bodyProfile} selectedId={focusSelected ? selected?.id ?? null : null} organView={organView} sectionAxis={sectionAxis} sectionOffset={sectionOffset} onSelect={selectStructure} onHover={updateHoverLabel} onCatalogReady={registerDetailedCatalog} />}
                       </AnimatedLayerGroup>}</Suspense>
-                      <Suspense fallback={null}>{layers.vascular.visible && <AnimatedLayerGroup exploded={layersExploded} offset={[1.74, 0, -.21]}><DenseAnatomySystemModel integrated={compositeScene} opacity={layers.vascular.opacity} clipPlane={bodySectionPlane} realistic={detailedMaterials} quality={renderPolicy} path={compositeScene ? COMPOSITE_CIRCULATORY_PATH : DETAILED_CIRCULATORY_PATH} layer="vascular" sourceId={compositeScene ? "zAnatomy3D" : "vayuAnatomy3D"} selectedId={focusSelected ? selected?.id ?? null : null} onSelect={selectStructure} onHover={updateHoverLabel} onCatalogReady={registerDetailedCatalog} /></AnimatedLayerGroup>}</Suspense>
-                      <Suspense fallback={null}>{layers.nervous.visible && <AnimatedLayerGroup exploded={layersExploded} offset={[2.9, 0, -.34]}><DenseAnatomySystemModel integrated={compositeScene} opacity={layers.nervous.opacity} clipPlane={bodySectionPlane} realistic={detailedMaterials} quality={renderPolicy} path={compositeScene ? COMPOSITE_NERVOUS_PATH : DETAILED_NERVOUS_PATH} layer="nervous" sourceId={compositeScene ? "zAnatomy3D" : "vayuAnatomy3D"} selectedId={focusSelected ? selected?.id ?? null : null} onSelect={selectStructure} onHover={updateHoverLabel} onCatalogReady={registerDetailedCatalog} /></AnimatedLayerGroup>}</Suspense>
+                      <Suspense fallback={null}>{layers.vascular.visible && <AnimatedLayerGroup exploded={layersExploded} offset={[4.8, 0, -.25]}><DenseAnatomySystemModel integrated={compositeScene} opacity={layers.vascular.opacity} clipPlane={bodySectionPlane} realistic={detailedMaterials} quality={renderPolicy} path={compositeScene ? COMPOSITE_CIRCULATORY_PATH : DETAILED_CIRCULATORY_PATH} layer="vascular" sourceId={compositeScene ? "zAnatomy3D" : "vayuAnatomy3D"} selectedId={focusSelected ? selected?.id ?? null : null} onSelect={selectStructure} onHover={updateHoverLabel} onCatalogReady={registerDetailedCatalog} /></AnimatedLayerGroup>}</Suspense>
+                      <Suspense fallback={null}>{layers.nervous.visible && <AnimatedLayerGroup exploded={layersExploded} offset={[8, 0, -.42]}><DenseAnatomySystemModel integrated={compositeScene} opacity={layers.nervous.opacity} clipPlane={bodySectionPlane} realistic={detailedMaterials} quality={renderPolicy} path={compositeScene ? COMPOSITE_NERVOUS_PATH : DETAILED_NERVOUS_PATH} layer="nervous" sourceId={compositeScene ? "zAnatomy3D" : "vayuAnatomy3D"} selectedId={focusSelected ? selected?.id ?? null : null} onSelect={selectStructure} onHover={updateHoverLabel} onCatalogReady={registerDetailedCatalog} /></AnimatedLayerGroup>}</Suspense>
                   </>
                 </group>
                 {!performanceComposition && <ContactShadows position={[0, -4.46, 0]} opacity={realistic ? .46 : .34} scale={8} blur={realistic ? 2.1 : 2.6} far={5} frames={renderPolicy.contactShadowFrames} />}
