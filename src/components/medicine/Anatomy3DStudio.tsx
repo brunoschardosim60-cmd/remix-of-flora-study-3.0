@@ -241,9 +241,6 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
   const activeLayerIds = mixableLayerOrder.filter((layer) => layers[layer].visible);
   const compositeScene = activeLayerIds.length > 1;
   const performanceComposition = activeLayerIds.length >= 3;
-  // Em composição cheia, preserva as cores anatômicas mas troca microtexturas
-  // procedurais por materiais leves. O detalhe máximo volta ao isolar a camada.
-  const detailedMaterials = realistic && !performanceComposition;
   const sceneSystem: Anatomy3DSystemId = compositeScene ? "all" : activeLayerIds[0] ?? system;
   const bodySectionPlane = useMemo(() => {
     if (!bodySectionEnabled) return null;
@@ -396,6 +393,9 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
   const cameraDistance = (detailedCameraDistance ?? baseCameraDistance)
     * (layersExploded && activeLayerIds.length > 1 && region === "whole" ? 1.18 : 1);
   const realistic = appearance === "realistic";
+  // Em composição cheia, preserva as cores anatômicas mas troca microtexturas
+  // procedurais por materiais leves. O detalhe máximo volta ao isolar a camada.
+  const detailedMaterials = realistic && !performanceComposition;
   const regionAvailability = useMemo(() => Object.fromEntries(anatomy3DRegions.map((item) => {
     if (item.id === "whole" || system === "all") return [item.id, true];
     const guidedAvailable = structuresFor3D(system, item.id).length > 0;
