@@ -145,11 +145,11 @@ interface Anatomy3DStudioProps {
 
 const layerOpacity: Record<Exclude<Anatomy3DSystemId, "all">, number> = {
   surface: 0.12,
-  muscular: 0.44,
-  skeletal: 0.58,
-  vascular: 0.96,
-  nervous: 0.98,
-  organs: 0.92,
+  muscular: 0.72,
+  skeletal: 1,
+  vascular: 1,
+  nervous: 1,
+  organs: 1,
 };
 
 const REAL_MODEL_PATH = "/medicine/models/zanatomy-musculoskeletal-hd-v2.glb";
@@ -188,12 +188,15 @@ const anatomyLevelGuidance: Record<MedicineLevel, string> = {
 };
 const mixableLayerOrder: MixableAnatomyLayer[] = ["surface", "muscular", "skeletal", "vascular", "nervous", "organs"];
 const mixedLayerOpacity: Record<MixableAnatomyLayer, number> = {
-  surface: .16,
-  muscular: .7,
-  skeletal: .82,
-  vascular: .96,
-  nervous: .96,
-  organs: .9,
+  // Somente os invólucros externos precisam ficar translúcidos para revelar
+  // estruturas profundas. Transparência em todas as malhas deixava a
+  // composição esbranquiçada e com aparência de plástico.
+  surface: .12,
+  muscular: .72,
+  skeletal: 1,
+  vascular: 1,
+  nervous: 1,
+  organs: 1,
 };
 export function Anatomy3DStudio({ level, initialStructureId, journeyContext, journeyVisitedStepIds = [], onOpenJourneyStep }: Anatomy3DStudioProps) {
   const contextRestoreId = journeyContext?.structure.restore3DStructureId;
@@ -206,9 +209,9 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
   const [layerPanelOpen, setLayerPanelOpen] = useState(() => typeof window === "undefined" || window.innerWidth >= 1600);
   const [layersExploded, setLayersExploded] = useState(false);
   const [bodySectionEnabled, setBodySectionEnabled] = useState(false);
-  // A aparência didática anterior é mais legível e sensivelmente mais leve.
-  // O acabamento PBR continua disponível pelo botão Materiais.
-  const [appearance, setAppearance] = useState<AnatomyAppearance>("educational");
+  // O corpo abre com acabamento biológico. O modo didático continua disponível
+  // no botão Materiais para aparelhos que prefiram cores chapadas.
+  const [appearance, setAppearance] = useState<AnatomyAppearance>("realistic");
   const [showMuscularSupportTissues, setShowMuscularSupportTissues] = useState(false);
   const [renderPolicy, setRenderPolicy] = useState<AnatomyRenderPolicy>(() => detectAnatomyRenderPolicy());
   // O pacote 3D disponível representa anatomia masculina. Mantemos um único
@@ -903,11 +906,12 @@ function RealBodyPartsModel({ system, realistic, quality, selectedId, skinOpacit
         material.color.copy(naturalTone);
         material.emissive.copy(naturalTone).multiplyScalar(active ? .16 : .018);
         material.emissiveIntensity = active ? .2 : .045;
-        material.roughness = .48;
-        material.clearcoat = .08;
-        material.clearcoatRoughness = .72;
-        material.sheen = .32;
+        material.roughness = .72;
+        material.clearcoat = .012;
+        material.clearcoatRoughness = .9;
+        material.sheen = .08;
         material.sheenColor.copy(naturalTone).offsetHSL(0, -.08, .1);
+        material.specularIntensity = .36;
         material.transmission = 0;
       }
       material.opacity = active ? 1 : skinOpacity;
@@ -1022,12 +1026,13 @@ function prepareBodyPartsRoot(source: Object3D, kind: "skin" | "organs") {
     welded.computeBoundingSphere();
     const material = new MeshPhysicalMaterial({
       color: "#ad7152",
-      roughness: .48,
+      roughness: .72,
       metalness: 0,
-      clearcoat: .08,
-      clearcoatRoughness: .72,
-      sheen: .32,
+      clearcoat: .012,
+      clearcoatRoughness: .9,
+      sheen: .08,
       sheenColor: "#dca98f",
+      specularIntensity: .36,
       ior: 1.4,
       side: DoubleSide,
     });
@@ -1078,8 +1083,8 @@ function RealMusculoskeletalModel({ system, realistic, quality, selectedId, onSe
       if (!(object instanceof Mesh)) return;
       const material = new MeshPhysicalMaterial();
       const type = realMeshAnatomyType(object);
-      material.color.set(type === "bone" ? "#e3d8bf" : "#a9343b");
-      material.roughness = type === "bone" ? 0.72 : 0.56;
+      material.color.set(type === "bone" ? "#d8c9aa" : "#8f3036");
+      material.roughness = type === "bone" ? 0.82 : 0.68;
       material.metalness = 0;
       object.material = material;
       object.castShadow = true;
@@ -1124,10 +1129,10 @@ function RealMusculoskeletalModel({ system, realistic, quality, selectedId, onSe
       } else {
         clearAnatomyTissueMaps(material);
         material.vertexColors = false;
-        material.color.set(type === "bone" ? "#e3d8bf" : "#a9343b");
+        material.color.set(type === "bone" ? "#d8c9aa" : "#8f3036");
         material.emissive.set(highlighted ? material.color : "#000000");
         material.emissiveIntensity = highlighted ? .34 : 0;
-        material.roughness = type === "bone" ? .72 : .56;
+        material.roughness = type === "bone" ? .82 : .68;
         material.clearcoat = 0;
         material.sheen = 0;
         material.transmission = 0;
@@ -1207,7 +1212,7 @@ function DenseAnatomySystemModel({ integrated = false, opacity = 1, clipPlane = 
       clearAnatomyTissueMaps(material);
       material.color.set("#ffffff");
       material.vertexColors = true;
-      material.roughness = layer === "vascular" ? .5 : layer === "skeletal" ? .72 : layer === "muscular" ? .56 : .63;
+      material.roughness = layer === "vascular" ? .62 : layer === "skeletal" ? .82 : layer === "muscular" ? .68 : .74;
       material.clearcoat = 0;
       material.sheen = 0;
       material.transmission = 0;
@@ -1827,7 +1832,7 @@ function prepareDenseAnatomySystem(source: Object3D, layer: DenseAnatomyLayer, s
   merged.computeBoundingSphere();
   const material = new MeshPhysicalMaterial({
     vertexColors: true,
-    roughness: layer === "vascular" ? .5 : layer === "skeletal" ? .72 : layer === "muscular" ? .56 : .63,
+    roughness: layer === "vascular" ? .62 : layer === "skeletal" ? .82 : layer === "muscular" ? .68 : .74,
     metalness: 0,
     side: DoubleSide,
   });

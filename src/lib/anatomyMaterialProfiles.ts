@@ -49,8 +49,8 @@ export interface AnatomyMaterialProfile {
 }
 
 export const anatomyMaterialProfiles: Record<AnatomyTissue, AnatomyMaterialProfile> = {
-  skin: { label: "Superfície cutânea", baseColor: "#a96f55", roughness: .63, clearcoat: .035, clearcoatRoughness: .78, sheen: .16, sheenColor: "#d4a28d", specularIntensity: .48, transmission: .012, thickness: .09, normalStrength: .2, variation: .09, fiberStrength: 0, textureFrequency: 22 },
-  muscle: { label: "Músculo esquelético", baseColor: "#5d1822", roughness: .58, clearcoat: .025, clearcoatRoughness: .76, sheen: .1, sheenColor: "#87343e", specularIntensity: .45, transmission: 0, thickness: 0, normalStrength: .44, variation: .17, fiberStrength: .72, textureFrequency: 30 },
+  skin: { label: "Superfície cutânea", baseColor: "#a96f55", roughness: .74, clearcoat: .01, clearcoatRoughness: .9, sheen: .07, sheenColor: "#d4a28d", specularIntensity: .36, transmission: 0, thickness: .06, normalStrength: .24, variation: .1, fiberStrength: 0, textureFrequency: 22 },
+  muscle: { label: "Músculo esquelético", baseColor: "#7b252b", roughness: .68, clearcoat: .008, clearcoatRoughness: .88, sheen: .04, sheenColor: "#9b4b50", specularIntensity: .36, transmission: 0, thickness: 0, normalStrength: .48, variation: .18, fiberStrength: .76, textureFrequency: 30 },
   tendon: { label: "Tendão e aponeurose", baseColor: "#cbbfa5", roughness: .74, clearcoat: .015, clearcoatRoughness: .88, sheen: .12, sheenColor: "#e1d8c5", specularIntensity: .42, transmission: 0, thickness: 0, normalStrength: .3, variation: .08, fiberStrength: .82, textureFrequency: 38 },
   bone: { label: "Tecido ósseo", baseColor: "#d4c5a6", roughness: .82, clearcoat: .008, clearcoatRoughness: .94, sheen: .04, sheenColor: "#e7dcc4", specularIntensity: .35, transmission: 0, thickness: 0, normalStrength: .31, variation: .11, fiberStrength: 0, textureFrequency: 26 },
   artery: { label: "Parede arterial", baseColor: "#9f2e3b", roughness: .55, clearcoat: .035, clearcoatRoughness: .72, sheen: .16, sheenColor: "#c65b62", specularIntensity: .5, transmission: .006, thickness: .05, normalStrength: .22, variation: .08, fiberStrength: .34, textureFrequency: 34 },

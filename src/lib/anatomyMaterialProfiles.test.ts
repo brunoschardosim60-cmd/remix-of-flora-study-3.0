@@ -17,6 +17,10 @@ describe("anatomy material profiles", () => {
     expect(anatomyMaterialProfiles.tendon.fiberStrength).toBeGreaterThan(anatomyMaterialProfiles.skin.fiberStrength);
     expect(anatomyMaterialProfiles.heart.clearcoat).toBeLessThan(.2);
     expect(anatomyMaterialProfiles.lung.roughness).toBeGreaterThan(anatomyMaterialProfiles.liver.roughness);
+    expect(anatomyMaterialProfiles.skin.roughness).toBeGreaterThan(.7);
+    expect(anatomyMaterialProfiles.skin.clearcoat).toBeLessThan(.02);
+    expect(anatomyMaterialProfiles.skin.transmission).toBe(0);
+    expect(anatomyMaterialProfiles.muscle.roughness).toBeGreaterThan(.65);
   });
 
   it("keeps generated texture memory inside the declared web budget", () => {
