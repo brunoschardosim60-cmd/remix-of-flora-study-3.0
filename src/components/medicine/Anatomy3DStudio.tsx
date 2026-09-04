@@ -399,7 +399,7 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
   const baseCameraDistance = focusSelected && selected && selectedIsVisible ? selected.focusDistance : wholeBodySystemDistance;
   const cameraFocus = detailedCameraFocus ?? baseCameraFocus;
   const cameraDistance = (detailedCameraDistance ?? baseCameraDistance)
-    * (layersExploded && activeLayerIds.length > 1 && region === "whole" ? 1.75 : 1);
+    * (layersExploded && activeLayerIds.length > 1 && region === "whole" ? 2.3 : 1);
   const realistic = appearance === "realistic";
   // Em composição cheia, preserva as cores anatômicas mas troca microtexturas
   // procedurais por materiais leves. O detalhe máximo volta ao isolar a camada.
