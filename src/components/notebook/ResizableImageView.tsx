@@ -91,7 +91,7 @@ export function ResizableImageView({ node, updateAttributes, deleteNode, selecte
           display: floating ? "block" : "inline-block",
           width: cropEnabled ? imageWidth : undefined,
           maxWidth: "100%",
-          outline: selected ? "2px solid hsl(var(--primary))" : "none",
+          outline: "none",
           borderRadius: 8,
         }}
       >
