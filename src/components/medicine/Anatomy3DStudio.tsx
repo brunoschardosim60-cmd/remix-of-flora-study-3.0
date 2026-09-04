@@ -180,6 +180,11 @@ const SYSTEM_OVERVIEWS: Record<Exclude<Anatomy3DSystemId, "all">, Anatomy3DStruc
   nervous: { id: "overview:nervous", name: "Sistema nervoso", layer: "nervous", regionId: "whole", region: "Corpo completo", system: "Nervoso", summary: "Visão do encéfalo, da medula e da rede nervosa periférica.", function: "Permite reconhecer a continuidade entre o sistema nervoso central e os nervos periféricos.", sourceId: "zAnatomy3D", focus: [0, -.15, 0], focusDistance: 15.8, color: "#e5a942", parts: [] },
   organs: { id: "overview:organs", name: "Órgãos internos", layer: "organs", regionId: "whole", region: "Corpo completo", system: "Sistemas viscerais", summary: "Visão contextual dos órgãos internos no corpo, sem abrir automaticamente o cérebro ou outro órgão.", function: "Permite comparar posição, volume e relações entre vísceras antes de isolar uma estrutura.", sourceId: "zAnatomy3D", focus: [0, .65, 0], focusDistance: 15.8, color: "#8f5878", parts: [] },
 };
+const ALL_LAYERS_OVERVIEW: Anatomy3DStructure = {
+  id: "overview:all", name: "Corpo por camadas", layer: "surface", regionId: "whole", region: "Corpo completo", system: "Anatomia integrada",
+  summary: "Comparação lado a lado da superfície, músculos, esqueleto, órgãos, vasos e nervos.", function: "Permite reconhecer o que cada sistema acrescenta e comparar suas relações sem sobreposição visual.",
+  sourceId: "zAnatomy3D", focus: [0, -.15, 0], focusDistance: 15.8, color: "#6b8f83", parts: [],
+};
 const BODY_PARTS_SOURCE_BOUNDS = new Box3(new Vector3(-1.33905, -3.534865, -0.187946), new Vector3(1.33396, 3.18329, 0.971386));
 // Todos os subconjuntos Z-Anatomy compartilham o mesmo sistema de coordenadas.
 // Usar o limite de cada arquivo separadamente fazia o conjunto parcial de órgãos
@@ -399,7 +404,7 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
   const baseCameraDistance = focusSelected && selected && selectedIsVisible ? selected.focusDistance : wholeBodySystemDistance;
   const cameraFocus = detailedCameraFocus ?? baseCameraFocus;
   const cameraDistance = (detailedCameraDistance ?? baseCameraDistance)
-    * (layersExploded && activeLayerIds.length > 1 && region === "whole" ? 2.3 : 1);
+    * (layersExploded && activeLayerIds.length > 1 && region === "whole" ? 3 : 1);
   const realistic = appearance === "realistic";
   // Em composição cheia, preserva as cores anatômicas mas troca microtexturas
   // procedurais por materiais leves. O detalhe máximo volta ao isolar a camada.
@@ -496,6 +501,8 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
     setLayers(next);
     setLayersExploded(preset === "all");
     setSystem("all");
+    setSelectedId(ALL_LAYERS_OVERVIEW.id);
+    setModelSelection(ALL_LAYERS_OVERVIEW);
     setFocusSelected(false);
     setFocusKey((value) => value + 1);
   };
