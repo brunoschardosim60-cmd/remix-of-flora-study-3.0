@@ -23,7 +23,7 @@ interface RichEditorProps {
   notebookId: string;
   darkMode: boolean;
   onToggleDarkMode: () => void;
-  template?: "blank" | "lined" | "grid" | "dotted" | "physics" | "chemistry" | "essay";
+  template?: "blank" | "lined" | "grid" | "dotted" | "cornell" | "clinical" | "anatomy" | "physics" | "chemistry" | "essay";
   zoom?: number;
   /** Orientação física da folha. */
   orientation?: "portrait" | "landscape";
@@ -47,6 +47,9 @@ const TEMPLATE_CLASS: Record<string, string> = {
   lined: "notebook-lined",
   grid: "notebook-grid",
   dotted: "notebook-dotted",
+  cornell: "notebook-cornell",
+  clinical: "notebook-clinical",
+  anatomy: "notebook-anatomy",
   physics: "notebook-physics",
   chemistry: "notebook-chemistry",
   essay: "notebook-essay",

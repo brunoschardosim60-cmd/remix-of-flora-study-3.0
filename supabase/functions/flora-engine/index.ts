@@ -2506,6 +2506,39 @@ dia: 0=seg..6=dom. Max ${Math.floor(onb.tempo_disponivel_min / 30)} slots/dia.\n
       return jsonResponse({ ok: true });
     }
 
+    // ─── FORMAT_NOTEBOOK_PAGE: organiza uma cópia sem alterar o original ─────
+    if (action === "format_notebook_page") {
+      const text = ((data as any)?.text || "").toString().trim().slice(0, 12000);
+      const subject = ((data as any)?.subject || "Geral").toString().slice(0, 80);
+      const title = ((data as any)?.title || "Anotações").toString().slice(0, 120);
+      const medical = Boolean((data as any)?.medical);
+      if (text.length < 80) return jsonResponse({ error: "Conteúdo insuficiente para organizar." }, 400);
+      const medicalRules = medical ? `
+Como é um caderno médico, organize somente quando houver informação correspondente, usando esta hierarquia:
+- conceito/estrutura ou problema central;
+- mecanismo/fisiopatologia;
+- achados, relações anatômicas ou manifestações;
+- diagnóstico diferencial e próximos passos de estudo;
+- alerta de segurança quando houver conduta, dose ou caso clínico.
+Não invente dados clínicos, doses, exames, diagnósticos nem referências ausentes. Diferencie claramente fato anotado de lacuna a revisar.` : "";
+      const opts: CallOptions = {
+        messages: [
+          { role: "system", content: `Você é Flora, editora acadêmica de um caderno premium. Reorganize anotações brutas em uma página clara, escaneável e fiel ao conteúdo. Preserve TODOS os fatos e o sentido; corrija ortografia; remova apenas repetições evidentes; crie títulos curtos, subtítulos, listas e destaque termos-chave. Não acrescente conhecimento que não esteja no texto. ${medicalRules}
+
+Responda SOMENTE JSON válido no formato {"title":"título curto","html":"HTML"}.
+O HTML pode usar apenas: h1, h2, h3, p, strong, em, mark, ul, ol, li, blockquote, table, thead, tbody, tr, th, td, hr, br. Não use markdown, CSS, links ou imagens. Português brasileiro.` },
+          { role: "user", content: `Caderno: ${title}\nMatéria: ${subject}\n\nANOTAÇÕES ORIGINAIS:\n${text}` },
+        ],
+        maxTokens: 1800,
+        temperature: 0.25,
+        jsonMode: true,
+      };
+      const raw = await runTaskChain(opts, "explicacao", "flora:format_notebook_page", { supabase, userId, actionType: "chat" });
+      const parsed = parseAIJSON(raw as string) as { title?: string; html?: string } | null;
+      if (!parsed?.html) return jsonResponse({ error: "Não foi possível estruturar a página." }, 502);
+      return jsonResponse({ title: String(parsed.title || title).slice(0, 120), html: String(parsed.html).slice(0, 30000) });
+    }
+
     // ─── GHOST_COMPLETE: autocomplete enquanto escreve no caderno ────────────
     if (action === "ghost_complete") {
       const before = ((data as any)?.before || "").toString().slice(-800);

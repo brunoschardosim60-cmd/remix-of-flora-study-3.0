@@ -16,6 +16,9 @@ interface FloraNotebookSidebarProps {
   onCreateTopic: () => void;
   onSyncSummary: () => void;
   onGenerateImage?: () => void;
+  onAutoFormat: () => void;
+  formattingPage: boolean;
+  medical: boolean;
 }
 
 export function FloraNotebookSidebar({
@@ -31,8 +34,11 @@ export function FloraNotebookSidebar({
   onCreateTopic,
   onSyncSummary,
   onGenerateImage,
+  onAutoFormat,
+  formattingPage,
+  medical,
 }: FloraNotebookSidebarProps) {
-  const isGenerating = generatingStudy !== "none";
+  const isGenerating = generatingStudy !== "none" || formattingPage;
 
   return (
     <aside className={`nb-flora-sidebar ${open ? "open" : ""}`}>
@@ -66,6 +72,16 @@ export function FloraNotebookSidebar({
 
       {/* Quick actions */}
       <div className="nb-flora-actions">
+        <button
+          type="button"
+          onClick={onAutoFormat}
+          disabled={isGenerating}
+          className={`nb-flora-action-btn nb-flora-action-primary ${formattingPage ? "loading" : ""}`}
+        >
+          {formattingPage ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+          {formattingPage ? "Organizando…" : medical ? "Organizar nota clínica" : "Organizar página"}
+          <small>Cria uma cópia estruturada</small>
+        </button>
         <button
           type="button"
           onClick={onGenerateSummary}

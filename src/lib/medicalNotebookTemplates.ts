@@ -1,4 +1,4 @@
-export type MedicalNotebookPaper = "blank" | "lined" | "grid" | "dotted";
+export type MedicalNotebookPaper = "blank" | "lined" | "grid" | "dotted" | "cornell" | "clinical" | "anatomy";
 
 export interface MedicalNotebookPageTemplate {
   title: string;
@@ -65,6 +65,7 @@ export const medicalNotebookTemplates: MedicalNotebookTemplate[] = [
           </ul>
           ${safetyNote}
         `,
+        paper: "anatomy",
       },
       {
         title: "Sistema musculoesquelético",
@@ -86,6 +87,7 @@ export const medicalNotebookTemplates: MedicalNotebookTemplate[] = [
           </ul>
           <p><strong>Desenhe setas</strong> sobre a imagem para indicar o sentido do movimento e marque os pontos de origem e inserção.</p>
         `,
+        paper: "anatomy",
       },
       {
         title: "Vasos e nervos",
@@ -110,6 +112,7 @@ export const medicalNotebookTemplates: MedicalNotebookTemplate[] = [
             <li><strong>Termina em:</strong> ____________________________________</li>
           </ul>
         `,
+        paper: "anatomy",
       },
       {
         title: "Órgão em detalhe",
@@ -132,7 +135,7 @@ export const medicalNotebookTemplates: MedicalNotebookTemplate[] = [
           <p>________________________________________________________________</p>
           <p>________________________________________________________________</p>
         `,
-        paper: "lined",
+        paper: "anatomy",
       },
       {
         title: "Revisão ativa",
@@ -218,7 +221,7 @@ export const medicalNotebookTemplates: MedicalNotebookTemplate[] = [
           <p>Por que uma alteração do raio de uma arteríola muda o fluxo a jusante?</p>
           <p>________________________________________________________________</p>
         `,
-        paper: "lined",
+        paper: "clinical",
       },
       {
         title: "Teste de recuperação",
@@ -360,7 +363,7 @@ export const medicalNotebookTemplates: MedicalNotebookTemplate[] = [
           </ul>
           ${safetyNote}
         `,
-        paper: "lined",
+        paper: "clinical",
       },
       {
         title: "Mecanismo e anatomia aplicada",
@@ -522,7 +525,7 @@ export const medicalNotebookTemplates: MedicalNotebookTemplate[] = [
           <h2>Antes de interpretar</h2>
           <p>Liste fatos objetivos de um lado e interpretações do outro. Não transforme a primeira impressão em conclusão.</p>
         `,
-        paper: "lined",
+        paper: "clinical",
       },
       {
         title: "Representação do problema",
@@ -541,7 +544,7 @@ export const medicalNotebookTemplates: MedicalNotebookTemplate[] = [
           <p><strong>Não posso deixar de considerar:</strong> _____________________</p>
           <p><strong>Dado que mais mudaria meu raciocínio:</strong> _______________</p>
         `,
-        paper: "lined",
+        paper: "clinical",
       },
       {
         title: "Anatomia e mecanismo",
@@ -559,6 +562,7 @@ export const medicalNotebookTemplates: MedicalNotebookTemplate[] = [
           </ul>
           <p>Use setas no corpo para representar irradiação, trajetos neurovasculares ou relações entre órgãos.</p>
         `,
+        paper: "anatomy",
       },
       {
         title: "Síntese e reflexão de segurança",
@@ -579,7 +583,7 @@ export const medicalNotebookTemplates: MedicalNotebookTemplate[] = [
           </ul>
           ${safetyNote}
         `,
-        paper: "lined",
+        paper: "clinical",
       },
     ],
   },
@@ -607,7 +611,7 @@ export const medicalNotebookTemplates: MedicalNotebookTemplate[] = [
           <h2>Primeira pergunta aberta</h2>
           <p>________________________________________________________________</p>
         `,
-        paper: "lined",
+        paper: "clinical",
       },
       {
         title: "História da condição simulada",
@@ -627,7 +631,7 @@ export const medicalNotebookTemplates: MedicalNotebookTemplate[] = [
           </ul>
           <blockquote>Escolha perguntas conforme a queixa simulada; um roteiro ajuda a organizar, mas não substitui escuta ativa.</blockquote>
         `,
-        paper: "lined",
+        paper: "clinical",
       },
       {
         title: "Revisão anatômica dirigida",
@@ -646,6 +650,7 @@ export const medicalNotebookTemplates: MedicalNotebookTemplate[] = [
           </ul>
           <p>Registre achados positivos e negativos simulados apenas quando forem úteis para o objetivo do caso.</p>
         `,
+        paper: "anatomy",
       },
       {
         title: "Síntese da entrevista",
@@ -667,7 +672,7 @@ export const medicalNotebookTemplates: MedicalNotebookTemplate[] = [
           <p>________________________________________________________________</p>
           ${safetyNote}
         `,
-        paper: "lined",
+        paper: "clinical",
       },
     ],
   },

@@ -233,6 +233,32 @@ html {
   background-size: 20px 20px;
 }
 
+/* Cornell — coluna de pistas + síntese inferior, mantendo a folha editável. */
+.notebook-cornell {
+  background-image:
+    linear-gradient(90deg, transparent 31%, rgba(91, 135, 155, 0.24) 31%, rgba(91, 135, 155, 0.24) calc(31% + 1px), transparent calc(31% + 1px)),
+    linear-gradient(0deg, transparent 17%, rgba(91, 135, 155, 0.24) 17%, rgba(91, 135, 155, 0.24) calc(17% + 1px), transparent calc(17% + 1px)),
+    repeating-linear-gradient(transparent, transparent 31px, hsl(var(--border) / 0.28) 31px, hsl(var(--border) / 0.28) 32px);
+}
+
+/* Clínica — pauta clara com guia lateral para dados, achados e conduta. */
+.notebook-clinical {
+  background-image:
+    linear-gradient(90deg, rgba(202, 232, 221, 0.28) 0 27%, transparent 27%),
+    linear-gradient(90deg, transparent calc(27% - 1px), rgba(52, 117, 94, 0.24) calc(27% - 1px), rgba(52, 117, 94, 0.24) 27%, transparent 27%),
+    repeating-linear-gradient(transparent, transparent 31px, rgba(94, 143, 125, 0.15) 31px, rgba(94, 143, 125, 0.15) 32px);
+}
+
+/* Anatomia — grade de proporção discreta para desenhos, setas e relações espaciais. */
+.notebook-anatomy {
+  background-image:
+    linear-gradient(rgba(95, 139, 126, 0.16) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(95, 139, 126, 0.16) 1px, transparent 1px),
+    linear-gradient(rgba(95, 139, 126, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(95, 139, 126, 0.07) 1px, transparent 1px);
+  background-size: 96px 96px, 96px 96px, 24px 24px, 24px 24px;
+}
+
 /* Física — eixo cartesiano leve sobre grade fina (diagrama de forças) */
 .notebook-physics {
   background-image:

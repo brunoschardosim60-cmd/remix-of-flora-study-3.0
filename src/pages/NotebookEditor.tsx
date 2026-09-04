@@ -63,6 +63,7 @@ import { PageSidebarGrid } from "@/components/notebook/PageSidebarGrid";
 import { MedicalAssetPicker } from "@/components/notebook/MedicalAssetPicker";
 import { NotebookExportDialog, type NotebookExportAction } from "@/components/notebook/NotebookExportDialog";
 import { FloraNotebookSidebar } from "@/components/notebook/FloraNotebookSidebar";
+import { VoiceMemoRecorder, type NotebookVoiceMemo } from "@/components/notebook/VoiceMemoRecorder";
 import { GHOST_ENABLED_KEY } from "@/components/notebook/GhostTextExtension";
 import "@/components/notebook/notebook-premium.css";
 import { ShareNotebookDialog } from "@/components/notebook/ShareNotebookDialog";
@@ -88,8 +89,9 @@ import {
 } from "@/lib/notebookExport";
 import DOMPurify from "dompurify";
 
-type PageTemplate = "blank" | "lined" | "grid" | "dotted" | "physics" | "chemistry" | "essay";
-const PAGE_TEMPLATES: PageTemplate[] = ["blank", "lined", "grid", "dotted", "physics", "chemistry", "essay"];
+type PageTemplate = "blank" | "lined" | "grid" | "dotted" | "cornell" | "clinical" | "anatomy" | "physics" | "chemistry" | "essay";
+type ZoomMode = "manual" | "width" | "page";
+const PAGE_TEMPLATES: PageTemplate[] = ["blank", "lined", "grid", "dotted", "cornell", "clinical", "anatomy", "physics", "chemistry", "essay"];
 
 function normalizePageTemplate(value: string | null | undefined): PageTemplate {
   return PAGE_TEMPLATES.includes(value as PageTemplate) ? value as PageTemplate : "blank";
@@ -139,6 +141,7 @@ interface DrawingState {
   strokes: Stroke[];
   stickyNotes: StickyNoteData[];
   mathSuggestions: MathSuggestion[];
+  voiceMemos?: NotebookVoiceMemo[];
   backgroundImage?: string;
   backgroundSource?: "pdf" | "image";
 }
@@ -211,7 +214,11 @@ const NOTEBOOK_SUMMARIES_STORAGE_KEY = "studyflow.notebook.page-summaries";
 const NOTEBOOK_TEMPLATE_STORAGE_KEY = "studyflow.notebook.page-templates";
 const NOTEBOOK_HISTORY_STORAGE_KEY = "studyflow.notebook.history";
 const NOTEBOOK_ZOOM_STORAGE_KEY = "studyflow.notebook.zoom";
+const NOTEBOOK_ZOOM_MODE_STORAGE_KEY = "studyflow.notebook.zoom-mode";
 const NOTEBOOK_ORIENTATION_STORAGE_KEY = "studyflow.notebook.orientation";
+const NOTEBOOK_PEN_COLOR_STORAGE_KEY = "studyflow.notebook.pen-color";
+const NOTEBOOK_PEN_WIDTH_STORAGE_KEY = "studyflow.notebook.pen-width";
+const NOTEBOOK_BRUSH_STORAGE_KEY = "studyflow.notebook.brush";
 const MEDICAL_NOTEBOOK_SUBJECTS = new Set(["Medicina", "HAM", "SOI", "IESC", "PIEPE", "MCM"]);
 
 const PAGE_TEMPLATE_LABELS: Record<PageTemplate, string> = {
@@ -219,6 +226,9 @@ const PAGE_TEMPLATE_LABELS: Record<PageTemplate, string> = {
   lined: "Pautado",
   grid: "Quadriculado",
   dotted: "Pontilhado",
+  cornell: "Cornell",
+  clinical: "Clínico",
+  anatomy: "Anatomia",
   physics: "Física",
   chemistry: "Química",
   essay: "Redação",
@@ -333,12 +343,19 @@ export default function NotebookEditor() {
     const stored = Number(loadStringStorage(NOTEBOOK_ZOOM_STORAGE_KEY));
     return Number.isFinite(stored) && stored > 0 ? clamp(stored, 0.5, 2.5) : 1;
   });
+  const [zoomMode, setZoomMode] = useState<ZoomMode>(() => {
+    const stored = loadStringStorage(NOTEBOOK_ZOOM_MODE_STORAGE_KEY);
+    return stored === "width" || stored === "page" ? stored : "manual";
+  });
   const [pageOrientation, setPageOrientation] = useState<"portrait" | "landscape">(() =>
     loadStringStorage(NOTEBOOK_ORIENTATION_STORAGE_KEY) === "landscape" ? "landscape" : "portrait"
   );
   const editorContainerRef = useRef<HTMLDivElement>(null);
   const [drawTool, setDrawTool] = useState<"pen" | "marker" | "eraser" | "select" | "line" | "rect" | "circle">("pen");
-  const [drawBrush, setDrawBrush] = useState<"ballpoint" | "gel" | "pencil" | "fineliner" | "marker">("ballpoint");
+  const [drawBrush, setDrawBrush] = useState<"ballpoint" | "gel" | "pencil" | "fineliner" | "marker">(() => {
+    const stored = loadStringStorage(NOTEBOOK_BRUSH_STORAGE_KEY);
+    return stored === "gel" || stored === "pencil" || stored === "fineliner" || stored === "marker" ? stored : "ballpoint";
+  });
   const [handwritingMode, setHandwritingMode] = useState(false);
   const [paperMargin, setPaperMargin] = useState(true);
   const [ghostEnabled, setGhostEnabled] = useState<boolean>(() =>
@@ -346,8 +363,11 @@ export default function NotebookEditor() {
   );
   const [floraOpen, setFloraOpen] = useState(false);
   const [selectionBounds, setSelectionBounds] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
-  const [penColor, setPenColor] = useState("#000000");
-  const [penWidth, setPenWidth] = useState(2);
+  const [penColor, setPenColor] = useState(() => loadStringStorage(NOTEBOOK_PEN_COLOR_STORAGE_KEY) || "#18221f");
+  const [penWidth, setPenWidth] = useState(() => {
+    const stored = Number(loadStringStorage(NOTEBOOK_PEN_WIDTH_STORAGE_KEY));
+    return [1.5, 3, 6, 10].includes(stored) ? stored : 3;
+  });
   const [redoStrokes, setRedoStrokes] = useState<Stroke[]>([]);
   const [autoSolveEnabled, setAutoSolveEnabled] = useState(() => {
     const stored = loadStringStorage(NOTEBOOK_AUTOSOLVE_STORAGE_KEY);
@@ -366,6 +386,7 @@ export default function NotebookEditor() {
   const [pageSummaries, setPageSummaries] = useState<Record<string, string>>({});
   const [aiActivities, setAiActivities] = useState<AIActivityItem[]>([]);
   const [generatingStudy, setGeneratingStudy] = useState<"none" | "flashcards" | "quiz" | "summary" | "image">("none");
+  const [formattingPage, setFormattingPage] = useState(false);
   const [quizDifficulty, setQuizDifficulty] = useState<"facil" | "medio" | "dificil">("medio");
   const [quizDialogOpen, setQuizDialogOpen] = useState(false);
   const [quizQuestions, setQuizQuestions] = useState<NotebookQuizQuestion[]>([]);
@@ -402,8 +423,18 @@ export default function NotebookEditor() {
   }, [zoom]);
 
   useEffect(() => {
+    window.localStorage.setItem(NOTEBOOK_ZOOM_MODE_STORAGE_KEY, zoomMode);
+  }, [zoomMode]);
+
+  useEffect(() => {
     window.localStorage.setItem(NOTEBOOK_ORIENTATION_STORAGE_KEY, pageOrientation);
   }, [pageOrientation]);
+
+  useEffect(() => {
+    window.localStorage.setItem(NOTEBOOK_PEN_COLOR_STORAGE_KEY, penColor);
+    window.localStorage.setItem(NOTEBOOK_PEN_WIDTH_STORAGE_KEY, String(penWidth));
+    window.localStorage.setItem(NOTEBOOK_BRUSH_STORAGE_KEY, drawBrush);
+  }, [drawBrush, penColor, penWidth]);
 
   useEffect(() => {
     const savedMeta = loadJsonStorage<Record<string, NotebookPageMeta>>(NOTEBOOK_META_STORAGE_KEY);
@@ -430,6 +461,39 @@ export default function NotebookEditor() {
     };
   }, []);
 
+  const updateFittedZoom = useCallback(() => {
+    if (zoomMode === "manual") return;
+    const container = editorContainerRef.current;
+    if (!container) return;
+    const pageWidth = pageOrientation === "landscape" ? 1123 : 794;
+    const pageHeight = pageOrientation === "landscape" ? 794 : 1123;
+    const availableWidth = Math.max(320, container.clientWidth - 76);
+    const availableHeight = Math.max(420, window.innerHeight - 226);
+    const next = zoomMode === "width"
+      ? availableWidth / pageWidth
+      : Math.min(availableWidth / pageWidth, availableHeight / pageHeight);
+    setZoom(clamp(next, 0.5, 1.5));
+  }, [pageOrientation, zoomMode]);
+
+  useEffect(() => {
+    if (zoomMode === "manual") return;
+    const container = editorContainerRef.current;
+    if (!container) return;
+    const observer = new ResizeObserver(updateFittedZoom);
+    observer.observe(container);
+    window.addEventListener("resize", updateFittedZoom);
+    updateFittedZoom();
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", updateFittedZoom);
+    };
+  }, [expandedEditor, floraOpen, updateFittedZoom, zoomMode]);
+
+  const setManualZoom = useCallback((next: number | ((value: number) => number)) => {
+    setZoomMode("manual");
+    setZoom((current) => clamp(typeof next === "function" ? next(current) : next, 0.5, 2.5));
+  }, []);
+
   // Zoom via mouse wheel (Ctrl+scroll) or pinch (touch)
   useEffect(() => {
     const container = editorContainerRef.current;
@@ -438,6 +502,7 @@ export default function NotebookEditor() {
     const handleWheel = (e: WheelEvent) => {
       if (e.ctrlKey) {
         e.preventDefault();
+        setZoomMode("manual");
         setZoom((prev) => clamp(prev - e.deltaY * 0.001, 0.5, 2.5));
       }
     };
@@ -505,6 +570,10 @@ export default function NotebookEditor() {
   }, [updateDrawingState]);
 
   const drawingState = currentPageData?.drawing_data ?? emptyDrawing;
+
+  useEffect(() => {
+    drawingStateRef.current = currentPageData?.drawing_data ?? emptyDrawing;
+  }, [currentPageData]);
 
   const recordPageVersion = useCallback((item: NotebookPage) => {
     try {
@@ -1061,24 +1130,37 @@ export default function NotebookEditor() {
     return () => clearInterval(timer);
   }, [drawingState, updateDrawingState]);
 
-  const addPage = async () => {
+  const createPage = useCallback(async ({
+    content = "",
+    template = pageTemplate,
+    successMessage,
+  }: { content?: string; template?: PageTemplate; successMessage?: string } = {}) => {
+    if (!id || !user?.id) return null;
     const newPageNum = pages.length + 1;
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("notebook_pages")
       .insert({
-        notebook_id: id!,
-        user_id: user!.id,
+        notebook_id: id,
+        user_id: user.id,
         page_number: newPageNum,
-        content: "",
+        content,
         drawing_data: drawingToJson(emptyDrawing),
+        template,
       })
       .select()
       .single();
-    if (data) {
-      setPages((prev) => [...prev, rowToNotebookPage(data)]);
-      setCurrentPage(pages.length);
-      toast.success("Página adicionada!");
+    if (error || !data) {
+      toast.error("Não foi possível criar a página.");
+      return null;
     }
+    setPages((prev) => [...prev, rowToNotebookPage(data)]);
+    setCurrentPage(pages.length);
+    if (successMessage) toast.success(successMessage);
+    return rowToNotebookPage(data);
+  }, [id, pageTemplate, pages.length, user?.id]);
+
+  const addPage = async () => {
+    await createPage({ successMessage: "Página adicionada!" });
   };
 
   const duplicatePage = async (targetIndex: number) => {
@@ -1271,6 +1353,62 @@ export default function NotebookEditor() {
     handleContentChange(`${existing}${separator}${html}`);
     toast.success(`Template "${label}" inserido.`);
   }, [page?.content, handleContentChange]);
+
+  const handleAutoFormatPage = useCallback(async () => {
+    if (formattingPage) return;
+    const text = getPlainPageText();
+    if (text.length < 120) {
+      toast.info("Escreva pelo menos um parágrafo antes de organizar a página.");
+      return;
+    }
+    setFormattingPage(true);
+    setFloraOpen(true);
+    try {
+      const { data, error } = await supabase.functions.invoke<{ html?: string; title?: string }>("flora-engine", {
+        body: {
+          action: "format_notebook_page",
+          userId: user?.id || "anonymous",
+          data: {
+            text,
+            subject: selectedSubject,
+            title: notebook?.title || `Página ${currentPage + 1}`,
+            medical: isMedicalNotebook,
+          },
+        },
+      });
+      if (error) throw error;
+      const rawHtml = String(data?.html || "")
+        .replace(/^```(?:html)?\s*/i, "")
+        .replace(/\s*```$/i, "")
+        .trim();
+      if (!rawHtml) throw new Error("A Flora não retornou conteúdo formatado.");
+      const safeHtml = DOMPurify.sanitize(rawHtml, {
+        ALLOWED_TAGS: ["h1", "h2", "h3", "p", "strong", "em", "mark", "ul", "ol", "li", "blockquote", "table", "thead", "tbody", "tr", "th", "td", "hr", "br"],
+        ALLOWED_ATTR: ["style"],
+      });
+      const sourcePageId = page?.id;
+      await createPage({
+        content: safeHtml,
+        template: isMedicalNotebook ? "clinical" : pageTemplate,
+        successMessage: "A Flora organizou uma cópia em uma nova página.",
+      });
+      pushAIActivity({
+        type: "summary",
+        title: isMedicalNotebook ? "Página clínica organizada" : "Página organizada",
+        detail: "Títulos, hierarquia e pontos-chave estruturados sem alterar a página original.",
+        notebookId: id,
+        pageId: sourcePageId,
+        topicId: currentLink?.topicId ?? undefined,
+      });
+    } catch (error) {
+      console.error("format notebook page", error);
+      const { handleQuotaError } = await import("@/lib/quotaErrors");
+      const handled = await handleQuotaError(error, { feature: "organização do caderno" });
+      if (!handled) toast.error(error instanceof Error ? error.message : "Não foi possível organizar a página.");
+    } finally {
+      setFormattingPage(false);
+    }
+  }, [createPage, currentLink?.topicId, currentPage, formattingPage, getPlainPageText, id, isMedicalNotebook, notebook?.title, page?.id, pageTemplate, pushAIActivity, selectedSubject, user?.id]);
 
   const handleSuggestTags = useCallback(() => {
     const text = getPlainPageText();
@@ -2109,9 +2247,7 @@ export default function NotebookEditor() {
                   <DropdownMenuItem onClick={() => setPaperMargin((value) => !value)}><span className="mr-3 block h-4 w-0.5 rounded bg-red-400" />{paperMargin ? "Esconder margem" : "Mostrar margem"}</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setPageOrientation((value) => value === "portrait" ? "landscape" : "portrait")}><LayoutTemplate className="mr-2 h-4 w-4" />{pageOrientation === "portrait" ? "Usar folha horizontal" : "Usar folha vertical"}</DropdownMenuItem>
                   <DropdownMenuLabel className="mt-1 text-[10px] uppercase tracking-wide text-muted-foreground">Modelo da página</DropdownMenuLabel>
-                  <div className="grid grid-cols-2 gap-1 px-1 pb-1">{([[
-                    "blank", "Em branco"], ["lined", "Pautado"], ["grid", "Quadriculado"], ["dotted", "Pontilhado"], ["physics", "Física"], ["chemistry", "Química"], ["essay", "Redação"],
-                  ] as const).map(([value, label]) => <Button key={value} type="button" variant={pageTemplate === value ? "secondary" : "ghost"} size="sm" className="h-8 justify-start text-xs" onClick={() => changePageTemplate(value)}><LayoutTemplate className="mr-1.5 h-3.5 w-3.5" />{label}</Button>)}</div>
+                  <div className="grid grid-cols-2 gap-1 px-1 pb-1">{PAGE_TEMPLATES.map((value) => <Button key={value} type="button" variant={pageTemplate === value ? "secondary" : "ghost"} size="sm" className="h-8 justify-start text-xs" onClick={() => changePageTemplate(value)}><LayoutTemplate className="mr-1.5 h-3.5 w-3.5" />{PAGE_TEMPLATE_LABELS[value]}</Button>)}</div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => setExpandedEditor((value) => !value)}>{expandedEditor ? <Minimize2 className="mr-2 h-4 w-4" /> : <Maximize2 className="mr-2 h-4 w-4" />}{expandedEditor ? "Sair da tela cheia" : "Abrir tela cheia"}</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setExportDialogOpen(true)}><Download className="mr-2 h-4 w-4" />Exportar / abrir em outro app</DropdownMenuItem>
@@ -2135,9 +2271,18 @@ export default function NotebookEditor() {
             </div>
 
             <div className="nb-zoom-controls" aria-label="Zoom da folha">
-              <button type="button" onClick={() => setZoom((value) => clamp(value - 0.1, 0.5, 2.5))} aria-label="Diminuir zoom" title="Diminuir zoom"><ZoomOut /></button>
-              <button type="button" className="value" onClick={() => setZoom(1)} aria-label="Redefinir zoom para 100%" title="Redefinir zoom"><span>{Math.round(zoom * 100)}%</span></button>
-              <button type="button" onClick={() => setZoom((value) => clamp(value + 0.1, 0.5, 2.5))} aria-label="Aumentar zoom" title="Aumentar zoom"><ZoomIn /></button>
+              <button type="button" onClick={() => setManualZoom((value) => value - 0.1)} aria-label="Diminuir zoom" title="Diminuir zoom"><ZoomOut /></button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild><button type="button" className="value" aria-label="Opções de zoom" title="Ajustar zoom"><span>{zoomMode === "width" ? "Largura" : zoomMode === "page" ? "Página" : `${Math.round(zoom * 100)}%`}</span></button></DropdownMenuTrigger>
+                <DropdownMenuContent align="center" className="w-48">
+                  <DropdownMenuLabel>Ajuste da folha</DropdownMenuLabel>
+                  <DropdownMenuItem onClick={() => setZoomMode("width")}>Ajustar à largura{zoomMode === "width" && <CheckCircle2 className="ml-auto h-4 w-4" />}</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setZoomMode("page")}>Mostrar página inteira{zoomMode === "page" && <CheckCircle2 className="ml-auto h-4 w-4" />}</DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setManualZoom(1)}>Tamanho real · 100%{zoomMode === "manual" && zoom === 1 && <CheckCircle2 className="ml-auto h-4 w-4" />}</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <button type="button" onClick={() => setManualZoom((value) => value + 0.1)} aria-label="Aumentar zoom" title="Aumentar zoom"><ZoomIn /></button>
             </div>
 
             <DropdownMenu>
@@ -2154,6 +2299,7 @@ export default function NotebookEditor() {
               <DropdownMenuTrigger asChild><button type="button" className="nb-study-page-button">{isMedicalNotebook ? <Stethoscope /> : <Brain />}<span>{isMedicalNotebook ? "Ferramentas médicas" : "Estudar esta página"}</span></button></DropdownMenuTrigger>
               <DropdownMenuContent align="center" className="w-64">
                 <DropdownMenuLabel>{isMedicalNotebook ? "Estudar e estruturar a página" : "Aprender com a página"}</DropdownMenuLabel>
+                <DropdownMenuItem onClick={() => void handleAutoFormatPage()} disabled={formattingPage || generatingStudy !== "none"}><Sparkles className="mr-2 h-4 w-4" />{formattingPage ? "Organizando cópia…" : isMedicalNotebook ? "Organizar como nota clínica" : "Organizar com a Flora"}</DropdownMenuItem>
                 <DropdownMenuItem onClick={handleGenerateSummaryFromPage} disabled={generatingStudy !== "none"}>{generatingStudy === "summary" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Gerar resumo explicado</DropdownMenuItem>
                 <DropdownMenuItem onClick={handleGenerateFlashcardsFromPage} disabled={generatingStudy !== "none"}>{generatingStudy === "flashcards" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Gerar flashcards</DropdownMenuItem>
                 <DropdownMenuItem onClick={handleGenerateQuizFromPage} disabled={generatingStudy !== "none"}>{generatingStudy === "quiz" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Gerar quiz</DropdownMenuItem>
@@ -2175,6 +2321,14 @@ export default function NotebookEditor() {
             <button type="button" className="nb-medical-gallery-button" onClick={() => setMedicalAssetPickerOpen(true)}><Images /><span>Atlas visual</span></button>
 
             <AudioSummaryButton content={currentPageData?.content || ""} title={notebook?.title || `Página ${currentPage + 1}`} />
+
+            {user?.id && currentPageData?.id && <VoiceMemoRecorder
+              userId={user.id}
+              notebookId={id!}
+              pageId={currentPageData.id}
+              memos={drawingState.voiceMemos ?? []}
+              onChange={(voiceMemos) => updateDrawingState({ ...drawingStateRef.current, voiceMemos })}
+            />}
           </div>
         </header>
       </div>
@@ -2366,6 +2520,9 @@ export default function NotebookEditor() {
             onCreateTopic={handleCreateTopicFromPage}
             onSyncSummary={handleSyncSummaryToTopic}
             onGenerateImage={handleGenerateImageOnPage}
+            onAutoFormat={() => void handleAutoFormatPage()}
+            formattingPage={formattingPage}
+            medical={isMedicalNotebook}
           />
         </div>
       )}
