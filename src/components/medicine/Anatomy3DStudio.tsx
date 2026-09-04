@@ -154,7 +154,9 @@ const layerOpacity: Record<Exclude<Anatomy3DSystemId, "all">, number> = {
 
 const REAL_MODEL_PATH = "/medicine/models/zanatomy-musculoskeletal-hd-v2.glb";
 const REAL_SKELETAL_PATH = "/medicine/models/zanatomy-musculoskeletal-hd-v2.glb";
-const MOBILE_MUSCULAR_PATH = anatomy3DAssets.bodyBase.path;
+const COMPOSITE_MUSCULAR_PATH = "/medicine/models/vayu-zanatomy-muscular-v1.glb";
+const COMPOSITE_SKELETAL_PATH = "/medicine/models/vayu-zanatomy-skeletal-v1.glb";
+const MOBILE_MUSCULAR_PATH = COMPOSITE_MUSCULAR_PATH;
 const REAL_SKIN_PATH = anatomy3DAssets.skinBase.path;
 const REAL_ORGANS_PATH = "/medicine/models/bodyparts3d-organs-v1.glb";
 const DETAILED_CIRCULATORY_PATH = anatomy3DAssets.cardiovascular.path;
@@ -390,7 +392,8 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
   const wholeBodySystemDistance = region === "whole" && system === "organs" ? 9.6 : regionMeta.distance;
   const baseCameraDistance = focusSelected && selected && selectedIsVisible ? selected.focusDistance : wholeBodySystemDistance;
   const cameraFocus = detailedCameraFocus ?? baseCameraFocus;
-  const cameraDistance = detailedCameraDistance ?? baseCameraDistance;
+  const cameraDistance = (detailedCameraDistance ?? baseCameraDistance)
+    * (layersExploded && activeLayerIds.length > 1 && region === "whole" ? 1.18 : 1);
   const realistic = appearance === "realistic";
   const regionAvailability = useMemo(() => Object.fromEntries(anatomy3DRegions.map((item) => {
     if (item.id === "whole" || system === "all") return [item.id, true];
@@ -430,7 +433,11 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
     const next = { ...layers, [layer]: { ...layers[layer], visible: becomingVisible } };
     if (!mixableLayerOrder.some((item) => next[item].visible)) next.surface = { ...next.surface, visible: true };
     const visible = mixableLayerOrder.filter((item) => next[item].visible);
-    if (visible.length > 1) {
+    if (visible.length > 1 && layersExploded) {
+      visible.forEach((item) => {
+        next[item] = { ...next[item], opacity: 1 };
+      });
+    } else if (visible.length > 1) {
       visible.forEach((item) => {
         // Uma camada isolada usa opacidade total. Ao montar o corpo, convertemos
         // apenas valores ainda intactos para o perfil de mistura recomendado.
@@ -465,8 +472,15 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
       next.organs.opacity = 1;
       next.vascular.opacity = 1;
       next.nervous.opacity = 1;
+    } else {
+      // A visão completa abre separada e opaca. Assim cada sistema conserva
+      // cor, volume e leitura próprios sem formar um único corpo avermelhado.
+      mixableLayerOrder.forEach((layer) => {
+        next[layer] = { ...next[layer], opacity: 1 };
+      });
     }
     setLayers(next);
+    setLayersExploded(preset === "all");
     setSystem("all");
     setFocusSelected(false);
     setFocusKey((value) => value + 1);
@@ -474,6 +488,22 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
 
   const activateRealisticLayer = () => {
     setAppearance((current) => current === "realistic" ? "educational" : "realistic");
+    setFocusKey((value) => value + 1);
+  };
+
+  const toggleLayerExplosion = () => {
+    const willExplode = !layersExploded;
+    setLayers((current) => {
+      const next = { ...current };
+      const visible = mixableLayerOrder.filter((layer) => current[layer].visible);
+      if (visible.length > 1) {
+        visible.forEach((layer) => {
+          next[layer] = { ...next[layer], opacity: willExplode ? 1 : mixedLayerOpacity[layer] };
+        });
+      }
+      return next;
+    });
+    setLayersExploded(willExplode);
     setFocusKey((value) => value + 1);
   };
 
@@ -750,7 +780,7 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
               </div>
               <footer>
                 <button className={realistic ? "active" : ""} aria-pressed={realistic} onClick={activateRealisticLayer}><HeartPulse /> Materiais</button>
-                <button className={layersExploded ? "active" : ""} aria-pressed={layersExploded} onClick={() => setLayersExploded((current) => !current)}><Layers3 /> {layersExploded ? "Reunir" : "Separar"}</button>
+                <button className={layersExploded ? "active" : ""} aria-pressed={layersExploded} onClick={toggleLayerExplosion}><Layers3 /> {layersExploded ? "Reunir" : "Separar"}</button>
                 <button className={bodySectionEnabled ? "active" : ""} aria-pressed={bodySectionEnabled} onClick={() => setBodySectionEnabled((current) => !current)}><ScanLine /> Metade</button>
               </footer>
               {bodySectionEnabled && <div className="med-3d-layer-section">
@@ -783,15 +813,15 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
                 </Environment>}
                 <group>
                   <>
-                      {layers.surface.visible && <AnimatedLayerGroup exploded={layersExploded} offset={[-.58, 0, .2]}><RealBodyPartsModel system={sceneSystem} realistic={realistic} quality={renderPolicy} selectedId={selected?.id ?? null} skinOpacity={layers.surface.opacity} skinTone={STANDARD_SKIN_TONE} organView={organView} sectionAxis={sectionAxis} sectionOffset={sectionOffset} globalSectionPlane={bodySectionPlane} onSelect={selectStructure} onHover={updateHoverLabel} /></AnimatedLayerGroup>}
-                      {layers.muscular.visible && <AnimatedLayerGroup exploded={layersExploded} offset={[-.35, 0, .12]}><DenseAnatomySystemModel integrated={compositeScene} opacity={layers.muscular.opacity} clipPlane={bodySectionPlane} realistic={realistic} quality={renderPolicy} path={compositeScene || renderPolicy.tier === "economy" ? MOBILE_MUSCULAR_PATH : REAL_MODEL_PATH} layer="muscular" sourceId={compositeScene || renderPolicy.tier === "economy" ? "vayuAnatomy3D" : "zAnatomy3D"} includeSupportTissue={system === "muscular" && showMuscularSupportTissues} selectedId={selected?.id ?? null} onSelect={selectStructure} onHover={updateHoverLabel} onCatalogReady={registerDetailedCatalog} /></AnimatedLayerGroup>}
-                      {layers.skeletal.visible && <AnimatedLayerGroup exploded={layersExploded} offset={[-.12, 0, .04]}><DenseAnatomySystemModel integrated={compositeScene} opacity={layers.skeletal.opacity} clipPlane={bodySectionPlane} realistic={realistic} quality={renderPolicy} path={REAL_SKELETAL_PATH} layer="skeletal" sourceId="zAnatomy3D" includeSupportTissue selectedId={selected?.id ?? null} onSelect={selectStructure} onHover={updateHoverLabel} onCatalogReady={registerDetailedCatalog} /></AnimatedLayerGroup>}
-                      {layers.organs.visible && <AnimatedLayerGroup exploded={layersExploded} offset={[.12, 0, -.04]}>{compositeScene
+                      {layers.surface.visible && <AnimatedLayerGroup exploded={layersExploded} offset={[-1.35, 0, .28]}><RealBodyPartsModel system={sceneSystem} realistic={realistic} quality={renderPolicy} selectedId={selected?.id ?? null} skinOpacity={layers.surface.opacity} skinTone={STANDARD_SKIN_TONE} organView={organView} sectionAxis={sectionAxis} sectionOffset={sectionOffset} globalSectionPlane={bodySectionPlane} onSelect={selectStructure} onHover={updateHoverLabel} /></AnimatedLayerGroup>}
+                      {layers.muscular.visible && <AnimatedLayerGroup exploded={layersExploded} offset={[-.82, 0, .17]}><DenseAnatomySystemModel integrated={compositeScene} opacity={layers.muscular.opacity} clipPlane={bodySectionPlane} realistic={realistic} quality={renderPolicy} path={compositeScene || renderPolicy.tier === "economy" ? MOBILE_MUSCULAR_PATH : REAL_MODEL_PATH} layer="muscular" sourceId={compositeScene || renderPolicy.tier === "economy" ? "vayuAnatomy3D" : "zAnatomy3D"} includeSupportTissue={system === "muscular" && showMuscularSupportTissues} selectedId={selected?.id ?? null} onSelect={selectStructure} onHover={updateHoverLabel} onCatalogReady={registerDetailedCatalog} /></AnimatedLayerGroup>}
+                      {layers.skeletal.visible && <AnimatedLayerGroup exploded={layersExploded} offset={[-.28, 0, .06]}><DenseAnatomySystemModel integrated={compositeScene} opacity={layers.skeletal.opacity} clipPlane={bodySectionPlane} realistic={realistic} quality={renderPolicy} path={compositeScene ? COMPOSITE_SKELETAL_PATH : REAL_SKELETAL_PATH} layer="skeletal" sourceId={compositeScene ? "vayuAnatomy3D" : "zAnatomy3D"} includeSupportTissue selectedId={selected?.id ?? null} onSelect={selectStructure} onHover={updateHoverLabel} onCatalogReady={registerDetailedCatalog} /></AnimatedLayerGroup>}
+                      {layers.organs.visible && <AnimatedLayerGroup exploded={layersExploded} offset={[.28, 0, -.06]}>{compositeScene
                         ? <CompositeOrgansModel opacity={layers.organs.opacity} clipPlane={bodySectionPlane} realistic={realistic} quality={renderPolicy} bodyProfile={bodyProfile} selectedId={selected?.id ?? null} onSelect={selectStructure} onHover={updateHoverLabel} onCatalogReady={registerDetailedCatalog} />
                         : <DetailedOrgansModel opacity={layers.organs.opacity} globalSectionPlane={bodySectionPlane} realistic={realistic} quality={renderPolicy} bodyProfile={bodyProfile} selectedId={selected?.id ?? null} organView={organView} sectionAxis={sectionAxis} sectionOffset={sectionOffset} onSelect={selectStructure} onHover={updateHoverLabel} onCatalogReady={registerDetailedCatalog} />}
                       </AnimatedLayerGroup>}
-                      {layers.vascular.visible && <AnimatedLayerGroup exploded={layersExploded} offset={[.35, 0, -.12]}><DenseAnatomySystemModel integrated={compositeScene} opacity={layers.vascular.opacity} clipPlane={bodySectionPlane} realistic={realistic} quality={renderPolicy} path={compositeScene ? COMPOSITE_CIRCULATORY_PATH : DETAILED_CIRCULATORY_PATH} layer="vascular" sourceId={compositeScene ? "zAnatomy3D" : "vayuAnatomy3D"} selectedId={selected?.id ?? null} onSelect={selectStructure} onHover={updateHoverLabel} onCatalogReady={registerDetailedCatalog} /></AnimatedLayerGroup>}
-                      {layers.nervous.visible && <AnimatedLayerGroup exploded={layersExploded} offset={[.58, 0, -.2]}><DenseAnatomySystemModel integrated={compositeScene} opacity={layers.nervous.opacity} clipPlane={bodySectionPlane} realistic={realistic} quality={renderPolicy} path={compositeScene ? COMPOSITE_NERVOUS_PATH : DETAILED_NERVOUS_PATH} layer="nervous" sourceId={compositeScene ? "zAnatomy3D" : "vayuAnatomy3D"} selectedId={selected?.id ?? null} onSelect={selectStructure} onHover={updateHoverLabel} onCatalogReady={registerDetailedCatalog} /></AnimatedLayerGroup>}
+                      {layers.vascular.visible && <AnimatedLayerGroup exploded={layersExploded} offset={[.82, 0, -.17]}><DenseAnatomySystemModel integrated={compositeScene} opacity={layers.vascular.opacity} clipPlane={bodySectionPlane} realistic={realistic} quality={renderPolicy} path={compositeScene ? COMPOSITE_CIRCULATORY_PATH : DETAILED_CIRCULATORY_PATH} layer="vascular" sourceId={compositeScene ? "zAnatomy3D" : "vayuAnatomy3D"} selectedId={selected?.id ?? null} onSelect={selectStructure} onHover={updateHoverLabel} onCatalogReady={registerDetailedCatalog} /></AnimatedLayerGroup>}
+                      {layers.nervous.visible && <AnimatedLayerGroup exploded={layersExploded} offset={[1.35, 0, -.28]}><DenseAnatomySystemModel integrated={compositeScene} opacity={layers.nervous.opacity} clipPlane={bodySectionPlane} realistic={realistic} quality={renderPolicy} path={compositeScene ? COMPOSITE_NERVOUS_PATH : DETAILED_NERVOUS_PATH} layer="nervous" sourceId={compositeScene ? "zAnatomy3D" : "vayuAnatomy3D"} selectedId={selected?.id ?? null} onSelect={selectStructure} onHover={updateHoverLabel} onCatalogReady={registerDetailedCatalog} /></AnimatedLayerGroup>}
                   </>
                 </group>
                 {!performanceComposition && <ContactShadows position={[0, -4.46, 0]} opacity={realistic ? .46 : .34} scale={8} blur={realistic ? 2.1 : 2.6} far={5} frames={renderPolicy.contactShadowFrames} />}
