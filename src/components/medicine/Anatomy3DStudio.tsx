@@ -999,10 +999,17 @@ function prepareBodyPartsRoot(source: Object3D, kind: "skin" | "organs") {
     });
     const combined = mergeGeometries(geometries, false);
     if (!combined) throw new Error("Não foi possível consolidar a superfície corporal.");
-    // Normais distintas impediam o merge dos vértices duplicados na linha
-    // sagital do modelo. Soldamos apenas pela posição e recalculamos a luz.
+    // O arquivo original traz as metades com uma folga milimétrica no eixo
+    // sagital. Alinhamos somente essa faixa central antes de soldar os vértices.
+    const combinedPositions = combined.getAttribute("position") as BufferAttribute;
+    for (let index = 0; index < combinedPositions.count; index += 1) {
+      if (Math.abs(combinedPositions.getX(index)) < .018) combinedPositions.setX(index, 0);
+    }
+    combinedPositions.needsUpdate = true;
+    // Normais distintas também impediam o merge dos vértices duplicados.
+    // Soldamos pela posição e só então recalculamos a iluminação da superfície.
     combined.deleteAttribute("normal");
-    const welded = mergeVertices(combined, .003);
+    const welded = mergeVertices(combined, .006);
     welded.computeVertexNormals();
     welded.computeBoundingBox();
     welded.computeBoundingSphere();
