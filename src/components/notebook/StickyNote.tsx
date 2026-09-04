@@ -40,19 +40,26 @@ export function StickyNote({ note, onUpdate, onDelete, active }: StickyNoteProps
     e.stopPropagation();
     const rect = noteRef.current?.parentElement?.getBoundingClientRect();
     if (!rect) return;
+    const parent = noteRef.current?.parentElement;
+    if (!parent) return;
+    const scaleX = rect.width > 0 ? parent.clientWidth / rect.width : 1;
+    const scaleY = rect.height > 0 ? parent.clientHeight / rect.height : 1;
     dragOffset.current = {
-      x: e.clientX - rect.left - note.x,
-      y: e.clientY - rect.top - note.y,
+      x: (e.clientX - rect.left) * scaleX - note.x,
+      y: (e.clientY - rect.top) * scaleY - note.y,
     };
     setIsDragging(true);
 
     const handleMove = (ev: MouseEvent) => {
       const parentRect = noteRef.current?.parentElement?.getBoundingClientRect();
-      if (!parentRect) return;
+      const parentElement = noteRef.current?.parentElement;
+      if (!parentRect || !parentElement) return;
+      const moveScaleX = parentRect.width > 0 ? parentElement.clientWidth / parentRect.width : 1;
+      const moveScaleY = parentRect.height > 0 ? parentElement.clientHeight / parentRect.height : 1;
       onUpdate({
         ...note,
-        x: Math.max(0, Math.min(parentRect.width - note.width, ev.clientX - parentRect.left - dragOffset.current.x)),
-        y: Math.max(0, Math.min(parentRect.height - note.height, ev.clientY - parentRect.top - dragOffset.current.y)),
+        x: Math.max(0, Math.min(parentElement.clientWidth - note.width, (ev.clientX - parentRect.left) * moveScaleX - dragOffset.current.x)),
+        y: Math.max(0, Math.min(parentElement.clientHeight - note.height, (ev.clientY - parentRect.top) * moveScaleY - dragOffset.current.y)),
       });
     };
 
@@ -69,7 +76,7 @@ export function StickyNote({ note, onUpdate, onDelete, active }: StickyNoteProps
   return (
     <div
       ref={noteRef}
-      className={`absolute rounded-lg shadow-lg border ${colors.bg} ${colors.border} ${colors.text} ${
+      className={`absolute rounded-lg shadow-lg border ${colors.bg} ${colors.border} ${colors.text} ${active ? "pointer-events-auto" : "pointer-events-none"} ${
         isDragging ? "opacity-80 scale-105" : ""
       } transition-transform`}
       style={{

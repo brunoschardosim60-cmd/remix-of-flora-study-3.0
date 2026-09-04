@@ -317,13 +317,18 @@ export const KonvaDrawingCanvas = forwardRef<DrawingCanvasRef, KonvaDrawingCanva
     useEffect(() => {
       const el = containerRef.current?.parentElement;
       if (!el) return;
-      const obs = new ResizeObserver(() => {
-        const r = el.getBoundingClientRect();
-        setSize({ width: r.width, height: r.height });
+
+      // O papel usa CSS zoom. getBoundingClientRect() devolve o tamanho visual
+      // já ampliado; usá-lo aqui ampliava o canvas uma segunda vez e fazia o
+      // traço nascer longe da caneta. clientWidth/scrollHeight permanecem no
+      // sistema de coordenadas lógico da folha.
+      const measure = () => setSize({
+        width: Math.max(1, el.clientWidth),
+        height: Math.max(1, el.clientHeight, el.scrollHeight),
       });
+      const obs = new ResizeObserver(measure);
       obs.observe(el);
-      const r = el.getBoundingClientRect();
-      setSize({ width: r.width, height: r.height });
+      measure();
       return () => obs.disconnect();
     }, []);
 
@@ -345,8 +350,16 @@ export const KonvaDrawingCanvas = forwardRef<DrawingCanvasRef, KonvaDrawingCanva
     }, [tool]);
 
     const getPos = (e: React.PointerEvent<HTMLCanvasElement>) => {
-      const rect = canvasRef.current!.getBoundingClientRect();
-      return { x: (e.clientX - rect.left) / zoom, y: (e.clientY - rect.top) / zoom };
+      const canvas = canvasRef.current!;
+      const rect = canvas.getBoundingClientRect();
+      // Converte da posição visual (afetada pelo zoom CSS) para a coordenada
+      // lógica persistida no desenho. Funciona em qualquer nível de zoom.
+      const scaleX = rect.width > 0 ? size.width / rect.width : 1;
+      const scaleY = rect.height > 0 ? size.height / rect.height : 1;
+      return {
+        x: (e.clientX - rect.left) * scaleX,
+        y: (e.clientY - rect.top) * scaleY,
+      };
     };
 
     // Calcula largura do ponto baseado em pressão + velocidade

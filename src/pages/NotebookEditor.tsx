@@ -2367,7 +2367,7 @@ export default function NotebookEditor() {
         onColorChange={setPenColor}
         penWidth={penWidth}
         onWidthChange={setPenWidth}
-        onClear={() => updateDrawingState({ ...drawingState, strokes: [], stickyNotes: [], mathSuggestions: [] })}
+        onClear={() => updateDrawingState({ ...drawingState, strokes: [] })}
         onUndo={() => {
           const lastStroke = drawingState.strokes[drawingState.strokes.length - 1];
           if (lastStroke) {
@@ -2383,10 +2383,13 @@ export default function NotebookEditor() {
         }}
         canUndo={drawingState.strokes.length > 0}
         canRedo={redoStrokes.length > 0}
-        onAddSticky={(color) => handleStickyNotesChange([
-          ...drawingState.stickyNotes,
-          { id: crypto.randomUUID(), x: 80, y: 80, width: 180, height: 140, text: "", color },
-        ])}
+        onAddSticky={(color) => {
+          setMode("draw");
+          handleStickyNotesChange([
+            ...drawingState.stickyNotes,
+            { id: crypto.randomUUID(), x: 80, y: 80, width: 180, height: 140, text: "", color },
+          ]);
+        }}
         onToggleFlora={() => setFloraOpen(!floraOpen)}
         floraOpen={floraOpen}
         onSolveSelection={handleSolveSelection}
@@ -2436,30 +2439,31 @@ export default function NotebookEditor() {
                 insertionRequest={editorInsertion}
                 onInsertionHandled={handleInsertionHandled}
                 paperOverlay={
-                  <KonvaDrawingCanvas
-                    ref={canvasRef}
-                    strokes={drawingState.strokes}
-                    onStrokesChange={handleStrokesChange}
-                    active={mode === "draw"}
-                    penColor={penColor}
-                    penWidth={penWidth}
-                    tool={drawTool}
-                    brush={drawBrush}
-                    zoom={1}
-                    onSelectionChange={setSelectionBounds}
-                  />
+                  <>
+                    <KonvaDrawingCanvas
+                      ref={canvasRef}
+                      strokes={drawingState.strokes}
+                      onStrokesChange={handleStrokesChange}
+                      active={mode === "draw"}
+                      penColor={penColor}
+                      penWidth={penWidth}
+                      tool={drawTool}
+                      brush={drawBrush}
+                      zoom={1}
+                      onSelectionChange={setSelectionBounds}
+                    />
+                    {drawingState.stickyNotes.map((note) => (
+                      <StickyNote
+                        key={note.id}
+                        note={note}
+                        active={mode === "draw"}
+                        onUpdate={(updated) => handleStickyNotesChange(drawingState.stickyNotes.map((n) => n.id === updated.id ? updated : n))}
+                        onDelete={(idToDelete) => handleStickyNotesChange(drawingState.stickyNotes.filter((n) => n.id !== idToDelete))}
+                      />
+                    ))}
+                  </>
                 }
               />
-
-              {drawingState.stickyNotes.map((note) => (
-                <StickyNote
-                  key={note.id}
-                  note={note}
-                  active={mode === "draw"}
-                  onUpdate={(updated) => handleStickyNotesChange(drawingState.stickyNotes.map((n) => n.id === updated.id ? updated : n))}
-                  onDelete={(idToDelete) => handleStickyNotesChange(drawingState.stickyNotes.filter((n) => n.id !== idToDelete))}
-                />
-              ))}
 
             </div>
           </div>
@@ -2506,30 +2510,31 @@ export default function NotebookEditor() {
                 insertionRequest={editorInsertion}
                 onInsertionHandled={handleInsertionHandled}
                 paperOverlay={
-                  <KonvaDrawingCanvas
-                    ref={canvasRef}
-                    strokes={drawingState.strokes}
-                    onStrokesChange={handleStrokesChange}
-                    active={mode === "draw"}
-                    penColor={penColor}
-                    penWidth={penWidth}
-                    tool={drawTool}
-                    brush={drawBrush}
-                    zoom={1}
-                    onSelectionChange={setSelectionBounds}
-                  />
+                  <>
+                    <KonvaDrawingCanvas
+                      ref={canvasRef}
+                      strokes={drawingState.strokes}
+                      onStrokesChange={handleStrokesChange}
+                      active={mode === "draw"}
+                      penColor={penColor}
+                      penWidth={penWidth}
+                      tool={drawTool}
+                      brush={drawBrush}
+                      zoom={1}
+                      onSelectionChange={setSelectionBounds}
+                    />
+                    {drawingState.stickyNotes.map((note) => (
+                      <StickyNote
+                        key={note.id}
+                        note={note}
+                        active={mode === "draw"}
+                        onUpdate={(updated) => handleStickyNotesChange(drawingState.stickyNotes.map((n) => n.id === updated.id ? updated : n))}
+                        onDelete={(idToDelete) => handleStickyNotesChange(drawingState.stickyNotes.filter((n) => n.id !== idToDelete))}
+                      />
+                    ))}
+                  </>
                 }
               />
-
-              {drawingState.stickyNotes.map((note) => (
-                <StickyNote
-                  key={note.id}
-                  note={note}
-                  active={mode === "draw"}
-                  onUpdate={(updated) => handleStickyNotesChange(drawingState.stickyNotes.map((n) => n.id === updated.id ? updated : n))}
-                  onDelete={(idToDelete) => handleStickyNotesChange(drawingState.stickyNotes.filter((n) => n.id !== idToDelete))}
-                />
-              ))}
 
             </div>
           </div>

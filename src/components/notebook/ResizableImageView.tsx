@@ -34,13 +34,15 @@ export function ResizableImageView({ node, updateAttributes, deleteNode, selecte
       const img = imgRef.current;
       if (!img) return;
       const startX = e.clientX;
-      const startW = img.getBoundingClientRect().width;
+      const rect = img.getBoundingClientRect();
+      const startW = img.offsetWidth || rect.width;
+      const visualToLocal = rect.width > 0 ? startW / rect.width : 1;
       const target = e.currentTarget as HTMLElement;
       target.setPointerCapture(e.pointerId);
       setResizing(true);
 
       const onMove = (ev: PointerEvent) => {
-        const delta = ev.clientX - startX;
+        const delta = (ev.clientX - startX) * visualToLocal;
         const next = Math.max(80, Math.min(1400, startW + delta));
         updateAttributes({ width: Math.round(next) });
       };
