@@ -210,7 +210,19 @@ const NOTEBOOK_META_STORAGE_KEY = "studyflow.notebook.page-meta";
 const NOTEBOOK_SUMMARIES_STORAGE_KEY = "studyflow.notebook.page-summaries";
 const NOTEBOOK_TEMPLATE_STORAGE_KEY = "studyflow.notebook.page-templates";
 const NOTEBOOK_HISTORY_STORAGE_KEY = "studyflow.notebook.history";
+const NOTEBOOK_ZOOM_STORAGE_KEY = "studyflow.notebook.zoom";
+const NOTEBOOK_ORIENTATION_STORAGE_KEY = "studyflow.notebook.orientation";
 const MEDICAL_NOTEBOOK_SUBJECTS = new Set(["Medicina", "HAM", "SOI", "IESC", "PIEPE", "MCM"]);
+
+const PAGE_TEMPLATE_LABELS: Record<PageTemplate, string> = {
+  blank: "Em branco",
+  lined: "Pautado",
+  grid: "Quadriculado",
+  dotted: "Pontilhado",
+  physics: "Física",
+  chemistry: "Química",
+  essay: "Redação",
+};
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
@@ -317,7 +329,13 @@ export default function NotebookEditor() {
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [exporting, setExporting] = useState<NotebookExportAction | null>(null);
   const [editorInsertion, setEditorInsertion] = useState<{ id: number; html: string } | null>(null);
-  const [zoom, setZoom] = useState(1);
+  const [zoom, setZoom] = useState(() => {
+    const stored = Number(loadStringStorage(NOTEBOOK_ZOOM_STORAGE_KEY));
+    return Number.isFinite(stored) && stored > 0 ? clamp(stored, 0.5, 2.5) : 1;
+  });
+  const [pageOrientation, setPageOrientation] = useState<"portrait" | "landscape">(() =>
+    loadStringStorage(NOTEBOOK_ORIENTATION_STORAGE_KEY) === "landscape" ? "landscape" : "portrait"
+  );
   const editorContainerRef = useRef<HTMLDivElement>(null);
   const [drawTool, setDrawTool] = useState<"pen" | "marker" | "eraser" | "select" | "line" | "rect" | "circle">("pen");
   const [drawBrush, setDrawBrush] = useState<"ballpoint" | "gel" | "pencil" | "fineliner" | "marker">("ballpoint");
@@ -380,6 +398,14 @@ export default function NotebookEditor() {
   }, []);
 
   useEffect(() => {
+    window.localStorage.setItem(NOTEBOOK_ZOOM_STORAGE_KEY, zoom.toFixed(2));
+  }, [zoom]);
+
+  useEffect(() => {
+    window.localStorage.setItem(NOTEBOOK_ORIENTATION_STORAGE_KEY, pageOrientation);
+  }, [pageOrientation]);
+
+  useEffect(() => {
     const savedMeta = loadJsonStorage<Record<string, NotebookPageMeta>>(NOTEBOOK_META_STORAGE_KEY);
     setPageMeta(savedMeta ?? {});
   }, []);
@@ -412,7 +438,7 @@ export default function NotebookEditor() {
     const handleWheel = (e: WheelEvent) => {
       if (e.ctrlKey) {
         e.preventDefault();
-        setZoom((prev) => clamp(prev - e.deltaY * 0.001, 0.5, 3));
+        setZoom((prev) => clamp(prev - e.deltaY * 0.001, 0.5, 2.5));
       }
     };
 
@@ -2081,6 +2107,7 @@ export default function NotebookEditor() {
                   <DropdownMenuLabel>Papel e visual</DropdownMenuLabel>
                   <DropdownMenuItem onClick={() => setHandwritingMode((value) => !value)}><span className="mr-2 text-base font-bold" style={{ fontFamily: "Caveat, cursive" }}>Aa</span>{handwritingMode ? "Usar tipografia digital" : "Usar caligrafia manuscrita"}</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setPaperMargin((value) => !value)}><span className="mr-3 block h-4 w-0.5 rounded bg-red-400" />{paperMargin ? "Esconder margem" : "Mostrar margem"}</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setPageOrientation((value) => value === "portrait" ? "landscape" : "portrait")}><LayoutTemplate className="mr-2 h-4 w-4" />{pageOrientation === "portrait" ? "Usar folha horizontal" : "Usar folha vertical"}</DropdownMenuItem>
                   <DropdownMenuLabel className="mt-1 text-[10px] uppercase tracking-wide text-muted-foreground">Modelo da página</DropdownMenuLabel>
                   <div className="grid grid-cols-2 gap-1 px-1 pb-1">{([[
                     "blank", "Em branco"], ["lined", "Pautado"], ["grid", "Quadriculado"], ["dotted", "Pontilhado"], ["physics", "Física"], ["chemistry", "Química"], ["essay", "Redação"],
@@ -2106,6 +2133,22 @@ export default function NotebookEditor() {
               <button type="button" aria-label="Próxima página" onClick={() => setCurrentPage((pageIndex) => Math.min(pages.length - 1, pageIndex + 1))} disabled={currentPage === pages.length - 1}><ChevronRight /></button>
               <button type="button" className="add" aria-label="Adicionar nova página" onClick={addPage} title="Nova página"><Plus /></button>
             </div>
+
+            <div className="nb-zoom-controls" aria-label="Zoom da folha">
+              <button type="button" onClick={() => setZoom((value) => clamp(value - 0.1, 0.5, 2.5))} aria-label="Diminuir zoom" title="Diminuir zoom"><ZoomOut /></button>
+              <button type="button" className="value" onClick={() => setZoom(1)} aria-label="Redefinir zoom para 100%" title="Redefinir zoom"><span>{Math.round(zoom * 100)}%</span></button>
+              <button type="button" onClick={() => setZoom((value) => clamp(value + 0.1, 0.5, 2.5))} aria-label="Aumentar zoom" title="Aumentar zoom"><ZoomIn /></button>
+            </div>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild><button type="button" className="nb-paper-style-button"><LayoutTemplate /><span>{PAGE_TEMPLATE_LABELS[pageTemplate]}</span></button></DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56">
+                <DropdownMenuLabel>Folha</DropdownMenuLabel>
+                {PAGE_TEMPLATES.map((value) => <DropdownMenuItem key={value} onClick={() => changePageTemplate(value)}><span className={`nb-paper-swatch is-${value}`} />{PAGE_TEMPLATE_LABELS[value]}{pageTemplate === value && <CheckCircle2 className="ml-auto h-4 w-4" />}</DropdownMenuItem>)}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setPageOrientation((value) => value === "portrait" ? "landscape" : "portrait")}><LayoutTemplate className="mr-2 h-4 w-4" />{pageOrientation === "portrait" ? "Virar para horizontal" : "Virar para vertical"}</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild><button type="button" className="nb-study-page-button">{isMedicalNotebook ? <Stethoscope /> : <Brain />}<span>{isMedicalNotebook ? "Ferramentas médicas" : "Estudar esta página"}</span></button></DropdownMenuTrigger>
@@ -2205,8 +2248,9 @@ export default function NotebookEditor() {
                 notebookId={id!}
                 darkMode={darkMode}
                 onToggleDarkMode={() => setDarkMode((d) => !d)}
-                template={pageTemplate}
-                zoom={zoom}
+                 template={pageTemplate}
+                 zoom={zoom}
+                 orientation={pageOrientation}
                 wide={expandedEditor}
                 handwriting={handwritingMode}
                 showMargin={paperMargin}
@@ -2273,6 +2317,7 @@ export default function NotebookEditor() {
                 onToggleDarkMode={() => setDarkMode((d) => !d)}
                 template={pageTemplate}
                 zoom={zoom}
+                orientation={pageOrientation}
                 wide={expandedEditor}
                 handwriting={handwritingMode}
                 showMargin={paperMargin}

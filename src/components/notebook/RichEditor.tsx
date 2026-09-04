@@ -25,6 +25,8 @@ interface RichEditorProps {
   onToggleDarkMode: () => void;
   template?: "blank" | "lined" | "grid" | "dotted" | "physics" | "chemistry" | "essay";
   zoom?: number;
+  /** Orientação física da folha. */
+  orientation?: "portrait" | "landscape";
   /** Overlay rendered on top of the paper sheet (e.g. drawing canvas, sticky notes). */
   paperOverlay?: ReactNode;
   /** When true, paper takes more horizontal space (focus/fullscreen mode). */
@@ -50,7 +52,7 @@ const TEMPLATE_CLASS: Record<string, string> = {
   essay: "notebook-essay",
 };
 
-export function RichEditor({ content, onChange, userId, notebookId, darkMode, onToggleDarkMode, template = "blank", zoom = 1, paperOverlay, wide = false, handwriting = false, showMargin = true, backgroundImage, insertionRequest, onInsertionHandled }: RichEditorProps) {
+export function RichEditor({ content, onChange, userId, notebookId, darkMode, onToggleDarkMode, template = "blank", zoom = 1, orientation = "portrait", paperOverlay, wide = false, handwriting = false, showMargin = true, backgroundImage, insertionRequest, onInsertionHandled }: RichEditorProps) {
   const isExternalUpdate = useRef(false);
   const lastInsertionId = useRef<number | null>(null);
   const [floraBusy, setFloraBusy] = useState<null | string>(null);
@@ -102,6 +104,31 @@ export function RichEditor({ content, onChange, userId, notebookId, darkMode, on
               default: 0,
               parseHTML: (el) => Number(el.getAttribute("data-rotation") || 0),
               renderHTML: (attrs) => attrs.rotation ? { "data-rotation": String(attrs.rotation) } : {},
+            },
+            cropEnabled: {
+              default: false,
+              parseHTML: (el) => el.getAttribute("data-crop-enabled") === "true",
+              renderHTML: (attrs) => attrs.cropEnabled ? { "data-crop-enabled": "true" } : {},
+            },
+            cropAspect: {
+              default: "4:3",
+              parseHTML: (el) => el.getAttribute("data-crop-aspect") || "4:3",
+              renderHTML: (attrs) => ({ "data-crop-aspect": attrs.cropAspect || "4:3" }),
+            },
+            cropX: {
+              default: 50,
+              parseHTML: (el) => Number(el.getAttribute("data-crop-x") || 50),
+              renderHTML: (attrs) => ({ "data-crop-x": String(attrs.cropX ?? 50) }),
+            },
+            cropY: {
+              default: 50,
+              parseHTML: (el) => Number(el.getAttribute("data-crop-y") || 50),
+              renderHTML: (attrs) => ({ "data-crop-y": String(attrs.cropY ?? 50) }),
+            },
+            cropZoom: {
+              default: 1,
+              parseHTML: (el) => Number(el.getAttribute("data-crop-zoom") || 1),
+              renderHTML: (attrs) => ({ "data-crop-zoom": String(attrs.cropZoom ?? 1) }),
             },
           };
         },
@@ -221,28 +248,27 @@ export function RichEditor({ content, onChange, userId, notebookId, darkMode, on
           </div>
         </BubbleMenu>
       )}
+      <div className="nb-editor-formatbar relative z-30 border-b border-black/[0.06] bg-white/90 backdrop-blur dark:bg-gray-900/90">
+        <EditorToolbar
+          editor={editor}
+          userId={userId}
+          notebookId={notebookId}
+          darkMode={darkMode}
+          onToggleDarkMode={onToggleDarkMode}
+        />
+      </div>
       <div className="nb-paper-viewport flex-1 py-5 sm:py-7 px-3 sm:px-6">
         <div
-          className={`nb-paper-frame relative mx-auto w-full ${wide ? "max-w-[1180px]" : "max-w-[920px]"} overflow-hidden rounded-xl transition-shadow duration-300 animate-fade-in notebook-paper-realistic ${showMargin ? "with-margin" : ""} ${handwriting ? "notebook-handwriting" : ""} ${
+          className="nb-paper-zoom-stage"
+          style={{ zoom } as React.CSSProperties}
+        >
+        <div
+          className={`nb-paper-frame relative mx-auto overflow-hidden transition-shadow duration-300 animate-fade-in notebook-paper-realistic is-${orientation} ${wide ? "is-wide" : ""} ${showMargin ? "with-margin" : ""} ${handwriting ? "notebook-handwriting" : ""} ${
             darkMode
               ? "bg-gray-900 shadow-[0_8px_30px_rgba(0,0,0,0.5)] [&_.ProseMirror]:text-gray-100 [&_.ProseMirror_h1]:text-gray-50 [&_.ProseMirror_h2]:text-gray-50 [&_.ProseMirror_h3]:text-gray-50"
               : "bg-white shadow-[0_4px_24px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.08)]"
           } ${TEMPLATE_CLASS[template] || ""}`}
-          style={{
-            minHeight: "85vh",
-            transform: `scale(${zoom})`,
-            transformOrigin: "top center",
-          }}
         >
-          <div className="nb-editor-formatbar relative z-30 border-b border-black/[0.06] bg-white/90 backdrop-blur dark:bg-gray-900/90">
-            <EditorToolbar
-              editor={editor}
-              userId={userId}
-              notebookId={notebookId}
-              darkMode={darkMode}
-              onToggleDarkMode={onToggleDarkMode}
-            />
-          </div>
           <div className="nb-paper-content relative min-h-[calc(85vh-42px)] px-8 py-10 sm:px-14 sm:py-12">
             {backgroundImage && (
               <img src={backgroundImage} alt="Página importada do PDF" draggable={false} className="pointer-events-none absolute inset-0 h-full w-full select-none object-contain object-top opacity-100" />
@@ -250,6 +276,7 @@ export function RichEditor({ content, onChange, userId, notebookId, darkMode, on
             <EditorContent editor={editor} className="relative z-[1] min-h-[70vh]" />
             {paperOverlay}
           </div>
+        </div>
         </div>
       </div>
     </div>
