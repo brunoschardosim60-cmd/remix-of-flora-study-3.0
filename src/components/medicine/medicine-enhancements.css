@@ -3070,6 +3070,11 @@
 @media (max-width: 820px) {
   .med-atlas-topbar { justify-content: flex-start; }
   .med-atlas-topbar > div:first-child { width: 100%; flex: 0 0 auto; }
+  .med-atlas-controls { width: 100%; justify-content: flex-start; }
+  .med-atlas-controls button.wide,
+  .med-atlas-controls a.wide { flex: 1 1 auto; min-width: 0; }
+  .med-atlas-profile-strip > p { flex: 1 1 100%; }
+
   .med-back,
   .med-menu-button,
   .med-focus-toggle,
