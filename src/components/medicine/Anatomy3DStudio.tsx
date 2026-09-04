@@ -404,7 +404,7 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
   const baseCameraDistance = focusSelected && selected && selectedIsVisible ? selected.focusDistance : wholeBodySystemDistance;
   const cameraFocus = detailedCameraFocus ?? baseCameraFocus;
   const cameraDistance = (detailedCameraDistance ?? baseCameraDistance)
-    * (layersExploded && activeLayerIds.length > 1 && region === "whole" ? 3 : 1);
+    * (layersExploded && activeLayerIds.length > 1 && region === "whole" ? 1.18 : 1);
   const realistic = appearance === "realistic";
   // Em composição cheia, preserva as cores anatômicas mas troca microtexturas
   // procedurais por materiais leves. O detalhe máximo volta ao isolar a camada.
@@ -832,7 +832,7 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
                   <Lightformer form="rect" intensity={.65} color="#d5ddd8" position={[-5, 1, 3]} rotation={[0, Math.PI / 2, 0]} scale={[5, 7, 1]} />
                   <Lightformer form="rect" intensity={.5} color="#a9c1ba" position={[5, 0, -3]} rotation={[0, -Math.PI / 2, 0]} scale={[4, 6, 1]} />
                 </Environment>}
-                <group>
+                <group scale={layersExploded && activeLayerIds.length > 1 && region === "whole" ? .62 : 1}>
                   <>
                       <Suspense fallback={null}>{layers.surface.visible && <AnimatedLayerGroup exploded={layersExploded} offset={[-8, 0, .42]}><RealBodyPartsModel system={sceneSystem} realistic={detailedMaterials} quality={renderPolicy} selectedId={focusSelected ? selected?.id ?? null : null} skinOpacity={layers.surface.opacity} skinTone={STANDARD_SKIN_TONE} globalSectionPlane={bodySectionPlane} onSelect={selectStructure} onHover={updateHoverLabel} /></AnimatedLayerGroup>}</Suspense>
                       <Suspense fallback={null}>{layers.muscular.visible && <AnimatedLayerGroup exploded={layersExploded} offset={[-4.8, 0, .25]}><DenseAnatomySystemModel integrated={compositeScene} opacity={layers.muscular.opacity} clipPlane={bodySectionPlane} realistic={detailedMaterials} quality={renderPolicy} path={compositeScene || renderPolicy.tier === "economy" ? MOBILE_MUSCULAR_PATH : REAL_MODEL_PATH} layer="muscular" sourceId={compositeScene || renderPolicy.tier === "economy" ? "vayuAnatomy3D" : "zAnatomy3D"} includeSupportTissue={system === "muscular" && showMuscularSupportTissues} selectedId={focusSelected ? selected?.id ?? null : null} onSelect={selectStructure} onHover={updateHoverLabel} onCatalogReady={registerDetailedCatalog} /></AnimatedLayerGroup>}</Suspense>
