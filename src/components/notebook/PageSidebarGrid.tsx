@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronUp, Copy, Plus, Trash2, Pin, Sparkles, Pencil, Files } from "lucide-react";
+import { ChevronDown, ChevronUp, Copy, Plus, Trash2, Pin, Sparkles, Pencil, Files, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useState } from "react";
 import "./notebook-premium.css";
 
@@ -25,6 +25,8 @@ interface PageSidebarGridProps {
   pageMeta?: Record<string, PageMeta>;
   notebookId?: string;
   hasActivity?: (pageId: string) => boolean;
+  collapsed?: boolean;
+  onToggleCollapsed?: () => void;
 }
 
 function pagePreview(html: string, max = 150): { image: string | null; title: string; text: string } {
@@ -48,6 +50,8 @@ export function PageSidebarGrid({
   pageMeta = {},
   notebookId,
   hasActivity,
+  collapsed = false,
+  onToggleCollapsed,
 }: PageSidebarGridProps) {
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
@@ -88,11 +92,25 @@ export function PageSidebarGrid({
     setDragOverIdx(null);
   };
 
+  if (collapsed) {
+    return (
+      <aside className="nb-page-sidebar is-collapsed" aria-label="Navegação de páginas recolhida">
+        <button type="button" className="nb-pages-expand" onClick={onToggleCollapsed} aria-label="Mostrar páginas" title="Mostrar páginas">
+          <PanelLeftOpen />
+          <span>{pages.length}</span>
+        </button>
+      </aside>
+    );
+  }
+
   return (
     <aside className="nb-page-sidebar">
       <div className="nb-pages-heading">
         <span><Files className="h-3.5 w-3.5" /> Páginas</span>
-        <button type="button" onClick={onAddPage} aria-label="Adicionar nova página" title="Nova página"><Plus className="h-4 w-4" /></button>
+        <div className="nb-pages-heading-actions">
+          <button type="button" onClick={onAddPage} aria-label="Adicionar nova página" title="Nova página"><Plus className="h-4 w-4" /></button>
+          {onToggleCollapsed && <button type="button" onClick={onToggleCollapsed} aria-label="Esconder páginas" title="Esconder páginas"><PanelLeftClose className="h-4 w-4" /></button>}
+        </div>
       </div>
       {pages.map((page, idx) => {
         const key = notebookId ? `${notebookId}:${page.id}` : "";

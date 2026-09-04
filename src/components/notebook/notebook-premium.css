@@ -192,7 +192,8 @@
   text-transform: uppercase;
 }
 
-.nb-pages-heading > button {
+.nb-pages-heading > button,
+.nb-pages-heading-actions > button {
   display: grid;
   width: 28px;
   height: 28px;
@@ -202,7 +203,8 @@
   transition: 150ms ease;
 }
 
-.nb-pages-heading > button:hover {
+.nb-pages-heading > button:hover,
+.nb-pages-heading-actions > button:hover {
   background: hsl(var(--primary) / 0.1);
   color: hsl(var(--primary));
 }
@@ -1005,6 +1007,12 @@
 .nb-layout { min-height: 0; background: #e9ede9; }
 .nb-page-sidebar { width: 158px; padding-bottom: 90px; border-right-color: rgba(37,64,57,.1); background: rgba(247,249,246,.96); }
 .nb-pages-heading { min-height: 50px; padding: 0 16px; background: rgba(247,249,246,.96); }
+.nb-pages-heading-actions { display: flex; align-items: center; gap: 2px; }
+.nb-page-sidebar.is-collapsed { width: 46px; overflow: hidden; padding: 0; }
+.nb-pages-expand { display: flex; width: 100%; min-height: 56px; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: #537268; transition: background 140ms ease,color 140ms ease; }
+.nb-pages-expand:hover { background: #e6efeb; color: #286750; }
+.nb-pages-expand svg { width: 17px; }
+.nb-pages-expand span { min-width: 18px; padding: 1px 4px; border-radius: 999px; background: #e2ece8; font-size: 8px; font-weight: 850; }
 .nb-page-sidebar > .relative { padding: 0 15px !important; }
 .nb-page-thumb { width: 116px; height: 150px; margin: 13px auto 7px; border-radius: 9px; border-width: 2px; box-shadow: 0 5px 15px rgba(38,64,57,.08); }
 .nb-page-thumb:hover { transform: translateY(-2px); }
@@ -1012,7 +1020,7 @@
 .nb-page-thumb-content { display: flex; height: 100%; flex-direction: column; gap: 3px; padding: 8px 7px 18px; color: #61726c; font-size: 5px; line-height: 1.35; text-align: left; word-break: normal; }
 .nb-page-thumb-content strong { overflow: hidden; color: #2f4c44; font-family: Georgia, serif; font-size: 7px; text-overflow: ellipsis; white-space: nowrap; }
 .nb-page-thumb-content > span:not(.nb-page-inline-title) { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 8; }
-.nb-page-inline-image { width: 100%; height: 102px; border-radius: 5px; background: #eef3f0; object-fit: cover; object-position: center top; }
+.nb-page-inline-image { width: 100%; height: 102px; border-radius: 5px; background: transparent; object-fit: contain; object-position: center top; mix-blend-mode: multiply; }
 .nb-page-inline-title { overflow: hidden; color: #314d45; font-family: Georgia, serif; font-size: 7px; text-overflow: ellipsis; white-space: nowrap; }
 .nb-page-thumb-num { right: 7px; bottom: 5px; font-size: 9px; }
 
@@ -1444,7 +1452,12 @@
 }
 .nb-image-viewport > img { max-height: none !important; margin: 0 !important; border: 0 !important; background: transparent !important; box-shadow: none !important; }
 .nb-img-wrap.is-transparent img { filter: drop-shadow(0 9px 11px rgba(34,66,56,.12)); }
-.nb-image-stage.is-cropping { background: #f2f4f1; box-shadow: 0 0 0 1px rgba(35,64,55,.12); }
+/* As pranchas médicas têm branco incorporado ao bitmap. Multiply integra esse branco
+   ao papel sem recortar, recolorir ou alterar qualquer detalhe anatômico. */
+.nb-img-wrap.is-medical-asset .nb-image-viewport,
+.nb-img-wrap.is-medical-asset .nb-image-stage { background: transparent !important; }
+.nb-img-wrap.is-medical-asset .nb-image-viewport > img { mix-blend-mode: multiply; }
+.nb-image-stage.is-cropping { background: transparent; box-shadow: 0 0 0 1px rgba(35,64,55,.12); }
 
 .nb-image-crop-controls {
   position: absolute;

@@ -214,7 +214,8 @@ const NOTEBOOK_SUMMARIES_STORAGE_KEY = "studyflow.notebook.page-summaries";
 const NOTEBOOK_TEMPLATE_STORAGE_KEY = "studyflow.notebook.page-templates";
 const NOTEBOOK_HISTORY_STORAGE_KEY = "studyflow.notebook.history";
 const NOTEBOOK_ZOOM_STORAGE_KEY = "studyflow.notebook.zoom";
-const NOTEBOOK_ZOOM_MODE_STORAGE_KEY = "studyflow.notebook.zoom-mode";
+const NOTEBOOK_ZOOM_MODE_STORAGE_KEY = "studyflow.notebook.zoom-mode-v2";
+const NOTEBOOK_PAGES_COLLAPSED_STORAGE_KEY = "studyflow.notebook.pages-collapsed";
 const NOTEBOOK_ORIENTATION_STORAGE_KEY = "studyflow.notebook.orientation";
 const NOTEBOOK_PEN_COLOR_STORAGE_KEY = "studyflow.notebook.pen-color";
 const NOTEBOOK_PEN_WIDTH_STORAGE_KEY = "studyflow.notebook.pen-width";
@@ -341,12 +342,13 @@ export default function NotebookEditor() {
   const [editorInsertion, setEditorInsertion] = useState<{ id: number; html: string } | null>(null);
   const [zoom, setZoom] = useState(() => {
     const stored = Number(loadStringStorage(NOTEBOOK_ZOOM_STORAGE_KEY));
-    return Number.isFinite(stored) && stored > 0 ? clamp(stored, 0.5, 2.5) : 1;
+    return Number.isFinite(stored) && stored > 0 ? clamp(stored, 0.35, 2.5) : 1;
   });
   const [zoomMode, setZoomMode] = useState<ZoomMode>(() => {
     const stored = loadStringStorage(NOTEBOOK_ZOOM_MODE_STORAGE_KEY);
-    return stored === "width" || stored === "page" ? stored : "manual";
+    return stored === "width" || stored === "manual" ? stored : "page";
   });
+  const [pagesCollapsed, setPagesCollapsed] = useState(() => loadStringStorage(NOTEBOOK_PAGES_COLLAPSED_STORAGE_KEY) === "1");
   const [pageOrientation, setPageOrientation] = useState<"portrait" | "landscape">(() =>
     loadStringStorage(NOTEBOOK_ORIENTATION_STORAGE_KEY) === "landscape" ? "landscape" : "portrait"
   );
@@ -427,6 +429,10 @@ export default function NotebookEditor() {
   }, [zoomMode]);
 
   useEffect(() => {
+    window.localStorage.setItem(NOTEBOOK_PAGES_COLLAPSED_STORAGE_KEY, pagesCollapsed ? "1" : "0");
+  }, [pagesCollapsed]);
+
+  useEffect(() => {
     window.localStorage.setItem(NOTEBOOK_ORIENTATION_STORAGE_KEY, pageOrientation);
   }, [pageOrientation]);
 
@@ -467,12 +473,12 @@ export default function NotebookEditor() {
     if (!container) return;
     const pageWidth = pageOrientation === "landscape" ? 1123 : 794;
     const pageHeight = pageOrientation === "landscape" ? 794 : 1123;
-    const availableWidth = Math.max(320, container.clientWidth - 76);
-    const availableHeight = Math.max(420, window.innerHeight - 226);
+    const availableWidth = Math.max(280, container.clientWidth - 56);
+    const availableHeight = Math.max(320, container.clientHeight - 48);
     const next = zoomMode === "width"
       ? availableWidth / pageWidth
       : Math.min(availableWidth / pageWidth, availableHeight / pageHeight);
-    setZoom(clamp(next, 0.5, 1.5));
+    setZoom(clamp(next, 0.35, 1.5));
   }, [pageOrientation, zoomMode]);
 
   useEffect(() => {
@@ -487,11 +493,11 @@ export default function NotebookEditor() {
       observer.disconnect();
       window.removeEventListener("resize", updateFittedZoom);
     };
-  }, [expandedEditor, floraOpen, updateFittedZoom, zoomMode]);
+  }, [expandedEditor, floraOpen, pagesCollapsed, updateFittedZoom, zoomMode]);
 
   const setManualZoom = useCallback((next: number | ((value: number) => number)) => {
     setZoomMode("manual");
-    setZoom((current) => clamp(typeof next === "function" ? next(current) : next, 0.5, 2.5));
+    setZoom((current) => clamp(typeof next === "function" ? next(current) : next, 0.35, 2.5));
   }, []);
 
   // Zoom via mouse wheel (Ctrl+scroll) or pinch (touch)
@@ -2454,6 +2460,8 @@ export default function NotebookEditor() {
               pageMeta={pageMeta}
               notebookId={id}
               hasActivity={(pageId) => aiActivities.some((activity) => activity.pageId === pageId)}
+              collapsed={pagesCollapsed}
+              onToggleCollapsed={() => setPagesCollapsed((current) => !current)}
             />
           )}
 

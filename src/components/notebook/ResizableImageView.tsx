@@ -16,6 +16,7 @@ export function ResizableImageView({ node, updateAttributes, deleteNode, selecte
   const width = (node.attrs.width as number | string | null) ?? null;
   const alignment = (node.attrs.alignment as "left" | "center" | "right" | null) ?? "center";
   const transparent = Boolean(node.attrs.transparent);
+  const medicalAsset = Boolean(node.attrs.medicalAsset);
   const wrap = Boolean(node.attrs.wrap);
   const rotation = Number(node.attrs.rotation || 0);
   const cropEnabled = Boolean(node.attrs.cropEnabled);
@@ -71,7 +72,7 @@ export function ResizableImageView({ node, updateAttributes, deleteNode, selecte
     <NodeViewWrapper
       ref={wrapperRef}
       as="div"
-      className={`nb-img-wrap ${transparent ? "is-transparent" : ""} ${floating ? "is-wrapped" : ""}`}
+      className={`nb-img-wrap ${transparent ? "is-transparent" : ""} ${medicalAsset ? "is-medical-asset" : ""} ${floating ? "is-wrapped" : ""}`}
       style={floating ? {
         display: "block",
         float: alignment,
