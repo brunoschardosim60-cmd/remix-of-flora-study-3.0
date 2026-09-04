@@ -473,8 +473,12 @@ export default function NotebookEditor() {
     if (!container) return;
     const pageWidth = pageOrientation === "landscape" ? 1123 : 794;
     const pageHeight = pageOrientation === "landscape" ? 794 : 1123;
+    const containerTop = Math.max(0, container.getBoundingClientRect().top);
+    // Mede somente o trecho realmente visível. O container pode crescer com a
+    // folha e, nesse caso, clientHeight sozinho faria "Página" parecer 100%.
+    const visibleViewportHeight = window.innerHeight - containerTop - 94;
     const availableWidth = Math.max(280, container.clientWidth - 56);
-    const availableHeight = Math.max(320, container.clientHeight - 48);
+    const availableHeight = Math.max(300, Math.min(container.clientHeight - 48, visibleViewportHeight));
     const next = zoomMode === "width"
       ? availableWidth / pageWidth
       : Math.min(availableWidth / pageWidth, availableHeight / pageHeight);
