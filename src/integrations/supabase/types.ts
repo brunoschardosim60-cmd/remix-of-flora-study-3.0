@@ -1061,6 +1061,87 @@ export type Database = {
           },
         ]
       }
+      medicine_content_reports: {
+        Row: {
+          content_version: string
+          created_at: string
+          description: string
+          id: string
+          reviewed_at: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          content_version?: string
+          created_at?: string
+          description: string
+          id?: string
+          reviewed_at?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          content_version?: string
+          created_at?: string
+          description?: string
+          id?: string
+          reviewed_at?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      medicine_progress: {
+        Row: {
+          answered: Json
+          case_progress: Json
+          case_step: number
+          content_version: string
+          created_at: string
+          favorites: Json
+          last_section: string
+          learning_state: Json
+          level: string
+          study_goal: string
+          study_hours: number
+          updated_at: string
+          user_id: string
+          wrong_items: Json
+        }
+        Insert: {
+          answered?: Json
+          case_progress?: Json
+          case_step?: number
+          content_version?: string
+          created_at?: string
+          favorites?: Json
+          last_section?: string
+          learning_state?: Json
+          level?: string
+          study_goal?: string
+          study_hours?: number
+          updated_at?: string
+          user_id: string
+          wrong_items?: Json
+        }
+        Update: {
+          answered?: Json
+          case_progress?: Json
+          case_step?: number
+          content_version?: string
+          created_at?: string
+          favorites?: Json
+          last_section?: string
+          learning_state?: Json
+          level?: string
+          study_goal?: string
+          study_hours?: number
+          updated_at?: string
+          user_id?: string
+          wrong_items?: Json
+        }
+        Relationships: []
+      }
       notebook_ai_activities: {
         Row: {
           created_at: string
