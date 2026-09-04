@@ -1,6 +1,6 @@
 import { Component, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
-import { ContactShadows, Environment, Grid, Lightformer, OrbitControls, useGLTF } from "@react-three/drei";
+import { Environment, Grid, Lightformer, OrbitControls, useGLTF } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import { ACESFilmicToneMapping, Box3, BufferAttribute, Color, DoubleSide, Mesh, MeshPhysicalMaterial, Object3D, PCFSoftShadowMap, Plane, SRGBColorSpace, Vector2, Vector3 } from "three";
 import { mergeGeometries, mergeVertices } from "three/examples/jsm/utils/BufferGeometryUtils.js";
@@ -452,11 +452,7 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
     const next = { ...layers, [layer]: { ...layers[layer], visible: becomingVisible } };
     if (!mixableLayerOrder.some((item) => next[item].visible)) next.surface = { ...next.surface, visible: true };
     const visible = mixableLayerOrder.filter((item) => next[item].visible);
-    if (visible.length > 1 && layersExploded) {
-      visible.forEach((item) => {
-        next[item] = { ...next[item], opacity: 1 };
-      });
-    } else if (visible.length > 1) {
+    if (visible.length > 1) {
       visible.forEach((item) => {
         // Uma camada isolada usa opacidade total. Ao montar o corpo, convertemos
         // apenas valores ainda intactos para o perfil de mistura recomendado.
@@ -468,6 +464,7 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
       next[visible[0]] = { ...next[visible[0]], opacity: 1 };
     }
     setLayers(next);
+    setLayersExploded(false);
     setSystem(visible.length === 1 ? visible[0] : "all");
     setFocusSelected(false);
   };
@@ -787,7 +784,7 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
                     <button className="med-3d-layer-visibility" aria-pressed={state.visible} onClick={() => updateLayerVisibility(layer)} aria-label={`${state.visible ? "Ocultar" : "Mostrar"} ${meta.label}`}>
                       {state.visible ? <Eye /> : <EyeOff />}
                     </button>
-                    <button className="med-3d-layer-name" onClick={() => changeSystem(layer)} title={`Isolar ${meta.label}`}>
+                    <button className="med-3d-layer-name" onClick={() => updateLayerVisibility(layer)} aria-pressed={state.visible} title={`${state.visible ? "Ocultar" : "Adicionar"} ${meta.label} ${state.visible ? "da" : "à"} composição`}>
                       <i /><span><strong>{meta.label}</strong><small>{meta.description}</small></span>
                     </button>
                     <label>
@@ -812,7 +809,7 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
             <ThreeModelErrorBoundary onError={() => undefined} fallback={<Anatomy3DLoadFailure />}>
             <Suspense fallback={<Anatomy3DLoadingFallback />}>
               <Canvas
-                shadows={!performanceComposition}
+                shadows={false}
                 frameloop={autoRotate ? "always" : "demand"}
                 dpr={[0.75, performanceComposition ? Math.min(1, renderPolicy.maxDpr) : renderPolicy.maxDpr]}
                 camera={{ position: [4.2, 1.4, 9.5], fov: 36, near: 0.1, far: 80 }}
@@ -821,12 +818,11 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
               >
                 <RendererAppearance realistic={realistic} />
                 <color attach="background" args={[realistic ? "#17201f" : "#edf3f0"]} />
-                <ambientLight intensity={realistic ? .36 : .48} />
-                <hemisphereLight args={[realistic ? "#f4eee7" : "#f9fffc", realistic ? "#26302e" : "#40554e", realistic ? .58 : .58]} />
-                <directionalLight position={[5, 8, 7]} intensity={realistic ? 1.7 : 1.1} color={realistic ? "#fff7ef" : "#ffffff"} castShadow shadow-mapSize={[renderPolicy.shadowMapSize, renderPolicy.shadowMapSize]} shadow-bias={-.0002} />
-                <directionalLight position={[-6, 3, 3]} intensity={realistic ? .5 : .35} color={realistic ? "#b8c9c4" : "#b9d7cd"} />
-                <directionalLight position={[0, 1.5, 8]} intensity={realistic ? .58 : .24} color="#fff4ed" />
-                <directionalLight position={[2, 2, -6]} intensity={realistic ? .4 : 0} color="#d8b6aa" />
+                <ambientLight intensity={realistic ? .62 : .58} />
+                <hemisphereLight args={[realistic ? "#f7f1eb" : "#f9fffc", realistic ? "#52605c" : "#52645e", realistic ? .72 : .68]} />
+                <directionalLight position={[5, 7, 7]} intensity={realistic ? .82 : .66} color={realistic ? "#fff7ef" : "#ffffff"} />
+                <directionalLight position={[-5, 7, 7]} intensity={realistic ? .82 : .66} color={realistic ? "#fff7ef" : "#ffffff"} />
+                <directionalLight position={[0, 2, -6]} intensity={realistic ? .24 : .16} color={realistic ? "#d8c7c0" : "#d6e1dd"} />
                 {realistic && !performanceComposition && <Environment resolution={renderPolicy.environmentResolution}>
                   <Lightformer form="rect" intensity={1.4} color="#fff8f2" position={[0, 6, 5]} rotation={[-Math.PI / 2, 0, 0]} scale={[9, 7, 1]} />
                   <Lightformer form="rect" intensity={.65} color="#d5ddd8" position={[-5, 1, 3]} rotation={[0, Math.PI / 2, 0]} scale={[5, 7, 1]} />
@@ -845,7 +841,6 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
                       <Suspense fallback={null}>{layers.nervous.visible && <AnimatedLayerGroup exploded={layersExploded} offset={[8, 0, -.42]}><DenseAnatomySystemModel integrated={compositeScene} opacity={layers.nervous.opacity} clipPlane={bodySectionPlane} realistic={detailedMaterials} quality={renderPolicy} path={compositeScene ? COMPOSITE_NERVOUS_PATH : DETAILED_NERVOUS_PATH} layer="nervous" sourceId={compositeScene ? "zAnatomy3D" : "vayuAnatomy3D"} selectedId={focusSelected ? selected?.id ?? null : null} onSelect={selectStructure} onHover={updateHoverLabel} onCatalogReady={registerDetailedCatalog} /></AnimatedLayerGroup>}</Suspense>
                   </>
                 </group>
-                {!performanceComposition && <ContactShadows position={[0, -4.46, 0]} opacity={realistic ? .46 : .34} scale={8} blur={realistic ? 2.1 : 2.6} far={5} frames={renderPolicy.contactShadowFrames} />}
                 <Grid position={[0, -4.45, 0]} args={[16, 16]} cellSize={0.5} cellThickness={0.45} cellColor={realistic ? "#4b3936" : "#a7bbb4"} sectionSize={2} sectionThickness={0.8} sectionColor={realistic ? "#725049" : "#7e9990"} fadeDistance={14} fadeStrength={1.2} infiniteGrid />
                 <CameraRig focus={cameraFocus} distance={cameraDistance / zoom} focusKey={focusKey} view={cameraView} autoRotate={autoRotate} />
               </Canvas>
@@ -1004,7 +999,10 @@ function prepareBodyPartsRoot(source: Object3D, kind: "skin" | "organs") {
     });
     const combined = mergeGeometries(geometries, false);
     if (!combined) throw new Error("Não foi possível consolidar a superfície corporal.");
-    const welded = mergeVertices(combined, .00045);
+    // Normais distintas impediam o merge dos vértices duplicados na linha
+    // sagital do modelo. Soldamos apenas pela posição e recalculamos a luz.
+    combined.deleteAttribute("normal");
+    const welded = mergeVertices(combined, .003);
     welded.computeVertexNormals();
     welded.computeBoundingBox();
     welded.computeBoundingSphere();
