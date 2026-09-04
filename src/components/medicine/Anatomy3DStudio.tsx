@@ -178,7 +178,7 @@ const SYSTEM_OVERVIEWS: Record<Exclude<Anatomy3DSystemId, "all">, Anatomy3DStruc
   skeletal: { id: "overview:skeletal", name: "Sistema esquelético", layer: "skeletal", regionId: "whole", region: "Corpo completo", system: "Esquelético", summary: "Visão completa dos ossos e eixos de suporte do corpo.", function: "Organiza o estudo do suporte, da proteção e das relações articulares.", sourceId: "zAnatomy3D", focus: [0, -.15, 0], focusDistance: 15.8, color: "#d8c9aa", parts: [] },
   vascular: { id: "overview:vascular", name: "Sistema vascular", layer: "vascular", regionId: "whole", region: "Corpo completo", system: "Cardiovascular", summary: "Visão conjunta das principais artérias e veias.", function: "Mostra a distribuição vascular e suas relações espaciais da cabeça aos membros.", sourceId: "zAnatomy3D", focus: [0, -.15, 0], focusDistance: 15.8, color: "#cb4f61", parts: [] },
   nervous: { id: "overview:nervous", name: "Sistema nervoso", layer: "nervous", regionId: "whole", region: "Corpo completo", system: "Nervoso", summary: "Visão do encéfalo, da medula e da rede nervosa periférica.", function: "Permite reconhecer a continuidade entre o sistema nervoso central e os nervos periféricos.", sourceId: "zAnatomy3D", focus: [0, -.15, 0], focusDistance: 15.8, color: "#e5a942", parts: [] },
-  organs: { id: "overview:organs", name: "Órgãos internos", layer: "organs", regionId: "whole", region: "Corpo completo", system: "Sistemas viscerais", summary: "Visão contextual dos órgãos internos no corpo, sem abrir automaticamente o cérebro ou outro órgão.", function: "Permite comparar posição, volume e relações entre vísceras antes de isolar uma estrutura.", sourceId: "zAnatomy3D", focus: [0, .65, 0], focusDistance: 9.6, color: "#8f5878", parts: [] },
+  organs: { id: "overview:organs", name: "Órgãos internos", layer: "organs", regionId: "whole", region: "Corpo completo", system: "Sistemas viscerais", summary: "Visão contextual dos órgãos internos no corpo, sem abrir automaticamente o cérebro ou outro órgão.", function: "Permite comparar posição, volume e relações entre vísceras antes de isolar uma estrutura.", sourceId: "zAnatomy3D", focus: [0, .65, 0], focusDistance: 15.8, color: "#8f5878", parts: [] },
 };
 const BODY_PARTS_SOURCE_BOUNDS = new Box3(new Vector3(-1.33905, -3.534865, -0.187946), new Vector3(1.33396, 3.18329, 0.971386));
 // Todos os subconjuntos Z-Anatomy compartilham o mesmo sistema de coordenadas.
@@ -395,7 +395,7 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
     : null;
   const wholeBodySystemFocus: [number, number, number] = region === "whole" && system === "organs" ? [0, .65, 0] : regionMeta.focus;
   const baseCameraFocus = focusSelected && selected && selectedIsVisible ? selected.focus : wholeBodySystemFocus;
-  const wholeBodySystemDistance = region === "whole" && system === "organs" ? 9.6 : regionMeta.distance;
+  const wholeBodySystemDistance = regionMeta.distance;
   const baseCameraDistance = focusSelected && selected && selectedIsVisible ? selected.focusDistance : wholeBodySystemDistance;
   const cameraFocus = detailedCameraFocus ?? baseCameraFocus;
   const cameraDistance = (detailedCameraDistance ?? baseCameraDistance)
@@ -742,7 +742,7 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
             </div>
           </div>
 
-          {system === "organs" && selected && <div className="med-3d-organ-stagebar" aria-label="Modo de visualização do órgão">
+          {system === "organs" && selected && !selected.id.startsWith("overview:") && <div className="med-3d-organ-stagebar" aria-label="Modo de visualização do órgão">
             <div className="med-3d-organ-stage-title"><span>ÓRGÃO SELECIONADO</span><strong>{selected.name}</strong></div>
             <div className="med-3d-organ-modes">
               {([
