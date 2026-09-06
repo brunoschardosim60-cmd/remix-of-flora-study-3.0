@@ -42,14 +42,14 @@ export const notebookMedicalAssets: NotebookMedicalAsset[] = [
   atlasAsset("nervous", "Sistema nervoso", "Medula, trajetos nervosos e relações posteriores.", "nervous", "Posterior"),
   atlasAsset("organs", "Órgãos internos", "Posição aproximada e relações dos principais órgãos.", "organs", "Anterior"),
   atlasAsset("organs", "Órgãos internos", "Relações viscerais observadas posteriormente.", "organs", "Posterior"),
-  ...[
+  ...([
     ["organ-heart", "Coração · vista anterior", "Morfologia externa, vasos coronários e origem dos grandes vasos.", "heart-anterior-v1.png", 390],
     ["organ-brain", "Encéfalo · vista lateral", "Hemisfério cerebral, cerebelo e tronco encefálico em recorte isolado.", "brain-lateral-v1.png", 520],
     ["organ-lungs", "Pulmões e vias aéreas", "Traqueia, brônquios principais, lobos pulmonares e relações do hilo.", "lungs-anterior-v1.png", 410],
     ["organ-liver", "Fígado e vesícula biliar", "Faces hepáticas, vesícula biliar e estruturas vasculares do hilo.", "liver-inferior-v1.png", 540],
     ["organ-urinary", "Sistema urinário isolado", "Rins, suprarrenais, ureteres e bexiga em continuidade anatômica.", "urinary-system-anterior-v1.png", 390],
     ["organ-digestive", "Trato digestório isolado", "Esôfago, estômago, fígado, pâncreas e alças intestinais em conjunto.", "digestive-system-anterior-v1.png", 400],
-  ].map(([id, label, description, file, suggestedWidth]) => ({
+  ] as const).map(([id, label, description, file, suggestedWidth]) => ({
     id,
     label,
     description,

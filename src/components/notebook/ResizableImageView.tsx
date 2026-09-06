@@ -11,7 +11,9 @@ import { AlignCenter, AlignLeft, AlignRight, Crop, RotateCcw, RotateCw, Trash2, 
 export function ResizableImageView({ node, updateAttributes, deleteNode, selected }: NodeViewProps) {
   const imgRef = useRef<HTMLImageElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
   const [resizing, setResizing] = useState(false);
+  const [naturalRatio, setNaturalRatio] = useState(1);
 
   const width = (node.attrs.width as number | string | null) ?? null;
   const alignment = (node.attrs.alignment as "left" | "center" | "right" | null) ?? "center";
@@ -25,28 +27,31 @@ export function ResizableImageView({ node, updateAttributes, deleteNode, selecte
   const cropY = Number(node.attrs.cropY ?? 50);
   const cropZoom = Number(node.attrs.cropZoom ?? 1);
   const imageWidth = floatingWidth(width, wrap && alignment !== "center");
-  const aspectRatio = cropAspect === "1:1" ? "1 / 1" : cropAspect === "16:9" ? "16 / 9" : "4 / 3";
+  const turned = Math.abs(Math.round(rotation / 90)) % 2 === 1;
+  const aspectRatio = cropEnabled ? (cropAspect === "1:1" ? 1 : cropAspect === "16:9" ? 16 / 9 : 4 / 3) : turned ? 1 / naturalRatio : naturalRatio;
 
   const onPointerDown = useCallback(
     (e: React.PointerEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      const img = imgRef.current;
-      if (!img) return;
+      const viewport = viewportRef.current;
+      if (!viewport) return;
       const startX = e.clientX;
-      const rect = img.getBoundingClientRect();
-      const startW = img.offsetWidth || rect.width;
+      const rect = viewport.getBoundingClientRect();
+      const startW = viewport.offsetWidth || rect.width;
       const visualToLocal = rect.width > 0 ? startW / rect.width : 1;
       const target = e.currentTarget as HTMLElement;
       target.setPointerCapture(e.pointerId);
       setResizing(true);
 
       const onMove = (ev: PointerEvent) => {
+        if (ev.pointerId !== e.pointerId) return;
         const delta = (ev.clientX - startX) * visualToLocal;
         const next = Math.max(80, Math.min(1400, startW + delta));
         updateAttributes({ width: Math.round(next) });
       };
       const onUp = (ev: PointerEvent) => {
+        if (ev.pointerId !== e.pointerId) return;
         try { target.releasePointerCapture(ev.pointerId); } catch { /* noop */ }
         window.removeEventListener("pointermove", onMove);
         window.removeEventListener("pointerup", onUp);
@@ -89,7 +94,7 @@ export function ResizableImageView({ node, updateAttributes, deleteNode, selecte
         style={{
           position: "relative",
           display: floating ? "block" : "inline-block",
-          width: cropEnabled ? imageWidth : undefined,
+          width: imageWidth,
           maxWidth: "100%",
           outline: "none",
           borderRadius: 8,
@@ -117,11 +122,13 @@ export function ResizableImageView({ node, updateAttributes, deleteNode, selecte
           <button type="button" className="nb-image-crop-reset" onClick={() => updateAttributes({ cropX: 50, cropY: 50, cropZoom: 1, cropAspect: "4:3" })}>Redefinir</button>
         </div>}
         <div
+          ref={viewportRef}
           className="nb-image-viewport"
           style={{
-            width: cropEnabled ? "100%" : floating ? "100%" : imageWidth,
+            position: "relative",
+            width: "100%",
             maxWidth: "100%",
-            aspectRatio: cropEnabled ? aspectRatio : undefined,
+            aspectRatio,
             overflow: cropEnabled ? "hidden" : "visible",
             borderRadius: transparent ? 0 : 8,
           } as React.CSSProperties}
@@ -132,16 +139,23 @@ export function ResizableImageView({ node, updateAttributes, deleteNode, selecte
             alt={(node.attrs.alt as string) || ""}
             title={(node.attrs.title as string) || undefined}
             draggable={false}
+            onLoad={(event) => {
+              const image = event.currentTarget;
+              if (image.naturalHeight) setNaturalRatio(image.naturalWidth / image.naturalHeight);
+            }}
             style={{
+              position: "absolute",
+              left: "50%",
+              top: "50%",
               display: "block",
-              width: "100%",
-              maxWidth: "100%",
-              height: cropEnabled ? "100%" : "auto",
+              width: turned ? `${100 / aspectRatio}%` : "100%",
+              maxWidth: "none",
+              height: turned ? `${100 * aspectRatio}%` : "100%",
               objectFit: cropEnabled ? "cover" : "contain",
               objectPosition: cropEnabled ? `${cropX}% ${cropY}%` : "center",
               borderRadius: transparent ? 0 : 8,
               background: "transparent",
-              transform: `scale(${cropEnabled ? cropZoom : 1}) rotate(${rotation}deg)`,
+              transform: `translate(-50%, -50%) rotate(${rotation}deg) scale(${cropEnabled ? cropZoom : 1})`,
               transformOrigin: "center",
               cursor: "grab",
               userSelect: "none",
@@ -150,9 +164,19 @@ export function ResizableImageView({ node, updateAttributes, deleteNode, selecte
           />
         </div>
         {/* Resize handle (bottom-right) */}
-        <span
+        {selected && <span
           role="slider"
           aria-label="Redimensionar imagem"
+          tabIndex={0}
+          aria-valuemin={80}
+          aria-valuemax={1400}
+          aria-valuenow={typeof width === "number" ? width : 720}
+          onKeyDown={(event) => {
+            if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+            event.preventDefault();
+            const current = viewportRef.current?.clientWidth ?? 720;
+            updateAttributes({ width: Math.max(80, Math.min(1400, current + (event.key === "ArrowRight" ? 10 : -10))) });
+          }}
           onPointerDown={onPointerDown}
           style={{
             position: "absolute",
@@ -170,7 +194,7 @@ export function ResizableImageView({ node, updateAttributes, deleteNode, selecte
             transition: "opacity 120ms ease",
             zIndex: 5,
           }}
-        />
+        />}
       </div>
     </NodeViewWrapper>
   );

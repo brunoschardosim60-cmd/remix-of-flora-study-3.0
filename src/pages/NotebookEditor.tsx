@@ -68,7 +68,6 @@ import { GHOST_ENABLED_KEY } from "@/components/notebook/GhostTextExtension";
 import "@/components/notebook/notebook-premium.css";
 import { ShareNotebookDialog } from "@/components/notebook/ShareNotebookDialog";
 import { StickyNote, type StickyNoteData } from "@/components/notebook/StickyNote";
-import { FocusMode } from "@/components/notebook/FocusMode";
 import { createTopic, loadTopics, type Flashcard, type Subject } from "@/lib/studyData";
 import { saveTopicsForUser } from "@/lib/studyStateStore";
 import { toLocalDateStr } from "@/lib/dateUtils";
@@ -76,7 +75,9 @@ import { loadJsonStorage, loadStringStorage } from "@/lib/storage";
 import { getNotebookAIActivities, recordAIActivity, type AIActivityItem } from "@/lib/aiActivityStore";
 import { scheduleSpacedReviews } from "@/lib/spacedReviews";
 import type { Json } from "@/integrations/supabase/types";
-import { enqueuePageUpdate, flushQueue, pendingCount } from "@/lib/notebookOfflineQueue";
+import { discardPendingPage, recoverPendingPage } from "@/lib/notebookOfflineQueue";
+import { discardUnsavedPage, getUnsavedPageSnapshot, useNotebookAutosave } from "@/hooks/useNotebookAutosave";
+import { useNotebookViewport } from "@/hooks/useNotebookViewport";
 import { getTemplatesForSubject, suggestTagsFromText } from "@/lib/notebookTemplates";
 import type { NotebookMedicalAsset } from "@/lib/notebookMedicalAssets";
 import {
@@ -88,6 +89,7 @@ import {
   notebookToPlainText,
 } from "@/lib/notebookExport";
 import DOMPurify from "dompurify";
+import "@/components/notebook/notebook-workspace.css";
 
 type PageTemplate = "blank" | "lined" | "grid" | "dotted" | "cornell" | "clinical" | "anatomy" | "physics" | "chemistry" | "essay";
 type ZoomMode = "manual" | "width" | "page";
@@ -329,16 +331,17 @@ export default function NotebookEditor() {
   const [currentPage, setCurrentPage] = useState(0);
   const page = pages[currentPage];
   const [loading, setLoading] = useState(true);
-  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error" | "offline">("idle");
-  const [pendingOffline, setPendingOffline] = useState<number>(0);
   const [darkMode, setDarkMode] = useState(false);
   const [mode, setMode] = useState<"text" | "draw">("text");
   const [pageTemplate, setPageTemplate] = useState<PageTemplate>("blank");
   // O layout normal começa com as páginas visíveis; tela cheia vira uma escolha.
   const [expandedEditor, setExpandedEditor] = useState(false);
   const [focusModeActive, setFocusModeActive] = useState(false);
+  const [drawWithTouch, setDrawWithTouch] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [medicalAssetPickerOpen, setMedicalAssetPickerOpen] = useState(false);
+  const [studyToolsOpen, setStudyToolsOpen] = useState(false);
+  const [textToolbarHost, setTextToolbarHost] = useState<HTMLDivElement | null>(null);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [exporting, setExporting] = useState<NotebookExportAction | null>(null);
   const [editorInsertion, setEditorInsertion] = useState<{ id: number; html: string } | null>(null);
@@ -350,7 +353,7 @@ export default function NotebookEditor() {
     const stored = loadStringStorage(NOTEBOOK_ZOOM_MODE_STORAGE_KEY);
     return stored === "width" || stored === "manual" ? stored : "page";
   });
-  const [pagesCollapsed, setPagesCollapsed] = useState(() => loadStringStorage(NOTEBOOK_PAGES_COLLAPSED_STORAGE_KEY) === "1");
+  const [pagesCollapsed, setPagesCollapsed] = useState(() => loadStringStorage(NOTEBOOK_PAGES_COLLAPSED_STORAGE_KEY) !== "0");
   const [pageFlow, setPageFlow] = useState<PageFlow>(() => loadStringStorage(NOTEBOOK_PAGE_FLOW_STORAGE_KEY) === "pages" ? "pages" : "continuous");
   const [pageOrientation, setPageOrientation] = useState<"portrait" | "landscape">(() =>
     loadStringStorage(NOTEBOOK_ORIENTATION_STORAGE_KEY) === "landscape" ? "landscape" : "portrait"
@@ -407,7 +410,6 @@ export default function NotebookEditor() {
   const [pdfImporting, setPdfImporting] = useState(false);
   const isMedicalNotebook = MEDICAL_NOTEBOOK_SUBJECTS.has(notebook?.subject || selectedSubject);
 
-  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const solveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const statusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const solveCacheRef = useRef<Map<string, NotebookMathSolution[]>>(new Map());
@@ -469,7 +471,6 @@ export default function NotebookEditor() {
 
   useEffect(() => {
     return () => {
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
       if (solveTimerRef.current) clearTimeout(solveTimerRef.current);
       if (statusTimerRef.current) clearTimeout(statusTimerRef.current);
     };
@@ -505,38 +506,26 @@ export default function NotebookEditor() {
       observer.disconnect();
       window.removeEventListener("resize", updateFittedZoom);
     };
-  }, [expandedEditor, floraOpen, pagesCollapsed, updateFittedZoom, zoomMode]);
+  }, [loading, focusModeActive, expandedEditor, floraOpen, pagesCollapsed, updateFittedZoom, zoomMode]);
 
   const setManualZoom = useCallback((next: number | ((value: number) => number)) => {
     setZoomMode("manual");
     setZoom((current) => clamp(typeof next === "function" ? next(current) : next, 0.35, 2.5));
   }, []);
 
-  // Zoom via mouse wheel (Ctrl+scroll) or pinch (touch)
+  useNotebookViewport(editorContainerRef, !loading, user?.id && currentPageData?.id ? `${user.id}:${currentPageData.id}` : undefined, zoom, setManualZoom);
+
   useEffect(() => {
-    const container = editorContainerRef.current;
-    if (!container) return;
+    if (loading || !user?.id || !id || !currentPageData?.id) return;
+    try { localStorage.setItem(`notebook-last-page:${user.id}:${id}`, JSON.stringify(currentPageData.id)); } catch { /* Optional preference */ }
+  }, [loading, user?.id, id, currentPageData?.id]);
 
-    const handleWheel = (e: WheelEvent) => {
-      if (e.ctrlKey) {
-        e.preventDefault();
-        setZoomMode("manual");
-        setZoom((prev) => clamp(prev - e.deltaY * 0.001, 0.5, 2.5));
-      }
-    };
-
-    const handleGestureStart = (e: Event) => {
-      e.preventDefault();
-    };
-
-    container.addEventListener("wheel", handleWheel, { passive: false });
-    container.addEventListener("gesturestart", handleGestureStart, { passive: false });
-
-    return () => {
-      container.removeEventListener("wheel", handleWheel);
-      container.removeEventListener("gesturestart", handleGestureStart);
-    };
-  }, []);
+  useEffect(() => {
+    if (!focusModeActive) return;
+    const exit = (event: KeyboardEvent) => { if (event.key === "Escape") setFocusModeActive(false); };
+    window.addEventListener("keydown", exit);
+    return () => window.removeEventListener("keydown", exit);
+  }, [focusModeActive]);
 
   const pageKey = id && currentPageData?.id ? `${id}:${currentPageData.id}` : undefined;
   const currentLink = pageKey ? pageLinks[pageKey] : undefined;
@@ -546,17 +535,16 @@ export default function NotebookEditor() {
   useEffect(() => {
     if (!pageKey) return;
     const saved = loadJsonStorage<Record<string, PageTemplate>>(NOTEBOOK_TEMPLATE_STORAGE_KEY) ?? {};
-    setPageTemplate(saved[pageKey] ?? currentPageData?.template ?? "blank");
+    setPageTemplate(currentPageData?.template ?? saved[pageKey] ?? "blank");
   }, [currentPageData?.template, pageKey]);
 
   const changePageTemplate = useCallback((template: PageTemplate) => {
     setPageTemplate(template);
     if (!pageKey) return;
     const saved = loadJsonStorage<Record<string, PageTemplate>>(NOTEBOOK_TEMPLATE_STORAGE_KEY) ?? {};
-    window.localStorage.setItem(NOTEBOOK_TEMPLATE_STORAGE_KEY, JSON.stringify({ ...saved, [pageKey]: template }));
+    try { window.localStorage.setItem(NOTEBOOK_TEMPLATE_STORAGE_KEY, JSON.stringify({ ...saved, [pageKey]: template })); } catch { /* autosave reports storage errors */ }
     if (currentPageData?.id) {
       setPages((currentPages) => currentPages.map((currentPageItem) => currentPageItem.id === currentPageData.id ? { ...currentPageItem, template } : currentPageItem));
-      void supabase.from("notebook_pages").update({ template }).eq("id", currentPageData.id);
     }
   }, [currentPageData?.id, pageKey]);
 
@@ -626,86 +614,25 @@ export default function NotebookEditor() {
     );
   }, [currentPage, pageKey]);
 
-  // Save to Supabase with debounce
+  const { saveStatus, pendingOffline, saveError, retrySave } = useNotebookAutosave(user?.id,
+    !loading && currentPageData && currentPageData.user_id === user?.id ? {
+      pageId: currentPageData.id,
+      content: currentPageData.content,
+      drawing_data: drawingToJson(currentPageData.drawing_data ?? emptyDrawing),
+      tags: currentMeta?.tags ?? currentPageData.tags,
+      template: currentPageData.template,
+    } : null);
+
   useEffect(() => {
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    setSaveStatus("saving");
-
-    saveTimerRef.current = setTimeout(async () => {
-      if (!id || !currentPageData?.id) {
-        setSaveStatus("saved");
-        return;
-      }
-
-      const payload = {
-        content: currentPageData.content,
-        drawing_data: drawingToJson(currentPageData.drawing_data ?? emptyDrawing),
-        tags: currentMeta?.tags ?? [],
-      };
-      recordPageVersion(currentPageData);
-
-      // Offline: queue and report
-      if (typeof navigator !== "undefined" && navigator.onLine === false) {
-        enqueuePageUpdate({ pageId: currentPageData.id, ...payload });
-        setPendingOffline(pendingCount());
-        setSaveStatus("offline");
-        return;
-      }
-
-      try {
-        const { error } = await supabase
-          .from("notebook_pages")
-          .update(payload)
-          .eq("id", currentPageData.id);
-
-        if (error) throw error;
-        setSaveStatus("saved");
-      } catch (error) {
-        console.error("Failed to save page:", error);
-        // Cai pra offline queue ao invés de perder dados
-        enqueuePageUpdate({ pageId: currentPageData.id, ...payload });
-        setPendingOffline(pendingCount());
-        setSaveStatus("offline");
-      }
-    }, 1000);
-
-    return () => {
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    };
-  }, [currentPageData, id, currentMeta?.tags, recordPageVersion]);
-
-  // Offline-first: tenta dar flush ao carregar e quando a conexão volta
-  useEffect(() => {
-    setPendingOffline(pendingCount());
-    const doFlush = async () => {
-      if (typeof navigator !== "undefined" && navigator.onLine === false) return;
-      const before = pendingCount();
-      if (before === 0) return;
-      const { ok, fail } = await flushQueue();
-      const remaining = pendingCount();
-      setPendingOffline(remaining);
-      if (ok > 0 && remaining === 0) {
-        setSaveStatus("saved");
-        toast.success(`Sincronizado: ${ok} alteraç${ok === 1 ? "ão" : "ões"} salva${ok === 1 ? "" : "s"}.`);
-      } else if (fail > 0) {
-        setSaveStatus("offline");
-      }
-    };
-    void doFlush();
-    const onOnline = () => void doFlush();
-    const onOffline = () => setSaveStatus("offline");
-    window.addEventListener("online", onOnline);
-    window.addEventListener("offline", onOffline);
-    return () => {
-      window.removeEventListener("online", onOnline);
-      window.removeEventListener("offline", onOffline);
-    };
-  }, []);
+    if (loading || !currentPageData) return;
+    const timer = window.setTimeout(() => recordPageVersion(currentPageData), 2000);
+    return () => window.clearTimeout(timer);
+  }, [loading, currentPageData, recordPageVersion]);
 
   // Load notebook and pages
   useEffect(() => {
     async function loadNotebook() {
-      if (!id) return;
+      if (!id || !user?.id) return;
       setLoading(true);
       try {
         const { data: notebookData, error: notebookError } = await supabase
@@ -726,7 +653,20 @@ export default function NotebookEditor() {
           .order("page_number", { ascending: true });
 
         if (pagesError) throw pagesError;
-        setPages(pagesData.map(rowToNotebookPage));
+        const recoveredPages = pagesData.map((row) => {
+          if (row.user_id !== user.id) return rowToNotebookPage(row);
+          try {
+            const pending = getUnsavedPageSnapshot(user.id, row.id) ?? recoverPendingPage(user.id, row.id);
+            return rowToNotebookPage(pending ? { ...row, content: pending.content,
+              drawing_data: pending.drawing_data, tags: pending.tags, template: pending.template ?? row.template } : row);
+          } catch {
+            toast.error("Não foi possível recuperar a cópia local. Evite editar até exportar uma cópia.");
+            return rowToNotebookPage(row);
+          }
+        });
+        setPages(recoveredPages);
+        const lastPageId = loadJsonStorage<string>(`notebook-last-page:${user.id}:${id}`);
+        setCurrentPage(Math.max(0, recoveredPages.findIndex((item) => item.id === lastPageId)));
       } catch (error) {
         console.error("Failed to load notebook:", error);
         toast.error("Erro ao carregar caderno.");
@@ -736,7 +676,7 @@ export default function NotebookEditor() {
       }
     }
     loadNotebook();
-  }, [id, navigate]);
+  }, [id, navigate, user?.id]);
 
   // Auto-create the first page when a notebook has none yet.
   useEffect(() => {
@@ -1212,16 +1152,13 @@ export default function NotebookEditor() {
     const normalized = reordered.map((pageItem, index) => ({ ...pageItem, page_number: index + 1 }));
     setPages(normalized);
     setCurrentPage(Math.max(0, normalized.findIndex((pageItem) => pageItem.id === activePageId)));
-    setSaveStatus("saving");
     const results = await Promise.all(normalized.map((pageItem) => supabase.from("notebook_pages").update({ page_number: pageItem.page_number }).eq("id", pageItem.id)));
     if (results.some((result) => result.error)) {
       setPages(previousPages);
       setCurrentPage(Math.max(0, previousPages.findIndex((pageItem) => pageItem.id === activePageId)));
-      setSaveStatus("error");
       toast.error("A nova ordem não pôde ser salva.");
       return;
     }
-    setSaveStatus("saved");
   };
 
   const deletePage = async (targetIndex = currentPage) => {
@@ -1230,6 +1167,10 @@ export default function NotebookEditor() {
     if (!pageToDelete) return;
     const { error } = await supabase.from("notebook_pages").delete().eq("id", pageToDelete.id);
     if (error) { toast.error("Não foi possível excluir a página."); return; }
+    if (user?.id) {
+      try { discardPendingPage(user.id, pageToDelete.id); } catch { /* A exclusão remota já foi confirmada. */ }
+      discardUnsavedPage(user.id, pageToDelete.id);
+    }
     const background = pageToDelete.drawing_data?.backgroundImage;
     const backgroundIsShared = pages.some((otherPage) => otherPage.id !== pageToDelete.id && otherPage.drawing_data?.backgroundImage === background);
     if (!backgroundIsShared && background?.includes("/notebook-images/")) {
@@ -1252,16 +1193,13 @@ export default function NotebookEditor() {
     const previousTitle = notebook.title;
     setNotebook({ ...notebook, title: nextTitle });
     setTitleDraft(nextTitle);
-    setSaveStatus("saving");
     const { error } = await supabase.from("notebooks").update({ title: nextTitle }).eq("id", notebook.id);
     if (error) {
       setNotebook({ ...notebook, title: previousTitle });
       setTitleDraft(previousTitle);
-      setSaveStatus("error");
       toast.error("Não foi possível renomear o caderno.");
       return;
     }
-    setSaveStatus("saved");
   };
 
   const insertMedicalAsset = (asset: NotebookMedicalAsset, insertMode: "cutout" | "study") => {
@@ -2213,7 +2151,7 @@ export default function NotebookEditor() {
   }
 
   return (
-    <div className={`nb-editor-container min-h-dvh bg-background flex flex-col ${isMedicalNotebook ? "is-medical-notebook" : ""} ${expandedEditor ? "fixed inset-0 z-50 overflow-auto" : ""}`}
+    <div className={`nb-editor-container nb-workspace-v2 min-h-dvh bg-background flex flex-col ${focusModeActive ? "is-focused" : ""} ${studyToolsOpen ? "tools-expanded" : ""} ${isMedicalNotebook ? "is-medical-notebook" : ""} ${expandedEditor ? "fixed inset-0 z-50 overflow-auto" : ""}`}
       style={{
         ...(expandedEditor ? { touchAction: "pan-x pan-y pinch-zoom" } : {}),
         "--nb-notebook-accent": notebook?.cover_color || "#397563",
@@ -2243,20 +2181,22 @@ export default function NotebookEditor() {
               <div><small>{isMedicalNotebook ? `CADERNO MÉDICO · ${notebook?.subject || selectedSubject}` : notebook?.subject || selectedSubject || "CADERNO LIVRE"}</small><input className="nb-editor-title-input" value={titleDraft} onChange={(event) => setTitleDraft(event.target.value)} onBlur={() => void saveNotebookTitle()} onKeyDown={(event) => { if (event.key === "Enter") event.currentTarget.blur(); if (event.key === "Escape") { setTitleDraft(notebook?.title || "Sem título"); event.currentTarget.blur(); } }} aria-label="Nome do caderno" title="Clique para renomear" /></div>
             </div>
 
-            <div className={`nb-save-state ${saveStatus}`}>
+            <button type="button" className={`nb-save-state ${saveStatus}`} onClick={() => void retrySave()} title={saveError || "Sincronizar alterações agora"} aria-live="polite">
               {saveStatus === "saving" && <><RefreshCw className="animate-spin" /><span>Salvando</span></>}
-              {saveStatus === "saved" && <><Cloud /><span>Salvo</span></>}
+              {saveStatus === "saved" && <><Cloud /><span>Sincronizado</span></>}
               {saveStatus === "error" && <><CloudOff /><span>Erro ao salvar</span></>}
-              {saveStatus === "offline" && <><CloudOff /><span>Offline{pendingOffline > 0 ? ` · ${pendingOffline}` : ""}</span></>}
-            </div>
+              {saveStatus === "offline" && <><CloudOff /><span>Salvo neste dispositivo{pendingOffline > 0 ? ` · ${pendingOffline}` : ""}</span></>}
+            </button>
 
             <form className="nb-editor-search" onSubmit={(event) => { event.preventDefault(); searchAndJumpToPage(); }}>
               <Search /><Input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Buscar neste caderno…" aria-label="Buscar texto ou etiqueta no caderno" />
             </form>
 
             <div className="nb-editor-actions">
+              <button type="button" onClick={() => setStudyToolsOpen((open) => !open)} aria-expanded={studyToolsOpen} aria-controls="notebook-study-tools" title="Páginas, papel e ferramentas de estudo" aria-label="Páginas, papel e ferramentas de estudo"><LayoutTemplate /></button>
+              <button type="button" onClick={() => setFloraOpen((open) => !open)} aria-pressed={floraOpen} title="Estudar com a Flora" aria-label="Estudar com a Flora"><Sparkles /></button>
               <button type="button" onClick={() => setShareDialogOpen(true)} title="Compartilhar caderno" aria-label="Compartilhar caderno"><Share2 /></button>
-              <button type="button" onClick={() => setFocusModeActive((active) => !active)} title="Modo foco" aria-label="Alternar modo foco"><Eye /></button>
+              <button type="button" onClick={() => setFocusModeActive((active) => !active)} title={focusModeActive ? "Sair do foco (Esc)" : "Modo foco"} aria-pressed={focusModeActive} aria-label="Alternar modo foco"><Eye /></button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild><button type="button" title="Mais opções" aria-label="Mais opções do caderno"><MoreHorizontal /></button></DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-72">
@@ -2282,7 +2222,7 @@ export default function NotebookEditor() {
             </div>
           </div>
 
-          <div className="nb-editor-subline">
+          <div className="nb-editor-subline" id="notebook-study-tools" hidden={!studyToolsOpen}>
             <div className="nb-page-switcher">
               <button type="button" aria-label="Página anterior" onClick={() => setCurrentPage((pageIndex) => Math.max(0, pageIndex - 1))} disabled={currentPage === 0}><ChevronLeft /></button>
               <span><b>{currentPage + 1}</b> de {pages.length}</span>
@@ -2356,7 +2296,12 @@ export default function NotebookEditor() {
         </header>
       </div>
 
+      {saveStatus === "error" && <div className="nb-save-warning" role="alert"><CloudOff /><span>{saveError || "Há alterações que ainda não estão protegidas."}</span><button type="button" onClick={() => void retrySave()}>Tentar novamente</button><button type="button" onClick={() => setExportDialogOpen(true)}>Exportar cópia</button></div>}
+
       <NotebookStudioToolbar
+        drawWithTouch={drawWithTouch}
+        onToggleTouch={() => setDrawWithTouch((value) => !value)}
+        textTools={<div ref={setTextToolbarHost} className="nb-text-tools-host" />}
         mode={mode}
         onModeChange={setMode}
         drawTool={drawTool}
@@ -2414,63 +2359,8 @@ export default function NotebookEditor() {
       <NotebookExportDialog open={exportDialogOpen} onOpenChange={setExportDialogOpen} exporting={exporting} onExport={(action) => void handleNotebookExport(action)} />
 
       {/* Editor */}
-      {focusModeActive ? (
-        <FocusMode isActive={focusModeActive} onToggle={() => setFocusModeActive(false)}>
-          <div
-            ref={editorContainerRef}
-            className={`flex-1 overflow-auto w-full h-full`}
-          >
-            <div className="relative min-h-full">
-              <RichEditor
-                content={page?.content || ""}
-                onChange={handleContentChange}
-                userId={user!.id}
-                notebookId={id!}
-                darkMode={darkMode}
-                onToggleDarkMode={() => setDarkMode((d) => !d)}
-                 template={pageTemplate}
-                 zoom={zoom}
-                 orientation={pageOrientation}
-                 pageFlow={pageFlow}
-                wide={expandedEditor}
-                handwriting={handwritingMode}
-                showMargin={paperMargin}
-                backgroundImage={drawingState.backgroundImage}
-                insertionRequest={editorInsertion}
-                onInsertionHandled={handleInsertionHandled}
-                paperOverlay={
-                  <>
-                    <KonvaDrawingCanvas
-                      ref={canvasRef}
-                      strokes={drawingState.strokes}
-                      onStrokesChange={handleStrokesChange}
-                      active={mode === "draw"}
-                      penColor={penColor}
-                      penWidth={penWidth}
-                      tool={drawTool}
-                      brush={drawBrush}
-                      zoom={1}
-                      onSelectionChange={setSelectionBounds}
-                    />
-                    {drawingState.stickyNotes.map((note) => (
-                      <StickyNote
-                        key={note.id}
-                        note={note}
-                        active={mode === "draw"}
-                        onUpdate={(updated) => handleStickyNotesChange(drawingState.stickyNotes.map((n) => n.id === updated.id ? updated : n))}
-                        onDelete={(idToDelete) => handleStickyNotesChange(drawingState.stickyNotes.filter((n) => n.id !== idToDelete))}
-                      />
-                    ))}
-                  </>
-                }
-              />
-
-            </div>
-          </div>
-        </FocusMode>
-      ) : (
         <div className="nb-layout">
-          {!expandedEditor && (
+          {!expandedEditor && !focusModeActive && (
             <PageSidebarGrid
               pages={pages}
               currentPage={currentPage}
@@ -2493,6 +2383,8 @@ export default function NotebookEditor() {
           >
             <div key={currentPage} className="relative min-h-full w-full flex-1 page-flip-anim">
               <RichEditor
+                toolbarHost={textToolbarHost}
+                drawing={mode === "draw"}
                 content={page?.content || ""}
                 onChange={handleContentChange}
                 userId={user!.id}
@@ -2516,6 +2408,7 @@ export default function NotebookEditor() {
                       strokes={drawingState.strokes}
                       onStrokesChange={handleStrokesChange}
                       active={mode === "draw"}
+                      drawWithTouch={drawWithTouch}
                       penColor={penColor}
                       penWidth={penWidth}
                       tool={drawTool}
@@ -2540,7 +2433,7 @@ export default function NotebookEditor() {
           </div>
           
           <FloraNotebookSidebar
-            open={floraOpen}
+            open={floraOpen && !focusModeActive}
             onClose={() => setFloraOpen(false)}
             linkedTopicTitle={notebook?.title}
             summary={currentSummary}
@@ -2555,10 +2448,10 @@ export default function NotebookEditor() {
             onAutoFormat={() => void handleAutoFormatPage()}
             formattingPage={formattingPage}
             medical={isMedicalNotebook}
+            templates={getTemplatesForSubject(selectedSubject)}
+            onInsertTemplate={handleInsertTemplate}
           />
         </div>
-      )}
-
       <Dialog
         open={quizDialogOpen}
         onOpenChange={(open) => {

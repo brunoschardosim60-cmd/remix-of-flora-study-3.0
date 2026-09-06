@@ -1,4 +1,5 @@
 import { Extension } from "@tiptap/core";
+import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,7 +15,7 @@ const ghostKey = new PluginKey<GhostState>("flora-ghost-text");
 const SET_SUGGESTION = "flora-ghost-set";
 const CLEAR_SUGGESTION = "flora-ghost-clear";
 
-function getTextBefore(doc: any, pos: number, max = 800): string {
+function getTextBefore(doc: ProseMirrorNode, pos: number, max = 800): string {
   const from = Math.max(0, pos - max);
   return doc.textBetween(from, pos, "\n", " ");
 }
@@ -115,10 +116,10 @@ export const GhostText = Extension.create({
               try {
                 const { data, error } = await supabase.functions.invoke("flora-engine", {
                   body: { action: "ghost_complete", data: { before } },
-                } as any);
+                });
                 if (currentSignal.aborted) return;
                 if (error) return;
-                const suggestion = ((data as any)?.suggestion || "").trim();
+                const suggestion = typeof data?.suggestion === "string" ? data.suggestion.trim() : "";
                 if (!suggestion) return;
                 // Make sure user hasn't moved/typed in the meantime
                 const curSel = view.state.selection;

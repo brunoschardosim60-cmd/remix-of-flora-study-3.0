@@ -59,8 +59,8 @@ export function AudioSummaryButton({
       setTimeout(() => {
         if (audioRef.current) { void audioRef.current.play(); setPlaying(true); }
       }, 50);
-    } catch (e: any) {
-      toast.error(e?.message || "Erro ao gerar resumo em áudio");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Erro ao gerar resumo em áudio");
     } finally {
       setLoading(false);
     }

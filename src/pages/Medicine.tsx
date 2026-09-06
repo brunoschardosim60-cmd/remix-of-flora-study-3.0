@@ -359,7 +359,7 @@ export default function Medicine() {
         answered,
         wrong_items: wrongIds,
         case_step: caseStep,
-        learning_state: learningState,
+        learning_state: { version: learningState.version, items: Object.fromEntries(Object.entries(learningState.items).map(([key, item]) => [key, { ...item }])) },
         case_progress: caseProgress,
         last_section: section === "home" ? resumeSection : section,
         content_version: "MED-2026.08.26",

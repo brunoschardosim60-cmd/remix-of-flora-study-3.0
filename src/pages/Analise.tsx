@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft, BarChart3, Loader2, AlertTriangle, Trophy, Target,
   TrendingUp, TrendingDown, Calendar, Flame, Brain,
-  Clock, Zap, FileDown,
+  Clock, Zap, FileDown, BookOpen,
 } from "lucide-react";
 import { toast } from "sonner";
 

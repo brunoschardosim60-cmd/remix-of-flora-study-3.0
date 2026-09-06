@@ -34,7 +34,7 @@ export function StickyNote({ note, onUpdate, onDelete, active }: StickyNoteProps
   const colorIdx = ["#fef08a", "#fbcfe8", "#bfdbfe", "#bbf7d0", "#e9d5ff"].indexOf(note.color);
   const colors = STICKY_COLORS[colorIdx >= 0 ? colorIdx : 0];
 
-  const handleMouseDown = (e: React.MouseEvent) => {
+  const handlePointerDown = (e: React.PointerEvent<HTMLSpanElement>) => {
     if (!active) return;
     e.preventDefault();
     e.stopPropagation();
@@ -49,8 +49,10 @@ export function StickyNote({ note, onUpdate, onDelete, active }: StickyNoteProps
       y: (e.clientY - rect.top) * scaleY - note.y,
     };
     setIsDragging(true);
+    e.currentTarget.setPointerCapture(e.pointerId);
 
-    const handleMove = (ev: MouseEvent) => {
+    const handleMove = (ev: PointerEvent) => {
+      if (ev.pointerId !== e.pointerId) return;
       const parentRect = noteRef.current?.parentElement?.getBoundingClientRect();
       const parentElement = noteRef.current?.parentElement;
       if (!parentRect || !parentElement) return;
@@ -63,14 +65,17 @@ export function StickyNote({ note, onUpdate, onDelete, active }: StickyNoteProps
       });
     };
 
-    const handleUp = () => {
+    const handleUp = (ev: PointerEvent) => {
+      if (ev.pointerId !== e.pointerId) return;
       setIsDragging(false);
-      window.removeEventListener("mousemove", handleMove);
-      window.removeEventListener("mouseup", handleUp);
+      window.removeEventListener("pointermove", handleMove);
+      window.removeEventListener("pointerup", handleUp);
+      window.removeEventListener("pointercancel", handleUp);
     };
 
-    window.addEventListener("mousemove", handleMove);
-    window.addEventListener("mouseup", handleUp);
+    window.addEventListener("pointermove", handleMove);
+    window.addEventListener("pointerup", handleUp);
+    window.addEventListener("pointercancel", handleUp);
   };
 
   return (
@@ -85,12 +90,15 @@ export function StickyNote({ note, onUpdate, onDelete, active }: StickyNoteProps
         width: note.width,
         minHeight: note.height,
         zIndex: 30,
+        backgroundColor: /^#[0-9a-f]{6}$/i.test(note.color) ? note.color : "#fff1a8",
+        color: "#303b35",
       }}
     >
       <div className="flex items-center justify-between px-2 py-1">
         <span
           className="flex-1 flex items-center cursor-grab active:cursor-grabbing select-none"
-          onMouseDown={handleMouseDown}
+          onPointerDown={handlePointerDown}
+          style={{ touchAction: "none" }}
         >
           <Move className="w-3 h-3 opacity-50" />
         </span>
@@ -114,6 +122,7 @@ export function StickyNote({ note, onUpdate, onDelete, active }: StickyNoteProps
         className={`w-full px-2 pb-2 bg-transparent resize-none outline-none text-sm ${colors.text}`}
         style={{ minHeight: note.height - 32 }}
         placeholder="Nota..."
+        aria-label="Texto da nota adesiva"
         readOnly={!active}
       />
     </div>

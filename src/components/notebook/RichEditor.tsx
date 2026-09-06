@@ -15,8 +15,13 @@ import { EditorToolbar } from "./EditorToolbar";
 import { ReactNodeViewRenderer } from "@tiptap/react";
 import { ResizableImageView } from "./ResizableImageView";
 import { GhostText } from "./GhostTextExtension";
+import { TableKit } from "@tiptap/extension-table";
+import { createPortal } from "react-dom";
+import { NodeSelection } from "@tiptap/pm/state";
 
 interface RichEditorProps {
+  toolbarHost?: HTMLElement | null;
+  drawing?: boolean;
   content: string;
   onChange: (html: string) => void;
   userId: string;
@@ -57,7 +62,7 @@ const TEMPLATE_CLASS: Record<string, string> = {
   essay: "notebook-essay",
 };
 
-export function RichEditor({ content, onChange, userId, notebookId, darkMode, onToggleDarkMode, template = "blank", zoom = 1, orientation = "portrait", pageFlow = "continuous", paperOverlay, wide = false, handwriting = false, showMargin = true, backgroundImage, insertionRequest, onInsertionHandled }: RichEditorProps) {
+export function RichEditor({ content, onChange, userId, notebookId, darkMode, onToggleDarkMode, template = "blank", zoom = 1, orientation = "portrait", pageFlow = "continuous", paperOverlay, wide = false, handwriting = false, showMargin = true, backgroundImage, insertionRequest, onInsertionHandled, toolbarHost, drawing = false }: RichEditorProps) {
   const isExternalUpdate = useRef(false);
   const lastInsertionId = useRef<number | null>(null);
   const [floraBusy, setFloraBusy] = useState<null | string>(null);
@@ -68,6 +73,7 @@ export function RichEditor({ content, onChange, userId, notebookId, darkMode, on
         heading: { levels: [1, 2, 3] },
       }),
       Highlight.configure({ multicolor: true }),
+      TableKit.configure({ table: { resizable: true } }),
       Image.extend({
         draggable: true,
         selectable: true,
@@ -165,6 +171,8 @@ export function RichEditor({ content, onChange, userId, notebookId, darkMode, on
   });
 
   // Sync external content changes (page switches)
+  useEffect(() => { editor?.setEditable(!drawing); }, [drawing, editor]);
+
   useEffect(() => {
     if (editor && content !== editor.getHTML()) {
       isExternalUpdate.current = true;
@@ -185,6 +193,7 @@ export function RichEditor({ content, onChange, userId, notebookId, darkMode, on
     const { from, to } = editor.state.selection;
     if (from === to) return;
     const text = editor.state.doc.textBetween(from, to, " ");
+    const originalDocument = editor.state.doc;
     if (!text.trim()) return;
     setFloraBusy(mode);
     try {
@@ -195,6 +204,10 @@ export function RichEditor({ content, onChange, userId, notebookId, darkMode, on
       const result = (data as { result?: string } | null)?.result;
       if (!result) {
         toast.error("Flora não conseguiu responder.");
+        return;
+      }
+      if (editor.isDestroyed || !editor.state.doc.eq(originalDocument)) {
+        toast.info("A página mudou durante a resposta. Selecione o trecho novamente para aplicar a edição.");
         return;
       }
       editor.chain().focus().insertContentAt({ from, to }, result).run();
@@ -211,7 +224,7 @@ export function RichEditor({ content, onChange, userId, notebookId, darkMode, on
       {editor && (
         <BubbleMenu
           editor={editor}
-          shouldShow={({ editor: ed, from, to }) => from !== to && !ed.state.selection.empty}
+          shouldShow={({ editor: ed, from, to }) => !drawing && from !== to && !ed.state.selection.empty && !(ed.state.selection instanceof NodeSelection)}
         >
           <div className="flex items-center gap-1 rounded-lg border border-border bg-popover/95 backdrop-blur shadow-lg px-1.5 py-1">
             <button
@@ -253,7 +266,7 @@ export function RichEditor({ content, onChange, userId, notebookId, darkMode, on
           </div>
         </BubbleMenu>
       )}
-      <div className="nb-editor-formatbar relative z-30 border-b border-black/[0.06] bg-white/90 backdrop-blur dark:bg-gray-900/90">
+      {!drawing && (toolbarHost ? createPortal(<EditorToolbar editor={editor} userId={userId} notebookId={notebookId} darkMode={darkMode} onToggleDarkMode={onToggleDarkMode} />, toolbarHost) : <div className="nb-editor-formatbar relative z-30 border-b border-black/[0.06] bg-white/90 backdrop-blur dark:bg-gray-900/90">
         <EditorToolbar
           editor={editor}
           userId={userId}
@@ -261,7 +274,7 @@ export function RichEditor({ content, onChange, userId, notebookId, darkMode, on
           darkMode={darkMode}
           onToggleDarkMode={onToggleDarkMode}
         />
-      </div>
+      </div>)}
       <div className={`nb-paper-viewport is-${pageFlow} flex-1 py-5 sm:py-7 px-3 sm:px-6`}>
         <div
           className={`nb-paper-zoom-stage is-${pageFlow}`}

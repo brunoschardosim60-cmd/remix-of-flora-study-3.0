@@ -8,6 +8,7 @@ export type Anatomy3DAssetDefinition = {
   license: string;
   expectedMinimumBytes: number;
   meshCount?: number;
+  structureCount?: number;
   triangleCount?: number;
 };
 

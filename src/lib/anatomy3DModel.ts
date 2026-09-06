@@ -28,6 +28,8 @@ export interface Anatomy3DStructure {
   focusDistance: number;
   color: string;
   parts: Anatomy3DPart[];
+  /** Original mesh/catalog name; separate from procedural geometry. */
+  sourceName?: string;
 }
 
 export interface Anatomy3DRegion {

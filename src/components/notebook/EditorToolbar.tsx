@@ -1,4 +1,4 @@
-import { type Editor } from "@tiptap/react";
+import { type Editor, useEditorState } from "@tiptap/react";
 import {
   Bold, Italic, Underline, Strikethrough, Highlighter,
   List, ListOrdered, Heading1, Heading2, Heading3,
@@ -27,6 +27,7 @@ export function EditorToolbar({ editor, userId, notebookId, darkMode, onToggleDa
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [expanded, setExpanded] = useState(false);
   const [imageUploading, setImageUploading] = useState(false);
+  useEditorState({ editor, selector: ({ transactionNumber }) => transactionNumber });
 
   if (!editor) return null;
 
@@ -50,6 +51,7 @@ export function EditorToolbar({ editor, userId, notebookId, darkMode, onToggleDa
       if (error) throw error;
       const { data: { publicUrl } } = supabase.storage.from("notebook-images").getPublicUrl(path);
       const alt = file.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").trim();
+      if (editor.isDestroyed) return;
       editor.chain().focus().setImage({ src: publicUrl, alt }).run();
       toast.success("Imagem inserida na página.");
     } catch (error: unknown) {
@@ -65,6 +67,7 @@ export function EditorToolbar({ editor, userId, notebookId, darkMode, onToggleDa
       type="button"
       onClick={onClick}
       title={title}
+      aria-label={title}
       className={`p-1.5 rounded-md transition-all ${
         active
           ? "bg-primary/20 text-primary"
@@ -89,6 +92,16 @@ export function EditorToolbar({ editor, userId, notebookId, darkMode, onToggleDa
           <ChevronDown className="w-3 h-3" />
         </button>
         <div className="flex items-center gap-0.5">
+          <ToolBtn active={editor.isActive("bold")} onClick={() => editor.chain().focus().toggleBold().run()} title="Negrito"><Bold className="w-4 h-4" /></ToolBtn>
+          <ToolBtn active={editor.isActive("highlight")} onClick={() => editor.chain().focus().toggleHighlight({ color: "#fef08a" }).run()} title="Destacar texto"><Highlighter className="w-4 h-4" /></ToolBtn>
+          <ToolBtn onClick={() => fileInputRef.current?.click()} title="Inserir imagem">{imageUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImagePlus className="w-4 h-4" />}</ToolBtn>
+          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+          <ToolBtn onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 2, withHeaderRow: true }).run()} title="Inserir tabela"><Table className="w-4 h-4" /></ToolBtn>
+          {editor.isActive("table") && <>
+            <button type="button" className="nb-table-action" onClick={() => editor.chain().focus().addRowAfter().run()}>+ Linha</button>
+            <button type="button" className="nb-table-action" onClick={() => editor.chain().focus().addColumnAfter().run()}>+ Coluna</button>
+            <button type="button" className="nb-table-action" onClick={() => editor.chain().focus().deleteRow().run()}>Excluir linha</button>
+          </>}
           <ToolBtn onClick={() => editor.chain().focus().undo().run()} title="Desfazer">
             <Undo className="w-3.5 h-3.5" />
           </ToolBtn>

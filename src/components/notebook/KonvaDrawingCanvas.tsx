@@ -39,6 +39,7 @@ interface KonvaDrawingCanvasProps {
   strokes: Stroke[];
   onStrokesChange: (strokes: Stroke[]) => void;
   active: boolean;
+  drawWithTouch?: boolean;
   penColor: string;
   penWidth: number;
   tool: "pen" | "marker" | "eraser" | "select" | "line" | "rect" | "circle";
@@ -218,7 +219,8 @@ export function renderStrokesToDataUrl(strokes: Stroke[], width = 794, height = 
 }
 
 export const KonvaDrawingCanvas = forwardRef<DrawingCanvasRef, KonvaDrawingCanvasProps>(
-  ({ strokes, onStrokesChange, active, penColor, penWidth, tool, brush = "ballpoint", zoom = 1, onSelectionChange }, ref) => {
+  ({ strokes, onStrokesChange, active, drawWithTouch = false, penColor, penWidth, tool, brush = "ballpoint", zoom = 1, onSelectionChange }, ref) => {
+    const activePointer = useRef<number | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [size, setSize] = useState({ width: 800, height: 600 });
@@ -381,8 +383,11 @@ export const KonvaDrawingCanvas = forwardRef<DrawingCanvasRef, KonvaDrawingCanva
 
     const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
       if (!active) return;
+      if (e.pointerType === "touch" && !drawWithTouch) return;
+      if (activePointer.current !== null) return;
       // Palm rejection: toque com área grande é palma da mão
       if (e.pointerType === "touch" && e.width > 40) return;
+      activePointer.current = e.pointerId;
       e.preventDefault();
       (e.target as HTMLCanvasElement).setPointerCapture(e.pointerId);
 
@@ -420,6 +425,7 @@ export const KonvaDrawingCanvas = forwardRef<DrawingCanvasRef, KonvaDrawingCanva
 
     const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
       if (!active || !isDrawingRef.current) return;
+      if (activePointer.current !== e.pointerId) return;
       if (e.pointerType === "touch" && e.width > 40) return;
       e.preventDefault();
       const pos = getPos(e);
@@ -484,6 +490,8 @@ export const KonvaDrawingCanvas = forwardRef<DrawingCanvasRef, KonvaDrawingCanva
     };
 
     const handlePointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
+      if (activePointer.current !== e.pointerId) return;
+      activePointer.current = null;
       if (!isDrawingRef.current) return;
       isDrawingRef.current = false;
       lastPointRef.current = null;
@@ -542,14 +550,21 @@ export const KonvaDrawingCanvas = forwardRef<DrawingCanvasRef, KonvaDrawingCanva
       tool === "select" ? "z-20 cursor-crosshair" : "z-20 cursor-crosshair";
 
     return (
-      <div ref={containerRef} className={`absolute inset-0 ${cursor}`} style={{ touchAction: active ? "none" : "auto" }}>
+      <div ref={containerRef} className={`absolute inset-0 ${cursor}`} style={{ touchAction: active && drawWithTouch ? "none" : "pan-x pan-y" }}>
         <canvas
           ref={canvasRef}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerUp}
-          onPointerLeave={handlePointerUp}
+          onPointerCancel={() => {
+            activePointer.current = null;
+            isDrawingRef.current = false;
+            currentStrokeRef.current = null;
+            shapeStartRef.current = null;
+            selectionStartRef.current = null;
+            selectionDragRef.current = null;
+            redraw();
+          }}
           style={{ display: "block", width: "100%", height: "100%" }}
         />
         {selection && tool === "select" && (

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import {
   ArrowUpRight, Bot, BoxSelect, ChevronDown, Circle, Copy, Eraser, Feather, Highlighter,
   Paintbrush, Pen, Pencil, PenTool, Redo2, Sparkles, Square,
@@ -22,7 +22,10 @@ const BRUSHES: { id: DrawingBrush; label: string; Icon: typeof Pen }[] = [
 ];
 
 interface NotebookStudioToolbarProps {
+  textTools?: ReactNode;
   mode: "text" | "draw";
+  drawWithTouch?: boolean;
+  onToggleTouch?: () => void;
   onModeChange: (mode: "text" | "draw") => void;
   drawTool: DrawingTool;
   onDrawToolChange: (tool: DrawingTool) => void;
@@ -65,7 +68,7 @@ export function NotebookStudioToolbar({
   penColor, onColorChange, penWidth, onWidthChange, onClear, onUndo, onRedo,
   canUndo, canRedo, onAddSticky, onToggleFlora, floraOpen, mathStatus,
   autoSolveEnabled, onToggleAutoSolve, solvingMath, onSolveSelection,
-  hasSelection, onDuplicateSelection, onDeleteSelection,
+  hasSelection, onDuplicateSelection, onDeleteSelection, textTools, drawWithTouch, onToggleTouch,
 }: NotebookStudioToolbarProps) {
   const [brushesOpen, setBrushesOpen] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
@@ -81,6 +84,7 @@ export function NotebookStudioToolbar({
     <span className="nb-studio-divider" />
 
     {mode === "draw" ? <div className="nb-studio-drawing-tools">
+      {onToggleTouch && <button type="button" className="nb-table-action" aria-pressed={drawWithTouch} onClick={onToggleTouch} title="Com o dedo desativado, use o toque para rolar e a caneta para escrever">{drawWithTouch ? "Dedo: desenhar" : "Dedo: rolar"}</button>}
       <div className="nb-studio-group">
         <StudioButton active={drawTool === "pen"} onClick={() => onDrawToolChange("pen")} label="Caneta"><Pen /></StudioButton>
         <StudioButton active={drawTool === "marker"} onClick={() => onDrawToolChange("marker")} label="Marca-texto"><Highlighter /></StudioButton>
@@ -119,7 +123,7 @@ export function NotebookStudioToolbar({
       </div>
 
       <button type="button" className={`nb-studio-ai ${autoSolveEnabled ? "active" : ""}`} onClick={() => onToggleAutoSolve(!autoSolveEnabled)} title="Reconhecer contas desenhadas"><Sparkles /><span>Reconhecer</span>{mathStatus !== "idle" && <i className={mathStatus} />}</button>
-    </div> : <div className="nb-studio-text-hint"><span>Use a barra no topo do papel para formatar o texto e inserir imagens.</span></div>}
+    </div> : textTools}
 
     <span className="nb-studio-divider" />
 

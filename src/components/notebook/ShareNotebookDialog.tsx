@@ -48,8 +48,8 @@ export function ShareNotebookDialog({
       const url = `${window.location.origin}/shared/notebook/${token}`;
       setShareUrl(url);
       setIsPublic(true);
-    } catch (e: any) {
-      toast.error("Erro ao gerar link: " + (e?.message ?? "tente novamente"));
+    } catch (e: unknown) {
+      toast.error("Erro ao gerar link: " + (e instanceof Error ? e.message : "tente novamente"));
     } finally {
       setLoading(false);
     }

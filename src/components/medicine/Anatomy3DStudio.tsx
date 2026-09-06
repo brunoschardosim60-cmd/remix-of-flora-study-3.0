@@ -2,7 +2,8 @@ import { Component, Suspense, useCallback, useEffect, useMemo, useRef, useState,
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { Environment, Grid, Lightformer, OrbitControls, useGLTF } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
-import { ACESFilmicToneMapping, Box3, BufferAttribute, Color, DoubleSide, Mesh, MeshPhysicalMaterial, Object3D, PCFSoftShadowMap, Plane, SRGBColorSpace, Vector2, Vector3 } from "three";
+import type { BodyLayer } from "@/lib/medicineData";
+import { ACESFilmicToneMapping, Box3, BufferAttribute, Color, DoubleSide, Group, Mesh, MeshPhysicalMaterial, Object3D, PCFSoftShadowMap, Plane, SRGBColorSpace, Vector2, Vector3 } from "three";
 import { mergeGeometries, mergeVertices } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import {
   Activity,
@@ -349,7 +350,7 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
   }, [manifestStructures]);
   const selectedManifestStructure = useMemo(() => {
     if (!selected) return undefined;
-    const rawPart = selected.parts.find((part) => typeof part === "string");
+    const rawPart = selected.sourceName;
     const candidates = [typeof rawPart === "string" ? rawPart : "", selected.name];
     for (const candidate of candidates) {
       for (const key of anatomyManifestLookupKeys(candidate)) {
@@ -763,7 +764,6 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
             </div>}
           </div>}
 
-          {realistic && <div className="med-3d-realism-note"><Sparkles /><span><strong>Materiais biológicos ativos</strong>Albedo, microrelevo e rugosidade respondem ao tecido e à capacidade do dispositivo.</span></div>}
 
           <div className="med-3d-canvas" role="application" tabIndex={0} aria-label={`Modelo 3D interativo mostrando ${anatomy3DSystemMeta.find((item) => item.id === system)?.label} em ${regionMeta.label}. Use as setas esquerda e direita para trocar de estrutura.`}>
             {layerPanelOpen && <aside className="med-3d-layer-panel" aria-label="Controle de camadas anatômicas">
@@ -887,7 +887,7 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
 }
 
 function AnimatedLayerGroup({ exploded, offset, children }: { exploded: boolean; offset: [number, number, number]; children: ReactNode }) {
-  const ref = useRef<Object3D>(null);
+  const ref = useRef<Group>(null);
   const { invalidate } = useThree();
   const target = useMemo(() => new Vector3(...offset), [offset]);
   const origin = useMemo(() => new Vector3(), []);
@@ -911,6 +911,7 @@ function RealBodyPartsModel({ system, realistic, quality, selectedId, skinOpacit
   selectedId: string | null;
   skinOpacity: number;
   skinTone: string;
+  globalSectionPlane: Plane | null;
   onSelect: (structure: Anatomy3DStructure) => void;
   onHover: AnatomyHoverHandler;
 }) {
@@ -999,18 +1000,9 @@ function prepareBodyPartsRoot(source: Object3D, kind: "skin" | "organs") {
     });
     const combined = mergeGeometries(geometries, false);
     if (!combined) throw new Error("Não foi possível consolidar a superfície corporal.");
-    // O arquivo original traz as metades com uma folga milimétrica no eixo
-    // sagital. Alinhamos somente essa faixa central antes de soldar os vértices.
-    const combinedPositions = combined.getAttribute("position") as BufferAttribute;
-    for (let index = 0; index < combinedPositions.count; index += 1) {
-      if (Math.abs(combinedPositions.getX(index)) < .018) combinedPositions.setX(index, 0);
-    }
-    combinedPositions.needsUpdate = true;
-    // Normais distintas também impediam o merge dos vértices duplicados.
-    // Soldamos pela posição e só então recalculamos a iluminação da superfície.
-    combined.deleteAttribute("normal");
-    const welded = mergeVertices(combined, .006);
-    welded.computeVertexNormals();
+    // Preserve source positions and normals. Snapping the sagittal band to X=0
+    // collapsed facial triangles instead of repairing the original model seam.
+    const welded = mergeVertices(combined, .000001);
     welded.computeBoundingBox();
     welded.computeBoundingSphere();
     const positions = welded.getAttribute("position") as BufferAttribute;
@@ -1213,6 +1205,9 @@ function DenseAnatomySystemModel({ integrated = false, opacity = 1, clipPlane = 
       colors[offset + 2] = active ? Math.min(1, prepared.baseColors[offset + 2] * .72 + .06) : prepared.baseColors[offset + 2];
     }
     attribute.needsUpdate = true;
+  }, [layer, prepared, selectedId]);
+
+  useEffect(() => {
     const material = prepared.mesh.material as MeshPhysicalMaterial;
     if (realistic) {
       applyAnatomyTissueMaterial(material, prepared.mesh.geometry, tissueFallbackForLayer(layer), { quality, vertexColors: true });
@@ -1225,13 +1220,21 @@ function DenseAnatomySystemModel({ integrated = false, opacity = 1, clipPlane = 
       material.sheen = 0;
       material.transmission = 0;
     }
-    material.opacity = opacity;
-    material.transparent = opacity < 1;
-    material.depthWrite = opacity > .52;
-    material.clippingPlanes = clipPlane ? [clipPlane] : [];
-    material.clipShadows = Boolean(material.clippingPlanes.length);
     material.needsUpdate = true;
-  }, [clipPlane, layer, opacity, prepared, quality, realistic, selectedId]);
+  }, [layer, prepared, quality, realistic]);
+
+  useEffect(() => {
+    const material = prepared.mesh.material as MeshPhysicalMaterial;
+    const transparent = opacity < 1;
+    const clipping = clipPlane ? [clipPlane] : [];
+    const shaderChanged = material.transparent !== transparent || (material.clippingPlanes?.length ?? 0) !== clipping.length;
+    material.opacity = opacity;
+    material.transparent = transparent;
+    material.depthWrite = opacity > .52;
+    material.clippingPlanes = clipping;
+    material.clipShadows = Boolean(clipping.length);
+    if (shaderChanged) material.needsUpdate = true;
+  }, [clipPlane, opacity, prepared]);
 
   const selectByIndex = useCallback((index: number) => {
     const structure = prepared.catalog[index];
@@ -1308,6 +1311,7 @@ function DetailedOrgansModel({ integrated = false, opacity = 1, globalSectionPla
   organView: OrganViewMode;
   sectionAxis: SectionAxis;
   sectionOffset: number;
+  onHover: AnatomyHoverHandler;
   onSelect: (structure: Anatomy3DStructure) => void;
   onCatalogReady: (system: Anatomy3DSystemId, catalog: Anatomy3DStructure[]) => void;
 }) {
@@ -1483,6 +1487,7 @@ function DetailedOrgansModel({ integrated = false, opacity = 1, globalSectionPla
         organView={organView}
         sectionAxis={sectionAxis}
         sectionOffset={sectionOffset}
+        onHover={onHover}
         onSelect={onSelect}
         onCatalogReady={onCatalogReady}
       />
@@ -1512,7 +1517,7 @@ function catalogStructureFromRealMesh(mesh: Mesh): Anatomy3DStructure {
     focus: [center.x, center.y, center.z],
     focusDistance: Math.min(4.4, Math.max(1.15, Math.max(size.x, size.y, size.z) * 3.2)),
     color: type === "bone" ? "#d8c9aa" : "#b94d4f",
-    parts: [rawDetailName],
+    parts: [], sourceName: rawDetailName,
   };
 }
 
@@ -1541,7 +1546,6 @@ function DetailedHeartModel({ realistic, quality, selectedId, organView, section
   organView: OrganViewMode;
   sectionAxis: SectionAxis;
   sectionOffset: number;
-  globalSectionPlane: Plane | null;
   onSelect: (structure: Anatomy3DStructure) => void;
   onCatalogReady: (system: Anatomy3DSystemId, catalog: Anatomy3DStructure[]) => void;
 }) {
@@ -1954,7 +1958,7 @@ function prepareSupplementalOrgan(source: Object3D, kind: keyof typeof SUPPLEMEN
         focus: [center.x, center.y, center.z],
         focusDistance: Math.max(definition.kind === "vessel" ? 1.55 : 1.35, Math.max(size.x, size.y, size.z) * 3.4),
         color: definition.color,
-        parts: [definition.kind],
+        parts: [], sourceName: definition.kind,
       };
       mesh.userData.supplementCatalogIndex = catalog.length;
       mesh.userData.didacticColor = definition.color;
@@ -2022,7 +2026,7 @@ function prepareHraDetailedOrgan(source: Object3D, kind: HraDetailedOrganKind) {
       focus: [center.x, center.y, center.z],
       focusDistance: Math.max(.72, Math.max(size.x, size.y, size.z) * 4.1),
       color,
-      parts: [rawName],
+      parts: [], sourceName: rawName,
     });
     meshes.push(object);
   });
@@ -2118,7 +2122,7 @@ function prepareDetailedHeart(source: Object3D) {
         ? Math.max(1.55, Math.max(size.x, size.y, size.z) * 4.8)
         : Math.max(.9, Math.max(size.x, size.y, size.z) * 3.5),
       color: definition.color,
-      parts: [definition.kind],
+      parts: [], sourceName: definition.kind,
     });
     meshes.push(object);
   });
@@ -2249,7 +2253,7 @@ function catalogStructureFromBounds(rawName: string, layer: DenseAnatomyLayer | 
     focus: [center.x, center.y, center.z],
     focusDistance: Math.min(4.8, Math.max(.82, Math.max(size.x, size.y, size.z) * 3.2)),
     color,
-    parts: [rawName],
+    parts: [], sourceName: rawName,
   };
 }
 
@@ -2661,7 +2665,7 @@ function translateCompoundAnatomyPhrase(value: string) {
 
 // Exportada para os testes de nomenclatura; não é um componente React.
 // eslint-disable-next-line react-refresh/only-export-components
-export function translateAnatomyName(rawName: string, layer: DenseAnatomyLayer | "organs", index: number) {
+export function translateAnatomyName(rawName: string, layer: BodyLayer, index: number) {
   const normalizedSourceName = rawName.replace(/^VH_[FM]_/i, "").replace(/^Allen_/i, "");
   const rawSide = normalizedSourceName.match(/(?:[._*\s)]([lr]))[.\s]*$/i)?.[1];
   const cleaned = normalizedSourceName

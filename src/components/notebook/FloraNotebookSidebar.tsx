@@ -1,6 +1,6 @@
-import { useState } from "react";
 import { Sparkles, X, FileText, Brain, Zap, BookOpen, Loader2, ImagePlus } from "lucide-react";
 import type { AIActivityItem } from "@/lib/aiActivityStore";
+import type { NotebookTemplate } from "@/lib/notebookTemplates";
 import "./notebook-premium.css";
 
 interface FloraNotebookSidebarProps {
@@ -19,6 +19,8 @@ interface FloraNotebookSidebarProps {
   onAutoFormat: () => void;
   formattingPage: boolean;
   medical: boolean;
+  templates: NotebookTemplate[];
+  onInsertTemplate: (html: string, label: string) => void;
 }
 
 export function FloraNotebookSidebar({
@@ -37,22 +39,25 @@ export function FloraNotebookSidebar({
   onAutoFormat,
   formattingPage,
   medical,
+  templates,
+  onInsertTemplate,
 }: FloraNotebookSidebarProps) {
   const isGenerating = generatingStudy !== "none" || formattingPage;
 
   return (
-    <aside className={`nb-flora-sidebar ${open ? "open" : ""}`}>
+    <aside className={`nb-flora-sidebar ${open ? "open" : ""}`} aria-label="Flora e ferramentas de estudo" hidden={!open}>
       {/* Header */}
       <div className="nb-flora-sidebar-header">
         <div className="nb-flora-sidebar-title">
           <div className="w-6 h-6 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
             <Sparkles className="w-3.5 h-3.5 text-white" />
           </div>
-          <span>Flora IA</span>
+          <span>{medical ? "Flora · Medicina" : "Flora · Estudo"}</span>
         </div>
         <button
           type="button"
           onClick={onClose}
+          aria-label="Fechar painel da Flora"
           className="nb-toolbar-btn"
           style={{ width: 28, height: 28 }}
         >
@@ -70,6 +75,15 @@ export function FloraNotebookSidebar({
         </p>
       </div>
 
+      <details className="nb-medical-blocks">
+        <summary>{medical ? "Modelos de estudo médico" : "Modelos de página"}</summary>
+        <p>Insira uma estrutura na página e complete com suas anotações. O conteúdo existente é preservado.</p>
+        {templates.map((template) => <button key={template.id} type="button" onClick={() => onInsertTemplate(template.html, template.label)}>
+          <strong>{template.label}</strong>
+          <small>Inserir na página</small>
+        </button>)}
+        {medical && <p>Use casos fictícios ou anonimizados. Revise as respostas da Flora com suas fontes.</p>}
+      </details>
       {/* Quick actions */}
       <div className="nb-flora-actions">
         <button

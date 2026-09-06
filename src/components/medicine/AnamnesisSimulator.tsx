@@ -15,7 +15,8 @@ import {
   composeAnchoredPatientReply, createAnamnesisPatientPayload, detectAnamnesisInteractionIntent, matchAnamnesisFactsLocally, matchAnamnesisQuestionsLocally,
   shouldTriggerAnamnesisCrisis, type AnamnesisConversationTurn, type AnamnesisPatientResponse,
 } from "@/lib/anamnesisPatient";
-import type { MedicineLearningEvent, MedicineLevel } from "@/lib/medicineData";
+import type { MedicineLevel } from "@/lib/medicineData";
+type MedicineLearningEvent = { id: string; label: string; correct: boolean };
 
 const categories: AnamnesisCategory[] = ["Abertura", "Sintoma atual", "Antecedentes", "Medicamentos e alergias", "Contexto", "Segurança"];
 const valueCopy = {
@@ -74,7 +75,7 @@ export function AnamnesisSimulator({ level, initialCaseId, onLearningEvent }: { 
   const [crisisActive, setCrisisActive] = useState(false);
   const [crisisResolved, setCrisisResolved] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [showGuidance, setShowGuidance] = useState(level === "beginner");
+  const [showGuidance, setShowGuidance] = useState(level === "Iniciante");
   const workspaceRef = useRef<HTMLDivElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
