@@ -116,6 +116,11 @@ export function RichEditor({ content, onChange, userId, notebookId, darkMode, on
               parseHTML: (el) => Number(el.getAttribute("data-rotation") || 0),
               renderHTML: (attrs) => attrs.rotation ? { "data-rotation": String(attrs.rotation) } : {},
             },
+            naturalRatio: {
+              default: null,
+              parseHTML: (el) => Number(el.getAttribute("data-natural-ratio")) || null,
+              renderHTML: (attrs) => attrs.naturalRatio ? { "data-natural-ratio": String(attrs.naturalRatio) } : {},
+            },
             cropEnabled: {
               default: false,
               parseHTML: (el) => el.getAttribute("data-crop-enabled") === "true",

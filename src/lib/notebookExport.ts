@@ -1,3 +1,6 @@
+import DOMPurify from "dompurify";
+import { notebookImageLayout } from "./notebookImageLayout";
+
 export interface PortableNotebookPage {
   pageNumber: number;
   content: string;
@@ -51,7 +54,7 @@ export function notebookToMarkdown(title: string, pages: PortableNotebookPage[])
 }
 
 export function buildStandaloneNotebookHtml(title: string, pages: PortableNotebookPage[]) {
-  const sections = pages.map((page) => `<section class="page"><div class="page-number">Página ${page.pageNumber}</div>${page.content || "<p></p>"}</section>`).join("\n");
+  const sections = pages.map((page) => `<section class="page"><div class="page-number">Página ${page.pageNumber}</div>${portableImageLayout(DOMPurify.sanitize(page.content || "<p></p>"))}</section>`).join("\n");
   return `<!doctype html>
 <html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${escapeHtml(title)}</title><style>
@@ -64,14 +67,67 @@ export async function embedNotebookImages(html: string) {
   const images = Array.from(parsed.images);
   await Promise.all(images.map(async (image) => {
     const source = image.getAttribute("src");
-    if (!source || source.startsWith("data:")) return;
+    if (!source) return;
     try {
-      const response = await fetch(source);
-      if (!response.ok) return;
-      image.setAttribute("src", await blobToDataUrl(await response.blob()));
+      if (!source.startsWith("data:")) {
+        const response = await fetch(source);
+        if (!response.ok) return;
+        image.setAttribute("src", await blobToDataUrl(await response.blob()));
+      }
+      // Older pages do not persist natural dimensions. Resolve them while the
+      // export is being assembled, so the saved HTML requires no script.
+      const ratio = await imageNaturalRatio(image.src);
+      if (ratio) image.setAttribute("data-natural-ratio", String(ratio));
+      layoutPortableImage(image);
     } catch { /* mantém o endereço original se a imagem não puder ser incorporada */ }
   }));
   return `<!doctype html>\n${parsed.documentElement.outerHTML}`;
+}
+
+export function portableImageLayout(html: string) {
+  const parsed = new DOMParser().parseFromString(html, "text/html");
+  Array.from(parsed.images).forEach(layoutPortableImage);
+  return parsed.body.innerHTML;
+}
+
+function layoutPortableImage(image: HTMLImageElement) {
+  const cropEnabled = image.dataset.cropEnabled === "true";
+  const rotation = Number(image.dataset.rotation || 0);
+  const alignment = image.dataset.alignment === "left" ? "left" : image.dataset.alignment === "right" ? "right" : "center";
+  const wrap = image.dataset.wrap === "true" && alignment !== "center";
+  let frame = image.parentElement;
+  if (!frame?.classList.contains("nb-export-image")) {
+    frame = image.ownerDocument.createElement("div");
+    frame.className = "nb-export-image";
+    image.replaceWith(frame);
+    frame.append(image);
+  }
+  const width = Number.parseFloat(image.getAttribute("width") || "720");
+  Object.assign(frame.style, { position: "relative", width: `${Number.isFinite(width) ? Math.min(1400, Math.max(80, width)) : 720}px`,
+    maxWidth: wrap ? "58%" : "100%", overflow: "hidden", background: "transparent",
+    float: wrap ? alignment : "none", clear: wrap ? "none" : "both",
+    margin: wrap ? alignment === "left" ? "10px 22px 14px 0" : "10px 0 14px 22px" : alignment === "left" ? "14px auto 14px 0" : alignment === "right" ? "14px 0 14px auto" : "14px auto",
+  });
+  if (!cropEnabled && !rotation) {
+    Object.assign(image.style, { position: "static", width: "100%", height: "auto", maxHeight: "none", margin: "0", background: "transparent" });
+    return;
+  }
+  const layout = notebookImageLayout({ naturalRatio: Number(image.dataset.naturalRatio || 1), rotation, cropEnabled,
+    cropAspect: image.dataset.cropAspect || "4:3", cropX: Number(image.dataset.cropX ?? 50), cropY: Number(image.dataset.cropY ?? 50), cropZoom: Number(image.dataset.cropZoom ?? 1),
+  });
+  frame.style.aspectRatio = String(layout.aspectRatio);
+  Object.assign(image.style, layout.imageStyle, { position: "absolute", display: "block", maxWidth: "none", maxHeight: "none", margin: "0", objectFit: "contain", background: "transparent" });
+}
+
+function imageNaturalRatio(src: string): Promise<number | null> {
+  return new Promise((resolve) => {
+    const image = new Image();
+    const finish = (value: number | null) => { clearTimeout(timeout); image.onload = null; image.onerror = null; resolve(value); };
+    const timeout = window.setTimeout(() => finish(null), 5000);
+    image.onload = () => finish(image.naturalHeight ? image.naturalWidth / image.naturalHeight : null);
+    image.onerror = () => finish(null);
+    image.src = src;
+  });
 }
 
 export function downloadNotebookBlob(content: BlobPart, type: string, filename: string) {

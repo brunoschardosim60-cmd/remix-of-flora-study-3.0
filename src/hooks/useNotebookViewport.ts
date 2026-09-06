@@ -73,25 +73,41 @@ export function useNotebookViewport(containerRef: RefObject<HTMLElement>, ready:
     const container = containerRef.current;
     if (!ready || !container || !pageKey) return;
     const key = `notebook-scroll:${pageKey}`;
-    let frame = window.requestAnimationFrame(() => {
-      try {
-        const position = JSON.parse(sessionStorage.getItem(key) || "null");
-        container.scrollTop = Number(position?.top) * zoomRef.current || 0;
-        container.scrollLeft = Number(position?.left) * zoomRef.current || 0;
-      } catch { container.scrollTop = 0; container.scrollLeft = 0; }
-    });
+    let frame: number | null = null;
+    let restored = false;
     let position = { top: 0, left: 0 };
+    const restoreFrame = window.requestAnimationFrame(() => {
+      try {
+        const stored = JSON.parse(sessionStorage.getItem(key) || "null");
+        position = { top: finiteScroll(stored?.top), left: finiteScroll(stored?.left) };
+        container.scrollTop = position.top * zoomRef.current;
+        container.scrollLeft = position.left * zoomRef.current;
+      } catch { container.scrollTop = 0; container.scrollLeft = 0; }
+      restored = true;
+    });
+    const flush = () => {
+      if (!restored) return;
+      try { sessionStorage.setItem(key, JSON.stringify(position)); } catch { /* Optional reading preference */ }
+    };
     const save = () => {
+      if (!restored) return;
       position = { top: container.scrollTop / zoomRef.current, left: container.scrollLeft / zoomRef.current };
-      window.cancelAnimationFrame(frame);
-      frame = window.requestAnimationFrame(() => {
-        try { sessionStorage.setItem(key, JSON.stringify(position)); } catch { /* Optional reading preference */ }
-      });
+      if (frame !== null) window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(flush);
     };
     container.addEventListener("scroll", save, { passive: true });
+    window.addEventListener("pagehide", flush);
     return () => {
-      window.cancelAnimationFrame(frame);
+      window.cancelAnimationFrame(restoreFrame);
+      if (frame !== null) window.cancelAnimationFrame(frame);
+      flush();
       container.removeEventListener("scroll", save);
+      window.removeEventListener("pagehide", flush);
     };
   }, [containerRef, ready, pageKey]);
+}
+
+function finiteScroll(value: unknown) {
+  const number = Number(value);
+  return Number.isFinite(number) ? Math.max(0, number) : 0;
 }

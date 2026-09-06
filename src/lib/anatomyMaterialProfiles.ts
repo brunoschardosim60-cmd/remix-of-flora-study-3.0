@@ -104,7 +104,9 @@ export function applyAnatomyTissueMaterial(
   material.map = maps.albedo;
   material.normalMap = maps.normal;
   material.roughnessMap = maps.roughness;
-  material.normalScale.setScalar(profile.normalStrength);
+  // The meshes already contain anatomical relief. Synthetic detail must not
+  // emboss another set of deep grooves onto their surface.
+  material.normalScale.setScalar(profile.normalStrength * .25);
   material.vertexColors = Boolean(options.vertexColors);
   material.color.set(options.vertexColors ? "#ffffff" : options.baseColor ?? profile.baseColor);
   material.emissive.set(options.active ? "#7a291f" : "#000000");
@@ -119,7 +121,10 @@ export function applyAnatomyTissueMaterial(
   material.ior = 1.38;
   material.specularIntensity = profile.specularIntensity;
   material.specularColor.set("#d8c1b7");
-  material.transmission = profile.transmission;
+  // Opaque tissue, not glass: transmission adds an offscreen render pass and
+  // makes overlapping anatomical surfaces appear waxy. Layer opacity is
+  // controlled separately by the atlas for deliberate see-through study.
+  material.transmission = 0;
   material.thickness = profile.thickness;
   material.attenuationColor.set(options.baseColor ?? profile.baseColor);
   material.attenuationDistance = .82;
@@ -166,7 +171,9 @@ function tissueTextureSet(tissue: AnatomyTissue, size: number): TissueTextureSet
         : 0;
       const value = clamp01(.52 + coarse * profile.variation * .46 + cellular * profile.variation * .24 + fibers * .17 + pores * .22);
       height[y * size + x] = value;
-      roughnessValues[y * size + x] = clamp01(.72 + (cellular * .14 - value * .16) * profile.variation * 4.2);
+      // Roughness maps multiply the profile roughness. Keep this close to one
+      // instead of unintentionally polishing every tissue with a .7 multiplier.
+      roughnessValues[y * size + x] = clamp01(.97 + cellular * profile.variation * .12);
     }
   }
 
@@ -178,7 +185,7 @@ function tissueTextureSet(tissue: AnatomyTissue, size: number): TissueTextureSet
       const index = y * size + x;
       const offset = index * 4;
       const value = height[index];
-      const tone = Math.round(190 + value * 55);
+      const tone = Math.round(236 + value * 18);
       albedoData[offset] = clampByte(tone + profile.variation * 20);
       albedoData[offset + 1] = clampByte(tone);
       albedoData[offset + 2] = clampByte(tone - profile.variation * 16);
@@ -244,9 +251,8 @@ function ensureProjectedUv(geometry: BufferGeometry) {
   const extent = [Math.max(size.x, 1e-6), Math.max(size.y, 1e-6), Math.max(size.z, 1e-6)];
   const uv = new Float32Array(positions.count * 2);
   for (let index = 0; index < positions.count; index += 1) {
-    const point = [positions.getX(index), positions.getY(index), positions.getZ(index)];
-    uv[index * 2] = ((point[uAxis] - minimum[uAxis]) / extent[uAxis]) * 4;
-    uv[index * 2 + 1] = ((point[vAxis] - minimum[vAxis]) / extent[vAxis]) * 4;
+    uv[index * 2] = ((positions.getComponent(index, uAxis) - minimum[uAxis]) / extent[uAxis]) * 4;
+    uv[index * 2 + 1] = ((positions.getComponent(index, vAxis) - minimum[vAxis]) / extent[vAxis]) * 4;
   }
   geometry.setAttribute("uv", new BufferAttribute(uv, 2));
 }

@@ -58,3 +58,49 @@
 @media(hover:none){.med-3d-hover-label{display:none}}
 @media(min-width:1051px){.med-3d-canvas-toolbar{flex-shrink:0}.med-3d-canvas{min-height:0}}
 .med-3d-hierarchy dd{overflow-wrap:anywhere;color:#4d6d63}.med-3d-hierarchy dd::first-letter{text-transform:uppercase}
+
+.med-3d-study-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  padding: 10px 14px;
+  border: 1px solid #dce6e1;
+  border-radius: 14px;
+  background: #f8fbf9;
+  color: #46665e;
+  max-width: 1540px;
+  margin: 0 auto 10px;
+}
+.med-3d-study-bar label { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 12px; }
+.med-3d-study-bar label svg { width: 16px; height: 16px; flex-shrink: 0; }
+.med-3d-study-bar select { max-width: 100%; min-height: 36px; padding: 6px 28px 6px 10px; border: 1px solid #d4e2dc; border-radius: 8px; background: #fff; color: #244f43; font: inherit; cursor: pointer; }
+.med-3d-study-bar select:focus-visible { outline: 2px solid #167969; outline-offset: 2px; }
+.med-3d-study-bar small { margin-left: auto; font-size: 11px; color: #66857b; }
+.med-3d-connected-study { max-width: 1540px; margin: 0 auto 10px; }
+.med-3d-connected-study > summary { display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 6px 12px; border: 1px solid #d4e2dc; border-radius: 10px; background: #eaf3ee; color: #356452; font-size: 12px; cursor: pointer; list-style: none; }
+.med-3d-connected-study > summary::-webkit-details-marker { display: none; }
+.med-3d-connected-study > summary svg { width: 16px; height: 16px; flex-shrink: 0; }
+.med-3d-connected-study > summary svg:last-child { margin-left: auto; }
+.med-3d-connected-study[open] > summary svg:last-child { transform: rotate(90deg); }
+.med-3d-connected-study > summary:focus-visible { outline: 2px solid #167969; outline-offset: 2px; }
+.med-3d-connected-study .med-3d-integration { margin-top: 8px; }
+@media(min-width: 1051px) {
+  .med-3d-studio { padding-top: 16px; }
+  .med-3d-heading { margin-bottom: 12px; }
+  .med-3d-heading h1 { font-size: 30px; }
+  .med-3d-heading p { font-size: 12px; }
+  .med-3d-workspace { min-height: 420px; height: clamp(420px, calc(100dvh - 280px), 800px); }
+  .med-3d-studio:fullscreen .med-3d-workspace,
+  .med-3d-studio.is-fullscreen-fallback .med-3d-workspace { height: calc(100dvh - 225px); }
+}
+.dark .med-3d-study-bar, .black .med-3d-study-bar { background: #17231e; border-color: #31483e; color: #bad4c9; }
+.dark .med-3d-study-bar select, .black .med-3d-study-bar select { background: #20372d; border-color: #466357; color: #d4e7df; }
+@media(max-width: 680px) {
+  .med-3d-study-bar { gap: 8px; padding: 10px; }
+  .med-3d-study-bar label:first-child { flex-basis: 100%; }
+  .med-3d-study-bar label:first-child select { flex: 1; min-width: 0; }
+  .med-3d-study-bar label:not(:first-child) { flex: 1; flex-wrap: wrap; }
+  .med-3d-study-bar select { min-height: 44px; }
+  .med-3d-study-bar small { flex-basis: 100%; }
+}

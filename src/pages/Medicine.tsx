@@ -10,6 +10,7 @@ import { BodyAtlas } from "@/components/medicine/BodyAtlas";
 import { IntegratedJourneyContextBar } from "@/components/medicine/IntegratedJourneyContextBar";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { confirmMedicineProgressWrite, requireMedicineProgressRead } from "@/lib/medicineSyncResult";
 import {
   anatomyPositionFor, anatomyStructures, atlasImageForStructure, bodyLayers, embryologyTimeline, medicalClinicalCase, medicalClinicalCases, medicalQuestions,
   medicineLevelProfiles, medicalSources, medicalSystems, type AnatomyStructure, type BodyLayer, type MedicineLevel,
@@ -240,6 +241,10 @@ export default function Medicine() {
   const [studyGoal, setStudyGoal] = useState("Dominar anatomia e fisiologia");
   const [cloudReady, setCloudReady] = useState(false);
   const [cloudSyncError, setCloudSyncError] = useState(false);
+  const [cloudOwnerId, setCloudOwnerId] = useState<string | null>(null);
+  const [cloudSaving, setCloudSaving] = useState(false);
+  const [syncAttempt, setSyncAttempt] = useState(0);
+  const cloudWriteQueue = useRef<Promise<void>>(Promise.resolve());
   const [resumeSection, setResumeSection] = useState<MedicineSection>(() => loadMedicineState("last_section", "home"));
   const [initial3DStructureId, setInitial3DStructureId] = useState<string | null>(null);
   const [sectionMediaReady, setSectionMediaReady] = useState(() => (SECTION_IMAGE_WARMUPS[section] ?? []).every(isMedicalImageReady));
@@ -315,10 +320,17 @@ export default function Medicine() {
   }, [level, practicePool]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) { setCloudReady(false); setCloudOwnerId(null); setCloudSyncError(false); setCloudSaving(false); return; }
+    if (cloudOwnerId === user.id && cloudReady) return;
     let active = true;
-    supabase.from("medicine_progress").select("*").eq("user_id", user.id).maybeSingle().then(({ data }) => {
+    setCloudReady(false);
+    setCloudSyncError(false);
+    setCloudSaving(true);
+    Promise.resolve(supabase.from("medicine_progress").select("*").eq("user_id", user.id).maybeSingle()).then((result) => {
       if (!active) return;
+      // An unavailable table/denied read is not an empty account. Never follow
+      // a failed read by overwriting the remote row with local defaults.
+      const data = requireMedicineProgressRead(result);
       if (data) {
         if (levelOrder.includes(data.level as MedicineLevel)) setLevel(data.level as MedicineLevel);
         setStudyHours(data.study_hours);
@@ -343,14 +355,34 @@ export default function Medicine() {
         setCaseStep(Math.min(Math.max(savedStep, 0), savedCase.steps.length));
       }
       setCloudReady(true);
+      setCloudOwnerId(user.id);
+      setCloudSaving(false);
+    }).catch(() => {
+      if (!active) return;
+      setCloudReady(false);
+      setCloudSyncError(true);
+      setCloudSaving(false);
     });
     return () => { active = false; };
-  }, [user]);
+  }, [user, cloudOwnerId, cloudReady, syncAttempt]);
 
   useEffect(() => {
-    if (!user || !cloudReady) return;
+    const retry = () => setSyncAttempt((value) => value + 1);
+    window.addEventListener("online", retry);
+    return () => window.removeEventListener("online", retry);
+  }, []);
+
+  useEffect(() => {
+    if (!user || !cloudReady || cloudOwnerId !== user.id) return;
+    let active = true;
+    setCloudSaving(true);
     const timeout = window.setTimeout(() => {
-      void supabase.from("medicine_progress").upsert({
+      // Serialize writes so a slow old request cannot finish after a new one
+      // and replace the latest progress. Skip queued snapshots already stale.
+      cloudWriteQueue.current = cloudWriteQueue.current.catch(() => {}).then(async () => {
+        if (!active) return;
+        try {
+          const result = await supabase.from("medicine_progress").upsert({
         user_id: user.id,
         level,
         study_hours: studyHours,
@@ -363,10 +395,18 @@ export default function Medicine() {
         case_progress: caseProgress,
         last_section: section === "home" ? resumeSection : section,
         content_version: "MED-2026.08.26",
-      }, { onConflict: "user_id" }).then(({ error }) => setCloudSyncError(Boolean(error)));
+          }, { onConflict: "user_id" }).select("user_id").single();
+          confirmMedicineProgressWrite(result, user.id);
+          if (active) setCloudSyncError(false);
+        } catch {
+          if (active) setCloudSyncError(true);
+        } finally {
+          if (active) setCloudSaving(false);
+        }
+      });
     }, 650);
-    return () => window.clearTimeout(timeout);
-  }, [answered, caseProgress, caseStep, cloudReady, favoriteIds, learningState, level, resumeSection, section, studyGoal, studyHours, user, wrongIds]);
+    return () => { active = false; window.clearTimeout(timeout); };
+  }, [answered, caseProgress, caseStep, cloudOwnerId, cloudReady, favoriteIds, learningState, level, resumeSection, section, studyGoal, studyHours, user, wrongIds, syncAttempt]);
 
   useEffect(() => {
     setCaseProgress((current) => {
@@ -505,7 +545,7 @@ export default function Medicine() {
           {section !== "notebook" && <button className="med-send-notebook" onPointerEnter={() => void warmMedicineSection("notebook")} onFocus={() => void warmMedicineSection("notebook")} onClick={() => navigate("/notebooks")} title="Abrir meus cadernos"><NotebookPen /><span>Abrir Caderno</span></button>}
           <button className="med-flora-button" onClick={() => openFlora()} title={`Estudar ${NAV.find((item) => item.id === section)?.label ?? "Medicina"} com a Flora`}><Sparkles /><span>Flora</span></button>
           <div className="med-level-chip" title={levelProfile.focus}><span>Nível</span><select aria-label="Nível de estudo" value={level} onChange={(event) => updateLevel(event.target.value as MedicineLevel)}>{levelOrder.map((item) => <option key={item}>{item}</option>)}</select></div>
-          <button className={`med-source-status ${cloudSyncError ? "sync-error" : ""}`} onClick={() => go("sources")} title={cloudSyncError ? "O progresso continua salvo neste dispositivo e será reenviado na próxima alteração." : undefined}><ShieldCheck /> {cloudSyncError ? "Sincronização pendente" : cloudReady ? "Progresso protegido" : "Conteúdo rastreável"}</button>
+          <button className={`med-source-status ${cloudSyncError ? "sync-error" : ""}`} disabled={cloudSaving} onClick={() => cloudSyncError ? setSyncAttempt((value) => value + 1) : go("sources")} title={cloudSyncError ? "Não foi possível confirmar a sincronização. Clique para tentar novamente." : undefined} aria-live="polite"><ShieldCheck /> {cloudSaving ? "Sincronizando…" : cloudSyncError ? "Tentar sincronizar" : cloudReady && cloudOwnerId === user?.id ? "Progresso protegido" : "Conteúdo rastreável"}</button>
           <button className="med-menu-button" onClick={() => setMobileNav((value) => !value)} aria-label={mobileNav ? "Fechar navegação" : "Abrir navegação"} aria-expanded={mobileNav} aria-controls="medicine-navigation">{mobileNav ? <X /> : <Menu />}</button>
         </div>
       </header>

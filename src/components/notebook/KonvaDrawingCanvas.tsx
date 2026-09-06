@@ -14,6 +14,7 @@
 
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { getStroke } from "perfect-freehand";
+import { drawNotebookShape } from "./drawingShapes";
 import {
   type Stroke,
   type StrokeBounds,
@@ -167,6 +168,8 @@ function drawRichStroke(ctx: CanvasRenderingContext2D, stroke: Stroke) {
     ctx.restore();
     return;
   }
+
+  if (drawNotebookShape(ctx, stroke)) { ctx.restore(); return; }
 
   // Pen/marker family — renderização vetorial via perfect-freehand.
   // Mapeia tool legado → brush quando o stroke não tiver brush explícito.
@@ -532,7 +535,7 @@ export const KonvaDrawingCanvas = forwardRef<DrawingCanvasRef, KonvaDrawingCanva
             return { x: cx + Math.cos(a) * rx, y: cy + Math.sin(a) * ry, pressure: 0.5, width: penWidth };
           });
         }
-        onStrokesChange([...strokes, { points: shapePts, color: penColor, width: penWidth, tool: "pen" }]);
+        onStrokesChange([...strokes, { points: shapePts, color: penColor, width: penWidth, tool: "pen", shape: tool }]);
         return;
       }
 

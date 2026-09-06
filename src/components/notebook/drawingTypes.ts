@@ -13,6 +13,8 @@ export interface Stroke {
   tool: "pen" | "marker" | "eraser";
   /** Brush variant para renderização realista (perfect-freehand). */
   brush?: BrushKind;
+  /** Preserve geometric strokes instead of smoothing their corners as handwriting. */
+  shape?: "line" | "rect" | "circle";
 }
 
 export interface StrokeBounds {

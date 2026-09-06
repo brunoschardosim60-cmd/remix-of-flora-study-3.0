@@ -17,4 +17,15 @@ describe("notebookExport", () => {
     expect(html).toContain('/heart.png');
     expect(html).toContain("Página 1");
   });
+  it("exports crop, zoom and rotation with static styles and no executable content", () => {
+    const html = buildStandaloneNotebookHtml("Teste", [{ pageNumber: 1, content: '<img src="/heart.png" width="360" data-natural-ratio="2" data-crop-enabled="true" data-crop-aspect="1:1" data-crop-zoom="2" data-crop-y="100" data-rotation="90" onerror="alert(1)"><script>alert(1)</script>' }]);
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    const image = doc.querySelector("img")!;
+    expect(image.style.width).toBe("400%");
+    expect(image.style.top).toBe("-100%");
+    expect(image.style.transform).toContain("rotate(90deg)");
+    expect(image.parentElement!.style.overflow).toBe("hidden");
+    expect(image.getAttribute("onerror")).toBeNull();
+    expect(doc.querySelector("script")).toBeNull();
+  });
 });
