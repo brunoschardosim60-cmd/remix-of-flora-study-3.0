@@ -55,4 +55,37 @@ describe("atlas study navigation", () => {
     expect(screen.getByLabelText("Acabamento dos tecidos")).toHaveValue("realistic");
     expect(screen.getByLabelText("Fundo do atlas")).toHaveValue("light");
   });
+
+  it("opens a grouped piece, returns to its system and resets isolation on a new view", () => {
+    render(<Anatomy3DStudio level="Residência" />);
+    fireEvent.click(screen.getByRole("button", { name: /Peças 3D/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Abrir peça: Crânio" }));
+    expect(screen.getByRole("heading", { name: "Crânio" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Voltar ao sistema" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Ver no sistema" }));
+    expect(screen.queryByRole("button", { name: "Voltar ao sistema" })).not.toBeInTheDocument();
+    choose("muscles");
+    expect(screen.getByRole("heading", { name: "Sistema muscular" })).toBeInTheDocument();
+  });
+
+  it("opens the new dedicated large intestine without jumping to the brain", () => {
+    render(<Anatomy3DStudio level="Ciclo básico" />);
+    fireEvent.click(screen.getByRole("button", { name: /Peças 3D/ }));
+    fireEvent.change(screen.getByLabelText("Buscar peça anatômica"), { target: { value: "grosso" } });
+    fireEvent.click(screen.getByRole("button", { name: "Abrir peça: Intestino grosso" }));
+    expect(screen.getByRole("heading", { name: "Intestino grosso" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Inteiro" })).toHaveClass("active");
+    expect(screen.queryByRole("heading", { name: "Encéfalo" })).not.toBeInTheDocument();
+  });
+
+  it("offers a reversible performance setting without changing the selected anatomy", () => {
+    render(<Anatomy3DStudio level="Residência" />);
+    choose("kidneys");
+    const performance = screen.getByRole("button", { name: "Priorizar fluidez" });
+    fireEvent.click(performance);
+    expect(performance).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("heading", { name: "Rins" })).toBeInTheDocument();
+    fireEvent.click(performance);
+    expect(performance).toHaveAttribute("aria-pressed", "false");
+  });
 });

@@ -3,6 +3,11 @@ import { translateAnatomyName } from "./Anatomy3DStudio";
 
 describe("translateAnatomyName", () => {
   it.each([
+    ["VH_F_ucinate_process1", "Processo uncinado do pâncreas"],
+    ["VH_F_neck_of_pancreas", "Colo do pâncreas"],
+    ["VH_F_hepatic_flexure_of_colon", "Flexura direita do cólon"],
+    ["VH_F_ileocecal_valve", "Valva ileocecal"],
+    ["VH_F_caecum", "Ceco"],
     ["Inferior_vena_cava_(abdominal_part)", "Parte abdominal da veia cava inferior"],
     ["Angular_artery.r", "Artéria angular direita"],
     ["(Accessory_parotid_gland)l", "Glândula parótida acessória esquerda"],

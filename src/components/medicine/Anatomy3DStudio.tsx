@@ -1,12 +1,19 @@
 import { Component, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
-import { Environment, Grid, Lightformer, OrbitControls, useGLTF } from "@react-three/drei";
+import { Environment, Grid, Html, Lightformer, OrbitControls, useGLTF } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import type { BodyLayer } from "@/lib/medicineData";
 import { bakeAnatomyGeometry } from "@/lib/anatomyGeometry";
+import { ANATOMY_SKIN_TONE, anatomySurfaceFinishes, buildAnatomySkinSurface } from "@/lib/anatomySkinSurface";
+import { prepareAnatomySkinEyes } from "@/lib/anatomySkinEyes";
+import type { AnatomySkinRegion } from "@/lib/anatomySkinRegions";
 import { anatomyStudyViews, layersForStudyView } from "@/lib/anatomyStudyViews";
+import { frameAnatomyBounds, isolateAnatomyGeometry } from "@/lib/anatomyIsolation";
+import { anatomyPartLibrary, resolvePartCatalog } from "@/lib/anatomyPartLibrary";
+import { AnatomyMeshPicker } from "./AnatomyMeshPicker";
+import { AnatomyPartBrowser } from "./AnatomyPartBrowser";
 import { ACESFilmicToneMapping, Box3, BufferAttribute, Color, DoubleSide, Group, Mesh, MeshPhysicalMaterial, Object3D, PCFSoftShadowMap, Plane, SRGBColorSpace, Vector2, Vector3 } from "three";
-import { mergeGeometries, mergeVertices } from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import {
   Activity,
   Box,
@@ -60,7 +67,7 @@ import {
   clearAnatomyTissueMaps,
   type AnatomyTissue,
 } from "@/lib/anatomyMaterialProfiles";
-import { detectAnatomyRenderPolicy, type AnatomyRenderPolicy } from "@/lib/anatomyRenderQuality";
+import { detectAnatomyRenderPolicy, selectAnatomyRenderPolicy, type AnatomyRenderPolicy } from "@/lib/anatomyRenderQuality";
 import {
   anatomyManifestLookupKeys,
   loadAnatomy3DManifest,
@@ -93,7 +100,7 @@ type MixableAnatomyLayer = Exclude<Anatomy3DSystemId, "all">;
 type AnatomyLayerState = Record<MixableAnatomyLayer, { visible: boolean; opacity: number }>;
 type AnatomyHoverLabel = { structure: Anatomy3DStructure; x: number; y: number };
 type AnatomyHoverHandler = (structure: Anatomy3DStructure | null, point?: { x: number; y: number }) => void;
-class ThreeModelErrorBoundary extends Component<{ children: ReactNode; onError: () => void; fallback?: ReactNode }, { failed: boolean }> {
+class ThreeModelErrorBoundary extends Component<{ children: ReactNode; onError: () => void; fallback?: ReactNode; resetKey?: string }, { failed: boolean }> {
   state = { failed: false };
 
   static getDerivedStateFromError() {
@@ -103,6 +110,10 @@ class ThreeModelErrorBoundary extends Component<{ children: ReactNode; onError: 
   componentDidCatch(error: Error) {
     console.error("Falha ao carregar modelo anatômico 3D detalhado.", error);
     this.props.onError();
+  }
+
+  componentDidUpdate(previous: Readonly<{ resetKey?: string }>) {
+    if (this.state.failed && previous.resetKey !== this.props.resetKey) this.setState({ failed: false });
   }
 
   render() {
@@ -135,6 +146,10 @@ function Anatomy3DLoadFailure() {
     <span>Os controles e seus dados foram preservados.</span>
     <button type="button" onClick={() => window.location.reload()}>Recarregar modelo</button>
   </div>;
+}
+
+function CanvasModelLoading() {
+  return <Html center><div className="med-3d-model-loading" role="status"><Rotate3D /><strong>Carregando peças 3D…</strong><small>Preparando a geometria selecionada.</small></div></Html>;
 }
 
 interface Anatomy3DStudioProps {
@@ -174,7 +189,7 @@ const SUPPLEMENTAL_ORGAN_PATHS = {
   spleen: "/medicine/models/zanatomy-organ-spleen-v1.glb",
   eye: "/medicine/models/zanatomy-organ-eye-v1.glb",
 } as const;
-const STANDARD_SKIN_TONE = "#c18468";
+const STANDARD_SKIN_TONE = ANATOMY_SKIN_TONE;
 const SYSTEM_OVERVIEWS: Record<Exclude<Anatomy3DSystemId, "all">, Anatomy3DStructure> = {
   surface: { id: "overview:surface", name: "Superfície corporal", layer: "surface", regionId: "whole", region: "Corpo completo", system: "Tegumentar", summary: "Visão externa completa do corpo, sem destacar uma região isolada.", function: "Serve de referência para orientação, proporções e relações entre a superfície e os planos profundos.", sourceId: "zAnatomy3D", focus: [0, -.15, 0], focusDistance: 15.8, color: "#d8a88c", parts: [] },
   muscular: { id: "overview:muscular", name: "Sistema muscular", layer: "muscular", regionId: "whole", region: "Corpo completo", system: "Muscular", summary: "Visão bilateral do conjunto muscular, sem realce unilateral automático.", function: "Permite estudar forma, continuidade e distribuição dos grupos musculares no corpo.", sourceId: "zAnatomy3D", focus: [0, -.15, 0], focusDistance: 15.8, color: "#b94d4f", parts: [] },
@@ -230,7 +245,17 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
   const [appearance, setAppearance] = useState<AnatomyAppearance>("realistic");
   const [backdrop, setBackdrop] = useState<"dark" | "light">("dark");
   const [showMuscularSupportTissues, setShowMuscularSupportTissues] = useState(false);
-  const [renderPolicy, setRenderPolicy] = useState<AnatomyRenderPolicy>(() => detectAnatomyRenderPolicy());
+  const [deviceRenderPolicy, setRenderPolicy] = useState<AnatomyRenderPolicy>(() => detectAnatomyRenderPolicy());
+  const [preferPerformance, setPreferPerformance] = useState(false);
+  const renderPolicy = useMemo(() => preferPerformance
+    ? selectAnatomyRenderPolicy({ width: 400, devicePixelRatio: 1 }) : deviceRenderPolicy, [deviceRenderPolicy, preferPerformance]);
+  const [partLibraryOpen, setPartLibraryOpen] = useState(false);
+  const [activePartId, setActivePartId] = useState<string | null>(null);
+  const [isolatePiece, setIsolatePiece] = useState(false);
+  const [isolatedFrame, setIsolatedFrame] = useState<{ focus: [number, number, number]; distance: number } | null>(null);
+  const registerIsolatedFrame = useCallback((frame: { focus: [number, number, number]; distance: number } | null) => {
+    setIsolatedFrame((current) => JSON.stringify(current) === JSON.stringify(frame) ? current : frame);
+  }, []);
   // O pacote 3D disponível representa anatomia masculina. Mantemos um único
   // perfil verdadeiro em vez de oferecer um seletor que apenas trocaria rótulos.
   const bodyProfile: AnatomyBodyProfile = "male";
@@ -311,6 +336,9 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
   const registerDetailedCatalog = useCallback((catalogSystem: Anatomy3DSystemId, catalog: Anatomy3DStructure[]) => {
     setDetailedCatalogs((current) => {
       const existing = current[catalogSystem] ?? [];
+      // Only organs compose several independent assets. Dense systems switch
+      // between HD/economy variants and must not retain a stale previous index.
+      if (catalogSystem !== "organs") return existing === catalog ? current : { ...current, [catalogSystem]: catalog };
       const mergedById = new Map(existing.map((item) => [item.id, item]));
       catalog.forEach((item) => mergedById.set(item.id, item));
       const merged = [...mergedById.values()];
@@ -338,10 +366,16 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
   }, [guidedStructures, level, visibleStructures]);
   const filteredStructures = useMemo(() => {
     const normalized = normalize(query);
+    if (activePartId) {
+      const pieces = resolvePartCatalog(activePartId, visibleStructures);
+      return pieces.filter((item) => !normalized || normalize(`${item.name} ${item.latin ?? ""}`).includes(normalized));
+    }
     if (!normalized) return system === "all" ? guidedStructures.slice(0, anatomyLevelLimits[level]) : levelVisibleStructures;
     return levelVisibleStructures.filter((item) => normalize(`${item.name} ${item.latin ?? ""} ${item.region} ${item.system} ${item.function}`).includes(normalized));
-  }, [guidedStructures, level, levelVisibleStructures, query, system]);
+  }, [activePartId, guidedStructures, level, levelVisibleStructures, query, system, visibleStructures]);
   const selected = anatomy3DStructures.find((item) => item.id === selectedId) ?? modelSelection;
+  const activePart = anatomyPartLibrary.find((part) => part.id === activePartId);
+  const activePartSource = activePart ? medicalSources[activePart.sourceId] : undefined;
   const manifestByName = useMemo(() => {
     const index = new Map<string, Anatomy3DManifestStructure>();
     manifestStructures.forEach((item) => {
@@ -363,6 +397,19 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
     }
     return undefined;
   }, [manifestByName, selected]);
+  useEffect(() => {
+    if (!selected || selected.layer === "organs" || !selected.id.startsWith("model:")) return;
+    const catalog = detailedCatalogs[selected.layer];
+    if (!catalog?.length) return;
+    const replacement = catalog.find((item) => item.id === selected.id)
+      ?? catalog.find((item) => normalize(item.sourceName ?? item.name) === normalize(selected.sourceName ?? selected.name));
+    if (replacement) {
+      if (modelSelection !== replacement) { setSelectedId(replacement.id); setModelSelection(replacement); }
+    } else if (!activePartId) {
+      const overview = SYSTEM_OVERVIEWS[selected.layer];
+      setSelectedId(overview.id); setModelSelection(overview); setFocusSelected(false); setIsolatePiece(false);
+    }
+  }, [activePartId, detailedCatalogs, modelSelection, selected]);
   const selectedJourneyResolution = resolveIntegratedJourneyStructure({ id: selected?.id, name: selected?.name });
   const contextJourney = integratedJourneyForContext(journeyContext);
   const contextStructure = contextJourney?.structures.find((item) => item.id === journeyContext?.structure.id);
@@ -406,8 +453,9 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
   const baseCameraFocus = focusSelected && selected && selectedIsVisible ? selected.focus : wholeBodySystemFocus;
   const wholeBodySystemDistance = regionMeta.distance;
   const baseCameraDistance = focusSelected && selected && selectedIsVisible ? selected.focusDistance : wholeBodySystemDistance;
-  const cameraFocus = detailedCameraFocus ?? baseCameraFocus;
-  const cameraDistance = (detailedCameraDistance ?? baseCameraDistance)
+  const usePieceFrame = isolatePiece || (organView !== "context" && detailedCameraDefinitions.length === 1);
+  const cameraFocus = (usePieceFrame ? isolatedFrame?.focus : null) ?? detailedCameraFocus ?? baseCameraFocus;
+  const cameraDistance = ((usePieceFrame ? isolatedFrame?.distance : null) ?? detailedCameraDistance ?? baseCameraDistance)
     * (layersExploded && activeLayerIds.length > 1 && region === "whole" ? 1.18 : 1);
   const realistic = appearance === "realistic";
   // Em composição cheia, preserva as cores anatômicas mas troca microtexturas
@@ -430,6 +478,9 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
   }, [levelVisibleStructures, modelSelection?.id, selectedId]);
 
   const changeSystem = (nextSystem: Anatomy3DSystemId) => {
+    setIsolatePiece(false);
+    setActivePartId(null);
+    setIsolatedFrame(null);
     setBodySectionEnabled(false);
     setLayersExploded(false);
     setHoverLabel(null);
@@ -455,6 +506,8 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
   };
 
   const updateLayerVisibility = (layer: MixableAnatomyLayer) => {
+    setIsolatePiece(false);
+    setActivePartId(null);
     const becomingVisible = !layers[layer].visible;
     const next = { ...layers, [layer]: { ...layers[layer], visible: becomingVisible } };
     if (!mixableLayerOrder.some((item) => next[item].visible)) next.surface = { ...next.surface, visible: true };
@@ -481,6 +534,8 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
   };
 
   const applyLayerPreset = (preset: "body" | "interior" | "all") => {
+    setIsolatePiece(false);
+    setActivePartId(null);
     setRegion("whole");
     setOrganView("context");
     setBodySectionEnabled(false);
@@ -562,7 +617,46 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
     setFocusKey((value) => value + 1);
   };
 
+  const openPart = (id: string) => {
+    const part = anatomyPartLibrary.find((item) => item.id === id);
+    if (!part) return;
+    changeSystem(part.layer);
+    const guided = anatomy3DStructures.find((item) => item.id === part.structureId);
+    const piece: Anatomy3DStructure = guided ?? {
+      id: part.structureId ?? `part:${part.id}`, name: part.label, layer: part.layer,
+      regionId: part.regionId, region: part.label, system: part.group, summary: part.description,
+      function: "Explore a forma da peça e confira suas relações no contexto do sistema.",
+      sourceId: part.sourceId, focus: part.focus, focusDistance: part.focusDistance,
+      color: SYSTEM_OVERVIEWS[part.layer].color, parts: [],
+    };
+    setSelectedId(piece.id);
+    setModelSelection(piece);
+    setActivePartId(part.id);
+    setIsolatePiece(part.layer !== "organs");
+    setOrganView(part.layer === "organs" ? "isolated" : "context");
+    setFocusSelected(true);
+    setCameraView("front");
+    setAutoRotate(false);
+    setPartLibraryOpen(false);
+    setLayerPanelOpen(false);
+  };
+
+  const isolateSelection = () => {
+    if (!selected || selected.id.startsWith("overview:")) return;
+    setLayers(anatomyLayerPreset(selected.layer));
+    setSystem(selected.layer);
+    setLayersExploded(false);
+    setBodySectionEnabled(false);
+    setFocusSelected(true);
+    setZoom(1);
+    if (selected.layer === "organs") setOrganView("isolated");
+    else if (selected.layer !== "surface") setIsolatePiece(true);
+    setFocusKey((value) => value + 1);
+  };
+
   const changeRegion = (nextRegion: Anatomy3DRegionId) => {
+    setIsolatePiece(false);
+    setActivePartId(null);
     setRegion(nextRegion);
     setQuery("");
     setCameraView("perspective");
@@ -575,6 +669,14 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
   };
 
   const selectStructure = useCallback((structure: Anatomy3DStructure) => {
+    const part = anatomyPartLibrary.find((item) => item.id === activePartId);
+    if (part?.structureId === structure.id) {
+      setSelectedId(structure.id); setModelSelection(structure); setFocusSelected(true);
+      setOrganView(structure.layer === "organs" ? "isolated" : "context");
+      setIsolatePiece(structure.layer !== "organs"); setFocusKey((value) => value + 1);
+      return;
+    }
+    setActivePartId((current) => structure.layer === "organs" ? current : null);
     const resolved = detailedStructureForGuided(structure, detailedCatalogs, realistic);
     setSelectedId(resolved.id);
     setModelSelection(resolved.id.startsWith("model:") ? resolved : null);
@@ -582,7 +684,7 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
     setFocusSelected(system !== "all");
     if (resolved.layer === "organs" && system === "organs") setOrganView("isolated");
     setFocusKey((value) => value + 1);
-  }, [detailedCatalogs, realistic, system]);
+  }, [activePartId, detailedCatalogs, realistic, system]);
 
   useEffect(() => {
     if (!journeyContext || system !== "organs") return;
@@ -603,6 +705,7 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
   }, [journeyContext, levelVisibleStructures, selectStructure, selected?.id, selected?.name, system]);
 
   useEffect(() => {
+    if (activePartId) return;
     const guided = anatomy3DStructures.find((item) => item.id === selectedId);
     if (!guided) return;
     const replacement = detailedStructureForGuided(guided, detailedCatalogs, realistic);
@@ -610,7 +713,7 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
     setSelectedId(replacement.id);
     setModelSelection(replacement);
     setFocusKey((value) => value + 1);
-  }, [detailedCatalogs, realistic, selectedId]);
+  }, [activePartId, detailedCatalogs, realistic, selectedId]);
 
   const selectedPosition = filteredStructures.findIndex((structure) => structure.id === selected?.id || normalize(structure.name) === normalize(selected?.name ?? ""));
   const navigateStructure = useCallback((direction: -1 | 1) => {
@@ -644,6 +747,8 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
   };
 
   const resetView = () => {
+    setIsolatePiece(false);
+    setActivePartId(null);
     setRegion("whole");
     setSelectedId(system === "all" ? "organ-heart" : structuresFor3D(system, "whole")[0]?.id ?? "organ-heart");
     setModelSelection(null);
@@ -715,6 +820,7 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
         {anatomy3DRegions.map((item) => <button key={item.id} className={region === item.id ? "active" : ""} disabled={!regionAvailability[item.id]} title={!regionAvailability[item.id] ? `Sem estruturas de ${anatomy3DSystemMeta.find((meta) => meta.id === system)?.label.toLocaleLowerCase("pt-BR")} nesta região` : undefined} onClick={() => changeRegion(item.id)}>{item.shortLabel}</button>)}
       </div>
       <div className="med-3d-study-bar" aria-label="Biblioteca de vistas anatômicas">
+        <button type="button" className="med-3d-library-toggle" aria-expanded={partLibraryOpen} onClick={() => setPartLibraryOpen((value) => !value)}><Box /> Peças 3D <span>{anatomyPartLibrary.length}</span></button>
         <label><Layers3 /><span>Explorar</span><select aria-label="Escolher vista anatômica" value="" onChange={(event) => openStudyView(event.target.value)}>
           <option value="" disabled>Sistemas, combinações e órgãos</option>
           {(["Sistemas", "Combinações", "Órgãos em detalhe"] as const).map((group) => <optgroup key={group} label={group}>
@@ -727,8 +833,15 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
         <label><span>Fundo</span><select aria-label="Fundo do atlas" value={backdrop} onChange={(event) => setBackdrop(event.target.value as "dark" | "light")}>
           <option value="dark">Escuro</option><option value="light">Claro</option>
         </select></label>
+        <button type="button" className={`med-3d-performance-toggle ${preferPerformance ? "active" : ""}`} aria-pressed={preferPerformance} onClick={() => setPreferPerformance((value) => !value)}><Activity /> Priorizar fluidez</button>
         <small title={anatomyLevelGuidance[level]}>{level} · {levelVisibleStructures.length} estruturas</small>
       </div>
+      {partLibraryOpen && <AnatomyPartBrowser activeId={activePartId} onOpen={openPart} onClose={() => setPartLibraryOpen(false)} />}
+      {activePartId && <div className="med-3d-piece-context" role="status">
+        <Box /><span><strong>{activePart?.label}</strong> · {activePart?.description}</span>
+        {activePart?.layer === "organs" && selected?.id !== activePart.structureId && <button type="button" onClick={() => openPart(activePart.id)}>Reunir peça</button>}
+        <button type="button" onClick={() => { setIsolatePiece(false); setActivePartId(null); setIsolatedFrame(null); setOrganView("context"); setFocusSelected(false); setZoom(1); setFocusKey((value) => value + 1); }}>Ver no sistema</button>
+      </div>}
       {system === "muscular" && <div className="med-3d-muscle-filter" aria-label="Camadas do sistema muscular">
         <span><strong>Músculos expostos</strong> Fáscias e tendões podem ser adicionados sem ocultar a leitura inicial.</span>
         <button aria-pressed={showMuscularSupportTissues} className={showMuscularSupportTissues ? "active" : ""} onClick={() => setShowMuscularSupportTissues((current) => !current)}>
@@ -858,7 +971,7 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
                 <input aria-label="Posição do corte do corpo" type="range" min="-.8" max=".8" step=".05" value={sectionOffset} onChange={(event) => setSectionOffset(Number(event.target.value))} />
               </div>}
             </aside>}
-            <ThreeModelErrorBoundary onError={() => undefined} fallback={<Anatomy3DLoadFailure />}>
+            <ThreeModelErrorBoundary resetKey={`${sceneSystem}:${activePartId ?? selected?.id ?? "system"}`} onError={() => undefined} fallback={<Anatomy3DLoadFailure />}>
             <Suspense fallback={<Anatomy3DLoadingFallback />}>
               <Canvas
                 shadows={false}
@@ -882,15 +995,15 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
                 </Environment>}
                 <group scale={layersExploded && activeLayerIds.length > 1 && region === "whole" ? .62 : 1}>
                   <>
-                      <Suspense fallback={null}>{layers.surface.visible && <AnimatedLayerGroup exploded={layersExploded} offset={[-8, 0, .42]}><RealBodyPartsModel system={sceneSystem} realistic={detailedMaterials} quality={renderPolicy} selectedId={focusSelected ? selected?.id ?? null : null} skinOpacity={layers.surface.opacity} skinTone={STANDARD_SKIN_TONE} globalSectionPlane={bodySectionPlane} onSelect={selectStructure} onHover={updateHoverLabel} /></AnimatedLayerGroup>}</Suspense>
-                      <Suspense fallback={null}>{layers.muscular.visible && <AnimatedLayerGroup exploded={layersExploded} offset={[-4.8, 0, .25]}><DenseAnatomySystemModel integrated={compositeScene} opacity={layers.muscular.opacity} clipPlane={bodySectionPlane} realistic={detailedMaterials} quality={renderPolicy} path={compositeScene || renderPolicy.tier === "economy" ? MOBILE_MUSCULAR_PATH : REAL_MODEL_PATH} layer="muscular" sourceId={compositeScene || renderPolicy.tier === "economy" ? "vayuAnatomy3D" : "zAnatomy3D"} includeSupportTissue={system === "muscular" && showMuscularSupportTissues} selectedId={focusSelected ? selected?.id ?? null : null} onSelect={selectStructure} onHover={updateHoverLabel} onCatalogReady={registerDetailedCatalog} /></AnimatedLayerGroup>}</Suspense>
-                      <Suspense fallback={null}>{layers.skeletal.visible && <AnimatedLayerGroup exploded={layersExploded} offset={[-1.6, 0, .08]}><DenseAnatomySystemModel integrated={compositeScene} opacity={layers.skeletal.opacity} clipPlane={bodySectionPlane} realistic={detailedMaterials} quality={renderPolicy} path={compositeScene ? COMPOSITE_SKELETAL_PATH : REAL_SKELETAL_PATH} layer="skeletal" sourceId={compositeScene ? "vayuAnatomy3D" : "zAnatomy3D"} includeSupportTissue selectedId={focusSelected ? selected?.id ?? null : null} onSelect={selectStructure} onHover={updateHoverLabel} onCatalogReady={registerDetailedCatalog} /></AnimatedLayerGroup>}</Suspense>
-                      <Suspense fallback={null}>{layers.organs.visible && <AnimatedLayerGroup exploded={layersExploded} offset={[1.6, 0, -.08]}>{compositeScene
+                      <Suspense fallback={<CanvasModelLoading />}>{layers.surface.visible && <AnimatedLayerGroup exploded={layersExploded} offset={[-8, 0, .42]}><RealBodyPartsModel system={sceneSystem} realistic={detailedMaterials} quality={renderPolicy} selectedId={focusSelected ? selected?.id ?? null : null} skinOpacity={layers.surface.opacity} skinTone={STANDARD_SKIN_TONE} globalSectionPlane={bodySectionPlane} onSelect={selectStructure} onHover={updateHoverLabel} /></AnimatedLayerGroup>}</Suspense>
+                      <Suspense fallback={<CanvasModelLoading />}>{layers.muscular.visible && <AnimatedLayerGroup exploded={layersExploded} offset={[-4.8, 0, .25]}><DenseAnatomySystemModel isolate={isolatePiece && !compositeScene} partId={activePartId} onIsolatedFrame={registerIsolatedFrame} integrated={compositeScene} opacity={layers.muscular.opacity} clipPlane={bodySectionPlane} realistic={detailedMaterials} quality={renderPolicy} path={compositeScene || renderPolicy.tier === "economy" ? MOBILE_MUSCULAR_PATH : REAL_MODEL_PATH} layer="muscular" sourceId={compositeScene || renderPolicy.tier === "economy" ? "vayuAnatomy3D" : "zAnatomy3D"} includeSupportTissue={system === "muscular" && showMuscularSupportTissues} selectedId={focusSelected ? selected?.id ?? null : null} onSelect={selectStructure} onHover={updateHoverLabel} onCatalogReady={registerDetailedCatalog} /></AnimatedLayerGroup>}</Suspense>
+                      <Suspense fallback={<CanvasModelLoading />}>{layers.skeletal.visible && <AnimatedLayerGroup exploded={layersExploded} offset={[-1.6, 0, .08]}><DenseAnatomySystemModel isolate={isolatePiece && !compositeScene} partId={activePartId} onIsolatedFrame={registerIsolatedFrame} integrated={compositeScene} opacity={layers.skeletal.opacity} clipPlane={bodySectionPlane} realistic={detailedMaterials} quality={renderPolicy} path={compositeScene ? COMPOSITE_SKELETAL_PATH : REAL_SKELETAL_PATH} layer="skeletal" sourceId={compositeScene ? "vayuAnatomy3D" : "zAnatomy3D"} includeSupportTissue selectedId={focusSelected ? selected?.id ?? null : null} onSelect={selectStructure} onHover={updateHoverLabel} onCatalogReady={registerDetailedCatalog} /></AnimatedLayerGroup>}</Suspense>
+                      <Suspense fallback={<CanvasModelLoading />}>{layers.organs.visible && <AnimatedLayerGroup exploded={layersExploded} offset={[1.6, 0, -.08]}>{compositeScene
                         ? <CompositeOrgansModel opacity={layers.organs.opacity} clipPlane={bodySectionPlane} realistic={detailedMaterials} quality={renderPolicy} bodyProfile={bodyProfile} selectedId={focusSelected ? selected?.id ?? null : null} onSelect={selectStructure} onHover={updateHoverLabel} onCatalogReady={registerDetailedCatalog} />
-                        : <DetailedOrgansModel opacity={layers.organs.opacity} globalSectionPlane={bodySectionPlane} realistic={detailedMaterials} quality={renderPolicy} bodyProfile={bodyProfile} selectedId={focusSelected ? selected?.id ?? null : null} organView={organView} sectionAxis={sectionAxis} sectionOffset={sectionOffset} onSelect={selectStructure} onHover={updateHoverLabel} onCatalogReady={registerDetailedCatalog} />}
+                        : <OrganScene onIsolatedFrame={registerIsolatedFrame} opacity={layers.organs.opacity} globalSectionPlane={bodySectionPlane} realistic={detailedMaterials} quality={renderPolicy} bodyProfile={bodyProfile} selectedId={focusSelected ? selected?.id ?? null : null} organView={organView} sectionAxis={sectionAxis} sectionOffset={sectionOffset} onSelect={selectStructure} onHover={updateHoverLabel} onCatalogReady={registerDetailedCatalog} />}
                       </AnimatedLayerGroup>}</Suspense>
-                      <Suspense fallback={null}>{layers.vascular.visible && <AnimatedLayerGroup exploded={layersExploded} offset={[4.8, 0, -.25]}><DenseAnatomySystemModel integrated={compositeScene} opacity={layers.vascular.opacity} clipPlane={bodySectionPlane} realistic={detailedMaterials} quality={renderPolicy} path={compositeScene ? COMPOSITE_CIRCULATORY_PATH : DETAILED_CIRCULATORY_PATH} layer="vascular" sourceId={compositeScene ? "zAnatomy3D" : "vayuAnatomy3D"} selectedId={focusSelected ? selected?.id ?? null : null} onSelect={selectStructure} onHover={updateHoverLabel} onCatalogReady={registerDetailedCatalog} /></AnimatedLayerGroup>}</Suspense>
-                      <Suspense fallback={null}>{layers.nervous.visible && <AnimatedLayerGroup exploded={layersExploded} offset={[8, 0, -.42]}><DenseAnatomySystemModel integrated={compositeScene} opacity={layers.nervous.opacity} clipPlane={bodySectionPlane} realistic={detailedMaterials} quality={renderPolicy} path={compositeScene ? COMPOSITE_NERVOUS_PATH : DETAILED_NERVOUS_PATH} layer="nervous" sourceId={compositeScene ? "zAnatomy3D" : "vayuAnatomy3D"} selectedId={focusSelected ? selected?.id ?? null : null} onSelect={selectStructure} onHover={updateHoverLabel} onCatalogReady={registerDetailedCatalog} /></AnimatedLayerGroup>}</Suspense>
+                      <Suspense fallback={<CanvasModelLoading />}>{layers.vascular.visible && <AnimatedLayerGroup exploded={layersExploded} offset={[4.8, 0, -.25]}><DenseAnatomySystemModel isolate={isolatePiece && !compositeScene} partId={activePartId} onIsolatedFrame={registerIsolatedFrame} integrated={compositeScene} opacity={layers.vascular.opacity} clipPlane={bodySectionPlane} realistic={detailedMaterials} quality={renderPolicy} path={compositeScene ? COMPOSITE_CIRCULATORY_PATH : DETAILED_CIRCULATORY_PATH} layer="vascular" sourceId={compositeScene ? "zAnatomy3D" : "vayuAnatomy3D"} selectedId={focusSelected ? selected?.id ?? null : null} onSelect={selectStructure} onHover={updateHoverLabel} onCatalogReady={registerDetailedCatalog} /></AnimatedLayerGroup>}</Suspense>
+                      <Suspense fallback={<CanvasModelLoading />}>{layers.nervous.visible && <AnimatedLayerGroup exploded={layersExploded} offset={[8, 0, -.42]}><DenseAnatomySystemModel isolate={isolatePiece && !compositeScene} partId={activePartId} onIsolatedFrame={registerIsolatedFrame} integrated={compositeScene} opacity={layers.nervous.opacity} clipPlane={bodySectionPlane} realistic={detailedMaterials} quality={renderPolicy} path={compositeScene ? COMPOSITE_NERVOUS_PATH : DETAILED_NERVOUS_PATH} layer="nervous" sourceId={compositeScene ? "zAnatomy3D" : "vayuAnatomy3D"} selectedId={focusSelected ? selected?.id ?? null : null} onSelect={selectStructure} onHover={updateHoverLabel} onCatalogReady={registerDetailedCatalog} /></AnimatedLayerGroup>}</Suspense>
                   </>
                 </group>
                 <Grid position={[0, -4.45, 0]} args={[16, 16]} cellSize={0.5} cellThickness={0.45} cellColor={backdrop === "dark" ? "#30433e" : "#a7bbb4"} sectionSize={2} sectionThickness={0.8} sectionColor={backdrop === "dark" ? "#47635a" : "#7e9990"} fadeDistance={14} fadeStrength={1.2} infiniteGrid />
@@ -917,17 +1030,20 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
             <p>{selected.summary}</p>
             <dl>
               <div><dt>Função</dt><dd>{selected.function}</dd></div>
-              <div><dt>Localização espacial</dt><dd>Centro do modelo em {formatCoordinates(selected.focus)}. Use a rotação para conferir relações anteriores, posteriores e laterais.</dd></div>
+              {activePart ? <div className="med-3d-study-targets"><dt>Roteiro de exploração</dt><dd><ol>{activePart.studyTargets.map((target) => <li key={target}>{target}</li>)}</ol></dd></div>
+                : <div><dt>Localização espacial</dt><dd>Centro do modelo em {formatCoordinates(selected.focus)}. Use a rotação para conferir relações anteriores, posteriores e laterais.</dd></div>}
               {selectedManifestStructure?.hierarchyPath?.length > 1 && <div className="med-3d-hierarchy">
                 <dt>Hierarquia anatômica</dt>
                 <dd>{selectedManifestStructure.hierarchyPath.map((item, index) => translateAnatomyName(item, selected.layer, index)).join(" → ")}</dd>
               </div>}
             </dl>
             <div className="med-3d-detail-actions">
-              <button onClick={() => { setFocusSelected(true); setZoom(1.25); if (selected.layer === "organs") setOrganView("isolated"); setFocusKey((value) => value + 1); }}><Focus /> Isolar e aproximar</button>
+              <button disabled={selected.id.startsWith("overview:")} onClick={isolateSelection}><Focus /> {selected.layer === "surface" ? "Aproximar região" : "Isolar e aproximar"}</button>
+              {isolatePiece && <button onClick={() => { setIsolatePiece(false); setActivePartId(null); setIsolatedFrame(null); setFocusSelected(false); setZoom(1); setFocusKey((value) => value + 1); }}><PersonStanding /> Voltar ao sistema</button>}
               <button onClick={() => speak(selected.name)}><Volume2 /> Ouvir nome</button>
               <a href={medicalSources[selected.sourceId]?.url ?? medicalSources.openAnatomy.url} target="_blank" rel="noreferrer"><ExternalLink /> Conferir anatomia</a>
             </div>
+            {activePartSource && <details className="med-3d-model-source"><summary>Fonte e licença do modelo</summary><a href={activePartSource.url} target="_blank" rel="noreferrer">{activePartSource.title} <ExternalLink /></a><p>{activePartSource.attribution}</p><small>{activePartSource.license} · Exibição com escala e materiais adaptados; geometria de origem preservada.</small></details>}
             {selected.layer === "organs" && <div className="med-3d-organ-disclaimer"><Box /><span><strong>{organViewLabel(organView)}</strong>{organViewDescription(organView)}</span></div>}
             {realistic && <div className="med-3d-realistic-disclaimer"><HeartPulse /><span><strong>{anatomyMaterialProfiles[anatomyTissueForName(selected.name, tissueFallbackForLayer(selected.layer))].label}</strong>Material PBR educacional com microtextura não anatômica; não representa variações individuais, patologia ou peça de dissecação.</span></div>}
             <div className="med-3d-safety"><ShieldCheck /><span><strong>Modelo educacional</strong>As formas 3D ajudam a entender orientação e relações gerais; não substituem atlas anatômico validado, dissecação ou avaliação profissional.</span></div>
@@ -976,23 +1092,27 @@ function RealBodyPartsModel({ system, realistic, quality, selectedId, skinOpacit
       if (!(object instanceof Mesh)) return;
       const material = object.material as MeshPhysicalMaterial;
       const active = selectedId === "model:skin";
-      const naturalTone = skinColorForMesh(skinTone, object.name);
-      if (realistic) {
-        applyAnatomyTissueMaterial(material, object.geometry, "skin", { active, baseColor: `#${naturalTone.getHexString()}`, quality, vertexColors: true });
+      const region = object.userData.anatomySkinRegion as AnatomySkinRegion;
+      const finish = anatomySurfaceFinishes[region];
+      if (realistic && region === "skin") {
+        applyAnatomyTissueMaterial(material, object.geometry, "skin", { active: false, baseColor: skinTone, quality, vertexColors: true });
       } else {
         clearAnatomyTissueMaps(material);
-        material.vertexColors = false;
-        material.color.copy(naturalTone);
-        material.emissive.copy(naturalTone).multiplyScalar(active ? .16 : .018);
-        material.emissiveIntensity = active ? .2 : .045;
-        material.roughness = .72;
-        material.clearcoat = .012;
-        material.clearcoatRoughness = .9;
-        material.sheen = .08;
-        material.sheenColor.copy(naturalTone).offsetHSL(0, -.08, .1);
-        material.specularIntensity = .36;
-        material.transmission = 0;
+        material.vertexColors = true;
+        material.color.set("#ffffff");
       }
+      // A selection must not recolor the whole face. Hair, nails and lips keep
+      // their own finishes in both teaching and tissue modes.
+      material.emissive.set("#000000");
+      material.emissiveIntensity = 0;
+      material.roughness = finish.roughness;
+      material.sheen = realistic ? finish.sheen : 0;
+      material.sheenColor.set(region === "skin" ? "#efc6b2" : finish.color);
+      material.specularIntensity = finish.specularIntensity;
+      material.specularColor.set("#ffffff");
+      material.clearcoat = region === "nail" ? .08 : 0;
+      material.clearcoatRoughness = .55;
+      material.transmission = 0;
       material.opacity = active ? 1 : skinOpacity;
       material.transparent = material.opacity < 1;
       material.depthWrite = material.opacity > 0.5;
@@ -1013,16 +1133,33 @@ function RealBodyPartsModel({ system, realistic, quality, selectedId, skinOpacit
   if (system !== "all" && system !== "surface") return null;
 
   return <group>
-    {system === "surface" ? <primitive
-      object={skinModel}
-      onPointerMove={(event: ThreeEvent<PointerEvent>) => {
-        event.stopPropagation();
-        onHover(skinStructure, hoverPointFromThreeEvent(event));
-      }}
-      onPointerOut={() => onHover(null)}
-    /> : <primitive object={skinModel} />}
-    <NativeMeshPicker active={system === "surface"} root={skinModel} onPick={selectSkinModel} />
+    <primitive object={skinModel} />
+    {system === "surface" && <Suspense fallback={null}><AnatomySurfaceEyes opacity={skinOpacity} sectionPlane={globalSectionPlane} /></Suspense>}
+    <AnatomyMeshPicker active={system === "surface"} root={skinModel} onPick={selectSkinModel}
+      onHover={(hit, point) => onHover(hit ? skinStructure : null, point)} />
   </group>;
+}
+
+function AnatomySurfaceEyes({ opacity, sectionPlane }: { opacity: number; sectionPlane: Plane | null }) {
+  const gltf = useGLTF(anatomy3DAssets.skinEyes.path, "/medicine/models/draco/");
+  const model = useMemo(() => {
+    const aligned = gltf.scene.clone(true);
+    alignZAnatomyRoot(aligned);
+    return prepareAnatomySkinEyes(aligned);
+  }, [gltf.scene]);
+  useEffect(() => {
+    model.traverse((object) => {
+      if (!(object instanceof Mesh)) return;
+      const material = object.material as MeshPhysicalMaterial;
+      const cornea = object.userData.anatomySurfaceMaterial === "cornea";
+      material.opacity = opacity * (cornea ? .08 : 1);
+      material.transparent = material.opacity < 1;
+      material.depthWrite = !cornea && opacity > .5;
+      material.clippingPlanes = sectionPlane ? [sectionPlane] : [];
+      material.needsUpdate = true;
+    });
+  }, [model, opacity, sectionPlane]);
+  return <primitive object={model} />;
 }
 
 function prepareBodyPartsRoot(source: Object3D, kind: "skin" | "organs") {
@@ -1039,62 +1176,7 @@ function prepareBodyPartsRoot(source: Object3D, kind: "skin" | "organs") {
   }
 
   if (kind === "skin") {
-    const geometries: Mesh["geometry"][] = [];
-    clone.traverse((object: unknown) => {
-      if (!(object instanceof Mesh)) return;
-      const geometry = bakeAnatomyGeometry(object.geometry, object.matrixWorld);
-      for (const attribute of Object.keys(geometry.attributes)) {
-        if (attribute !== "position" && attribute !== "normal") geometry.deleteAttribute(attribute);
-      }
-      if (!geometry.getAttribute("normal")) geometry.computeVertexNormals();
-      geometries.push(geometry);
-    });
-    const combined = mergeGeometries(geometries, false);
-    if (!combined) throw new Error("Não foi possível consolidar a superfície corporal.");
-    // Preserve source positions and normals. Snapping the sagittal band to X=0
-    // collapsed facial triangles instead of repairing the original model seam.
-    const welded = mergeVertices(combined, .000001);
-    welded.computeBoundingBox();
-    welded.computeBoundingSphere();
-    const positions = welded.getAttribute("position") as BufferAttribute;
-    const bounds = welded.boundingBox;
-    const skinColors = new Float32Array(positions.count * 3);
-    const baseSkin = new Color(STANDARD_SKIN_TONE);
-    const height = Math.max(.001, (bounds?.max.y ?? 1) - (bounds?.min.y ?? 0));
-    for (let index = 0; index < positions.count; index += 1) {
-      const x = positions.getX(index);
-      const y = positions.getY(index);
-      const z = positions.getZ(index);
-      const normalizedHeight = (y - (bounds?.min.y ?? 0)) / height;
-      const variation = Math.sin(x * 17.3 + y * 9.1 + z * 13.7) * .012;
-      const circulation = Math.sin(normalizedHeight * Math.PI) * .012;
-      const tone = baseSkin.clone().offsetHSL(.002, -.025, variation + circulation);
-      skinColors[index * 3] = tone.r;
-      skinColors[index * 3 + 1] = tone.g;
-      skinColors[index * 3 + 2] = tone.b;
-    }
-    welded.setAttribute("color", new BufferAttribute(skinColors, 3));
-    const material = new MeshPhysicalMaterial({
-      color: "#ffffff",
-      vertexColors: true,
-      roughness: .64,
-      metalness: 0,
-      clearcoat: .018,
-      clearcoatRoughness: .86,
-      sheen: .16,
-      sheenColor: "#e0ad97",
-      specularIntensity: .42,
-      ior: 1.4,
-      side: DoubleSide,
-    });
-    const skin = new Mesh(welded, material);
-    skin.name = "superficie-corporal-continua";
-    skin.castShadow = true;
-    skin.receiveShadow = true;
-    const root = new Object3D();
-    root.name = "superficie-corporal-natural";
-    root.add(skin);
-    return root;
+    return buildAnatomySkinSurface(clone);
   }
 
   clone.traverse((object: unknown) => {
@@ -1217,7 +1299,10 @@ function RealMusculoskeletalModel({ system, realistic, quality, selectedId, onSe
 
 type DenseAnatomyLayer = "muscular" | "skeletal" | "vascular" | "nervous";
 
-function DenseAnatomySystemModel({ integrated = false, opacity = 1, clipPlane = null, realistic, quality, path, layer, sourceId, includeSupportTissue = true, selectedId, onSelect, onHover, onCatalogReady }: {
+function DenseAnatomySystemModel({ integrated = false, opacity = 1, clipPlane = null, realistic, quality, path, layer, sourceId, includeSupportTissue = true, selectedId, onSelect, onHover, onCatalogReady, isolate = false, partId = null, onIsolatedFrame }: {
+  isolate?: boolean;
+  partId?: string | null;
+  onIsolatedFrame?: (frame: { focus: [number, number, number]; distance: number } | null) => void;
   integrated?: boolean;
   opacity?: number;
   clipPlane?: Plane | null;
@@ -1233,7 +1318,28 @@ function DenseAnatomySystemModel({ integrated = false, opacity = 1, clipPlane = 
   onCatalogReady: (system: Anatomy3DSystemId, catalog: Anatomy3DStructure[]) => void;
 }) {
   const gltf = useGLTF(path, "/medicine/models/draco/");
+  const { size: viewportSize } = useThree();
   const prepared = useMemo(() => getPreparedDenseAnatomySystem(gltf.scene, layer, sourceId, includeSupportTissue), [gltf.scene, includeSupportTissue, layer, sourceId]);
+  const isolationSelectionId = partId ? null : selectedId;
+  const isolatedGeometry = useMemo(() => {
+    if (!isolate) return null;
+    const part = anatomyPartLibrary.find((item) => item.id === partId);
+    const matches = part ? resolvePartCatalog(part, prepared.catalog) : [];
+    const ids = new Set(matches.map((item) => item.id));
+    if (!part) {
+      const guided = anatomy3DStructures.find((item) => item.id === isolationSelectionId);
+      const replacement = guided ? detailedStructureForGuided(guided, { [layer]: prepared.catalog }) : null;
+      ids.add(replacement?.id ?? isolationSelectionId ?? "");
+    }
+    const indices = new Set(prepared.catalog.flatMap((item, index) => ids.has(item.id) ? [index] : []));
+    return isolateAnatomyGeometry(prepared.mesh.geometry, indices, prepared.baseColors);
+  }, [isolate, isolationSelectionId, layer, partId, prepared]);
+  const displayMesh = useMemo(() => isolatedGeometry ? new Mesh(isolatedGeometry, prepared.mesh.material) : prepared.mesh, [isolatedGeometry, prepared.mesh]);
+  useEffect(() => {
+    if (!isolatedGeometry?.boundingBox) { onIsolatedFrame?.(null); return; }
+    onIsolatedFrame?.(frameAnatomyBounds(isolatedGeometry.boundingBox, viewportSize.width / Math.max(1, viewportSize.height)));
+  }, [isolatedGeometry, onIsolatedFrame, viewportSize.width, viewportSize.height]);
+  useEffect(() => () => { isolatedGeometry?.dispose(); }, [isolatedGeometry]);
 
   useEffect(() => {
     onCatalogReady(layer, prioritizeAnatomyCatalog(prepared.catalog, layer));
@@ -1261,7 +1367,7 @@ function DenseAnatomySystemModel({ integrated = false, opacity = 1, clipPlane = 
   useEffect(() => {
     const material = prepared.mesh.material as MeshPhysicalMaterial;
     if (realistic) {
-      applyAnatomyTissueMaterial(material, prepared.mesh.geometry, tissueFallbackForLayer(layer), { quality, vertexColors: true });
+      applyAnatomyTissueMaterial(material, displayMesh.geometry, tissueFallbackForLayer(layer), { quality, vertexColors: true });
     } else {
       clearAnatomyTissueMaps(material);
       material.color.set("#ffffff");
@@ -1272,7 +1378,7 @@ function DenseAnatomySystemModel({ integrated = false, opacity = 1, clipPlane = 
       material.transmission = 0;
     }
     material.needsUpdate = true;
-  }, [layer, prepared, quality, realistic]);
+  }, [displayMesh, layer, prepared, quality, realistic]);
 
   useEffect(() => {
     const material = prepared.mesh.material as MeshPhysicalMaterial;
@@ -1292,20 +1398,15 @@ function DenseAnatomySystemModel({ integrated = false, opacity = 1, clipPlane = 
     if (structure) onSelect(structure);
   }, [onSelect, prepared.catalog]);
 
-  const hoverStructure = useCallback((event: ThreeEvent<PointerEvent>) => {
-    if (!event.face) return;
-    const ids = prepared.mesh.geometry.getAttribute("anatomyStructureId") as BufferAttribute;
-    const structure = prepared.catalog[Math.round(ids.getX(event.face.a))];
-    if (!structure) return;
-    event.stopPropagation();
-    onHover(structure, hoverPointFromThreeEvent(event));
-  }, [onHover, prepared.catalog, prepared.mesh.geometry]);
-
+  if (isolate && !isolatedGeometry) return <Html center><div className="med-3d-model-loading" role="alert"><Box /><strong>Peça indisponível nesta versão do modelo.</strong><small>Use “Voltar ao sistema” para continuar explorando.</small></div></Html>;
   return <group>
-    {integrated
-      ? <primitive object={prepared.mesh} />
-      : <primitive object={prepared.mesh} onPointerMove={hoverStructure} onPointerOut={() => onHover(null)} />}
-    <DenseSystemPicker active={!integrated} mesh={prepared.mesh} onPick={selectByIndex} />
+    <primitive object={displayMesh} />
+    <AnatomyMeshPicker active={!integrated} root={displayMesh}
+      onPick={(hit) => { if (hit.face) selectByIndex(Math.round(displayMesh.geometry.getAttribute("anatomyStructureId").getX(hit.face.a))); }}
+      onHover={(hit, point) => {
+        const structure = hit?.face ? prepared.catalog[Math.round(displayMesh.geometry.getAttribute("anatomyStructureId").getX(hit.face.a))] : null;
+        onHover(structure ?? null, point);
+      }} />
   </group>;
 }
 
@@ -1484,39 +1585,30 @@ function DetailedOrgansModel({ integrated = false, opacity = 1, globalSectionPla
     });
   }, [bodyProfile, globalSectionPlane, integrated, opacity, organView, prepared.meshes, quality, realistic, sectionPlane, selectedId, selectedIndexes, selectedSupplement, showDetailedHeart, showDetailedHra, supplements]);
 
-  const selectOrgan = useCallback((mesh: Mesh) => {
-    const structure = prepared.catalog[Number(mesh.userData.catalogIndex)];
-    if (structure && structureMatchesBodyProfile(structure, bodyProfile)) onSelect(structure);
-  }, [bodyProfile, onSelect, prepared.catalog]);
-
-  const selectIntegratedOrgan = useCallback((event: ThreeEvent<MouseEvent>) => {
-    if (!(event.object instanceof Mesh)) return;
-    event.stopPropagation();
-    selectOrgan(event.object);
-  }, [selectOrgan]);
-
-  const hoverOrgan = useCallback((event: ThreeEvent<PointerEvent>) => {
-    if (!(event.object instanceof Mesh)) return;
-    const structure = prepared.catalog[Number(event.object.userData.catalogIndex)];
-    if (!structure || !structureMatchesBodyProfile(structure, bodyProfile)) return;
-    event.stopPropagation();
-    onHover(structure, hoverPointFromThreeEvent(event));
-  }, [bodyProfile, onHover, prepared.catalog]);
-
-  const selectSupplementStructure = useCallback((supplement: ReturnType<typeof prepareSupplementalOrgan>, event: ThreeEvent<MouseEvent>) => {
-    if (!(event.object instanceof Mesh)) return;
-    const structure = supplement.catalog[Number(event.object.userData.supplementCatalogIndex)] ?? supplement.structure;
-    event.stopPropagation();
-    onSelect(structure);
-  }, [onSelect]);
+  const pickRoot = useMemo(() => {
+    const root = new Group();
+    root.add(prepared.root, ...supplements.map((supplement) => supplement.root));
+    return root;
+  }, [prepared.root, supplements]);
+  const pickCatalog = useMemo(() => {
+    const catalog = new Map<Object3D, Anatomy3DStructure>();
+    prepared.meshes.forEach((mesh, index) => {
+      const structure = prepared.catalog[index];
+      if (structure && structureMatchesBodyProfile(structure, bodyProfile)) catalog.set(mesh, structure);
+    });
+    supplements.forEach((supplement) => supplement.root.traverse((object) => {
+      if (!(object instanceof Mesh)) return;
+      const structure = supplement.catalog[Number(object.userData.supplementCatalogIndex)] ?? supplement.structure;
+      if (structureMatchesBodyProfile(structure, bodyProfile)) catalog.set(object, structure);
+    }));
+    return catalog;
+  }, [bodyProfile, prepared, supplements]);
 
   return <group>
-    <primitive object={prepared.root} onClick={integrated ? selectIntegratedOrgan : undefined} onPointerMove={hoverOrgan} onPointerOut={() => onHover(null)} />
-    {supplements.map((supplement) => <primitive
-      key={supplement.structure.id}
-      object={supplement.root}
-      onClick={(event: ThreeEvent<MouseEvent>) => selectSupplementStructure(supplement, event)}
-    />)}
+    <primitive object={pickRoot} />
+    <AnatomyMeshPicker active={!showDetailedHeart && !showDetailedHra} root={pickRoot}
+      onPick={(hit) => { const structure = pickCatalog.get(hit.object); if (structure) onSelect(structure); }}
+      onHover={(hit, point) => onHover(hit ? pickCatalog.get(hit.object) ?? null : null, point)} />
     {showDetailedHeart && <ThreeModelErrorBoundary onError={() => setHeartDetailFailed(true)}>
       <DetailedHeartModel
         realistic={realistic}
@@ -1543,7 +1635,6 @@ function DetailedOrgansModel({ integrated = false, opacity = 1, globalSectionPla
         onCatalogReady={onCatalogReady}
       />
     </ThreeModelErrorBoundary>)}
-    <NativeMeshPicker active={!integrated && !selectedSupplement} root={prepared.root} onPick={selectOrgan} />
   </group>;
 }
 
@@ -1655,7 +1746,15 @@ function DetailedHeartModel({ realistic, quality, selectedId, organView, section
   return <primitive object={prepared.root} onClick={selectHeartStructure} />;
 }
 
-function DetailedHraOrganModel({ kind, realistic, quality, selectedId, organView, sectionAxis, sectionOffset, onSelect, onCatalogReady }: {
+// Dedicated organ routes do not load the whole-body viscera or unrelated supplements.
+function OrganScene(props: Parameters<typeof DetailedOrgansModel>[0] & { onIsolatedFrame: (frame: { focus: [number, number, number]; distance: number } | null) => void }) {
+  const kinds = props.organView === "context" ? [] : detailedOrganKindsForSelection(props.selectedId);
+  if (!kinds.length) return <DetailedOrgansModel {...props} />;
+  return <group>{kinds.map((kind) => <DetailedHraOrganModel key={kind} {...props} kind={kind} onFrame={kinds.length === 1 ? props.onIsolatedFrame : undefined} />)}</group>;
+}
+
+function DetailedHraOrganModel({ kind, realistic, quality, selectedId, organView, sectionAxis, sectionOffset, onSelect, onHover, onCatalogReady, onFrame }: {
+  onFrame?: (frame: { focus: [number, number, number]; distance: number } | null) => void;
   kind: HraDetailedOrganKind;
   realistic: boolean;
   quality: AnatomyRenderPolicy;
@@ -1670,6 +1769,11 @@ function DetailedHraOrganModel({ kind, realistic, quality, selectedId, organView
   const definition = hraDetailedOrganAssets[kind];
   const gltf = useGLTF(definition.asset.path);
   const prepared = useMemo(() => prepareHraDetailedOrgan(gltf.scene, kind), [gltf.scene, kind]);
+  const { size: viewportSize } = useThree();
+  useEffect(() => {
+    if (selectedId?.startsWith("model:hra:")) { onFrame?.(null); return; }
+    onFrame?.(frameAnatomyBounds(new Box3().setFromObject(prepared.root), viewportSize.width / Math.max(1, viewportSize.height)));
+  }, [onFrame, prepared, selectedId, viewportSize.width, viewportSize.height]);
 
   useEffect(() => {
     onCatalogReady("organs", prepared.catalog);
@@ -1691,7 +1795,7 @@ function DetailedHraOrganModel({ kind, realistic, quality, selectedId, organView
       const structure = prepared.catalog[Number(mesh.userData.catalogIndex)];
       const active = structure?.id === selectedId;
       const material = mesh.material as MeshPhysicalMaterial;
-      mesh.visible = true;
+      mesh.visible = !selectingPart || organView !== "isolated" || active;
       applyOrganAppearance(mesh, `${definition.name} ${structure?.name ?? ""}`, realistic, active, String(mesh.userData.didacticColor ?? definition.color), quality);
       material.opacity = organView === "transparent"
         ? selectingPart ? active ? 1 : .1 : .42
@@ -1716,77 +1820,14 @@ function DetailedHraOrganModel({ kind, realistic, quality, selectedId, organView
 
   return <group>
     <primitive object={prepared.root} />
-    <NativeMeshPicker active root={prepared.root} onPick={selectStructure} />
+    <AnatomyMeshPicker root={prepared.root} onPick={(hit) => { if (hit.object instanceof Mesh) selectStructure(hit.object); }}
+      onHover={(hit, point) => onHover(hit ? prepared.catalog[Number(hit.object.userData.catalogIndex)] ?? null : null, point)} />
   </group>;
 }
 
-function DenseSystemPicker({ active, mesh, onPick }: { active: boolean; mesh: Mesh; onPick: (index: number) => void }) {
-  const { camera, gl, raycaster } = useThree();
-  const pointerStart = useRef<{ id: number; x: number; y: number } | null>(null);
-  useEffect(() => {
-    if (!active) return;
-    const canvas = gl.domElement;
-    const pointer = new Vector2();
-    const handlePointerDown = (event: PointerEvent) => {
-      if (event.button === 0) pointerStart.current = { id: event.pointerId, x: event.clientX, y: event.clientY };
-    };
-    const handlePointerUp = (event: PointerEvent) => {
-      const start = pointerStart.current;
-      pointerStart.current = null;
-      if (!start || start.id !== event.pointerId || Math.hypot(event.clientX - start.x, event.clientY - start.y) > 5) return;
-      const bounds = canvas.getBoundingClientRect();
-      pointer.set(((event.clientX - bounds.left) / bounds.width) * 2 - 1, -((event.clientY - bounds.top) / bounds.height) * 2 + 1);
-      raycaster.setFromCamera(pointer, camera);
-      const hit = raycaster.intersectObject(mesh, false)[0];
-      if (!hit?.face) return;
-      const ids = mesh.geometry.getAttribute("anatomyStructureId") as BufferAttribute;
-      onPick(Math.round(ids.getX(hit.face.a)));
-    };
-    const cancelPointer = () => { pointerStart.current = null; };
-    canvas.addEventListener("pointerdown", handlePointerDown);
-    canvas.addEventListener("pointerup", handlePointerUp);
-    canvas.addEventListener("pointercancel", cancelPointer);
-    return () => {
-      canvas.removeEventListener("pointerdown", handlePointerDown);
-      canvas.removeEventListener("pointerup", handlePointerUp);
-      canvas.removeEventListener("pointercancel", cancelPointer);
-    };
-  }, [active, camera, gl, mesh, onPick, raycaster]);
-  return null;
-}
-
 function NativeMeshPicker({ active, root, onPick }: { active: boolean; root: Object3D; onPick: (mesh: Mesh) => void }) {
-  const { camera, gl, raycaster } = useThree();
-  const pointerStart = useRef<{ id: number; x: number; y: number } | null>(null);
-  useEffect(() => {
-    if (!active) return;
-    const canvas = gl.domElement;
-    const pointer = new Vector2();
-    const handlePointerDown = (event: PointerEvent) => {
-      if (event.button !== 0) return;
-      pointerStart.current = { id: event.pointerId, x: event.clientX, y: event.clientY };
-    };
-    const handlePointerUp = (event: PointerEvent) => {
-      const start = pointerStart.current;
-      pointerStart.current = null;
-      if (!start || start.id !== event.pointerId || Math.hypot(event.clientX - start.x, event.clientY - start.y) > 5) return;
-      const bounds = canvas.getBoundingClientRect();
-      pointer.set(((event.clientX - bounds.left) / bounds.width) * 2 - 1, -((event.clientY - bounds.top) / bounds.height) * 2 + 1);
-      raycaster.setFromCamera(pointer, camera);
-      const hit = raycaster.intersectObject(root, true).find((intersection) => intersection.object instanceof Mesh && meshIsEffectivelyVisible(intersection.object, root));
-      if (hit?.object instanceof Mesh) onPick(hit.object);
-    };
-    const cancelPointer = () => { pointerStart.current = null; };
-    canvas.addEventListener("pointerdown", handlePointerDown);
-    canvas.addEventListener("pointerup", handlePointerUp);
-    canvas.addEventListener("pointercancel", cancelPointer);
-    return () => {
-      canvas.removeEventListener("pointerdown", handlePointerDown);
-      canvas.removeEventListener("pointerup", handlePointerUp);
-      canvas.removeEventListener("pointercancel", cancelPointer);
-    };
-  }, [active, camera, gl, onPick, raycaster, root]);
-  return null;
+  return <AnatomyMeshPicker active={active} root={root}
+    onPick={(hit) => { if (hit.object instanceof Mesh) onPick(hit.object); }} />;
 }
 
 function CameraRig({ focus, distance, focusKey, view, autoRotate }: { focus: [number, number, number]; distance: number; focusKey: number; view: CameraView; autoRotate: boolean }) {
@@ -1795,12 +1836,14 @@ function CameraRig({ focus, distance, focusKey, view, autoRotate }: { focus: [nu
   const desiredTarget = useRef(new Vector3(...focus));
   const desiredPosition = useRef(new Vector3(4, 1, 9));
   const progress = useRef(1);
+  const [focusX, focusY, focusZ] = focus;
 
   useEffect(() => {
-    desiredTarget.current.set(...focus);
-    desiredPosition.current.copy(cameraPositionFor(focus, distance, view));
+    desiredTarget.current.set(focusX, focusY, focusZ);
+    desiredPosition.current.copy(cameraPositionFor([focusX, focusY, focusZ], distance, view));
     progress.current = 1;
-  }, [camera, distance, focus, focusKey, view]);
+    invalidate();
+  }, [camera, distance, focusX, focusY, focusZ, focusKey, invalidate, view]);
 
   useFrame((_, delta) => {
     if (progress.current <= 0.001 || !controls.current) return;
@@ -2227,12 +2270,6 @@ function RendererAppearance({ realistic }: { realistic: boolean }) {
   return null;
 }
 
-function skinColorForMesh(baseTone: string, meshName: string) {
-  const hash = Array.from(meshName).reduce((value, character) => ((value * 31) + character.charCodeAt(0)) >>> 0, 17);
-  const lightnessVariation = ((hash % 7) - 3) * .006;
-  return new Color(baseTone).offsetHSL(0, -.015, lightnessVariation);
-}
-
 function normalizeAnatomyRoot(source: Object3D) {
   const clone = source.clone(true);
   alignZAnatomyRoot(clone);
@@ -2291,7 +2328,7 @@ function catalogStructureFromBounds(rawName: string, layer: DenseAnatomyLayer | 
       ? "Participa da condução, integração ou processamento de sinais nervosos conforme sua localização e conexões."
       : "Sua função depende do órgão ou segmento selecionado e deve ser estudada em conjunto com suas relações anatômicas e sistema funcional.";
   return {
-    id: `model:${layer}:${index}`,
+    id: `model:${layer}:${sourceId}:${stableMeshSlug(rawName)}`,
     name,
     layer,
     regionId,
@@ -2716,6 +2753,15 @@ function translateCompoundAnatomyPhrase(value: string) {
 // Exportada para os testes de nomenclatura; não é um componente React.
 // eslint-disable-next-line react-refresh/only-export-components
 export function translateAnatomyName(rawName: string, layer: BodyLayer, index: number) {
+  const hraSegmentNames: Record<string, string> = {
+    tail_of_pancreas: "Cauda do pâncreas", body_of_pancreas: "Corpo do pâncreas",
+    ucinate_process1: "Processo uncinado do pâncreas", head_of_pancreas: "Cabeça do pâncreas", neck_of_pancreas: "Colo do pâncreas",
+    hepatic_flexure_of_colon: "Flexura direita do cólon", transverse_colon: "Cólon transverso", ascending_colon: "Cólon ascendente",
+    vermiform_appendix: "Apêndice vermiforme", descending_colon: "Cólon descendente", ileocecal_valve: "Valva ileocecal",
+    caecum: "Ceco", rectum: "Reto", sigmoid_colon: "Cólon sigmoide", splenic_flexure_of_colon: "Flexura esquerda do cólon",
+  };
+  const hraName = hraSegmentNames[rawName.replace(/^VH_[FM]_/i, "")];
+  if (hraName) return hraName;
   const normalizedSourceName = rawName.replace(/^VH_[FM]_/i, "").replace(/^Allen_/i, "");
   const rawSide = normalizedSourceName.match(/(?:[._*\s)]([lr]))[.\s]*$/i)?.[1];
   const cleaned = normalizedSourceName

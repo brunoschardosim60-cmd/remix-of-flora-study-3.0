@@ -35,6 +35,14 @@ Arquivos: `zanatomy-surface-hd-v2.glb`, `zanatomy-musculoskeletal-hd-v2.glb`, `z
 
 Exclusões de licença: a fonte declara o modelo renal de Lissie Cowley como CC BY-NC 4.0 e o ouvido interno da University of Dundee como CC BY-NC-SA 4.0. Nomes relacionados a esses subconjuntos foram removidos das exportações redistribuíveis. Os rins mostrados em detalhe no Flora vêm dos modelos HRA/NIH CC BY 4.0 descritos abaixo.
 
+### Suplemento de olhos alinhados à superfície
+
+- Arquivo: `zanatomy-surface-eyes-v1.glb`, derivado exclusivamente do pacote local `zanatomy-nervous-hd-v2.glb` acima.
+- Autoria e licença herdadas: Z-Anatomy (Gauthier Kervyn e colaboradores), BodyParts3D/DBCLS; CC BY-SA 4.0, com cópia em `CC-BY-SA-4.0.txt`.
+- Conteúdo: esclera, íris, córnea e segmento posterior de ambos os olhos. Nomes anatômicos, topologia comprimida Draco, posições, rotações e escala da fonte permanecem preservados. O segmento posterior recebe material escuro para a cavidade vista através da abertura pupilar, sem criar ou renomear uma malha como "pupila".
+- Alterações em 6 de setembro de 2026: extração compacta, remoção das estruturas nervosas não relacionadas e materiais diferenciados; córnea translúcida com alfa 0,08, sem uma camada branca opaca sobre a íris. Não há fotografia/textura clínica neste derivado.
+- Reprodução: `node scripts/anatomy/extract-surface-eyes.mjs`. O SHA-256 da fonte está incorporado em `asset.extras.sourceSha256`; não há download nem re-encode da geometria.
+
 ## `zanatomy-musculoskeletal-v1.glb`
 
 - Fonte imediata: [Body Anatomy 3D Viewer](https://github.com/hpfrei/body-anatomy-3d-viewer), de hpfrei.
@@ -104,6 +112,32 @@ Todos os arquivos abaixo foram obtidos pela API oficial do NIH 3D em 28 de agost
 - Conteúdo: 29 malhas combinadas de cápsulas, hilos, córtex, colunas e pirâmides renais; 147.071 triângulos.
 - SHA-256 esquerdo: `8AC1228E4DB8C07CBF9F6C6DC7CA522C5B8D61F641927233A29AE6609B577403`.
 - SHA-256 direito: `A67508E6948723D34A29FEA2BC8C96931A8FE2F8A08293FD1C3161CFCF13968E`.
+
+## Órgãos HRA independentes adicionados em 6 de setembro de 2026
+
+Os dois arquivos foram obtidos diretamente do CDN oficial do Human Reference Atlas.
+São malhas segmentadas de referência, sem texturas fotográficas. Os binários originais
+foram apenas renomeados; enquadramento, escala, materiais e seleção ocorrem em tempo de
+execução. Não foram criadas representações de doença nem inferidos detalhes ausentes.
+
+### `hra-pancreas-female-v1.glb`
+
+- Atribuição: Kristen Browne; Heidi Schlehlein. 2023. **3D Reference Organ for Pancreas, Female v1.2**. [DOI 10.48539/HBM938.BRGC.644](https://doi.org/10.48539/HBM938.BRGC.644).
+- Licença explícita nos [metadados oficiais](https://cdn.humanatlas.io/hra-releases/v2.0/markdown/ref-organs/3d-vh-f-pancreas.md): [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+- [GLB original](https://cdn.humanatlas.io/hra-releases/v2.0/models/3d-vh-f-pancreas.glb): 714.668 bytes, 12.894 triângulos, 5 malhas.
+- Base declarada: Visible Human Female, National Library of Medicine; revisão por Martha Campbell-Thompson.
+- Segmentos: cabeça, colo, corpo, cauda e processo uncinado. Preservado o nome original de malha `VH_F_ucinate_process1`, apesar do erro de grafia; o metadado `label` identifica corretamente o processo uncinado.
+- SHA-256: `EDB41456634B8FC887E609520E0A59EB0626E0FD0FAA88A5B40985BF358B626D`.
+
+### `hra-large-intestine-female-v1.glb`
+
+- Atribuição: Kristen Browne; Heidi Schlehlein. 2022. **3D Reference Organ for Large Intestine, Female v1.2**. [DOI 10.48539/HBM637.SRWT.828](https://doi.org/10.48539/HBM637.SRWT.828).
+- Licença explícita nos [metadados oficiais](https://cdn.humanatlas.io/hra-releases/v2.0/markdown/ref-organs/3d-vh-f-large-intestine.md): [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+- [GLB original](https://cdn.humanatlas.io/hra-releases/v1.2/models/SBU_F_Intestine_Large.glb): 387.184 bytes, 20.421 triângulos, 10 malhas.
+- Base declarada: dados de Arie Kaufman, Stony Brook University, usados como base para modelagem em ZBrush; revisão por Yiing Lin.
+- Segmentos: ceco, apêndice vermiforme, valva ileocecal, cólon ascendente, flexura direita/hepática, cólon transverso, flexura esquerda/esplênica, cólon descendente, cólon sigmoide e reto.
+- Não representa o intestino delgado; a seleção genérica de intestinos não é substituída por este modelo.
+- SHA-256: `A14BCA59D855546B8343E732C1BF0A146FBDB8EF4D73A3EAC333FC298ECB5D1D`.
 
 ## `zanatomy-circulatory-v1.glb`, `zanatomy-nervous-v1.glb` e `zanatomy-organs-v1.glb`
 

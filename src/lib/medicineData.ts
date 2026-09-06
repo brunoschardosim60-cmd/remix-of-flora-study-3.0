@@ -374,6 +374,22 @@ export const medicalSources: Record<string, MedicalSource> = {
     license: "CC BY 4.0",
     attribution: "Kristen Browne; Heidi Schlehlein. 2022. 3D Reference Organs for Kidney, Female, Left and Right v1.2. https://doi.org/10.48539/HBM898.QGVV.734; https://doi.org/10.48539/HBM487.ZGCW.688.",
   },
+  nihHraPancreas3D: {
+    title: "3D Reference Organ for Pancreas, Female v1.2",
+    organization: "Human Reference Atlas / HuBMAP, NIH",
+    url: "https://doi.org/10.48539/HBM938.BRGC.644",
+    reviewedAt: "2026-09-06",
+    license: "CC BY 4.0",
+    attribution: "Kristen Browne; Heidi Schlehlein. 2023. 3D Reference Organ for Pancreas, Female v1.2. https://doi.org/10.48539/HBM938.BRGC.644.",
+  },
+  nihHraLargeIntestine3D: {
+    title: "3D Reference Organ for Large Intestine, Female v1.2",
+    organization: "Human Reference Atlas / HuBMAP, NIH",
+    url: "https://doi.org/10.48539/HBM637.SRWT.828",
+    reviewedAt: "2026-09-06",
+    license: "CC BY 4.0",
+    attribution: "Kristen Browne; Heidi Schlehlein. 2022. 3D Reference Organ for Large Intestine, Female v1.2. https://doi.org/10.48539/HBM637.SRWT.828.",
+  },
   openstaxCardiacCycle: {
     title: "Ciclo cardíaco",
     organization: "OpenStax, Rice University",

@@ -126,6 +126,8 @@ describe("anatomy3DAssetRegistry", () => {
       liver: "AD9B0BE0FF253E7BFE31BFFFC00017DAFCE226D4F3E7804A81CBB4C2E269D598",
       "kidney-left": "8AC1228E4DB8C07CBF9F6C6DC7CA522C5B8D61F641927233A29AE6609B577403",
       "kidney-right": "A67508E6948723D34A29FEA2BC8C96931A8FE2F8A08293FD1C3161CFCF13968E",
+      pancreas: "EDB41456634B8FC887E609520E0A59EB0626E0FD0FAA88A5B40985BF358B626D",
+      "large-intestine": "A14BCA59D855546B8343E732C1BF0A146FBDB8EF4D73A3EAC333FC298ECB5D1D",
     };
     for (const [kind, definition] of Object.entries(hraDetailedOrganAssets)) {
       const path = resolve(process.cwd(), "public", definition.asset.path.replace(/^\//, ""));
@@ -142,8 +144,26 @@ describe("anatomy3DAssetRegistry", () => {
     expect(detailedOrganKindsForSelection("organ-lungs")).toEqual(["lungs"]);
     expect(detailedOrganKindsForSelection("organ-liver")).toEqual(["liver"]);
     expect(detailedOrganKindsForSelection("organ-kidneys")).toEqual(["kidney-left", "kidney-right"]);
+    expect(detailedOrganKindsForSelection("organ-pancreas")).toEqual(["pancreas"]);
+    expect(detailedOrganKindsForSelection("organ-large-intestine")).toEqual(["large-intestine"]);
+    expect(detailedOrganKindsForSelection("model:hra:pancreas:vh-f-tail-of-pancreas")).toEqual(["pancreas"]);
+    expect(detailedOrganKindsForSelection("model:hra:large-intestine:vh-f-caecum")).toEqual(["large-intestine"]);
+    expect(detailedOrganKindsForSelection("organ-intestines")).toEqual([]);
+    expect(detailedOrganKindsForSelection("jejunum")).toEqual([]);
     expect(detailedOrganKindsForSelection("model:hra:brain:allen-thalamus-l")).toEqual(["brain"]);
     expect(detailedOrganKindsForSelection("organ-heart")).toEqual([]);
     expect(detailedOrganKindsForSelection(null)).toEqual([]);
+  });
+
+  it("preserva os segmentos originais dos novos órgãos sem carregar o corpo completo", () => {
+    const readAsset = (path: string) => readFileSync(resolve(process.cwd(), "public", path.replace(/^\//, "")));
+    expect(glbMeshNames(readAsset(anatomy3DAssets.pancreasDetailed.path))).toEqual(expect.arrayContaining([
+      "VH_F_head_of_pancreas", "VH_F_neck_of_pancreas", "VH_F_body_of_pancreas", "VH_F_tail_of_pancreas", "VH_F_ucinate_process1",
+    ]));
+    expect(glbMeshNames(readAsset(anatomy3DAssets.largeIntestineDetailed.path))).toEqual(expect.arrayContaining([
+      "VH_F_caecum", "VH_F_vermiform_appendix", "VH_F_ascending_colon", "VH_F_transverse_colon", "VH_F_descending_colon", "VH_F_sigmoid_colon", "VH_F_rectum",
+    ]));
+    expect(readAsset(anatomy3DAssets.pancreasDetailed.path).byteLength).toBeLessThan(800_000);
+    expect(readAsset(anatomy3DAssets.largeIntestineDetailed.path).byteLength).toBeLessThan(400_000);
   });
 });

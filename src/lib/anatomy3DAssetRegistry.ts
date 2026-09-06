@@ -61,6 +61,16 @@ export const anatomy3DAssets = {
     meshCount: 256,
     triangleCount: 135_204,
   },
+  skinEyes: {
+    id: "skin-eyes",
+    path: "/medicine/models/zanatomy-surface-eyes-v1.glb",
+    loadMode: "base",
+    sourceId: "zAnatomy3D",
+    license: "CC BY-SA 4.0",
+    expectedMinimumBytes: 65_000,
+    meshCount: 8,
+    triangleCount: 17_196,
+  },
   cardiovascular: {
     id: "cardiovascular",
     path: "/medicine/models/vayu-zanatomy-cardiovascular-v1.glb",
@@ -164,9 +174,29 @@ export const anatomy3DAssets = {
     meshCount: 14,
     triangleCount: 74_283,
   },
+  pancreasDetailed: {
+    id: "pancreas-detailed",
+    path: "/medicine/models/hra-pancreas-female-v1.glb",
+    loadMode: "organ",
+    sourceId: "nihHraPancreas3D",
+    license: "CC BY 4.0",
+    expectedMinimumBytes: 714_000,
+    meshCount: 5,
+    triangleCount: 12_894,
+  },
+  largeIntestineDetailed: {
+    id: "large-intestine-detailed",
+    path: "/medicine/models/hra-large-intestine-female-v1.glb",
+    loadMode: "organ",
+    sourceId: "nihHraLargeIntestine3D",
+    license: "CC BY 4.0",
+    expectedMinimumBytes: 387_000,
+    meshCount: 10,
+    triangleCount: 20_421,
+  },
 } as const satisfies Record<string, Anatomy3DAssetDefinition>;
 
-export type HraDetailedOrganKind = "brain" | "lungs" | "liver" | "kidney-left" | "kidney-right";
+export type HraDetailedOrganKind = "brain" | "lungs" | "liver" | "kidney-left" | "kidney-right" | "pancreas" | "large-intestine";
 
 export const hraDetailedOrganAssets: Record<HraDetailedOrganKind, {
   asset: Anatomy3DAssetDefinition;
@@ -185,6 +215,8 @@ export const hraDetailedOrganAssets: Record<HraDetailedOrganKind, {
   liver: { asset: anatomy3DAssets.liverDetailed, parentId: "organ-liver", name: "Fígado detalhado", latin: "Hepar", system: "Digestório", regionId: "abdomen", region: "Hipocôndrio direito e epigástrio", color: "#7f4037", target: [-.24, 1.16, .04], size: 1.18 },
   "kidney-left": { asset: anatomy3DAssets.kidneyLeftDetailed, parentId: "organ-kidneys", name: "Rim esquerdo detalhado", latin: "Ren sinister", system: "Urinário", regionId: "abdomen", region: "Retroperitônio esquerdo", color: "#80556b", target: [-.25, .72, 0], size: .72 },
   "kidney-right": { asset: anatomy3DAssets.kidneyRightDetailed, parentId: "organ-kidneys", name: "Rim direito detalhado", latin: "Ren dexter", system: "Urinário", regionId: "abdomen", region: "Retroperitônio direito", color: "#80556b", target: [.25, .72, 0], size: .72 },
+  pancreas: { asset: anatomy3DAssets.pancreasDetailed, parentId: "organ-pancreas", name: "Pâncreas segmentado", latin: "Pancreas", system: "Digestório e endócrino", regionId: "abdomen", region: "Abdome superior", color: "#c99678", target: [0, .85, -.1], size: .85 },
+  "large-intestine": { asset: anatomy3DAssets.largeIntestineDetailed, parentId: "organ-large-intestine", name: "Intestino grosso segmentado", latin: "Intestinum crassum", system: "Digestório", regionId: "abdomen", region: "Abdome e pelve", color: "#c38b8a", target: [0, .55, .05], size: 1.55 },
 };
 
 export function detailedOrganKindsForSelection(anatomicalId?: string | null): HraDetailedOrganKind[] {
@@ -193,6 +225,10 @@ export function detailedOrganKindsForSelection(anatomicalId?: string | null): Hr
   if (anatomicalId === "organ-lungs" || anatomicalId.startsWith("model:hra:lungs:")) return ["lungs"];
   if (anatomicalId === "organ-liver" || anatomicalId.startsWith("model:hra:liver:")) return ["liver"];
   if (anatomicalId === "organ-kidneys" || anatomicalId.startsWith("model:hra:kidney-")) return ["kidney-left", "kidney-right"];
+  if (anatomicalId === "organ-pancreas" || anatomicalId.startsWith("model:hra:pancreas:")) return ["pancreas"];
+  // The generic intestine view also includes the small bowel; it must not be
+  // silently replaced with this large-intestine-only reference model.
+  if (anatomicalId === "organ-large-intestine" || anatomicalId.startsWith("model:hra:large-intestine:")) return ["large-intestine"];
   return [];
 }
 
