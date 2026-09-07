@@ -1,4 +1,4 @@
-import { Component, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Component, lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { Environment, Grid, Html, Lightformer, OrbitControls, useGLTF } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
@@ -12,6 +12,8 @@ import { frameAnatomyBounds, isolateAnatomyGeometry } from "@/lib/anatomyIsolati
 import { anatomyPartLibrary, resolvePartCatalog } from "@/lib/anatomyPartLibrary";
 import { AnatomyMeshPicker } from "./AnatomyMeshPicker";
 import { AnatomyPartBrowser } from "./AnatomyPartBrowser";
+import { anatomySpecimens } from "@/lib/anatomySpecimens";
+const AnatomySpecimenViewer = lazy(() => import("./AnatomySpecimenViewer"));
 import { ACESFilmicToneMapping, Box3, BufferAttribute, Color, DoubleSide, Group, Mesh, MeshPhysicalMaterial, Object3D, PCFSoftShadowMap, Plane, SRGBColorSpace, Vector2, Vector3 } from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import {
@@ -251,6 +253,7 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
     ? selectAnatomyRenderPolicy({ width: 400, devicePixelRatio: 1 }) : deviceRenderPolicy, [deviceRenderPolicy, preferPerformance]);
   const [partLibraryOpen, setPartLibraryOpen] = useState(false);
   const [activePartId, setActivePartId] = useState<string | null>(null);
+  const [activeSpecimenId, setActiveSpecimenId] = useState<string | null>(null);
   const [isolatePiece, setIsolatePiece] = useState(false);
   const [isolatedFrame, setIsolatedFrame] = useState<{ focus: [number, number, number]; distance: number } | null>(null);
   const registerIsolatedFrame = useCallback((frame: { focus: [number, number, number]; distance: number } | null) => {
@@ -800,6 +803,10 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
     onOpenJourneyStep?.(step, journeyStructure);
   };
 
+  const activeSpecimen = anatomySpecimens.find((item) => item.id === activeSpecimenId);
+  if (activeSpecimen) return <section ref={rootRef} className={`med-3d-studio${fallbackFullscreen ? " is-fullscreen-fallback" : ""}`} aria-label="Atlas anatômico tridimensional">
+    <Suspense fallback={<div role="status">Abrindo peça realista…</div>}><AnatomySpecimenViewer specimen={activeSpecimen} onBack={() => { setActiveSpecimenId(null); setPartLibraryOpen(true); }} onDidactic={() => { setActiveSpecimenId(null); openPart(activeSpecimen.didacticPartId); }} /></Suspense>
+  </section>;
   return (
     <section ref={rootRef} className={`med-3d-studio${fallbackFullscreen ? " is-fullscreen-fallback" : ""}`} aria-label="Atlas anatômico tridimensional">
       <header className="med-3d-heading">
@@ -820,7 +827,7 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
         {anatomy3DRegions.map((item) => <button key={item.id} className={region === item.id ? "active" : ""} disabled={!regionAvailability[item.id]} title={!regionAvailability[item.id] ? `Sem estruturas de ${anatomy3DSystemMeta.find((meta) => meta.id === system)?.label.toLocaleLowerCase("pt-BR")} nesta região` : undefined} onClick={() => changeRegion(item.id)}>{item.shortLabel}</button>)}
       </div>
       <div className="med-3d-study-bar" aria-label="Biblioteca de vistas anatômicas">
-        <button type="button" className="med-3d-library-toggle" aria-expanded={partLibraryOpen} onClick={() => setPartLibraryOpen((value) => !value)}><Box /> Peças 3D <span>{anatomyPartLibrary.length}</span></button>
+        <button type="button" className="med-3d-library-toggle" aria-expanded={partLibraryOpen} onClick={() => setPartLibraryOpen((value) => !value)}><Box /> Peças 3D <span>{anatomyPartLibrary.length + anatomySpecimens.length}</span></button>
         <label><Layers3 /><span>Explorar</span><select aria-label="Escolher vista anatômica" value="" onChange={(event) => openStudyView(event.target.value)}>
           <option value="" disabled>Sistemas, combinações e órgãos</option>
           {(["Sistemas", "Combinações", "Órgãos em detalhe"] as const).map((group) => <optgroup key={group} label={group}>
@@ -836,7 +843,7 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
         <button type="button" className={`med-3d-performance-toggle ${preferPerformance ? "active" : ""}`} aria-pressed={preferPerformance} onClick={() => setPreferPerformance((value) => !value)}><Activity /> Priorizar fluidez</button>
         <small title={anatomyLevelGuidance[level]}>{level} · {levelVisibleStructures.length} estruturas</small>
       </div>
-      {partLibraryOpen && <AnatomyPartBrowser activeId={activePartId} onOpen={openPart} onClose={() => setPartLibraryOpen(false)} />}
+      {partLibraryOpen && <AnatomyPartBrowser activeId={activePartId} onOpen={openPart} onOpenSpecimen={(id) => { setActiveSpecimenId(id); setPartLibraryOpen(false); }} onClose={() => setPartLibraryOpen(false)} />}
       {activePartId && <div className="med-3d-piece-context" role="status">
         <Box /><span><strong>{activePart?.label}</strong> · {activePart?.description}</span>
         {activePart?.layer === "organs" && selected?.id !== activePart.structureId && <button type="button" onClick={() => openPart(activePart.id)}>Reunir peça</button>}

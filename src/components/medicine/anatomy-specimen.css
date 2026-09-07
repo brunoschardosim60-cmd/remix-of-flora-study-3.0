@@ -1,0 +1,43 @@
+.med-specimen {
+  width: 100%; max-width: 1600px; margin: auto; padding: 8px;
+  color: #254e42; background: #f7f8f4;
+}
+.med-specimen-header { display: flex; align-items: center; gap: 20px; padding: 4px 0 16px; }
+.med-specimen-title { flex: 1; min-width: 0; }
+.med-specimen h1 { margin: 3px 0 0; font: 500 clamp(22px, 2.2vw, 30px)/1.2 Georgia, serif; }
+.med-specimen small { font-size: 11px; line-height: 1.6; color: #60796e; }
+.med-specimen-title small { font-size: 9px; letter-spacing: .14em; font-weight: 700; }
+.med-specimen button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  min-height: 44px; padding: 8px 12px; border: 1px solid #cfddd6; border-radius: 9px;
+  background: #fff; color: #2c6352; font-size: 12px; font-weight: 650; cursor: pointer;
+}
+.med-specimen button:hover { background: #e9f0eb; }
+.med-specimen button[aria-pressed=true], .med-specimen button.med-specimen-compare { background: #245b4c; border-color: #245b4c; color: #fff; }
+.med-specimen button:disabled { opacity: .4; cursor: default; }
+.med-specimen-context { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; border: 1px solid #d9e2db; border-bottom: 0; border-radius: 12px 12px 0 0; font-size: 11px; color: #637c70; }
+.med-specimen-context > span:first-child { color: #2c6352; font-weight: 700; }
+.med-specimen-toolbar { display: flex; align-items: center; gap: 5px; overflow-x: auto; padding: 8px; border: 1px solid #d9e2db; background: #fff; }
+.med-specimen-toolbar button { flex-shrink: 0; border-color: transparent; }
+.med-specimen-toolbar button:nth-child(3), .med-specimen-toolbar button:nth-child(5) { margin-left: 8px; border-left-color: #d9e2db; border-radius: 0 9px 9px 0; }
+.med-specimen-stage { position: relative; height: clamp(380px, calc(100dvh - 250px), 900px); overflow: hidden; border-radius: 0 0 12px 12px; background: #172320; }
+.med-specimen-stage.is-light { background: #edf1ed; }
+.med-specimen-gesture { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); max-width: 92%; width: max-content; padding: 7px 12px; border: 1px solid #ffffff24; border-radius: 8px; background: #14241fd9; color: #e6eee8; font-size: 11px; text-align: center; pointer-events: none; }
+.med-specimen-loading { display: block; min-width: 220px; padding: 12px 18px; border-radius: 10px; background: #fff; color: #345b4c; font-size: 13px; text-align: center; }
+.med-specimen footer { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; padding: 14px 2px; font-size: 12px; line-height: 1.7; }
+.med-specimen-info { max-width: 720px; flex: 1; }
+.med-specimen-info summary { cursor: pointer; font-weight: 650; min-height: 32px; }
+.med-specimen-info p { margin: 8px 0; color: #60796e; }
+.med-specimen-credit { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; color: #60796e; }
+.med-specimen footer a { display: inline-flex; align-items: center; gap: 4px; color: #266952; text-decoration: underline; text-underline-offset: 3px; }
+.med-specimen :is(button,a,summary):focus-visible { outline: 3px solid #329a80; outline-offset: 3px; }
+.med-specimen-error { padding: 32px; background: #fff; color: #583c30; }
+@media (max-width: 640px) {
+  .med-specimen { padding: 0; }
+  .med-specimen-header { flex-wrap: wrap; gap: 10px; padding-bottom: 12px; }
+  .med-specimen-title { order: -1; flex-basis: 100%; }
+  .med-specimen-header button { flex: 1; font-size: 11px; padding-inline: 8px; }
+  .med-specimen-context { align-items: flex-start; flex-direction: column; gap: 2px; padding: 8px 10px; }
+  .med-specimen-stage { height: max(390px, calc(100dvh - 310px)); }
+  .med-specimen footer { flex-direction: column; gap: 4px; }
+}

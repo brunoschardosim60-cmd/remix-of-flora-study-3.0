@@ -166,3 +166,13 @@ Esses três ativos e adaptações das próprias malhas permanecem sob CC BY-SA 4
 - Alterações neste projeto: renomeação dos arquivos, materiais, transparência, agrupamento semântico, destaque, filtros e câmera aplicados em tempo de execução. A geometria não foi remodelada neste repositório.
 
 O aviso resumido e a cópia do texto jurídico estão nos arquivos `CC-BY-SA-2.1-JP.txt` e `CC-BY-SA-2.1-JP-legalcode.html` deste diretório.
+
+## `neshallads-heart-realistic-v1.glb`
+
+- Obra: [Realistic Human Heart](https://sketchfab.com/3d-models/realistic-human-heart-3f8072336ce94d18b3d0d055a1ece089), de **neshallads**.
+- Licença: [Creative Commons Attribution 4.0 International](https://creativecommons.org/licenses/by/4.0/).
+- Arquivo entregue pelo usuário após download oficial autenticado: `realistic_human_heart (1).glb`, opção GLB 2K, em 6 de setembro de 2026.
+- SHA-256: `5ca211d7ced50856a70cdd0df58e38e1ba3091b2007676d62b5f393ba5629ab7`.
+- 7.555.476 bytes; uma malha, um material, 22.562 triângulos, três PNGs 2048×2048 embutidos (cor, metallic/roughness e normal). Não requer texturas de URLs externas.
+- Alterações: arquivo apenas renomeado, bytes originais preservados. Centralização, escala e iluminação aplicadas em tempo de execução; materiais, texturas, UVs e geometria originais preservados.
+- Modelo artístico da superfície externa, não scan de doador. Não contém câmaras/valvas ou vasos individualmente selecionáveis. Não insinuar validação clínica ou endosso do autor ao Flora.
