@@ -34,6 +34,7 @@ import {
   ListChecks,
   Layers3,
   Maximize2,
+  Minimize2,
   Microscope,
   Minus,
   MousePointer2,
@@ -105,6 +106,21 @@ type MixableAnatomyLayer = Exclude<Anatomy3DSystemId, "all">;
 type AnatomyLayerState = Record<MixableAnatomyLayer, { visible: boolean; opacity: number }>;
 type AnatomyHoverLabel = { structure: Anatomy3DStructure; x: number; y: number };
 type AnatomyHoverHandler = (structure: Anatomy3DStructure | null, point?: { x: number; y: number }) => void;
+
+const BODY_REGION_CALLOUTS: Array<{
+  id: Exclude<Anatomy3DRegionId, "whole">;
+  label: string;
+  top: string;
+  side: "left" | "right";
+}> = [
+  { id: "head", label: "Cabeça e pescoço", top: "13%", side: "right" },
+  { id: "thorax", label: "Tórax", top: "30%", side: "left" },
+  { id: "upper-limb", label: "Membros superiores", top: "38%", side: "right" },
+  { id: "abdomen", label: "Abdome", top: "45%", side: "left" },
+  { id: "pelvis", label: "Pelve", top: "56%", side: "right" },
+  { id: "lower-limb", label: "Membros inferiores", top: "74%", side: "left" },
+];
+
 class ThreeModelErrorBoundary extends Component<{ children: ReactNode; onError: () => void; fallback?: ReactNode; resetKey?: string }, { failed: boolean }> {
   state = { failed: false };
 
@@ -838,7 +854,7 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
     <Suspense fallback={<div role="status">Abrindo peça realista…</div>}><AnatomySpecimenViewer specimen={activeSpecimen} onBack={() => { setActiveSpecimenId(null); setPartLibraryOpen(true); }} onDidactic={() => { setActiveSpecimenId(null); openPart(activeSpecimen.didacticPartId); }} /></Suspense>
   </section>;
   return (
-    <section ref={rootRef} className={`med-3d-studio${fallbackFullscreen ? " is-fullscreen-fallback" : ""}${illustrated ? " is-illustrated" : ""}${illustrated && !illustrationDetails ? " is-illustration-focused" : ""}`} aria-label="Atlas anatômico tridimensional">
+    <section ref={rootRef} className={`med-3d-studio${fallbackFullscreen ? " is-fullscreen-fallback" : ""}${fullscreenActive ? " is-fullscreen-active" : ""}${illustrated ? " is-illustrated" : ""}${illustrated && !illustrationDetails ? " is-illustration-focused" : ""}`} aria-label="Atlas anatômico tridimensional">
       <header className="med-3d-heading">
         <div>
           <span className="med-eyebrow"><Sparkles /> Atlas volumétrico · {level}</span>
@@ -848,7 +864,7 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
         <div className="med-3d-heading-badges">
           <span><Rotate3D /> Rotação real</span>
           <span><MousePointer2 /> Estruturas clicáveis</span>
-          <button aria-pressed={fullscreenActive} onClick={() => void toggleFullscreen()}><Maximize2 /> {fullscreenActive ? "Sair da tela cheia" : "Tela cheia"}</button>
+          <button aria-pressed={fullscreenActive} onClick={() => void toggleFullscreen()}>{fullscreenActive ? <Minimize2 /> : <Maximize2 />} {fullscreenActive ? "Sair da tela cheia" : "Ampliar atlas"}</button>
         </div>
       </header>
 
@@ -935,6 +951,8 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
           <div className="med-3d-canvas-toolbar">
             <div className="med-3d-view-presets">
               <button className={layerPanelOpen ? "active" : ""} onClick={() => setLayerPanelOpen((current) => !current)}><Layers3 /> Camadas</button>
+              <button className={`med-3d-canvas-expand ${fullscreenActive ? "active" : ""}`} aria-pressed={fullscreenActive} onClick={() => void toggleFullscreen()}>{fullscreenActive ? <Minimize2 /> : <Maximize2 />} {fullscreenActive ? "Reduzir" : "Ampliar"}</button>
+              {region !== "whole" && <button onClick={() => changeRegion("whole")}><PersonStanding /> Corpo inteiro</button>}
               {(["front", "back", "left", "right"] as CameraView[]).map((view) => <button key={view} className={cameraView === view ? "active" : ""} onClick={() => setPresetView(view)}>{viewLabel(view)}</button>)}
             </div>
             <div className="med-3d-selection-nav" aria-label="Navegar entre estruturas" aria-live="polite">
@@ -1054,6 +1072,17 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
               <small>{hoverLabel.structure.system}</small>
               <strong>{hoverLabel.structure.name}</strong>
             </div>}
+            {region === "whole" && !focusSelected && !layerPanelOpen && <nav className="med-3d-region-callouts" aria-label="Regiões identificadas no modelo">
+              {BODY_REGION_CALLOUTS.map((callout) => <button
+                key={callout.id}
+                type="button"
+                data-side={callout.side}
+                style={{ "--region-top": callout.top } as React.CSSProperties}
+                disabled={!regionAvailability[callout.id]}
+                onClick={() => changeRegion(callout.id)}
+                aria-label={`Focar região ${callout.label} pelo modelo`}
+              ><i /><span>{callout.label}</span></button>)}
+            </nav>}
             <div className="med-3d-gesture-help"><Rotate3D /><span><b>Arraste</b> para girar</span><span><b>Roda ou pinça</b> para aproximar</span><span><b>Botão direito</b> para mover</span><span><b>← →</b> trocar estrutura</span></div>
             <div className="med-3d-axis"><span>D</span><i /><span>E</span></div>
           </div>

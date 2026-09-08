@@ -23,6 +23,30 @@ function openLayers() {
 }
 
 describe("atlas study navigation", () => {
+  it("names every body region on the whole model and lets the student focus one", () => {
+    render(<Anatomy3DStudio level="Iniciante" />);
+    const callouts = within(screen.getByRole("navigation", { name: "Regiões identificadas no modelo" }));
+    expect(callouts.getAllByRole("button")).toHaveLength(6);
+    expect(callouts.getByText("Cabeça e pescoço")).toBeInTheDocument();
+    expect(callouts.getByText("Membros inferiores")).toBeInTheDocument();
+    fireEvent.click(callouts.getByRole("button", { name: "Focar região Tórax pelo modelo" }));
+    expect(screen.getByRole("button", { name: "Tórax" })).toHaveClass("active");
+    expect(screen.queryByRole("navigation", { name: "Regiões identificadas no modelo" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Corpo inteiro" }));
+    expect(screen.getByRole("navigation", { name: "Regiões identificadas no modelo" })).toBeInTheDocument();
+  });
+
+  it("opens a genuinely expanded atlas and keeps an exit control inside the canvas", () => {
+    render(<Anatomy3DStudio level="Iniciante" />);
+    fireEvent.click(screen.getByRole("button", { name: "Ampliar atlas" }));
+    const studio = screen.getByLabelText("Atlas anatômico tridimensional");
+    expect(studio).toHaveClass("is-fullscreen-fallback");
+    expect(screen.getByRole("button", { name: "Reduzir" })).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(screen.getByRole("button", { name: "Reduzir" }));
+    expect(studio).not.toHaveClass("is-fullscreen-fallback");
+    expect(screen.getByRole("button", { name: "Ampliar atlas" })).toHaveAttribute("aria-pressed", "false");
+  });
+
   it("exits the illustrated cutaway before isolating a muscle", () => {
     render(<Anatomy3DStudio level="Iniciante" />);
     fireEvent.click(screen.getByRole("button", { name: "Vista ilustrada" }));

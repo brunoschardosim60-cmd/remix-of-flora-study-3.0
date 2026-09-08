@@ -15,6 +15,8 @@
 }
 .med-3d-illustration-note button:focus-visible { outline: 3px solid #397765; outline-offset: 3px; }
 .med-3d-studio.is-illustration-focused .med-3d-workspace { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); height: max(500px, calc(100dvh - 260px)); min-height: 0; }
+.med-3d-studio.is-fullscreen-fallback.is-illustration-focused .med-3d-workspace,
+.med-3d-studio.is-illustration-focused:fullscreen .med-3d-workspace { height: calc(100dvh - 16px); }
 .med-3d-studio.is-illustration-focused .med-3d-index,
 .med-3d-studio.is-illustration-focused .med-3d-detail { display: none; }
 .med-3d-studio.is-illustrated { padding: 16px; }
