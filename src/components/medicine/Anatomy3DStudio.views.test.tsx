@@ -23,6 +23,62 @@ function openLayers() {
 }
 
 describe("atlas study navigation", () => {
+  it("exits the illustrated cutaway before isolating a muscle", () => {
+    render(<Anatomy3DStudio level="Iniciante" />);
+    fireEvent.click(screen.getByRole("button", { name: "Vista ilustrada" }));
+    fireEvent.click(screen.getByRole("button", { name: "Mostrar detalhes" }));
+    fireEvent.click(screen.getByRole("button", { name: "Músculo deltoide Ombro" }));
+    expect(screen.getByRole("button", { name: "Frente" })).toHaveClass("active");
+    fireEvent.click(screen.getByRole("button", { name: "Isolar e aproximar" }));
+    expect(screen.getByRole("button", { name: "Vista ilustrada" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.queryByText("Exposição por camadas")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Músculo deltoide" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Voltar ao sistema" })).toBeInTheDocument();
+    const panel = openLayers();
+    expect(panel.getByLabelText("Ocultar Músculos")).toHaveAttribute("aria-pressed", "true");
+    expect(panel.getByLabelText("Mostrar Esqueleto")).toHaveAttribute("aria-pressed", "false");
+    expect(panel.getByRole("button", { name: "Metade" })).toHaveAttribute("aria-pressed", "false");
+  }, 15000);
+
+  it("recenters the illustrated body back to its frontal pose", () => {
+    render(<Anatomy3DStudio level="Iniciante" />);
+    fireEvent.click(screen.getByRole("button", { name: "Vista ilustrada" }));
+    fireEvent.click(screen.getByRole("button", { name: "Costas" }));
+    expect(screen.getByRole("button", { name: "Costas" })).toHaveClass("active");
+    fireEvent.click(screen.getByRole("button", { name: "Recentrar" }));
+    expect(screen.getByRole("button", { name: "Frente" })).toHaveClass("active");
+    expect(screen.getByRole("button", { name: "Costas" })).not.toHaveClass("active");
+    expect(screen.getByRole("button", { name: "Vista ilustrada" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByLabelText("Opacidade da pele ilustrada")).toHaveValue("0.4");
+  }, 15000);
+
+  // This flow traverses the large integrated catalog several times.
+  it("opens an explicit illustrated view and restores complete systems on exit", () => {
+    render(<Anatomy3DStudio level="Residência" />);
+    fireEvent.click(screen.getByRole("button", { name: "Vista ilustrada" }));
+    expect(screen.getByRole("button", { name: "Vista ilustrada" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText("Exposição por camadas")).toBeInTheDocument();
+    expect(screen.getByLabelText("Fundo do atlas")).toHaveValue("studio");
+    const skinOpacity = screen.getByLabelText("Opacidade da pele ilustrada");
+    expect(skinOpacity).toHaveValue("0.4");
+    fireEvent.change(skinOpacity, { target: { value: "0.55" } });
+    fireEvent.click(screen.getByRole("button", { name: "Ocultar pele" }));
+    expect(skinOpacity).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Mostrar pele" }));
+    expect(skinOpacity).toHaveValue("0.55");
+    fireEvent.click(screen.getByRole("button", { name: "Ocultar pele" }));
+    expect(screen.getByRole("button", { name: "Mostrar pele" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: "Vista ilustrada" })).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(screen.getByRole("button", { name: "Mostrar detalhes" }));
+    expect(screen.getByRole("button", { name: "Ocultar detalhes" })).toHaveAttribute("aria-expanded", "true");
+    const panel = openLayers();
+    expect(panel.getByRole("button", { name: "Separar" })).toHaveAttribute("aria-pressed", "false");
+    expect(panel.getByRole("button", { name: "Metade" })).toHaveAttribute("aria-pressed", "false");
+    choose("muscles");
+    expect(screen.queryByText("Exposição por camadas")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Vista ilustrada" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("heading", { name: "Sistema muscular" })).toBeInTheDocument();
+  }, 15000);
   it("composes muscles and bones, excludes hidden skin from the index and resets stale cuts", () => {
     render(<Anatomy3DStudio level="Residência" />);
     const panel = openLayers();
