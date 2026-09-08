@@ -134,6 +134,10 @@ describe("atlas study navigation", () => {
     fireEvent.change(screen.getByLabelText("Fundo do atlas"), { target: { value: "light" } });
     expect(screen.getByLabelText("Acabamento dos tecidos")).toHaveValue("realistic");
     expect(screen.getByLabelText("Fundo do atlas")).toHaveValue("light");
+    expect(screen.getByLabelText("Acabamento ativo")).toHaveTextContent("Tecidos: relevo e variação");
+    fireEvent.change(screen.getByLabelText("Acabamento dos tecidos"), { target: { value: "educational" } });
+    expect(screen.getByLabelText("Acabamento ativo")).toHaveTextContent("Didático: cores planas");
+    expect(screen.getByLabelText("Fundo do atlas")).toHaveValue("light");
   });
 
   it("opens a grouped piece, returns to its system and resets isolation on a new view", () => {

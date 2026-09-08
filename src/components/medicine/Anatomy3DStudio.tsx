@@ -882,7 +882,7 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
           </optgroup>)}
         </select></label>
         <label><span>Acabamento</span><select aria-label="Acabamento dos tecidos" value={appearance} onChange={(event) => setAppearance(event.target.value as AnatomyAppearance)}>
-          <option value="realistic">Tecidos</option><option value="educational">Didático simplificado</option>
+          <option value="realistic">Tecidos realistas</option><option value="educational">Didático por cores</option>
         </select></label>
         <label><span>Fundo</span><select aria-label="Fundo do atlas" value={backdrop} onChange={(event) => setBackdrop(event.target.value as "dark" | "light" | "studio")}>
           <option value="dark">Escuro</option><option value="light">Claro</option><option value="studio">Estúdio</option>
@@ -1040,11 +1040,11 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
               >
                 <RendererAppearance realistic={realistic} />
                 {backdrop !== "studio" && <color attach="background" args={[backdrop === "dark" ? "#17201f" : "#edf3f0"]} />}
-                <ambientLight intensity={illustrated ? .95 : realistic ? .62 : .58} />
-                <hemisphereLight args={[realistic ? "#f7f1eb" : "#f9fffc", realistic ? "#52605c" : "#52645e", realistic ? .72 : .68]} />
-                <directionalLight position={[5, 7, 7]} intensity={realistic ? .82 : .66} color={realistic ? "#fff7ef" : "#ffffff"} />
-                <directionalLight position={[-5, 7, 7]} intensity={realistic ? .82 : .66} color={realistic ? "#fff7ef" : "#ffffff"} />
-                <directionalLight position={[0, 2, -6]} intensity={realistic ? .24 : .16} color={realistic ? "#d8c7c0" : "#d6e1dd"} />
+                <ambientLight intensity={illustrated ? .95 : realistic ? .62 : 1.18} />
+                <hemisphereLight args={[realistic ? "#f7f1eb" : "#ffffff", realistic ? "#52605c" : "#70837b", realistic ? .72 : .92]} />
+                <directionalLight position={[5, 7, 7]} intensity={realistic ? .82 : .32} color={realistic ? "#fff7ef" : "#ffffff"} />
+                <directionalLight position={[-5, 7, 7]} intensity={realistic ? .82 : .32} color={realistic ? "#fff7ef" : "#ffffff"} />
+                <directionalLight position={[0, 2, -6]} intensity={realistic ? .24 : .06} color={realistic ? "#d8c7c0" : "#ffffff"} />
                 {realistic && !performanceComposition && <Environment resolution={renderPolicy.environmentResolution}>
                   <Lightformer form="rect" intensity={1.4} color="#fff8f2" position={[0, 6, 5]} rotation={[-Math.PI / 2, 0, 0]} scale={[9, 7, 1]} />
                   <Lightformer form="rect" intensity={.65} color="#e3e7e3" position={[-5, 1, 3]} rotation={[0, Math.PI / 2, 0]} scale={[5, 7, 1]} />
@@ -1083,6 +1083,9 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
                 aria-label={`Focar região ${callout.label} pelo modelo`}
               ><i /><span>{callout.label}</span></button>)}
             </nav>}
+            <div className={`med-3d-appearance-badge ${realistic ? "is-tissue" : "is-didactic"}`} aria-label="Acabamento ativo">
+              <i />{realistic ? "Tecidos: relevo e variação" : "Didático: cores planas"}
+            </div>
             <div className="med-3d-gesture-help"><Rotate3D /><span><b>Arraste</b> para girar</span><span><b>Roda ou pinça</b> para aproximar</span><span><b>Botão direito</b> para mover</span><span><b>← →</b> trocar estrutura</span></div>
             <div className="med-3d-axis"><span>D</span><i /><span>E</span></div>
           </div>
@@ -1167,6 +1170,10 @@ function RealBodyPartsModel({ illustrated = false, system, realistic, quality, s
       object.visible = !(illustrated && region === "hair");
       if (realistic && region === "skin") {
         applyAnatomyTissueMaterial(material, object.geometry, "skin", { active: false, baseColor: skinTone, quality, vertexColors: true });
+      } else if (!realistic) {
+        clearAnatomyTissueMaps(material);
+        material.vertexColors = false;
+        material.color.set(region === "skin" ? skinTone : finish.color);
       } else {
         clearAnatomyTissueMaps(material);
         material.vertexColors = true;
@@ -1174,15 +1181,16 @@ function RealBodyPartsModel({ illustrated = false, system, realistic, quality, s
       }
       // A selection must not recolor the whole face. Hair, nails and lips keep
       // their own finishes in both teaching and tissue modes.
-      material.emissive.set("#000000");
-      material.emissiveIntensity = 0;
-      material.roughness = finish.roughness;
+      material.emissive.set(realistic ? "#000000" : region === "skin" ? skinTone : finish.color);
+      material.emissiveIntensity = realistic ? 0 : .12;
+      material.roughness = realistic ? finish.roughness : .96;
       material.sheen = realistic ? finish.sheen : 0;
       material.sheenColor.set(region === "skin" ? "#efc6b2" : finish.color);
-      material.specularIntensity = finish.specularIntensity;
+      material.specularIntensity = realistic ? finish.specularIntensity : .1;
       material.specularColor.set("#ffffff");
-      material.clearcoat = region === "nail" ? .08 : 0;
+      material.clearcoat = realistic && region === "nail" ? .08 : 0;
       material.clearcoatRoughness = .55;
+      material.envMapIntensity = realistic ? .88 : .12;
       material.transmission = 0;
       material.opacity = active ? 1 : skinOpacity;
       material.transparent = material.opacity < 1;
@@ -1450,10 +1458,14 @@ function DenseAnatomySystemModel({ integrated = false, opacity = 1, clipPlane = 
       clearAnatomyTissueMaps(material);
       material.color.set("#ffffff");
       material.vertexColors = true;
-      material.roughness = layer === "vascular" ? .62 : layer === "skeletal" ? .82 : layer === "muscular" ? .68 : .74;
+      material.emissive.set("#17231f");
+      material.emissiveIntensity = .16;
+      material.roughness = .96;
       material.clearcoat = 0;
       material.sheen = 0;
       material.transmission = 0;
+      material.specularIntensity = .1;
+      material.envMapIntensity = .12;
     }
     material.needsUpdate = true;
     invalidate();
@@ -2319,16 +2331,16 @@ function applyOrganAppearance(mesh: Mesh, name: string, realistic: boolean, acti
     material.color.set(didacticColor);
     material.vertexColors = false;
     material.emissive.set(didacticColor);
-    material.emissiveIntensity = active ? .3 : .08;
-    material.roughness = .54;
+    material.emissiveIntensity = active ? .34 : .16;
+    material.roughness = .96;
     material.clearcoat = 0;
     material.clearcoatRoughness = .5;
     material.sheen = 0;
     material.metalness = 0;
     material.transmission = 0;
     material.thickness = 0;
-    material.specularIntensity = 1;
-    material.envMapIntensity = 1;
+    material.specularIntensity = .1;
+    material.envMapIntensity = .12;
     return;
   }
   const tissue = anatomyTissueForName(name, "visceral");
