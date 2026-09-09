@@ -46,6 +46,7 @@ import "@/components/medicine/anamnesis-simulator.css";
 import "@/components/medicine/semiology-academy.css";
 import "@/components/medicine/pathology-lab.css";
 import "@/components/medicine/medicine-enhancements.css";
+import "@/components/medicine/medicine-compact.css";
 
 const Anatomy3DStudio = lazy(() => import("@/components/medicine/Anatomy3DStudio").then((module) => ({ default: module.Anatomy3DStudio })));
 const AnamnesisSimulator = lazy(() => import("@/components/medicine/AnamnesisSimulator").then((module) => ({ default: module.AnamnesisSimulator })));

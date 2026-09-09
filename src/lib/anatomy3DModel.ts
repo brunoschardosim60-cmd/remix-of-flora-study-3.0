@@ -48,10 +48,10 @@ const tube = (points: Array<[number, number, number]>, radius: number, color?: s
 
 export const anatomy3DRegions: Anatomy3DRegion[] = [
   { id: "whole", label: "Corpo completo", shortLabel: "Completo", focus: [0, -0.15, 0], distance: 15.8 },
-  { id: "head", label: "Cabeça e cérebro", shortLabel: "Cabeça", focus: [0, 3.35, 0], distance: 2.65 },
+  { id: "head", label: "Cabeça e cérebro", shortLabel: "Cabeça", focus: [0, 3.35, 0], distance: 3.8 },
   { id: "thorax", label: "Tórax", shortLabel: "Tórax", focus: [0, 1.5, 0], distance: 5.1 },
-  { id: "abdomen", label: "Abdome", shortLabel: "Abdome", focus: [0, 0.25, 0], distance: 3.45 },
-  { id: "pelvis", label: "Pelve", shortLabel: "Pelve", focus: [0, -0.75, 0], distance: 3.15 },
+  { id: "abdomen", label: "Abdome", shortLabel: "Abdome", focus: [0, 0.25, 0], distance: 6.2 },
+  { id: "pelvis", label: "Pelve", shortLabel: "Pelve", focus: [0, -0.75, 0], distance: 5.8 },
   { id: "upper-limb", label: "Membro superior", shortLabel: "Braço", focus: [1.55, 0.65, 0], distance: 6.2 },
   { id: "lower-limb", label: "Membro inferior", shortLabel: "Perna", focus: [0.48, -2.65, 0], distance: 6.1 },
 ];

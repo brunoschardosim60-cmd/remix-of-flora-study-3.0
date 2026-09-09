@@ -1,5 +1,20 @@
 import { describe, expect, it } from "vitest";
-import { ILLUSTRATION_BODY_BOUNDS, ILLUSTRATION_BODY_FOCUS, illustrationFitDistance } from "./anatomyIllustrationFraming";
+import { ILLUSTRATION_BODY_BOUNDS, ILLUSTRATION_BODY_FOCUS, illustrationFitDistance, regionalFitDistance } from "./anatomyIllustrationFraming";
+
+describe("regional camera framing", () => {
+  it("preserves desktop distance and backs away for portrait viewports", () => {
+    expect(regionalFitDistance(6.2, 800, 500)).toBe(6.2);
+    expect(regionalFitDistance(6.2, 350, 700)).toBe(12.4);
+  });
+  it("handles hidden canvases and bounds extreme ratios", () => {
+    expect(regionalFitDistance(6.2, 0, 700)).toBe(6.2);
+    expect(regionalFitDistance(6.2, NaN, 700)).toBe(6.2);
+    expect(regionalFitDistance(6.2, 1, 700)).toBeCloseTo(18.6);
+  });
+  it("preserves proportional manual zoom", () => {
+    expect(regionalFitDistance(3.1, 350, 700)).toBe(regionalFitDistance(6.2, 350, 700) / 2);
+  });
+});
 
 describe("illustrated body camera framing", () => {
   it.each([[1280, 600], [900, 520], [375, 480], [320, 800], [844, 350], [1024, 768]])(

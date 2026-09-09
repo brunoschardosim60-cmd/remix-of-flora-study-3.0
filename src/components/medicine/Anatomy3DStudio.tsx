@@ -9,11 +9,13 @@ import { prepareAnatomySkinEyes } from "@/lib/anatomySkinEyes";
 import type { AnatomySkinRegion } from "@/lib/anatomySkinRegions";
 import { anatomyStudyViews, layersForStudyView } from "@/lib/anatomyStudyViews";
 import { anatomyIllustratedView, createAnatomyIllustrationPlanes } from "@/lib/anatomyIllustration";
-import { illustrationFitDistance } from "@/lib/anatomyIllustrationFraming";
+import { illustrationFitDistance, regionalFitDistance } from "@/lib/anatomyIllustrationFraming";
 import "./anatomy-illustration.css";
+import "./medicine-compact.css";
 import { frameAnatomyBounds, isolateAnatomyGeometry } from "@/lib/anatomyIsolation";
 import { anatomyPartLibrary, resolvePartCatalog } from "@/lib/anatomyPartLibrary";
 import { AnatomyMeshPicker } from "./AnatomyMeshPicker";
+import { AnatomyRenderDiagnostics } from "./AnatomyRenderDiagnostics";
 import { AnatomyPartBrowser } from "./AnatomyPartBrowser";
 import { anatomySpecimens } from "@/lib/anatomySpecimens";
 const AnatomySpecimenViewer = lazy(() => import("./AnatomySpecimenViewer"));
@@ -260,6 +262,7 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
   const [layers, setLayers] = useState<AnatomyLayerState>(() => anatomyLayerPreset(initialSystem));
   const [layerPanelOpen, setLayerPanelOpen] = useState(() => typeof window === "undefined" || window.innerWidth >= 1600);
   const [layersExploded, setLayersExploded] = useState(false);
+  const regionLabels = useRef<HTMLElement>(null);
   const [bodySectionEnabled, setBodySectionEnabled] = useState(false);
   const [illustrated, setIllustrated] = useState(false);
   const [illustrationDetails, setIllustrationDetails] = useState(false);
@@ -483,10 +486,9 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
   const cameraDistance = ((usePieceFrame ? isolatedFrame?.distance : null) ?? detailedCameraDistance ?? baseCameraDistance)
     * (layersExploded && activeLayerIds.length > 1 && region === "whole" ? 1.18 : 1);
   const realistic = appearance === "realistic";
-  // Em composição cheia, preserva as cores anatômicas mas troca microtexturas
-  // procedurais por materiais leves. O detalhe máximo volta ao isolar a camada.
+  // Composition reduces resolution/geometry, never the user's material style.
   const illustratedDetail = illustrated && !preferPerformance && renderPolicy.tier !== "economy";
-  const detailedMaterials = realistic && (!performanceComposition || illustratedDetail);
+  const detailedMaterials = realistic;
   const regionAvailability = useMemo(() => Object.fromEntries(anatomy3DRegions.map((item) => {
     if (item.id === "whole" || system === "all") return [item.id, true];
     const guidedAvailable = structuresFor3D(system, item.id).length > 0;
@@ -1039,6 +1041,8 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
                 onCreated={({ gl }) => { gl.localClippingEnabled = true; }}
               >
                 <RendererAppearance realistic={realistic} />
+                {import.meta.env.DEV && <AnatomyRenderDiagnostics active={autoRotate} />}
+                <RegionLabelProjection labels={regionLabels} />
                 {backdrop !== "studio" && <color attach="background" args={[backdrop === "dark" ? "#17201f" : "#edf3f0"]} />}
                 <ambientLight intensity={illustrated ? .95 : realistic ? .62 : 1.18} />
                 <hemisphereLight args={[realistic ? "#f7f1eb" : "#ffffff", realistic ? "#52605c" : "#70837b", realistic ? .72 : .92]} />
@@ -1072,7 +1076,7 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
               <small>{hoverLabel.structure.system}</small>
               <strong>{hoverLabel.structure.name}</strong>
             </div>}
-            {region === "whole" && !focusSelected && !layerPanelOpen && <nav className="med-3d-region-callouts" aria-label="Regiões identificadas no modelo">
+            {region === "whole" && !focusSelected && !layerPanelOpen && !layersExploded && <nav ref={regionLabels} className="med-3d-region-callouts is-anchored" aria-label="Regiões identificadas no modelo">
               {BODY_REGION_CALLOUTS.map((callout) => <button
                 key={callout.id}
                 type="button"
@@ -1924,6 +1928,33 @@ function NativeMeshPicker({ active, root, onPick }: { active: boolean; root: Obj
     onPick={(hit) => { if (hit.object instanceof Mesh) onPick(hit.object); }} />;
 }
 
+function RegionLabelProjection({ labels }: { labels: React.RefObject<HTMLElement> }) {
+  const points = useMemo(() => [
+    new Vector3(0, 3.45, .5), new Vector3(-.6, 1.8, .65),
+    new Vector3(1.35, .9, .2), new Vector3(-.65, .25, .65),
+    new Vector3(.65, -.85, .4), new Vector3(-.5, -2.8, .2),
+  ], []);
+  const projected = useMemo(() => new Vector3(), []);
+  useFrame(({ camera, size }) => {
+    const buttons = labels.current?.children;
+    if (!buttons) return;
+    points.forEach((point, index) => {
+      const button = buttons[index] as HTMLElement | undefined;
+      if (!button) return;
+      projected.copy(point).project(camera);
+      const x = (projected.x + 1) * size.width / 2;
+      const y = (1 - projected.y) * size.height / 2;
+      const left = BODY_REGION_CALLOUTS[index].side === "left";
+      const offset = size.width < 480 ? 18 : 36;
+      const desiredX = x + (left ? -button.offsetWidth - offset : offset);
+      button.style.left = `${Math.max(6, Math.min(size.width - button.offsetWidth - 6, desiredX))}px`;
+      button.style.top = `${y}px`;
+      button.style.visibility = projected.z < -1 || projected.z > 1 || y < 24 || y > size.height - 30 ? "hidden" : "visible";
+    });
+  });
+  return null;
+}
+
 function CameraRig({ focus, distance, focusKey, view, autoRotate, fitIllustration = false, fitZoom = 1 }: { focus: [number, number, number]; distance: number; focusKey: number; view: CameraView; autoRotate: boolean; fitIllustration?: boolean; fitZoom?: number }) {
   const controls = useRef<OrbitControlsImpl>(null);
   const { camera, invalidate, size } = useThree();
@@ -1934,7 +1965,8 @@ function CameraRig({ focus, distance, focusKey, view, autoRotate, fitIllustratio
 
   useEffect(() => {
     desiredTarget.current.set(focusX, focusY, focusZ);
-    const fittedDistance = fitIllustration ? illustrationFitDistance(size.width, size.height) / fitZoom : distance;
+    const fittedDistance = fitIllustration ? illustrationFitDistance(size.width, size.height) / fitZoom
+      : regionalFitDistance(distance, size.width, size.height);
     desiredPosition.current.copy(cameraPositionFor([focusX, focusY, focusZ], fittedDistance, view));
     if (fitIllustration && (view === "front" || view === "back")) desiredPosition.current.y = focusY;
     progress.current = 1;

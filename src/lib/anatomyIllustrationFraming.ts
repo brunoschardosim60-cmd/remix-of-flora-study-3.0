@@ -5,6 +5,13 @@ export const ILLUSTRATION_BODY_BOUNDS = [4.2, 8.7, 2.1] as const;
 export const ILLUSTRATION_BODY_FOCUS = [0, -.15, 0] as const;
 const ILLUSTRATION_FRAME_MARGIN = 1.12;
 
+/** Preserve a regional overview on narrow canvases without altering manual zoom. */
+export function regionalFitDistance(distance: number, width: number, height: number): number {
+  const aspectCorrection = width > 0 && height > 0 && Number.isFinite(width) && Number.isFinite(height)
+    ? Math.max(1, Math.min(3, height / width)) : 1;
+  return distance * aspectCorrection;
+}
+
 /** Distance from the central target that fits both canvas dimensions. */
 export function illustrationFitDistance(width: number, height: number, fov = 36): number {
   // Hidden/unmeasured canvases use a stable square fallback. Extreme ratios

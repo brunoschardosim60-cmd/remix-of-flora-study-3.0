@@ -1,0 +1,66 @@
+/* Desktop density inspired by the 80% reference, without scaling the canvas,
+   browser zoom, pointer coordinates, or touch targets on mobile. */
+@media (min-width: 1051px) {
+  .med-app .med-header { height: 58px; padding-inline: 16px; }
+  .med-app .med-brand > span { width: 32px; height: 32px; border-radius: 10px; }
+  .med-app .med-brand strong { font-size: 12px; }
+  .med-app .med-brand small { font-size: 11px; }
+  .med-app .med-header-context { margin-left: 28px; padding-left: 20px; }
+  .med-app .med-header-context span { font-size: 10px; }
+  .med-app .med-header-context strong { font-size: 11px; }
+  .med-app .med-header-actions { gap: 7px; }
+  .med-app .med-header-actions button,
+  .med-app .med-level-chip,
+  .med-app .med-source-status { min-height: 32px; height: 32px; font-size: 11px; padding-inline: 9px; }
+  .med-app .med-level-chip select,.med-app .med-level-chip span { font-size: 12px; }
+  .med-app .med-shell { min-height: calc(100dvh - 58px); }
+  .med-app .med-sidebar { top: 58px; width: 188px; height: calc(100dvh - 58px); max-height: calc(100dvh - 58px); padding: 18px 10px 12px; }
+  .med-app .med-sidebar-label { font-size: 10px; padding-inline: 10px; }
+  .med-app .med-sidebar > button,.med-app .med-nav-hub { min-height: 34px; height: 34px; font-size: 12px; padding-inline: 9px; gap: 8px; }
+  .med-app .med-nav-children { margin-left: 14px; padding-left: 8px; }
+  .med-app .med-nav-children > button { min-height: 30px; font-size: 11.5px; padding-inline: 7px; }
+  .med-app .med-safety-mini { padding: 10px; }
+  .med-app .med-safety-mini strong,.med-app .med-safety-mini span { font-size: 10.5px; }
+  .med-3d-studio.med-3d-studio { padding: 8px 14px 12px; min-height: calc(100dvh - 58px); }
+  .med-3d-studio .med-3d-heading { align-items: center; margin-bottom: 6px; gap: 12px; }
+  .med-3d-studio .med-3d-heading h1 { margin: 0; font-size: 23px; }
+  .med-3d-studio .med-3d-heading p,.med-3d-studio .med-3d-heading .med-eyebrow { display: none; }
+  .med-3d-studio .med-3d-heading-badges > span { display: none; }
+  .med-3d-studio .med-3d-heading-badges > button { height: 30px; font-size: 11px; }
+  .med-3d-studio .med-3d-region-strip { padding: 3px 7px; margin-bottom: 6px; }
+  .med-3d-studio .med-3d-region-strip button { height: 27px; font-size: 11px; padding-inline: 10px; }
+  .med-3d-studio .med-3d-study-bar { gap: 6px; padding: 6px 8px; margin-bottom: 7px; }
+  .med-3d-studio .med-3d-study-bar label { gap: 5px; font-size: 10.5px; }
+  .med-3d-studio .med-3d-study-bar select { min-height: 30px; padding: 4px 20px 4px 6px; }
+  .med-3d-studio .med-3d-study-bar small { font-size: 9px; }
+  .med-3d-studio .med-3d-study-bar > button { min-height: 30px; padding: 5px 8px; font-size: 10.5px; gap: 5px; }
+  .med-3d-studio .med-3d-workspace { grid-template-columns: 176px minmax(0, 1fr) 208px; min-height: 360px; height: calc(100dvh - 195px); border-radius: 17px; box-shadow: none; }
+  .med-3d-studio .med-3d-canvas { min-height: 0; }
+  .med-3d-studio .med-3d-canvas-toolbar { min-height: 42px; padding: 5px 6px; gap: 4px; }
+  .med-3d-studio .med-3d-view-presets,.med-3d-studio .med-3d-zoom-controls { gap: 3px; }
+  .med-3d-studio .med-3d-view-presets button,.med-3d-studio .med-3d-zoom-controls button { height: 27px; font-size: 10px; padding-inline: 6px; }
+  .med-3d-studio .med-3d-selection-nav { min-width: 110px; flex-basis: 110px; max-width: 145px; grid-template-columns: 22px minmax(0, 1fr) 22px; gap: 2px; padding: 2px; }
+  .med-3d-studio .med-3d-selection-nav button { width: 22px; height: 26px; }
+  .med-3d-studio .med-3d-selection-nav strong,.med-3d-studio .med-3d-selection-nav small { font-size: 9px; }
+  .med-3d-studio .med-3d-index-title { padding: 12px 10px 9px; }
+  .med-3d-studio .med-3d-structure-list > button { padding: 8px 6px; }
+  .med-3d-studio .med-3d-structure-list strong { font-size: 11px; }
+  .med-3d-studio .med-3d-structure-list small { font-size: 10px; }
+  .med-3d-studio .med-3d-detail { padding: 14px; }
+  .med-3d-studio .med-3d-detail h2 { font-size: 25px; }
+  .med-3d-studio .med-3d-detail p,.med-3d-studio .med-3d-detail dd { font-size: 11px; line-height: 1.55; }
+  .med-3d-studio .med-3d-detail-orbit { display: none; }
+}
+
+/* Labels are projected from anatomical landmarks, not percentages of screen. */
+.med-3d-studio .med-3d-region-callouts.is-anchored > button { right: auto; width: max-content; visibility: hidden; max-width: 135px; font-size: 10px; }
+.med-3d-region-callouts.is-anchored > button::after { width: 18px; }
+.med-3d-region-callouts.is-anchored > button[data-side=left]::after { right: -18px; }
+.med-3d-region-callouts.is-anchored > button[data-side=right]::after { left: -18px; }
+
+/* Keep exploration and appearance available while expanded. */
+.med-3d-studio.med-3d-studio:is(:fullscreen,.is-fullscreen-fallback) { display: flex; flex-direction: column; gap: 6px; }
+.med-3d-studio.med-3d-studio:is(:fullscreen,.is-fullscreen-fallback) > .med-3d-study-bar,
+.med-3d-studio.med-3d-studio:is(:fullscreen,.is-fullscreen-fallback) > .med-3d-region-strip { display: flex; width: 100%; max-width: none; flex-shrink: 0; margin: 0; }
+.med-3d-studio.med-3d-studio:is(:fullscreen,.is-fullscreen-fallback) > .med-3d-workspace { flex: 1; height: auto; min-height: 0; width: 100%; max-width: none; }
+.med-3d-studio.med-3d-studio:is(:fullscreen,.is-fullscreen-fallback) > .med-3d-part-library { display: block; position: absolute; inset: 65px 16px auto; z-index: 20; max-height: calc(100dvh - 90px); overflow: auto; }
