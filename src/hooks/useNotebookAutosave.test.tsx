@@ -5,7 +5,7 @@ import { getPendingPage, pendingCount } from "@/lib/notebookOfflineQueue";
 
 const { select, update, eq } = vi.hoisted(() => ({ select: vi.fn(), update: vi.fn(), eq: vi.fn() }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { from: () => ({ update }) } }));
-const page = { pageId: "p1", content: "Texto", drawing_data: null, tags: [], template: "grid" };
+const page = { pageId: "p1", content: "Texto", drawing_data: null, tags: [], template: "grid", baseUpdatedAt: "2026-09-08T00:00:00Z" };
 beforeEach(() => {
   vi.useFakeTimers();
   localStorage.clear();
@@ -47,7 +47,7 @@ describe("notebook autosave", () => {
     select.mockResolvedValue({ data: [], error: { message: "denied" } });
     const { result } = renderHook(() => useNotebookAutosave("user", page));
     await act(() => vi.advanceTimersByTimeAsync(801));
-    expect(result.current.saveStatus).toBe("offline");
+    expect(result.current.saveStatus).toBe("error");
     expect(pendingCount("user")).toBe(1);
   });
 });

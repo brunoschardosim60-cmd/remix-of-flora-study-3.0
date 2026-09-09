@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { enqueuePageUpdate, flushQueue, pendingCount, NOTEBOOK_QUEUE_CHANGED, type PendingPageUpdate } from "@/lib/notebookOfflineQueue";
+import { notebookQueueError } from "@/lib/notebookOfflineQueue";
 
 type Snapshot = Omit<PendingPageUpdate, "queuedAt" | "revision">;
 type SaveStatus = "idle" | "saving" | "saved" | "error" | "offline";
@@ -43,7 +44,8 @@ export function useNotebookAutosave(userId: string | undefined, snapshot: Snapsh
     try {
       const count = pendingCount(userId);
       setPendingOffline(count);
-      if (volatileFor(userId).size) setSaveStatus("error");
+      if (notebookQueueError(userId)) { setSaveStatus("error"); setSaveError(notebookQueueError(userId)); }
+      else if (volatileFor(userId).size) setSaveStatus("error");
       else setSaveStatus(count ? "offline" : "saved");
     } catch {
       setSaveStatus("error");

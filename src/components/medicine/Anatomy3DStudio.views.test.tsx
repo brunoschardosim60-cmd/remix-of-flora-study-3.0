@@ -23,6 +23,18 @@ function openLayers() {
 }
 
 describe("atlas study navigation", () => {
+  it("expands and reassembles the native skull and whole skeleton", () => {
+    render(<Anatomy3DStudio level="Iniciante" />);
+    fireEvent.change(screen.getByRole("combobox", { name: "Escolher vista anatômica" }), { target: { value: "skeleton" } });
+    fireEvent.click(screen.getByRole("button", { name: "Abrir crânio por ossos" }));
+    expect(screen.getByRole("slider", { name: "Distância entre os ossos" })).toHaveValue("1");
+    fireEvent.click(screen.getByRole("button", { name: "Remontar crânio" }));
+    expect(screen.getByRole("slider", { name: "Distância entre os ossos" })).toHaveValue("0");
+    fireEvent.click(screen.getByRole("button", { name: "Desmontar esqueleto" }));
+    expect(screen.getByRole("slider", { name: "Distância entre os ossos" })).toHaveValue("1");
+    fireEvent.click(screen.getByRole("button", { name: "Remontar esqueleto" }));
+    expect(screen.getByRole("slider", { name: "Distância entre os ossos" })).toHaveValue("0");
+  });
   it("names every body region on the whole model and lets the student focus one", () => {
     render(<Anatomy3DStudio level="Iniciante" />);
     const callouts = within(screen.getByRole("navigation", { name: "Regiões identificadas no modelo" }));

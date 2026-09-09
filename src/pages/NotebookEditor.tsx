@@ -77,6 +77,7 @@ import { scheduleSpacedReviews } from "@/lib/spacedReviews";
 import type { Json } from "@/integrations/supabase/types";
 import { discardPendingPage, recoverPendingPage } from "@/lib/notebookOfflineQueue";
 import { discardUnsavedPage, getUnsavedPageSnapshot, useNotebookAutosave } from "@/hooks/useNotebookAutosave";
+import { rememberNotebookVersion } from "@/lib/notebookOfflineQueue";
 import { useNotebookViewport } from "@/hooks/useNotebookViewport";
 import { getTemplatesForSubject, suggestTagsFromText } from "@/lib/notebookTemplates";
 import type { NotebookMedicalAsset } from "@/lib/notebookMedicalAssets";
@@ -109,7 +110,9 @@ function drawingToJson(d: DrawingState): Json {
 function rowToNotebookPage(row: {
   id: string; notebook_id: string; user_id: string; page_number: number;
   content: string; drawing_data: Json | null; tags: string[]; template: string;
+  updated_at?: string;
 }): NotebookPage {
+  if (row.updated_at) rememberNotebookVersion(row.user_id, row.id, row.updated_at);
   return {
     id: row.id,
     notebook_id: row.notebook_id,
@@ -119,10 +122,12 @@ function rowToNotebookPage(row: {
     drawing_data: (row.drawing_data as unknown as DrawingState | null) ?? null,
     tags: row.tags ?? [],
     template: normalizePageTemplate(row.template),
+    updated_at: row.updated_at,
   };
 }
 
 interface NotebookPage {
+  updated_at?: string;
   id: string;
   notebook_id: string;
   user_id: string;
@@ -621,6 +626,7 @@ export default function NotebookEditor() {
       drawing_data: drawingToJson(currentPageData.drawing_data ?? emptyDrawing),
       tags: currentMeta?.tags ?? currentPageData.tags,
       template: currentPageData.template,
+      baseUpdatedAt: currentPageData.updated_at,
     } : null);
 
   useEffect(() => {

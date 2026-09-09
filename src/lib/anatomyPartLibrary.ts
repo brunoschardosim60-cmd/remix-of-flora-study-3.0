@@ -123,6 +123,7 @@ export function resolvePartCatalog(partOrId: AnatomyPartEntry | string, catalog:
     }
     // Source names are the authoritative anatomical names; display labels may be shortened.
     const text = normalizePartName(structure.sourceName || structure.name);
+    if (definition.id === "skull" && /\b(malleus|incus|stapes)\b/.test(text)) return true;
     // Z-Anatomy calls toes "finger of foot" too; "finger" alone is not a hand identifier.
     if (definition.id === "hand" && /\b(foot|toe|pe)\b/.test(text)) return false;
     if (definition.id === "foot" && /\b(hand|mao)\b/.test(text)) return false;

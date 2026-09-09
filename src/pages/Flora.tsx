@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Sparkles, Brain, Target, Zap, MessageSquare } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { decisionLabel, decisionReason } from "@/lib/floraPresentation";
 
 interface Decision {
   id: string;
@@ -44,22 +45,31 @@ export default function Flora() {
   const [memories, setMemories] = useState<Memory[]>([]);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [reload, setReload] = useState(0);
 
   useEffect(() => {
     if (!user) return;
+    let cancelled = false;
     (async () => {
       setLoading(true);
+      setLoadError(false);
+      try {
       const [dec, mem, ach] = await Promise.all([
         supabase.from("flora_decisions").select("id, decision_type, reasoning, accepted, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(30),
         supabase.from("flora_academic_memory").select("id, kind, subject, description, confidence, last_seen_at").eq("user_id", user.id).eq("active", true).order("confidence", { ascending: false }).limit(20),
         supabase.from("student_achievements").select("id, type, value, last_earned_at").eq("user_id", user.id).order("last_earned_at", { ascending: false }).limit(20),
       ]);
+      if (dec.error || mem.error || ach.error) throw new Error("Flora indisponível");
+      if (cancelled) return;
       setDecisions((dec.data ?? []) as Decision[]);
       setMemories((mem.data ?? []) as Memory[]);
       setAchievements((ach.data ?? []) as Achievement[]);
-      setLoading(false);
+      } catch { if (!cancelled) setLoadError(true); }
+      finally { if (!cancelled) setLoading(false); }
     })();
-  }, [user?.id]);
+    return () => { cancelled = true; };
+  }, [user, reload]);
 
   const totalXp = achievements.reduce((sum, a) => sum + (a.value || 0), 0);
 
@@ -78,6 +88,8 @@ export default function Flora() {
 
         {loading ? (
           <div className="text-sm text-muted-foreground">Carregando…</div>
+        ) : loadError ? (
+          <div role="alert" className="rounded-xl border p-4 text-sm">Não foi possível carregar o histórico da Flora. Isso não significa que seus dados foram apagados.<button type="button" className="ml-2 underline" onClick={() => setReload((value) => value + 1)}>Tentar novamente</button></div>
         ) : (
           <>
             {/* Resumo */}
@@ -85,7 +97,7 @@ export default function Flora() {
               <div className="rounded-xl bg-muted/30 border border-border/40 p-3">
                 <Brain className="w-4 h-4 text-primary mb-1" />
                 <div className="text-xl font-heading font-semibold">{memories.length}</div>
-                <div className="text-[11px] text-muted-foreground">memórias ativas</div>
+                <div className="text-[11px] text-muted-foreground">memórias exibidas</div>
               </div>
               <div className="rounded-xl bg-muted/30 border border-border/40 p-3">
                 <MessageSquare className="w-4 h-4 text-primary mb-1" />
@@ -95,7 +107,7 @@ export default function Flora() {
               <div className="rounded-xl bg-muted/30 border border-border/40 p-3">
                 <Zap className="w-4 h-4 text-primary mb-1" />
                 <div className="text-xl font-heading font-semibold">{totalXp}</div>
-                <div className="text-[11px] text-muted-foreground">XP total</div>
+                <div className="text-[11px] text-muted-foreground">pontos nas conquistas recentes</div>
               </div>
             </div>
 
@@ -130,13 +142,13 @@ export default function Flora() {
                   {decisions.map((d) => (
                     <div key={d.id} className="p-2.5 rounded-lg bg-muted/30 border border-border/40">
                       <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                        <span className="px-1.5 py-0.5 rounded-md bg-primary/10 text-primary font-medium">{d.decision_type}</span>
+                        <span className="px-1.5 py-0.5 rounded-md bg-primary/10 text-primary font-medium">{decisionLabel(d.decision_type)}</span>
                         <span>{new Date(d.created_at).toLocaleDateString("pt-BR")}</span>
                         {d.accepted === true && <span className="text-emerald-500 ml-auto">aceita</span>}
                         {d.accepted === false && <span className="text-muted-foreground ml-auto">dispensada</span>}
                         {d.accepted === null && <span className="text-amber-500 ml-auto">pendente</span>}
                       </div>
-                      <div className="text-sm mt-1">{d.reasoning}</div>
+                      <div className="text-sm mt-1">{decisionReason(d.decision_type, d.reasoning)}</div>
                     </div>
                   ))}
                 </div>

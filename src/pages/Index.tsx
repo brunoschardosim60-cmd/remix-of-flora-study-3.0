@@ -296,7 +296,7 @@ export default function Index() {
         {user && <FloraConfirmationBanner />}
 
         {/* Flora: primeira ação recomendada (pós-onboarding) */}
-        {user && <FloraFirstAction onStartStudy={handlePrimaryAction} />}
+        {user && <FloraFirstAction onStartStudy={handlePrimaryAction} overdueCount={overdueRevisions.length} />}
 
         {/* Check-in semanal migrou pra modal disparado ao encerrar o cronômetro. */}
         {user && <FloraCheckinDialog user={user} />}

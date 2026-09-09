@@ -388,11 +388,12 @@ export default function Analise() {
         doc.addPage();
         doc.setFontSize(16);
         doc.setTextColor(59, 130, 246);
-        doc.text("Predição ENEM", 15, 20);
+        doc.text("Indicador de preparação — simulação", 15, 20);
         
         doc.setFontSize(11);
         doc.setTextColor(30, 41, 59);
-        doc.text(`Nota Geral Estimada: ${Math.round(toENEMScale(enemPred.score))}`, 15, 35);
+        doc.text(`Índice interno: ${Math.round(toENEMScale(enemPred.score))}`, 15, 35);
+        doc.text("Não aplica a TRI nem equivale à nota oficial do ENEM.", 15, 42);
         
         y = 50;
         doc.text("Detalhamento por Área:", 15, y);
@@ -404,7 +405,7 @@ export default function Analise() {
         });
         
         y += 10;
-        doc.text(`Redação Estimada: ${Math.round(toENEMScale(enemPred.factors.essayScore))}`, 15, y);
+        doc.text(`Componente de redação (índice interno): ${Math.round(toENEMScale(enemPred.factors.essayScore))}`, 15, y);
       }
 
       
@@ -594,7 +595,7 @@ export default function Analise() {
                 </div>
 
                 {/* Heatmap horário × dia */}
-                <HourDayHeatmap sessions={sessions} />
+                <HourDayHeatmap sessions={filteredSessions} />
 
                 {/* Radar de matérias */}
                 {radarData.length >= 3 && (
@@ -773,7 +774,7 @@ export default function Analise() {
                 <div className="rounded-2xl border border-primary/30 bg-primary/5 p-5">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Nota estimada ENEM</p>
+                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Indicador de preparação · simulação</p>
                       <div className="flex items-baseline gap-2 mt-1">
                         <span className="font-heading text-5xl font-bold text-primary">{toENEMScale(enemPred.score)}</span>
                         <span className="text-lg text-muted-foreground">/1000</span>
@@ -781,16 +782,17 @@ export default function Analise() {
                         {enemPred.trend === "down" && <TrendingDown className="h-5 w-5 text-red-500" />}
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Confiança: {enemPred.confidence}% · Baseado em {perfs.length} matérias e {sessions.length} sessões
+                        Cobertura heurística: {enemPred.confidence}% · {perfs.length} matérias no histórico e {filteredSessions.length} sessões no período
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs text-muted-foreground">Média nacional</p>
-                      <p className="font-heading text-2xl font-bold text-muted-foreground">550</p>
+                      <p className="text-xs text-muted-foreground">Uso formativo</p>
+                      <p className="text-sm font-semibold text-muted-foreground">Não é nota oficial</p>
                     </div>
                   </div>
 
-                  {/* Barra visual — escala ENEM 300-1000 */}
+                  <p className="mt-3 text-sm text-muted-foreground">Este índice combina atividade e desempenho com pesos internos. Não aplica a TRI, não prevê aprovação e não equivale à nota do ENEM. Revisões, redações e matérias consideram o histórico; o filtro de período se aplica às sessões.</p>
+                  {/* Escala visual interna; não representa limites da TRI. */}
                   <div className="mt-4 rounded-full bg-muted h-3 overflow-hidden">
                     <div
                       className="h-full rounded-full bg-primary transition-all"

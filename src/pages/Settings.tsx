@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTheme } from "next-themes";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,6 +38,9 @@ const BANCAS = [
 export default function Settings() {
   const { user, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const sections: Record<string, string> = { study: "estudo", goals: "estudo", perfil: "perfil", estudo: "estudo", aparencia: "aparencia", conta: "conta" };
+  const activeTab = sections[searchParams.get("section") ?? ""] ?? "perfil";
   const { theme, setTheme } = useTheme();
 
   // Profile
@@ -274,7 +277,7 @@ export default function Settings() {
           </div>
         )}
 
-        <Tabs defaultValue="perfil" className="w-full">
+        <Tabs value={activeTab} onValueChange={(value) => setSearchParams({ section: value }, { replace: true })} className="w-full">
           <TabsList className="w-full h-auto flex flex-wrap justify-start gap-1 bg-muted/60 p-1">
             <TabsTrigger value="perfil" className="flex-1 min-w-[80px]">Perfil</TabsTrigger>
             <TabsTrigger value="estudo" className="flex-1 min-w-[80px]">Estudo</TabsTrigger>
@@ -456,7 +459,7 @@ export default function Settings() {
         </section>
 
           {/* Minhas metas — migrado do dashboard pra reduzir ruído da tela inicial */}
-          {user && <StudentGoalsCard user={user} />}
+          <div id="goals" className="scroll-mt-20">{user && <StudentGoalsCard user={user} />}</div>
 
           {/* Integração com Calendário */}
           {user && (

@@ -143,11 +143,11 @@ function getObjetivoConfig(objetivo: Objetivo) {
     case "vestibular":
       return {
         label: "ENEM",
-        minLines: 25,
-        maxLines: 35,
-        minWords: 150,
-        placeholder: "Escreva sua redação dissertativa-argumentativa aqui. O ENEM exige entre 150 e 500 palavras.",
-        dica: "O ENEM exige: tese clara, 2 argumentos desenvolvidos e proposta de intervenção completa.",
+        minLines: 8,
+        maxLines: 30,
+        minWords: 0,
+        placeholder: "Escreva seu texto dissertativo-argumentativo. Na prova, a folha comporta até 30 linhas; a estimativa digital não equivale à escrita manuscrita.",
+        dica: "Defenda um ponto de vista com argumentos e uma proposta de intervenção que respeite os direitos humanos. O ENEM não exige um número fixo de argumentos ou de palavras.",
         isENEM: true,
       };
     case "concurso":
@@ -502,8 +502,8 @@ export default function Redacao() {
   async function handleCorrect() {
     if (!selected) return;
     if (correcting) return; // 🛡️ guard duplo clique / StrictMode
-    if (lineCount < config.minLines) {
-      toast.error(`Escreva pelo menos ${config.minLines} linhas para uma redação completa.`);
+    if (!texto.trim()) {
+      toast.error("Escreva um texto antes de solicitar a análise.");
       return;
     }
     // Mantém o fingerprint só para informar — o clique sempre dispara nova correção
@@ -782,7 +782,7 @@ export default function Redacao() {
                     <div className="flex items-center justify-between">
                       <label className="text-sm font-medium">Texto da redação</label>
                       <span className="text-xs text-muted-foreground flex items-center gap-2">
-                        {wordCount} palavras · ~{lineCount} linhas
+                        {wordCount} palavras · ~{lineCount} linhas estimadas
                         {lastSavedAt && (
                           <span className="inline-flex items-center gap-1 text-green-600">
                             <CheckCircle2 className="h-3 w-3" />
@@ -797,7 +797,7 @@ export default function Redacao() {
                         )}
                         <span className={lineCount >= config.minLines && lineCount <= config.maxLines
                           ? " text-green-600" : " text-orange-500"}>
-                          {" "}(alvo {config.minLines}–{config.maxLines})
+                          {" "}{config.isENEM ? "(estimativa digital · prova: até 30 linhas)" : `(alvo ${config.minLines}–${config.maxLines})`}
                         </span>
                       </span>
                     </div>

@@ -304,7 +304,7 @@ export default function Notebooks() {
   return <div className="notebooks-studio">
     <header className="notebooks-topbar">
       <button className="notebooks-back" onClick={() => navigate("/")} title="Voltar" aria-label="Voltar"><ArrowLeft /></button>
-      <div className="notebooks-brand"><span><NotebookPen /></span><div><small>FLORA NOTES</small><strong>Caderno médico</strong></div></div>
+      <div className="notebooks-brand"><span><NotebookPen /></span><div><small>FLORA NOTES</small><strong>Seus cadernos</strong></div></div>
       <div className="notebooks-top-actions">
         <label className="notebooks-search">{searching ? <Loader2 className="animate-spin" /> : <Search />}<input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Buscar nas suas notas…" /></label>
         <button className="notebooks-new-button" onClick={openBlankNotebook}><Plus /><span>Nova nota</span></button>
@@ -316,12 +316,13 @@ export default function Notebooks() {
         <div className="notebooks-overview-copy">
           <span className="notebooks-eyebrow">SEU ESPAÇO DE ESTUDO</span>
           <h1>Todas as notas</h1>
-          <p>Escreva, desenhe, marque PDFs e organize o raciocínio médico no mesmo lugar.</p>
+          <p>Escreva, desenhe, marque PDFs e organize seus estudos no mesmo lugar.</p>
         </div>
         <div className="notebooks-stats"><span><b>{notebooks.length}</b> notas</span><span><b>{allFolders.length}</b> pastas</span><span><b>{favoriteCount}</b> favoritas</span></div>
       </section>
 
-      <section className="notebooks-medical-start">
+      <details className="notebooks-medical-start" open={notebooks.length === 0 ? true : undefined}>
+        <summary className="cursor-pointer font-semibold">Modelos médicos — criar a partir de uma estrutura pronta</summary>
         <header><div><span className="notebooks-eyebrow">MODELOS MÉDICOS</span><h2>Comece com uma estrutura pronta</h2><p>Páginas editáveis com conteúdo visual, perguntas e espaço para anotações.</p></div><button type="button" onClick={openBlankNotebook}><Plus /> Em branco</button></header>
         <div className="notebooks-template-strip">
           {medicalNotebookTemplates.map((template, index) => {
@@ -332,7 +333,7 @@ export default function Notebooks() {
             </button>;
           })}
         </div>
-      </section>
+      </details>
 
       {showNew && <section className="notebooks-create-panel">
         <header><span>{selectedTemplate ? <Stethoscope /> : <Plus />}</span><div><h3>{selectedTemplate ? `Criar “${selectedTemplate.name}”` : "Nova nota"}</h3><p>{selectedTemplate ? `${selectedTemplate.pages.length} páginas médicas serão montadas automaticamente.` : "Comece em branco e escolha o papel dentro do editor."}</p></div></header>

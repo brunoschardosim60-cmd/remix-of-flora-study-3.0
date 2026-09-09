@@ -1019,7 +1019,7 @@ export default function BancoQuestoes() {
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <Select key={`ano-${anos.length}`} value={ano} onValueChange={setAno}>
-              <SelectTrigger><SelectValue placeholder="Ano" /></SelectTrigger>
+              <SelectTrigger aria-label="Filtrar por ano" title="Ano da prova"><SelectValue placeholder="Ano" /></SelectTrigger>
               <SelectContent>
                 {anos && anos.length > 0 ? (
                   anos.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)
@@ -1029,7 +1029,7 @@ export default function BancoQuestoes() {
               </SelectContent>
             </Select>
             <Select key={`area-${AREAS.length}`} value={area} onValueChange={(v) => { setArea(v); setDisciplina("Todas"); setTema("Todos"); }}>
-              <SelectTrigger><SelectValue placeholder="Área" /></SelectTrigger>
+              <SelectTrigger aria-label="Filtrar por área" title="Área de conhecimento"><SelectValue placeholder="Área" /></SelectTrigger>
               <SelectContent>
                 {AREAS && AREAS.length > 0 ? (
                   AREAS.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)
@@ -1039,7 +1039,7 @@ export default function BancoQuestoes() {
               </SelectContent>
             </Select>
             <Select key={`disciplina-${disciplinas.length}`} value={disciplina} onValueChange={(v) => { setDisciplina(v); setTema("Todos"); }}>
-              <SelectTrigger><SelectValue placeholder="Disciplina" /></SelectTrigger>
+              <SelectTrigger aria-label="Filtrar por disciplina" title="Disciplina"><SelectValue placeholder="Disciplina" /></SelectTrigger>
               <SelectContent>
                 {disciplinas && disciplinas.length > 0 ? (
                   disciplinas.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)
@@ -1049,7 +1049,7 @@ export default function BancoQuestoes() {
               </SelectContent>
             </Select>
             <Select key={`tema-${temas.length}`} value={tema} onValueChange={setTema}>
-              <SelectTrigger><SelectValue placeholder="Tema" /></SelectTrigger>
+              <SelectTrigger aria-label="Filtrar por tema" title="Tema"><SelectValue placeholder="Tema" /></SelectTrigger>
               <SelectContent className="max-h-72">
                 <SelectItem value="Todos">Todos os Temas</SelectItem>
                 {temas && temas.length > 0 ? (

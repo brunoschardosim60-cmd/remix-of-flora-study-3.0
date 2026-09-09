@@ -24,3 +24,12 @@
 .med-3d-part-library :is(button,a,summary,input):focus-visible{outline:3px solid #329a80;outline-offset:3px}
 @media(max-width:700px){.med-3d-part-library .med-3d-part-library-tools label{flex:auto}.med-3d-part-library .med-3d-part-grid{grid-template-columns:1fr;max-height:480px}}
 @media(max-width:600px){.med-3d-presentation-filter button{flex:1;padding-inline:10px}.med-3d-candidate-selection{padding:12px}.med-3d-candidate-card{padding:14px}}
+.med-skull-dialog {
+  --primary: 168 70% 25%;
+  --primary-foreground: 0 0% 100%;
+  --ring: 168 70% 25%;
+}
+.med-bone-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px; background: #edf5f1; border-bottom: 1px solid #d3e4dd; color: #175b4d; }
+.med-bone-tools button { border: 1px solid #bad6cb; padding: 7px 10px; border-radius: 8px; background: white; font-size: 12px; }
+.med-bone-tools label { display: flex; align-items: center; gap: 7px; font-size: 12px; }
+.med-bone-tools small { flex-basis: 100%; font-size: 11px; }

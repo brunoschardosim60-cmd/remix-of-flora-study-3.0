@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 const POLL_MS = 60_000;            // 1 min
@@ -7,8 +7,6 @@ const WRONG_STREAK_MIN = 3;        // 3 erros seguidos
 const LONG_SESSION_MS = 2 * 3600_000; // 2h contínuas
 
 const LS_LAST_ALERT = "flora.fatigue.lastAlertAt";
-const LS_SESSION_START = "flora.fatigue.sessionStart";
-const LS_LAST_ACTIVE = "flora.presence.lastActive";
 
 /**
  * Detecta fadiga e insere flora_decisions com decision_type='fatigue'.
@@ -17,32 +15,41 @@ const LS_LAST_ACTIVE = "flora.presence.lastActive";
  * Respeita cooldown de 2h entre alertas.
  */
 export function useFatigueDetector(userId: string | undefined | null) {
-  const lastCheckedAt = useRef<number>(0);
 
   useEffect(() => {
     if (!userId) return;
     let timer: ReturnType<typeof setInterval> | null = null;
     let cancelled = false;
+    let running = false;
+    let sessionStart = Date.now();
+    let lastInput = sessionStart;
+    const activity = () => {
+      const now = Date.now();
+      if (now - lastInput > 10 * 60_000) sessionStart = now;
+      lastInput = now;
+    };
+    const visibility = () => { sessionStart = Date.now(); lastInput = sessionStart; };
+    window.addEventListener("pointerdown", activity, { passive: true });
+    window.addEventListener("keydown", activity);
+    window.addEventListener("scroll", activity, { passive: true });
+    document.addEventListener("visibilitychange", visibility);
 
     const check = async () => {
+      if (cancelled || running) return;
+      running = true;
       try {
         const now = Date.now();
-        const lastAlert = parseInt(localStorage.getItem(LS_LAST_ALERT) || "0", 10);
+        if (document.hidden || now - lastInput > 10 * 60_000) { sessionStart = now; return; }
+        const lastAlert = parseInt(localStorage.getItem(`${LS_LAST_ALERT}:${userId}`) || "0", 10);
         if (now - lastAlert < COOLDOWN_MS) return;
 
         // Sessão contínua: usa lastActive + sessionStart
-        const lastActive = parseInt(localStorage.getItem(LS_LAST_ACTIVE) || "0", 10);
-        let sessionStart = parseInt(localStorage.getItem(LS_SESSION_START) || "0", 10);
-        if (!sessionStart || (lastActive && now - lastActive > 10 * 60_000)) {
-          sessionStart = now;
-          localStorage.setItem(LS_SESSION_START, String(now));
-        }
         const continuous = now - sessionStart;
 
         // 1) fatigue_time
         if (continuous >= LONG_SESSION_MS) {
-          await insertFatigue(userId, "fatigue_time", `Você está estudando há ${Math.round(continuous/3600_000*10)/10}h sem pausa — uma respirada de 10min recarrega a memória.`, { minutes: Math.round(continuous/60_000) });
-          localStorage.setItem(LS_LAST_ALERT, String(now));
+          await insertFatigue(userId, "fatigue_time", "Você está ativo no site há cerca de 2 horas. Que tal fazer uma pausa? Isso é uma estimativa de atividade, não uma medida de fadiga.", { minutes: Math.round(continuous/60_000) });
+          localStorage.setItem(`${LS_LAST_ALERT}:${userId}`, String(now));
           return;
         }
 
@@ -57,14 +64,16 @@ export function useFatigueDetector(userId: string | undefined | null) {
           .limit(5);
         const rows = data || [];
         if (rows.length >= WRONG_STREAK_MIN) {
-          const streak = rows.slice(0, WRONG_STREAK_MIN).every((r: any) => r.acertou === false);
+          const streak = rows.slice(0, WRONG_STREAK_MIN).every((r) => r.acertou === false);
           if (streak) {
             await insertFatigue(userId, "fatigue_errors", `Você errou ${WRONG_STREAK_MIN} questões seguidas — bora trocar de matéria ou descansar 5min?`, { count: WRONG_STREAK_MIN });
-            localStorage.setItem(LS_LAST_ALERT, String(now));
+            localStorage.setItem(`${LS_LAST_ALERT}:${userId}`, String(now));
           }
         }
-      } catch (e) {
+      } catch {
         // silencioso
+      } finally {
+        running = false;
       }
     };
 
@@ -76,15 +85,20 @@ export function useFatigueDetector(userId: string | undefined | null) {
       cancelled = true;
       clearTimeout(initial);
       if (timer) clearInterval(timer);
+      window.removeEventListener("pointerdown", activity);
+      window.removeEventListener("keydown", activity);
+      window.removeEventListener("scroll", activity);
+      document.removeEventListener("visibilitychange", visibility);
     };
   }, [userId]);
 }
 
 async function insertFatigue(userId: string, subtype: string, reasoning: string, details: Record<string, unknown>) {
-  await supabase.from("flora_decisions").insert({
+  const { error } = await supabase.from("flora_decisions").insert({
     user_id: userId,
     decision_type: "fatigue",
     reasoning,
     recommendation: { subtype, ...details },
   });
+  if (error) throw error;
 }

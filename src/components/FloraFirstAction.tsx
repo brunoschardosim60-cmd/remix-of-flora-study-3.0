@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 
 interface FloraFirstActionProps {
   onStartStudy?: () => void;
+  overdueCount?: number;
 }
 
 type Nudge =
@@ -22,7 +23,7 @@ function todayKey() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-export function FloraFirstAction({ onStartStudy }: FloraFirstActionProps) {
+export function FloraFirstAction({ onStartStudy, overdueCount }: FloraFirstActionProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [nudge, setNudge] = useState<Nudge | null>(null);
@@ -92,19 +93,20 @@ export function FloraFirstAction({ onStartStudy }: FloraFirstActionProps) {
 
         // 2) Revisões atrasadas (> 0 com scheduled_date < hoje)
         const today = todayKey();
-        const { data: overdue } = await supabase
+        const { data: overdue, count: remoteCount } = await supabase
           .from("spaced_reviews")
-          .select("materia,scheduled_date")
+          .select("materia,scheduled_date", { count: "exact" })
           .eq("user_id", user.id)
           .eq("completed", false)
           .lt("scheduled_date", today)
           .limit(20);
 
-        if (overdue && overdue.length >= 2) {
+        const count = overdueCount ?? remoteCount ?? overdue?.length ?? 0;
+        if (count >= 2) {
           const byMat: Record<string, number> = {};
-          for (const r of overdue) byMat[r.materia] = (byMat[r.materia] || 0) + 1;
+          for (const r of overdue ?? []) byMat[r.materia] = (byMat[r.materia] || 0) + 1;
           const top = Object.entries(byMat).sort((a, b) => b[1] - a[1])[0];
-          setNudge({ kind: "overdue_revisions", count: overdue.length, materia: top?.[0] });
+          setNudge({ kind: "overdue_revisions", count, materia: overdueCount === undefined ? top?.[0] : undefined });
           return;
         }
 
@@ -163,7 +165,7 @@ export function FloraFirstAction({ onStartStudy }: FloraFirstActionProps) {
       } catch { /* silent */ }
       finally { setLoading(false); }
     })();
-  }, [user, dismissed]);
+  }, [user, dismissed, overdueCount]);
 
   if (dismissed || (!loading && !nudge)) return null;
 

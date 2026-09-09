@@ -19,7 +19,7 @@ export function AnatomyPartBrowser({ activeId, onOpen, onClose, onOpenSpecimen }
   }, [group, query, presentation]);
   const specimens = anatomySpecimens.filter((part) => presentation !== "Didáticos" && (group === "Todas" || group === "Órgãos") && matchesAnatomyQuery(`${part.label} ${part.description}`, query));
   const availableCount = results.length + specimens.length;
-  const candidates = anatomyModelSelection.filter((part) => part.status !== "integrated" && (presentation === "Todas" || part.presentation === presentation)
+  const candidates = anatomyModelSelection.filter((part) => part.status !== "integrated" && part.id !== "witmerlab-skull" && (presentation === "Todas" || part.presentation === presentation)
     && (group === "Todas" || part.group === group)
     && matchesAnatomyQuery(`${part.label} ${part.author} ${part.description}`, query));
   const clearFilters = () => { setQuery(""); setGroup("Todas"); setPresentation("Todas"); };
