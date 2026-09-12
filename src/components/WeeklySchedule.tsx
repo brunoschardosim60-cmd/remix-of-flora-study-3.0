@@ -86,7 +86,7 @@ export function WeeklySchedule({ slots, onChange, subjects }: WeeklyScheduleProp
     const time = newHorario.trim();
     if (!time || horarios.includes(time)) return;
     const newSlots: WeeklySlot[] = DIAS.map((_, dia) => ({
-      id: `slot-${Date.now()}-${dia}`,
+      id: crypto.randomUUID(),
       dia,
       horario: time,
       materia: null,
