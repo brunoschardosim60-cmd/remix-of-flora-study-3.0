@@ -25,7 +25,7 @@ export async function renderPdfPages(file: File, onProgress?: (current: number, 
     const original = page.getViewport({ scale: 1 });
     const scale = Math.min(2, 1600 / Math.max(original.width, original.height));
     const viewport = page.getViewport({ scale });
-    const canvas = document.createElement("canvas");
+    const canvas = window.document.createElement("canvas");
     canvas.width = Math.ceil(viewport.width);
     canvas.height = Math.ceil(viewport.height);
     const context = canvas.getContext("2d", { alpha: false });

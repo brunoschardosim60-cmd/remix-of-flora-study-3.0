@@ -204,10 +204,6 @@ const App = () => (
         <AuthProvider>
           <NotificationInit />
           <BrowserRouter
-            future={{
-              v7_startTransition: true,
-              v7_relativeSplatPath: true,
-            }}
           >
             <GlobalFocusMiniPlayer />
             <QuotaLimitModal />

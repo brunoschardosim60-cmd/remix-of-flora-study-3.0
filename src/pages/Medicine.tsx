@@ -1,3 +1,4 @@
+import type { Json } from "@/integrations/supabase/types";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
@@ -359,8 +360,8 @@ export default function Medicine() {
         answered,
         wrong_items: wrongIds,
         case_step: caseStep,
-        learning_state: learningState,
-        case_progress: caseProgress,
+        learning_state: learningState as unknown as Json,
+        case_progress: caseProgress as unknown as Json,
         last_section: section === "home" ? resumeSection : section,
         content_version: "MED-2026.08.26",
       }, { onConflict: "user_id" }).then(({ error }) => setCloudSyncError(Boolean(error)));

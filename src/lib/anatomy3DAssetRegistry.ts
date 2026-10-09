@@ -1,6 +1,7 @@
 export type Anatomy3DAssetLoadMode = "base" | "system" | "organ";
 
 export type Anatomy3DAssetDefinition = {
+  structureCount?: number;
   id: string;
   path: string;
   loadMode: Anatomy3DAssetLoadMode;
