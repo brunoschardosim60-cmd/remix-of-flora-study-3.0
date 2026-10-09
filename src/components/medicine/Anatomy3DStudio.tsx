@@ -853,7 +853,7 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
               <div><dt>Localização espacial</dt><dd>Centro do modelo em {formatCoordinates(selected.focus)}. Use a rotação para conferir relações anteriores, posteriores e laterais.</dd></div>
               {selectedManifestStructure?.hierarchyPath?.length > 1 && <div className="med-3d-hierarchy">
                 <dt>Hierarquia anatômica</dt>
-                <dd>{selectedManifestStructure.hierarchyPath.map((item, index) => translateAnatomyName(item, selected.layer, index)).join(" → ")}</dd>
+                <dd>{selectedManifestStructure.hierarchyPath.map((item, index) => translateAnatomyName(item, selected.layer as DenseAnatomyLayer | "organs", index)).join(" → ")}</dd>
               </div>}
             </dl>
             <div className="med-3d-detail-actions">
@@ -872,7 +872,7 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
 }
 
 function AnimatedLayerGroup({ exploded, offset, children }: { exploded: boolean; offset: [number, number, number]; children: ReactNode }) {
-  const ref = useRef<Object3D>(null);
+  const ref = useRef<Group>(null);
   const { invalidate } = useThree();
   const target = useMemo(() => new Vector3(...offset), [offset]);
   const origin = useMemo(() => new Vector3(), []);
@@ -896,6 +896,7 @@ function RealBodyPartsModel({ system, realistic, quality, selectedId, skinOpacit
   selectedId: string | null;
   skinOpacity: number;
   skinTone: string;
+  globalSectionPlane?: Plane | null;
   onSelect: (structure: Anatomy3DStructure) => void;
   onHover: AnatomyHoverHandler;
 }) {
@@ -1286,6 +1287,7 @@ function DetailedOrgansModel({ integrated = false, opacity = 1, globalSectionPla
   sectionAxis: SectionAxis;
   sectionOffset: number;
   onSelect: (structure: Anatomy3DStructure) => void;
+  onHover?: AnatomyHoverHandler;
   onCatalogReady: (system: Anatomy3DSystemId, catalog: Anatomy3DStructure[]) => void;
 }) {
   const [heartDetailFailed, setHeartDetailFailed] = useState(false);
@@ -1489,7 +1491,7 @@ function catalogStructureFromRealMesh(mesh: Mesh): Anatomy3DStructure {
     focus: [center.x, center.y, center.z],
     focusDistance: Math.min(4.4, Math.max(1.15, Math.max(size.x, size.y, size.z) * 3.2)),
     color: type === "bone" ? "#d8c9aa" : "#b94d4f",
-    parts: [rawDetailName],
+    parts: [rawDetailName] as unknown as Anatomy3DPart[],
   };
 }
 
@@ -1518,7 +1520,7 @@ function DetailedHeartModel({ realistic, quality, selectedId, organView, section
   organView: OrganViewMode;
   sectionAxis: SectionAxis;
   sectionOffset: number;
-  globalSectionPlane: Plane | null;
+  globalSectionPlane?: Plane | null;
   onSelect: (structure: Anatomy3DStructure) => void;
   onCatalogReady: (system: Anatomy3DSystemId, catalog: Anatomy3DStructure[]) => void;
 }) {
@@ -1586,7 +1588,7 @@ function DetailedHraOrganModel({ kind, realistic, quality, selectedId, organView
   sectionAxis: SectionAxis;
   sectionOffset: number;
   onSelect: (structure: Anatomy3DStructure) => void;
-  onHover: AnatomyHoverHandler;
+  onHover?: AnatomyHoverHandler;
   onCatalogReady: (system: Anatomy3DSystemId, catalog: Anatomy3DStructure[]) => void;
 }) {
   const definition = hraDetailedOrganAssets[kind];
@@ -1931,7 +1933,7 @@ function prepareSupplementalOrgan(source: Object3D, kind: keyof typeof SUPPLEMEN
         focus: [center.x, center.y, center.z],
         focusDistance: Math.max(definition.kind === "vessel" ? 1.55 : 1.35, Math.max(size.x, size.y, size.z) * 3.4),
         color: definition.color,
-        parts: [definition.kind],
+        parts: [definition.kind] as unknown as Anatomy3DPart[],
       };
       mesh.userData.supplementCatalogIndex = catalog.length;
       mesh.userData.didacticColor = definition.color;
@@ -1999,7 +2001,7 @@ function prepareHraDetailedOrgan(source: Object3D, kind: HraDetailedOrganKind) {
       focus: [center.x, center.y, center.z],
       focusDistance: Math.max(.72, Math.max(size.x, size.y, size.z) * 4.1),
       color,
-      parts: [rawName],
+      parts: [rawName] as unknown as Anatomy3DPart[],
     });
     meshes.push(object);
   });
@@ -2095,7 +2097,7 @@ function prepareDetailedHeart(source: Object3D) {
         ? Math.max(1.55, Math.max(size.x, size.y, size.z) * 4.8)
         : Math.max(.9, Math.max(size.x, size.y, size.z) * 3.5),
       color: definition.color,
-      parts: [definition.kind],
+      parts: [definition.kind] as unknown as Anatomy3DPart[],
     });
     meshes.push(object);
   });
@@ -2226,7 +2228,7 @@ function catalogStructureFromBounds(rawName: string, layer: DenseAnatomyLayer | 
     focus: [center.x, center.y, center.z],
     focusDistance: Math.min(4.8, Math.max(.82, Math.max(size.x, size.y, size.z) * 3.2)),
     color,
-    parts: [rawName],
+    parts: [rawName] as unknown as Anatomy3DPart[],
   };
 }
 

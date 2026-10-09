@@ -53,7 +53,7 @@ export function MedicalPathologyLab({
   const activeVisual = pathology.visuals.find((item) => item.id === visualId) ?? pathology.visuals[0];
 
   useEffect(() => {
-    if (initialPathologyId && medicalPathologies.some((item) => item.id === initialPathologyId)) setActiveId(initialPathologyId);
+    if (initialPathologyId && medicalPathologies.some((item) => item.id === initialPathologyId)) setActiveId(initialPathologyId as PathologyOrganId);
   }, [initialPathologyId]);
 
   useEffect(() => {
