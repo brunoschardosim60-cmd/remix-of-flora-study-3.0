@@ -16,7 +16,7 @@ import {
   shouldTriggerAnamnesisCrisis, type AnamnesisConversationTurn, type AnamnesisPatientResponse,
 } from "@/lib/anamnesisPatient";
 import type { MedicineLevel } from "@/lib/medicineData";
-type MedicineLearningEvent = Record<string, unknown>;
+type MedicineLearningEvent = { id: string; label: string; correct: boolean };
 
 const categories: AnamnesisCategory[] = ["Abertura", "Sintoma atual", "Antecedentes", "Medicamentos e alergias", "Contexto", "Segurança"];
 const valueCopy = {

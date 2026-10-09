@@ -1,3 +1,4 @@
+import type { PathologyOrganId } from "@/lib/medicalPathology";
 import { useEffect, useState, type CSSProperties } from "react";
 import {
   AlertTriangle,
