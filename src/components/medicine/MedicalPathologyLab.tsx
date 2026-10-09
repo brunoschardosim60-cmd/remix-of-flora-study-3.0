@@ -1,3 +1,4 @@
+import type { PathologyOrganId } from "@/lib/medicalPathology";
 import { useEffect, useState, type CSSProperties } from "react";
 import {
   AlertTriangle,
@@ -53,8 +54,7 @@ export function MedicalPathologyLab({
   const activeVisual = pathology.visuals.find((item) => item.id === visualId) ?? pathology.visuals[0];
 
   useEffect(() => {
-    const initial = medicalPathologies.find((item) => item.id === initialPathologyId);
-    if (initial) setActiveId(initial.id);
+    if (initialPathologyId && medicalPathologies.some((item) => item.id === initialPathologyId)) setActiveId(initialPathologyId as PathologyOrganId);
   }, [initialPathologyId]);
 
   useEffect(() => {

@@ -14,7 +14,6 @@
 
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { getStroke } from "perfect-freehand";
-import { drawNotebookShape } from "./drawingShapes";
 import {
   type Stroke,
   type StrokeBounds,
@@ -40,7 +39,6 @@ interface KonvaDrawingCanvasProps {
   strokes: Stroke[];
   onStrokesChange: (strokes: Stroke[]) => void;
   active: boolean;
-  drawWithTouch?: boolean;
   penColor: string;
   penWidth: number;
   tool: "pen" | "marker" | "eraser" | "select" | "line" | "rect" | "circle";
@@ -169,8 +167,6 @@ function drawRichStroke(ctx: CanvasRenderingContext2D, stroke: Stroke) {
     return;
   }
 
-  if (drawNotebookShape(ctx, stroke)) { ctx.restore(); return; }
-
   // Pen/marker family — renderização vetorial via perfect-freehand.
   // Mapeia tool legado → brush quando o stroke não tiver brush explícito.
   const inferredBrush: BrushKind =
@@ -222,8 +218,7 @@ export function renderStrokesToDataUrl(strokes: Stroke[], width = 794, height = 
 }
 
 export const KonvaDrawingCanvas = forwardRef<DrawingCanvasRef, KonvaDrawingCanvasProps>(
-  ({ strokes, onStrokesChange, active, drawWithTouch = false, penColor, penWidth, tool, brush = "ballpoint", zoom = 1, onSelectionChange }, ref) => {
-    const activePointer = useRef<number | null>(null);
+  ({ strokes, onStrokesChange, active, penColor, penWidth, tool, brush = "ballpoint", zoom = 1, onSelectionChange }, ref) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [size, setSize] = useState({ width: 800, height: 600 });
@@ -322,18 +317,13 @@ export const KonvaDrawingCanvas = forwardRef<DrawingCanvasRef, KonvaDrawingCanva
     useEffect(() => {
       const el = containerRef.current?.parentElement;
       if (!el) return;
-
-      // O papel usa CSS zoom. getBoundingClientRect() devolve o tamanho visual
-      // já ampliado; usá-lo aqui ampliava o canvas uma segunda vez e fazia o
-      // traço nascer longe da caneta. clientWidth/scrollHeight permanecem no
-      // sistema de coordenadas lógico da folha.
-      const measure = () => setSize({
-        width: Math.max(1, el.clientWidth),
-        height: Math.max(1, el.clientHeight, el.scrollHeight),
+      const obs = new ResizeObserver(() => {
+        const r = el.getBoundingClientRect();
+        setSize({ width: r.width, height: r.height });
       });
-      const obs = new ResizeObserver(measure);
       obs.observe(el);
-      measure();
+      const r = el.getBoundingClientRect();
+      setSize({ width: r.width, height: r.height });
       return () => obs.disconnect();
     }, []);
 
@@ -355,16 +345,8 @@ export const KonvaDrawingCanvas = forwardRef<DrawingCanvasRef, KonvaDrawingCanva
     }, [tool]);
 
     const getPos = (e: React.PointerEvent<HTMLCanvasElement>) => {
-      const canvas = canvasRef.current!;
-      const rect = canvas.getBoundingClientRect();
-      // Converte da posição visual (afetada pelo zoom CSS) para a coordenada
-      // lógica persistida no desenho. Funciona em qualquer nível de zoom.
-      const scaleX = rect.width > 0 ? size.width / rect.width : 1;
-      const scaleY = rect.height > 0 ? size.height / rect.height : 1;
-      return {
-        x: (e.clientX - rect.left) * scaleX,
-        y: (e.clientY - rect.top) * scaleY,
-      };
+      const rect = canvasRef.current!.getBoundingClientRect();
+      return { x: (e.clientX - rect.left) / zoom, y: (e.clientY - rect.top) / zoom };
     };
 
     // Calcula largura do ponto baseado em pressão + velocidade
@@ -386,11 +368,8 @@ export const KonvaDrawingCanvas = forwardRef<DrawingCanvasRef, KonvaDrawingCanva
 
     const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
       if (!active) return;
-      if (e.pointerType === "touch" && !drawWithTouch) return;
-      if (activePointer.current !== null) return;
       // Palm rejection: toque com área grande é palma da mão
       if (e.pointerType === "touch" && e.width > 40) return;
-      activePointer.current = e.pointerId;
       e.preventDefault();
       (e.target as HTMLCanvasElement).setPointerCapture(e.pointerId);
 
@@ -428,7 +407,6 @@ export const KonvaDrawingCanvas = forwardRef<DrawingCanvasRef, KonvaDrawingCanva
 
     const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
       if (!active || !isDrawingRef.current) return;
-      if (activePointer.current !== e.pointerId) return;
       if (e.pointerType === "touch" && e.width > 40) return;
       e.preventDefault();
       const pos = getPos(e);
@@ -493,8 +471,6 @@ export const KonvaDrawingCanvas = forwardRef<DrawingCanvasRef, KonvaDrawingCanva
     };
 
     const handlePointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
-      if (activePointer.current !== e.pointerId) return;
-      activePointer.current = null;
       if (!isDrawingRef.current) return;
       isDrawingRef.current = false;
       lastPointRef.current = null;
@@ -535,7 +511,7 @@ export const KonvaDrawingCanvas = forwardRef<DrawingCanvasRef, KonvaDrawingCanva
             return { x: cx + Math.cos(a) * rx, y: cy + Math.sin(a) * ry, pressure: 0.5, width: penWidth };
           });
         }
-        onStrokesChange([...strokes, { points: shapePts, color: penColor, width: penWidth, tool: "pen", shape: tool }]);
+        onStrokesChange([...strokes, { points: shapePts, color: penColor, width: penWidth, tool: "pen" }]);
         return;
       }
 
@@ -553,21 +529,14 @@ export const KonvaDrawingCanvas = forwardRef<DrawingCanvasRef, KonvaDrawingCanva
       tool === "select" ? "z-20 cursor-crosshair" : "z-20 cursor-crosshair";
 
     return (
-      <div ref={containerRef} className={`absolute inset-0 ${cursor}`} style={{ touchAction: active && drawWithTouch ? "none" : "pan-x pan-y" }}>
+      <div ref={containerRef} className={`absolute inset-0 ${cursor}`} style={{ touchAction: active ? "none" : "auto" }}>
         <canvas
           ref={canvasRef}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
-          onPointerCancel={() => {
-            activePointer.current = null;
-            isDrawingRef.current = false;
-            currentStrokeRef.current = null;
-            shapeStartRef.current = null;
-            selectionStartRef.current = null;
-            selectionDragRef.current = null;
-            redraw();
-          }}
+          onPointerCancel={handlePointerUp}
+          onPointerLeave={handlePointerUp}
           style={{ display: "block", width: "100%", height: "100%" }}
         />
         {selection && tool === "select" && (

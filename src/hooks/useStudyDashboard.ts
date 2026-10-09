@@ -53,7 +53,6 @@ import {
   saveRemoteStudyState,
 } from "@/lib/studyStateStore";
 import { reportError } from "@/lib/errorHandling";
-import { pendingStudySave, stageStudySave, flushStudySave } from "@/lib/studyPendingSave";
 
 type SyncStatus = "local" | "local_only" | "offline" | "syncing" | "synced" | "error";
 
@@ -82,6 +81,7 @@ export function useStudyDashboard() {
   const [syncStatus, setSyncStatus] = useState<SyncStatus>("local");
   const [canRestoreFromLocal, setCanRestoreFromLocal] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveGamificationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -169,11 +169,10 @@ export function useStudyDashboard() {
           REMOTE_HYDRATION_TIMEOUT_MS,
           "Timeout ao carregar estado remoto",
         );
-        const pending = pendingStudySave(user.id);
-        let nextState = pending?.state ?? remote ?? getInitialRemoteStudyState();
+        let nextState = remote ?? getInitialRemoteStudyState();
         const initialMergeDone = hasCompletedInitialMerge(user.id);
 
-        if (remote && !initialMergeDone && !pending) {
+        if (remote && !initialMergeDone) {
           nextState = mergeStudyStates(localState, remote);
           await saveRemoteStudyState(user.id, nextState);
           markInitialMergeComplete(user.id);
@@ -246,8 +245,6 @@ export function useStudyDashboard() {
           filter: `user_id=eq.${user.id}`,
         },
         (payload) => {
-          // A delayed event must not replace changes awaiting confirmation.
-          if (pendingStudySave(user.id)) return;
           const row = payload.new as { topics?: unknown; weekly_slots?: unknown; sessions?: unknown };
           if (row.topics) setTopics(row.topics as StudyTopic[]);
           if (row.weekly_slots) setWeekly(row.weekly_slots as WeeklySlot[]);
@@ -333,15 +330,15 @@ export function useStudyDashboard() {
       return;
     }
 
-    stageStudySave(user.id, { topics, weekly, sessions });
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     if (!isOnline) {
       setSyncStatus("offline");
       return;
     }
 
     setSyncStatus("syncing");
-    {
-      flushStudySave(user.id, (state) => saveRemoteStudyState(user.id, state))
+    saveTimeoutRef.current = setTimeout(() => {
+      saveRemoteStudyState(user.id, { topics, weekly, sessions })
         .then(() => {
           setSyncStatus("synced");
         })
@@ -349,9 +346,12 @@ export function useStudyDashboard() {
           reportError("Erro ao sincronizar estado de estudo remoto:", error, { devOnly: true });
           setSyncStatus("error");
         });
-    }
+    }, 350);
 
-  }, [hydrated, sessions, studySyncMode, topics, user, weekly, isOnline]);
+    return () => {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    };
+  }, [hydrated, sessions, studySyncMode, topics, user, weekly]);
 
   useEffect(() => {
     if (!hydrated || !user || studySyncMode !== "remote" || !isOnline || syncStatus === "synced" || syncStatus === "syncing") {
@@ -359,7 +359,7 @@ export function useStudyDashboard() {
     }
 
     setSyncStatus("syncing");
-    flushStudySave(user.id, (state) => saveRemoteStudyState(user.id, state))
+    saveRemoteStudyState(user.id, { topics, weekly, sessions })
       .then(() => {
         setSyncStatus("synced");
       })
@@ -367,9 +367,7 @@ export function useStudyDashboard() {
         reportError("Erro ao sincronizar estado remoto após reconexao:", error, { devOnly: true });
         setSyncStatus("error");
       });
-  // Retry on connectivity changes, not every error state (which loops offline
-  // server failures into an unbounded request storm).
-  }, [isOnline]);
+  }, [hydrated, isOnline, studySyncMode, syncStatus, user, topics, weekly, sessions]);
 
   const todayRevisions = getTodayRevisions(topics);
   const overdueRevisions = getOverdueRevisions(topics);

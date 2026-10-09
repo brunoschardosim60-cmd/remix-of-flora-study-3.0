@@ -349,8 +349,13 @@ export function loadWeekly(): WeeklySlot[] {
       Array.isArray(value) ? value : []
     );
     if (!parsed) return getDefaultWeekly();
-    // A customized grid need not contain the default boundary hours.
-    // Never replace saved subjects/times as a side effect of reading them.
+    // Migrate: if missing 07:00 or 23:00 slots, regenerate
+    const hours = new Set(parsed.map(s => s.horario));
+    if (!hours.has("07:00") || !hours.has("23:00")) {
+      const fresh = getDefaultWeekly();
+      localStorage.setItem(STORAGE_KEY_WEEKLY, JSON.stringify(fresh));
+      return fresh;
+    }
     return parsed;
   } catch {
     return getDefaultWeekly();
@@ -430,15 +435,14 @@ export function normalizeWeeklySlots(input: unknown): WeeklySlot[] {
     existing.set(`${slot.horario}|${slot.dia}`, slot);
   }
 
-  // Preserve custom times (08:30, 06:45, etc.) when hydrating remote rows.
-  const horarios = [...new Set(parsed.map((slot) => slot.horario))];
+  // Ensure every hour/day combination exists, filling gaps with empty slots
+  const horarios: string[] = [];
   for (let h = 7; h <= 23; h++) {
-    const horario = `${String(h).padStart(2, "0")}:00`;
-    if (!horarios.includes(horario)) horarios.push(horario);
+    horarios.push(`${String(h).padStart(2, "0")}:00`);
   }
 
   const result: WeeklySlot[] = [];
-  for (const horario of horarios.sort()) {
+  for (const horario of horarios) {
     for (let dia = 0; dia < 7; dia++) {
       const key = `${horario}|${dia}`;
       result.push(existing.get(key) ?? { id: crypto.randomUUID(), horario, dia, materia: null, descricao: "", concluido: false });

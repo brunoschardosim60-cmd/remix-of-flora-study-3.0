@@ -15,13 +15,8 @@ import { EditorToolbar } from "./EditorToolbar";
 import { ReactNodeViewRenderer } from "@tiptap/react";
 import { ResizableImageView } from "./ResizableImageView";
 import { GhostText } from "./GhostTextExtension";
-import { TableKit } from "@tiptap/extension-table";
-import { createPortal } from "react-dom";
-import { NodeSelection } from "@tiptap/pm/state";
 
 interface RichEditorProps {
-  toolbarHost?: HTMLElement | null;
-  drawing?: boolean;
   content: string;
   onChange: (html: string) => void;
   userId: string;
@@ -32,8 +27,6 @@ interface RichEditorProps {
   zoom?: number;
   /** Orientação física da folha. */
   orientation?: "portrait" | "landscape";
-  /** Samsung Notes: tela contínua por padrão ou páginas físicas para impressão. */
-  pageFlow?: "continuous" | "pages";
   /** Overlay rendered on top of the paper sheet (e.g. drawing canvas, sticky notes). */
   paperOverlay?: ReactNode;
   /** When true, paper takes more horizontal space (focus/fullscreen mode). */
@@ -62,7 +55,7 @@ const TEMPLATE_CLASS: Record<string, string> = {
   essay: "notebook-essay",
 };
 
-export function RichEditor({ content, onChange, userId, notebookId, darkMode, onToggleDarkMode, template = "blank", zoom = 1, orientation = "portrait", pageFlow = "continuous", paperOverlay, wide = false, handwriting = false, showMargin = true, backgroundImage, insertionRequest, onInsertionHandled, toolbarHost, drawing = false }: RichEditorProps) {
+export function RichEditor({ content, onChange, userId, notebookId, darkMode, onToggleDarkMode, template = "blank", zoom = 1, orientation = "portrait", paperOverlay, wide = false, handwriting = false, showMargin = true, backgroundImage, insertionRequest, onInsertionHandled }: RichEditorProps) {
   const isExternalUpdate = useRef(false);
   const lastInsertionId = useRef<number | null>(null);
   const [floraBusy, setFloraBusy] = useState<null | string>(null);
@@ -73,7 +66,6 @@ export function RichEditor({ content, onChange, userId, notebookId, darkMode, on
         heading: { levels: [1, 2, 3] },
       }),
       Highlight.configure({ multicolor: true }),
-      TableKit.configure({ table: { resizable: true } }),
       Image.extend({
         draggable: true,
         selectable: true,
@@ -115,11 +107,6 @@ export function RichEditor({ content, onChange, userId, notebookId, darkMode, on
               default: 0,
               parseHTML: (el) => Number(el.getAttribute("data-rotation") || 0),
               renderHTML: (attrs) => attrs.rotation ? { "data-rotation": String(attrs.rotation) } : {},
-            },
-            naturalRatio: {
-              default: null,
-              parseHTML: (el) => Number(el.getAttribute("data-natural-ratio")) || null,
-              renderHTML: (attrs) => attrs.naturalRatio ? { "data-natural-ratio": String(attrs.naturalRatio) } : {},
             },
             cropEnabled: {
               default: false,
@@ -176,8 +163,6 @@ export function RichEditor({ content, onChange, userId, notebookId, darkMode, on
   });
 
   // Sync external content changes (page switches)
-  useEffect(() => { editor?.setEditable(!drawing); }, [drawing, editor]);
-
   useEffect(() => {
     if (editor && content !== editor.getHTML()) {
       isExternalUpdate.current = true;
@@ -198,7 +183,6 @@ export function RichEditor({ content, onChange, userId, notebookId, darkMode, on
     const { from, to } = editor.state.selection;
     if (from === to) return;
     const text = editor.state.doc.textBetween(from, to, " ");
-    const originalDocument = editor.state.doc;
     if (!text.trim()) return;
     setFloraBusy(mode);
     try {
@@ -211,10 +195,6 @@ export function RichEditor({ content, onChange, userId, notebookId, darkMode, on
         toast.error("Flora não conseguiu responder.");
         return;
       }
-      if (editor.isDestroyed || !editor.state.doc.eq(originalDocument)) {
-        toast.info("A página mudou durante a resposta. Selecione o trecho novamente para aplicar a edição.");
-        return;
-      }
       editor.chain().focus().insertContentAt({ from, to }, result).run();
       toast.success("Flora aplicou a edição.");
     } catch (error: unknown) {
@@ -225,11 +205,11 @@ export function RichEditor({ content, onChange, userId, notebookId, darkMode, on
   };
 
   return (
-    <div className={`nb-rich-editor-root flex flex-col h-full is-${pageFlow} ${darkMode ? "text-gray-100" : ""}`}>
+    <div className={`nb-rich-editor-root flex flex-col h-full ${darkMode ? "text-gray-100" : ""}`}>
       {editor && (
         <BubbleMenu
           editor={editor}
-          shouldShow={({ editor: ed, from, to }) => !drawing && from !== to && !ed.state.selection.empty && !(ed.state.selection instanceof NodeSelection)}
+          shouldShow={({ editor: ed, from, to }) => from !== to && !ed.state.selection.empty}
         >
           <div className="flex items-center gap-1 rounded-lg border border-border bg-popover/95 backdrop-blur shadow-lg px-1.5 py-1">
             <button
@@ -271,7 +251,7 @@ export function RichEditor({ content, onChange, userId, notebookId, darkMode, on
           </div>
         </BubbleMenu>
       )}
-      {!drawing && (toolbarHost ? createPortal(<EditorToolbar editor={editor} userId={userId} notebookId={notebookId} darkMode={darkMode} onToggleDarkMode={onToggleDarkMode} />, toolbarHost) : <div className="nb-editor-formatbar relative z-30 border-b border-black/[0.06] bg-white/90 backdrop-blur dark:bg-gray-900/90">
+      <div className="nb-editor-formatbar relative z-30 border-b border-black/[0.06] bg-white/90 backdrop-blur dark:bg-gray-900/90">
         <EditorToolbar
           editor={editor}
           userId={userId}
@@ -279,20 +259,20 @@ export function RichEditor({ content, onChange, userId, notebookId, darkMode, on
           darkMode={darkMode}
           onToggleDarkMode={onToggleDarkMode}
         />
-      </div>)}
-      <div className={`nb-paper-viewport is-${pageFlow} flex-1 py-5 sm:py-7 px-3 sm:px-6`}>
+      </div>
+      <div className="nb-paper-viewport flex-1 py-5 sm:py-7 px-3 sm:px-6">
         <div
-          className={`nb-paper-zoom-stage is-${pageFlow}`}
+          className="nb-paper-zoom-stage"
           style={{ zoom } as React.CSSProperties}
         >
         <div
-          className={`nb-paper-frame relative mx-auto overflow-hidden transition-shadow duration-300 animate-fade-in notebook-paper-realistic is-${orientation} is-${pageFlow} ${wide ? "is-wide" : ""} ${showMargin ? "with-margin" : ""} ${handwriting ? "notebook-handwriting" : ""} ${
+          className={`nb-paper-frame relative mx-auto overflow-hidden transition-shadow duration-300 animate-fade-in notebook-paper-realistic is-${orientation} ${wide ? "is-wide" : ""} ${showMargin ? "with-margin" : ""} ${handwriting ? "notebook-handwriting" : ""} ${
             darkMode
               ? "bg-gray-900 shadow-[0_8px_30px_rgba(0,0,0,0.5)] [&_.ProseMirror]:text-gray-100 [&_.ProseMirror_h1]:text-gray-50 [&_.ProseMirror_h2]:text-gray-50 [&_.ProseMirror_h3]:text-gray-50"
               : "bg-white shadow-[0_4px_24px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.08)]"
           } ${TEMPLATE_CLASS[template] || ""}`}
         >
-          <div className={`nb-paper-content is-${pageFlow} relative min-h-[calc(85vh-42px)] px-8 py-10 sm:px-14 sm:py-12`}>
+          <div className="nb-paper-content relative min-h-[calc(85vh-42px)] px-8 py-10 sm:px-14 sm:py-12">
             {backgroundImage && (
               <img src={backgroundImage} alt="Página importada do PDF" draggable={false} className="pointer-events-none absolute inset-0 h-full w-full select-none object-contain object-top opacity-100" />
             )}

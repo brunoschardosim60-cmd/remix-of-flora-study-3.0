@@ -1,9 +1,10 @@
-// Indicador heurístico de preparação, não uma estimativa validada da TRI.
-// Interno: 0–1000. Display legado: 300–1000 (escala visual arbitrária).
+// Predição de nota ENEM ponderada por múltiplos fatores reais
+// Interno: 0–1000 (transparente). Display: 300–1000 (escala real ENEM)
 // Conversão: displayScore = 300 + (internal / 1000) * 700
 
 /**
- * Mantém a conversão visual legada; não representa os limites reais do ENEM.
+ * Converte pontuação interna (0-1000) para escala real do ENEM (300-1000).
+ * 0 interno = 300 ENEM (mínimo real), 1000 interno = 1000 ENEM.
  */
 export function toENEMScale(internal: number): number {
   return Math.round(300 + (Math.min(1000, Math.max(0, internal)) / 1000) * 700);

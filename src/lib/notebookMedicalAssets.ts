@@ -49,7 +49,7 @@ export const notebookMedicalAssets: NotebookMedicalAsset[] = [
     ["organ-liver", "Fígado e vesícula biliar", "Faces hepáticas, vesícula biliar e estruturas vasculares do hilo.", "liver-inferior-v1.png", 540],
     ["organ-urinary", "Sistema urinário isolado", "Rins, suprarrenais, ureteres e bexiga em continuidade anatômica.", "urinary-system-anterior-v1.png", 390],
     ["organ-digestive", "Trato digestório isolado", "Esôfago, estômago, fígado, pâncreas e alças intestinais em conjunto.", "digestive-system-anterior-v1.png", 400],
-  ] as const).map(([id, label, description, file, suggestedWidth]) => ({
+  ] as Array<[string, string, string, string, number]>).map(([id, label, description, file, suggestedWidth]) => ({
     id,
     label,
     description,

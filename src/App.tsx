@@ -203,7 +203,8 @@ const App = () => (
         <Sonner />
         <AuthProvider>
           <NotificationInit />
-          <BrowserRouter>
+          <BrowserRouter
+          >
             <GlobalFocusMiniPlayer />
             <QuotaLimitModal />
             <Suspense fallback={<RouteFallback />}>

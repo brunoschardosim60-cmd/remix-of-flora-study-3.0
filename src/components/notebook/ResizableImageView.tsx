@@ -1,7 +1,6 @@
 import { NodeViewWrapper, type NodeViewProps } from "@tiptap/react";
 import { useRef, useState, useCallback, useEffect } from "react";
 import { AlignCenter, AlignLeft, AlignRight, Crop, RotateCcw, RotateCw, Trash2, WrapText } from "lucide-react";
-import { notebookImageLayout } from "@/lib/notebookImageLayout";
 
 /**
  * Imagem do caderno: arrastável (drag nativo do ProseMirror) e
@@ -12,11 +11,7 @@ import { notebookImageLayout } from "@/lib/notebookImageLayout";
 export function ResizableImageView({ node, updateAttributes, deleteNode, selected }: NodeViewProps) {
   const imgRef = useRef<HTMLImageElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
-  const viewportRef = useRef<HTMLDivElement>(null);
   const [resizing, setResizing] = useState(false);
-  const [naturalRatio, setNaturalRatio] = useState(1);
-  const [editingCrop, setEditingCrop] = useState(false);
-  useEffect(() => { if (!selected) setEditingCrop(false); }, [selected]);
 
   const width = (node.attrs.width as number | string | null) ?? null;
   const alignment = (node.attrs.alignment as "left" | "center" | "right" | null) ?? "center";
@@ -30,30 +25,26 @@ export function ResizableImageView({ node, updateAttributes, deleteNode, selecte
   const cropY = Number(node.attrs.cropY ?? 50);
   const cropZoom = Number(node.attrs.cropZoom ?? 1);
   const imageWidth = floatingWidth(width, wrap && alignment !== "center");
-  const { aspectRatio, imageStyle } = notebookImageLayout({ naturalRatio, rotation, cropEnabled, cropAspect, cropX, cropY, cropZoom });
+  const aspectRatio = cropAspect === "1:1" ? "1 / 1" : cropAspect === "16:9" ? "16 / 9" : "4 / 3";
 
   const onPointerDown = useCallback(
     (e: React.PointerEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      const viewport = viewportRef.current;
-      if (!viewport) return;
+      const img = imgRef.current;
+      if (!img) return;
       const startX = e.clientX;
-      const rect = viewport.getBoundingClientRect();
-      const startW = viewport.offsetWidth || rect.width;
-      const visualToLocal = rect.width > 0 ? startW / rect.width : 1;
+      const startW = img.getBoundingClientRect().width;
       const target = e.currentTarget as HTMLElement;
       target.setPointerCapture(e.pointerId);
       setResizing(true);
 
       const onMove = (ev: PointerEvent) => {
-        if (ev.pointerId !== e.pointerId) return;
-        const delta = (ev.clientX - startX) * visualToLocal;
+        const delta = ev.clientX - startX;
         const next = Math.max(80, Math.min(1400, startW + delta));
         updateAttributes({ width: Math.round(next) });
       };
       const onUp = (ev: PointerEvent) => {
-        if (ev.pointerId !== e.pointerId) return;
         try { target.releasePointerCapture(ev.pointerId); } catch { /* noop */ }
         window.removeEventListener("pointermove", onMove);
         window.removeEventListener("pointerup", onUp);
@@ -96,9 +87,9 @@ export function ResizableImageView({ node, updateAttributes, deleteNode, selecte
         style={{
           position: "relative",
           display: floating ? "block" : "inline-block",
-          width: imageWidth,
+          width: cropEnabled ? imageWidth : undefined,
           maxWidth: "100%",
-          outline: "none",
+          outline: selected ? "2px solid hsl(var(--primary))" : "none",
           borderRadius: 8,
         }}
       >
@@ -108,13 +99,13 @@ export function ResizableImageView({ node, updateAttributes, deleteNode, selecte
           <button type="button" className={alignment === "right" ? "active" : ""} onClick={() => updateAttributes({ alignment: "right" })} title="Alinhar imagem à direita" aria-label="Alinhar imagem à direita"><AlignRight /></button>
           <span />
           <button type="button" className={wrap ? "active" : ""} onClick={() => updateAttributes({ wrap: !wrap, alignment: alignment === "center" ? "left" : alignment })} title="Fazer o texto contornar a imagem" aria-label="Alternar texto ao redor da imagem"><WrapText /></button>
-          <button type="button" className={editingCrop ? "active" : ""} onClick={() => { if (!cropEnabled) updateAttributes({ cropEnabled: true }); setEditingCrop((value) => !value); }} title="Editar recorte" aria-label="Alternar recorte da imagem" aria-pressed={editingCrop}><Crop /></button>
+          <button type="button" className={cropEnabled ? "active" : ""} onClick={() => updateAttributes({ cropEnabled: !cropEnabled })} title="Recortar imagem" aria-label="Alternar recorte da imagem"><Crop /></button>
           <button type="button" onClick={() => updateAttributes({ rotation: rotation - 90 })} title="Girar à esquerda" aria-label="Girar imagem à esquerda"><RotateCcw /></button>
           <button type="button" onClick={() => updateAttributes({ rotation: rotation + 90 })} title="Girar à direita" aria-label="Girar imagem à direita"><RotateCw /></button>
           <span />
           <button type="button" className="danger" onClick={deleteNode} title="Remover imagem" aria-label="Remover imagem"><Trash2 /></button>
         </div>}
-        {selected && editingCrop && cropEnabled && <div className="nb-image-crop-controls" contentEditable={false} onPointerDown={(event) => event.stopPropagation()}>
+        {selected && cropEnabled && <div className="nb-image-crop-controls" contentEditable={false} onPointerDown={(event) => event.stopPropagation()}>
           <div className="nb-image-crop-aspects" role="group" aria-label="Formato do recorte">
             {(["1:1", "4:3", "16:9"] as const).map((value) => <button key={value} type="button" className={cropAspect === value ? "active" : ""} onClick={() => updateAttributes({ cropAspect: value })}>{value}</button>)}
           </div>
@@ -122,17 +113,13 @@ export function ResizableImageView({ node, updateAttributes, deleteNode, selecte
           <label><span>Vertical</span><input type="range" min="0" max="100" value={cropY} onChange={(event) => updateAttributes({ cropY: Number(event.target.value) })} /></label>
           <label><span>Zoom</span><input type="range" min="1" max="3" step="0.05" value={cropZoom} onChange={(event) => updateAttributes({ cropZoom: Number(event.target.value) })} /></label>
           <button type="button" className="nb-image-crop-reset" onClick={() => updateAttributes({ cropX: 50, cropY: 50, cropZoom: 1, cropAspect: "4:3" })}>Redefinir</button>
-          <button type="button" className="nb-image-crop-reset" onClick={() => { updateAttributes({ cropEnabled: false }); setEditingCrop(false); }}>Remover recorte</button>
-          <button type="button" className="nb-image-crop-reset" onClick={() => setEditingCrop(false)}>Concluir recorte</button>
         </div>}
         <div
-          ref={viewportRef}
           className="nb-image-viewport"
           style={{
-            position: "relative",
-            width: "100%",
+            width: cropEnabled ? "100%" : floating ? "100%" : imageWidth,
             maxWidth: "100%",
-            aspectRatio,
+            aspectRatio: cropEnabled ? aspectRatio : undefined,
             overflow: cropEnabled ? "hidden" : "visible",
             borderRadius: transparent ? 0 : 8,
           } as React.CSSProperties}
@@ -143,23 +130,16 @@ export function ResizableImageView({ node, updateAttributes, deleteNode, selecte
             alt={(node.attrs.alt as string) || ""}
             title={(node.attrs.title as string) || undefined}
             draggable={false}
-            onLoad={(event) => {
-              const image = event.currentTarget;
-              if (image.naturalHeight) {
-                const ratio = image.naturalWidth / image.naturalHeight;
-                setNaturalRatio(ratio);
-                if (node.attrs.naturalRatio !== ratio) updateAttributes({ naturalRatio: ratio });
-              }
-            }}
             style={{
-              position: "absolute",
-              ...imageStyle,
               display: "block",
-              maxWidth: "none",
-              objectFit: "contain",
-              objectPosition: "center",
+              width: "100%",
+              maxWidth: "100%",
+              height: cropEnabled ? "100%" : "auto",
+              objectFit: cropEnabled ? "cover" : "contain",
+              objectPosition: cropEnabled ? `${cropX}% ${cropY}%` : "center",
               borderRadius: transparent ? 0 : 8,
               background: "transparent",
+              transform: `scale(${cropEnabled ? cropZoom : 1}) rotate(${rotation}deg)`,
               transformOrigin: "center",
               cursor: "grab",
               userSelect: "none",
@@ -168,19 +148,9 @@ export function ResizableImageView({ node, updateAttributes, deleteNode, selecte
           />
         </div>
         {/* Resize handle (bottom-right) */}
-        {selected && <span
+        <span
           role="slider"
           aria-label="Redimensionar imagem"
-          tabIndex={0}
-          aria-valuemin={80}
-          aria-valuemax={1400}
-          aria-valuenow={typeof width === "number" ? width : 720}
-          onKeyDown={(event) => {
-            if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
-            event.preventDefault();
-            const current = viewportRef.current?.clientWidth ?? 720;
-            updateAttributes({ width: Math.max(80, Math.min(1400, current + (event.key === "ArrowRight" ? 10 : -10))) });
-          }}
           onPointerDown={onPointerDown}
           style={{
             position: "absolute",
@@ -198,7 +168,7 @@ export function ResizableImageView({ node, updateAttributes, deleteNode, selecte
             transition: "opacity 120ms ease",
             zIndex: 5,
           }}
-        />}
+        />
       </div>
     </NodeViewWrapper>
   );

@@ -12,21 +12,20 @@ export interface RenderedPdfPage {
 
 export async function renderPdfPages(file: File, onProgress?: (current: number, total: number) => void): Promise<RenderedPdfPage[]> {
   const bytes = new Uint8Array(await file.arrayBuffer());
-  const pdfDocument = await pdfjs.getDocument({ data: bytes }).promise;
-  if (pdfDocument.numPages > 100) {
-    await pdfDocument.destroy();
+  const document = await pdfjs.getDocument({ data: bytes }).promise;
+  if (document.numPages > 100) {
+    await document.destroy();
     throw new Error("O PDF pode ter no máximo 100 páginas por importação.");
   }
   const result: RenderedPdfPage[] = [];
 
-  try {
-  for (let pageNumber = 1; pageNumber <= pdfDocument.numPages; pageNumber += 1) {
-    onProgress?.(pageNumber, pdfDocument.numPages);
-    const page = await pdfDocument.getPage(pageNumber);
+  for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
+    onProgress?.(pageNumber, document.numPages);
+    const page = await document.getPage(pageNumber);
     const original = page.getViewport({ scale: 1 });
     const scale = Math.min(2, 1600 / Math.max(original.width, original.height));
     const viewport = page.getViewport({ scale });
-    const canvas = document.createElement("canvas");
+    const canvas = window.document.createElement("canvas");
     canvas.width = Math.ceil(viewport.width);
     canvas.height = Math.ceil(viewport.height);
     const context = canvas.getContext("2d", { alpha: false });
@@ -40,8 +39,6 @@ export async function renderPdfPages(file: File, onProgress?: (current: number, 
     result.push({ pageNumber, blob, width: canvas.width, height: canvas.height });
     page.cleanup();
   }
+  await document.destroy();
   return result;
-  } finally {
-    await pdfDocument.destroy();
-  }
 }
