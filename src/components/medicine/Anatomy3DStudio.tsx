@@ -141,6 +141,10 @@ interface Anatomy3DStudioProps {
   journeyContext?: IntegratedMedicineContext | null;
   journeyVisitedStepIds?: string[];
   onOpenJourneyStep?: (step: IntegratedMedicineStep, structure: Anatomy3DStructure) => void;
+  /** Pedido externo de foco (ex.: visita guiada). Um novo `nonce` refaz o foco na mesma estrutura. */
+  focusRequest?: { structureId: string; nonce: number } | null;
+  /** Conteúdo sobreposto ao canvas 3D (ex.: visita guiada). */
+  canvasOverlay?: ReactNode;
 }
 
 const layerOpacity: Record<Exclude<Anatomy3DSystemId, "all">, number> = {
@@ -199,7 +203,7 @@ const mixedLayerOpacity: Record<MixableAnatomyLayer, number> = {
   nervous: 1,
   organs: 1,
 };
-export function Anatomy3DStudio({ level, initialStructureId, journeyContext, journeyVisitedStepIds = [], onOpenJourneyStep }: Anatomy3DStudioProps) {
+export function Anatomy3DStudio({ level, initialStructureId, journeyContext, journeyVisitedStepIds = [], onOpenJourneyStep, focusRequest, canvasOverlay }: Anatomy3DStudioProps) {
   const contextRestoreId = journeyContext?.structure.restore3DStructureId;
   const initialStructure = anatomy3DStructures.find((item) => item.id === initialStructureId)
     ?? anatomy3DStructures.find((item) => item.id === contextRestoreId);
@@ -531,6 +535,15 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
     setFocusKey((value) => value + 1);
   }, [detailedCatalogs, realistic, system]);
 
+  const handledFocusNonce = useRef<number | null>(null);
+  useEffect(() => {
+    if (!focusRequest || handledFocusNonce.current === focusRequest.nonce) return;
+    const target = anatomy3DStructures.find((item) => item.id === focusRequest.structureId);
+    if (!target) return;
+    handledFocusNonce.current = focusRequest.nonce;
+    selectStructure(target);
+  }, [focusRequest, selectStructure]);
+
   useEffect(() => {
     if (!journeyContext || system !== "organs") return;
     const contextKey = `${journeyContext.journeyId}:${journeyContext.structure.id}:${journeyContext.structure.source3DId}`;
@@ -751,6 +764,7 @@ export function Anatomy3DStudio({ level, initialStructureId, journeyContext, jou
           {realistic && <div className="med-3d-realism-note"><Sparkles /><span><strong>Materiais biológicos ativos</strong>Albedo, microrelevo e rugosidade respondem ao tecido e à capacidade do dispositivo.</span></div>}
 
           <div className="med-3d-canvas" role="application" tabIndex={0} aria-label={`Modelo 3D interativo mostrando ${anatomy3DSystemMeta.find((item) => item.id === system)?.label} em ${regionMeta.label}. Use as setas esquerda e direita para trocar de estrutura.`}>
+            {canvasOverlay}
             {layerPanelOpen && <aside className="med-3d-layer-panel" aria-label="Controle de camadas anatômicas">
               <header>
                 <span><Layers3 /><b>Camadas anatômicas</b><small>Monte o corpo por sistemas</small></span>

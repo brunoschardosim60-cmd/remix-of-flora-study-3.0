@@ -1,0 +1,29 @@
+.tour-launch{position:absolute;z-index:6;left:14px;bottom:14px;display:inline-flex;min-height:44px;align-items:center;gap:8px;padding:0 16px;border:1px solid rgba(39,73,65,.2);border-radius:999px;background:#fff;color:#17332e;font-size:14px;font-weight:800;box-shadow:0 8px 22px rgba(23,51,46,.14);cursor:pointer}
+.tour-launch svg{width:17px;height:17px}
+.tour-panel{position:absolute;z-index:6;left:14px;bottom:14px;width:min(380px,calc(100% - 28px));max-height:70%;overflow:auto;padding:14px 16px;border:1px solid rgba(39,73,65,.16);border-radius:16px;background:rgba(255,255,255,.96);color:#17332e;box-shadow:0 14px 34px rgba(23,51,46,.18);backdrop-filter:blur(8px)}
+.tour-panel header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.tour-panel header strong{font-family:Georgia,"Times New Roman",serif;font-size:17px}
+.tour-close{display:grid;width:40px;height:40px;place-items:center;border:0;border-radius:50%;background:transparent;color:#4c6a61;cursor:pointer}
+.tour-close svg{width:18px;height:18px}
+.tour-choices{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.tour-choices button{display:grid;width:100%;gap:2px;padding:10px 12px;border:1px solid rgba(39,73,65,.14);border-radius:12px;background:#fafcfb;color:inherit;text-align:left;cursor:pointer}
+.tour-choices button span{color:#647772;font-size:13px}
+.tour-stop small{color:#5d8577;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+.tour-stop h4{margin:2px 0 6px;font-size:19px}
+.tour-stop p{margin:0 0 8px;font-size:14px;line-height:1.55}
+.tour-reflection{padding:8px 10px;border-radius:10px;background:#eef4f1}
+.tour-note{color:#7a5a1d;font-size:12.5px!important}
+.tour-controls{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.tour-controls button{display:inline-flex;min-width:44px;min-height:44px;align-items:center;justify-content:center;gap:6px;padding:0 12px;border:1px solid rgba(39,73,65,.18);border-radius:999px;background:#fff;color:#17332e;font-weight:800;cursor:pointer}
+.tour-controls button:disabled{opacity:.4;cursor:not-allowed}
+.tour-controls svg{width:17px;height:17px}
+.tour-play{background:#2f5b4e!important;color:#fff!important;border-color:#2f5b4e!important}
+.tour-auto{display:inline-flex;align-items:center;gap:6px;margin-left:auto;font-size:13px}
+.tour-dots{display:flex;gap:2px;margin:8px 0 0;padding:0;list-style:none}
+.tour-dots button{width:28px;height:28px;border:0;background:transparent;cursor:pointer;position:relative}
+.tour-dots button::after{content:"";position:absolute;inset:10px;border-radius:50%;background:#c3d3cc}
+.tour-dots button.active::after{background:#2f5b4e}
+@media (max-width:820px){
+  .tour-launch,.tour-panel{left:10px;bottom:10px}
+  .tour-panel{max-height:58%}
+}
