@@ -1,6 +1,6 @@
 export type HraSex = "female" | "male";
 
-export type HraSystem = "Nervoso" | "Cardiovascular" | "Respiratório" | "Digestório" | "Urinário" | "Linfático e imune" | "Reprodutor";
+export type HraSystem = "Nervoso" | "Cardiovascular" | "Respiratório" | "Digestório" | "Urinário" | "Linfático e imune" | "Reprodutor" | "Sentidos" | "Musculoesquelético";
 
 export interface HraOrganPart {
   /** Caminho público do GLB (comprimido com Draco). */
@@ -24,7 +24,7 @@ export interface HraOrgan {
   models: Partial<Record<HraSex, HraOrganPart[]>>;
 }
 
-export const hraSystemOrder: HraSystem[] = ["Nervoso", "Cardiovascular", "Respiratório", "Digestório", "Urinário", "Linfático e imune", "Reprodutor"];
+export const hraSystemOrder: HraSystem[] = ["Nervoso", "Cardiovascular", "Respiratório", "Digestório", "Urinário", "Linfático e imune", "Reprodutor", "Sentidos", "Musculoesquelético"];
 
 export const hraSexLabel: Record<HraSex, string> = { female: "Mulher", male: "Homem" };
 
@@ -253,6 +253,61 @@ export const hraOrgans: HraOrgan[] = [
     sourceId: "hraReferenceLibrary",
     models: {
       male: [{ path: "/medicine/models/hra/hra-prostate-male-v1.glb", label: "Próstata", meshCount: 18, triangleCount: 224676, expectedMinimumBytes: 453888 }],
+    },
+  },
+  {
+    id: "eye",
+    name: "Olhos",
+    latin: "Oculi",
+    system: "Sentidos",
+    color: "#e4dccb",
+    summary: "Globos oculares com esclera, córnea, íris, pupila, cristalino, corpo ciliar, coroide, retina (com mácula, fóvea e disco óptico), humores aquoso e vítreo, além da conjuntiva das pálpebras.",
+    function: "Focalizam a luz sobre a retina, onde fotorreceptores a convertem em sinais nervosos enviados ao encéfalo pelo nervo óptico.",
+    sourceId: "hraReferenceLibrary",
+    models: {
+      female: [{ path: "/medicine/models/hra/hra-eye-left-female-v1.glb", label: "Olho esquerdo", meshCount: 23, triangleCount: 455290, expectedMinimumBytes: 900000 }, { path: "/medicine/models/hra/hra-eye-right-female-v1.glb", label: "Olho direito", meshCount: 23, triangleCount: 455082, expectedMinimumBytes: 900000 }],
+      male: [{ path: "/medicine/models/hra/hra-eye-left-male-v1.glb", label: "Olho esquerdo", meshCount: 23, triangleCount: 455290, expectedMinimumBytes: 900000 }, { path: "/medicine/models/hra/hra-eye-right-male-v1.glb", label: "Olho direito", meshCount: 23, triangleCount: 455082, expectedMinimumBytes: 900000 }],
+    },
+  },
+  {
+    id: "uterine-tube",
+    name: "Tubas uterinas",
+    latin: "Tubae uterinae",
+    system: "Reprodutor",
+    color: "#d89aa0",
+    summary: "Pares de tubos musculares que ligam a região dos ovários ao útero, divididos em infundíbulo com fímbrias, ampola e istmo.",
+    function: "Captam o oócito ovulado, é nelas que costuma ocorrer a fecundação, e transportam o embrião inicial até o útero.",
+    sourceId: "hraReferenceLibrary",
+    models: {
+      female: [{ path: "/medicine/models/hra/hra-fallopian-tube-left-female-v1.glb", label: "Tuba uterina esquerda", meshCount: 4, triangleCount: 18281, expectedMinimumBytes: 45000 }, { path: "/medicine/models/hra/hra-fallopian-tube-right-female-v1.glb", label: "Tuba uterina direita", meshCount: 4, triangleCount: 17770, expectedMinimumBytes: 45000 }],
+    },
+  },
+  {
+    id: "ureter",
+    name: "Ureteres e vias coletoras",
+    latin: "Ureteres",
+    system: "Urinário",
+    color: "#d7b46a",
+    summary: "Cálices menores e maiores, pelve renal e ureteres, que levam a urina de cada rim até a bexiga.",
+    function: "Coletam a urina formada no rim e a conduzem por peristaltismo até a bexiga urinária.",
+    sourceId: "hraReferenceLibrary",
+    models: {
+      female: [{ path: "/medicine/models/hra/hra-ureter-left-female-v1.glb", label: "Ureter esquerdo", meshCount: 27, triangleCount: 36964, expectedMinimumBytes: 110000 }, { path: "/medicine/models/hra/hra-ureter-right-female-v1.glb", label: "Ureter direito", meshCount: 25, triangleCount: 33171, expectedMinimumBytes: 100000 }],
+      male: [{ path: "/medicine/models/hra/hra-ureter-left-male-v1.glb", label: "Ureter esquerdo", meshCount: 14, triangleCount: 30618, expectedMinimumBytes: 85000 }, { path: "/medicine/models/hra/hra-ureter-right-male-v1.glb", label: "Ureter direito", meshCount: 13, triangleCount: 28410, expectedMinimumBytes: 80000 }],
+    },
+  },
+  {
+    id: "knee",
+    name: "Joelho esquerdo",
+    latin: "Genu",
+    system: "Musculoesquelético",
+    color: "#e6dcc3",
+    summary: "Fêmur, tíbia, fíbula e patela com cartilagem articular, menisco, côndilos, fossa intercondilar e as inserções dos ligamentos cruzados.",
+    function: "Permite flexão e extensão do membro inferior, suporta carga e contribui para a estabilidade da marcha.",
+    sourceId: "hraReferenceLibrary",
+    models: {
+      female: [{ path: "/medicine/models/hra/hra-knee-left-female-v1.glb", label: "Joelho esquerdo", meshCount: 20, triangleCount: 17844, expectedMinimumBytes: 60000 }],
+      male: [{ path: "/medicine/models/hra/hra-knee-left-male-v1.glb", label: "Joelho esquerdo", meshCount: 20, triangleCount: 22892, expectedMinimumBytes: 70000 }],
     },
   },
 ];

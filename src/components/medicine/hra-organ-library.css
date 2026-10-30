@@ -52,6 +52,15 @@
 .hra-source a{display:inline-flex;width:max-content;align-items:center;gap:5px;color:#2f6b5a;font-weight:700}
 .hra-source a svg{width:14px;height:14px}
 
+.hra-quiz-toggle,.hra-quiz button{display:inline-flex;min-height:42px;width:max-content;align-items:center;gap:6px;padding:0 14px;border:1px solid var(--hra-line);border-radius:999px;background:#fff;color:var(--hra-ink);font-size:13px;font-weight:700;cursor:pointer}
+.hra-quiz-toggle svg,.hra-quiz button svg{width:15px;height:15px}
+.hra-quiz-toggle[aria-pressed="true"]{border-color:var(--hra-sage);background:var(--hra-soft)}
+.hra-quiz{display:grid;gap:10px;padding:12px;border:1px dashed rgba(82,134,118,.5);border-radius:12px;background:#f6faf8}
+.hra-quiz p{margin:0;font-size:14px;line-height:1.5}
+.hra-quiz-score{color:var(--hra-muted)}
+.hra-quiz-answer strong{text-transform:capitalize}
+.hra-quiz-rate{display:flex;flex-wrap:wrap;gap:8px}
+.hra-quiz button:disabled{opacity:.45;cursor:not-allowed}
 @media (max-width:1100px){
   .hra-library-grid{grid-template-columns:220px minmax(0,1fr)}
   .hra-detail{grid-column:1 / -1;max-height:none}

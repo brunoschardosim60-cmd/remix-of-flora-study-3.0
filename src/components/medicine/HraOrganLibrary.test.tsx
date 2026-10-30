@@ -46,3 +46,21 @@ describe("HraOrganLibrary", () => {
     expect(screen.getByRole("button", { name: "Isolar selecionada" })).toBeEnabled();
   });
 });
+
+describe("HraOrganLibrary — modo Testar-me", () => {
+  it("sorteia uma estrutura sem revelar o nome, revela e contabiliza o acerto", async () => {
+    render(<HraOrganLibrary />);
+    await screen.findByRole("list", { name: "Estruturas do modelo" });
+    await waitFor(() => expect(screen.getAllByRole("listitem").length).toBeGreaterThan(1));
+    fireEvent.click(screen.getByRole("button", { name: /Testar-me/ }));
+    expect(screen.queryByRole("list", { name: "Estruturas do modelo" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Sortear estrutura/ }));
+    const selected = screen.getByTestId("viewport").getAttribute("data-selected");
+    expect(selected).toMatch(/^VH_F_/);
+    expect(screen.queryByText(/Era:/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Revelar nome/ }));
+    expect(screen.getByText(/Era:/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Acertei/ }));
+    expect(screen.getByText(/Acertos:/).textContent).toContain("1 de 1");
+  });
+});

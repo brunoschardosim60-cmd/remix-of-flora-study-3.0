@@ -1,5 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ExternalLink, Eye, Maximize2, Minimize2, RotateCcw, Rotate3D, Search } from "lucide-react";
+import { Check, ExternalLink, Eye, HelpCircle, Maximize2, Minimize2, RotateCcw, Rotate3D, Search, Shuffle, X } from "lucide-react";
 import { medicalSources } from "@/lib/medicineData";
 import {
   cleanHraMeshName,
@@ -30,6 +30,10 @@ export function HraOrganLibrary() {
   const [query, setQuery] = useState("");
   const [fullscreen, setFullscreen] = useState(false);
   const stageRef = useRef<HTMLDivElement | null>(null);
+  const [quizMode, setQuizMode] = useState(false);
+  const [revealed, setRevealed] = useState(false);
+  const [rated, setRated] = useState(false);
+  const [score, setScore] = useState({ hits: 0, total: 0 });
 
   const organ = hraOrganById(organId) ?? hraOrgans[0];
   const sex = hraResolveSex(organ, preferredSex);
@@ -43,6 +47,31 @@ export function HraOrganLibrary() {
     const entries = meshNames.map((raw) => ({ raw, label: cleanHraMeshName(raw) }));
     return term ? entries.filter((entry) => entry.label.toLocaleLowerCase("pt-BR").includes(term)) : entries;
   }, [meshNames, query]);
+
+  useEffect(() => {
+    setRevealed(false);
+    setRated(false);
+  }, [selectedMesh]);
+
+  const drawStructure = () => {
+    if (!meshNames.length) return;
+    const pool = meshNames.length > 1 ? meshNames.filter((name) => name !== selectedMesh) : meshNames;
+    setIsolate(false);
+    setAutoRotate(false);
+    setSelectedMesh(pool[Math.floor(Math.random() * pool.length)]);
+  };
+
+  const rate = (hit: boolean) => {
+    setScore((current) => ({ hits: current.hits + (hit ? 1 : 0), total: current.total + 1 }));
+    setRated(true);
+  };
+
+  const toggleQuiz = () => {
+    setQuizMode((value) => !value);
+    setSelectedMesh(null);
+    setScore({ hits: 0, total: 0 });
+    setQuery("");
+  };
 
   const handleMeshesReady = useCallback((names: string[]) => setMeshNames(names), []);
 
@@ -171,6 +200,34 @@ export function HraOrganLibrary() {
             </div>
           </dl>
 
+          <button type="button" className="hra-quiz-toggle" aria-pressed={quizMode} onClick={toggleQuiz}>
+            <HelpCircle aria-hidden="true" /> {quizMode ? "Voltar ao modo estudo" : "Testar-me"}
+          </button>
+
+          {quizMode ? (
+            <div className="hra-quiz" aria-live="polite">
+              <p className="hra-quiz-score">Acertos: <strong>{score.hits}</strong> de {score.total}</p>
+              {!selectedMesh ? (
+                <p>Sorteie uma estrutura: ela será destacada no modelo. Tente dizer o nome antes de conferir. Você também pode tocar em uma parte do modelo.</p>
+              ) : revealed ? (
+                <>
+                  <p className="hra-quiz-answer">Era: <strong>{selectedLabel}</strong></p>
+                  {!rated ? (
+                    <div className="hra-quiz-rate">
+                      <button type="button" onClick={() => rate(true)}><Check aria-hidden="true" /> Acertei</button>
+                      <button type="button" onClick={() => rate(false)}><X aria-hidden="true" /> Errei</button>
+                    </div>
+                  ) : <p>Registrado. Sorteie a próxima.</p>}
+                </>
+              ) : (
+                <>
+                  <p>Que estrutura está destacada?</p>
+                  <button type="button" onClick={() => setRevealed(true)}><Eye aria-hidden="true" /> Revelar nome</button>
+                </>
+              )}
+              <button type="button" onClick={drawStructure} disabled={!meshNames.length}><Shuffle aria-hidden="true" /> Sortear estrutura</button>
+            </div>
+          ) : (<>
           <div className="hra-mesh-tools">
             <label className="hra-mesh-search">
               <Search aria-hidden="true" />
@@ -207,6 +264,7 @@ export function HraOrganLibrary() {
             {meshNames.length > 0 && filteredMeshes.length === 0 && <li className="hra-mesh-empty">Nenhuma estrutura encontrada.</li>}
           </ul>
           <p className="hra-lang-note">Nomes das estruturas como constam no modelo de referência (em inglês).</p>
+          </>)}
 
           {source && (
             <footer className="hra-source">

@@ -38,4 +38,16 @@ VH_M_Lung.glb hra-lung-male-v1.glb
 VH_M_Kidney_L.glb hra-kidney-left-male-v1.glb
 VH_M_Kidney_R.glb hra-kidney-right-male-v1.glb
 Allen_M_Brain.glb hra-brain-male-v1.glb
+VH_F_Eye_L.glb hra-eye-left-female-v1.glb
+VH_F_Eye_R.glb hra-eye-right-female-v1.glb
+VH_M_Eye_L.glb hra-eye-left-male-v1.glb
+VH_M_Eye_R.glb hra-eye-right-male-v1.glb
+VH_F_Fallopian_Tube_L.glb hra-fallopian-tube-left-female-v1.glb
+VH_F_Fallopian_Tube_R.glb hra-fallopian-tube-right-female-v1.glb
+VH_F_Ureter_L.glb hra-ureter-left-female-v1.glb
+VH_F_Ureter_R.glb hra-ureter-right-female-v1.glb
+VH_M_Ureter_L.glb hra-ureter-left-male-v1.glb
+VH_M_Ureter_R.glb hra-ureter-right-male-v1.glb
+VH_F_Knee_L.glb hra-knee-left-female-v1.glb
+VH_M_Knee_L.glb hra-knee-left-male-v1.glb
 LIST
