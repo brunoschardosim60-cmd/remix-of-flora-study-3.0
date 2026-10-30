@@ -54,9 +54,10 @@ const InstrumentsStudio = lazy(() => import("@/components/medicine/InstrumentsSt
 const SurgerySimulator = lazy(() => import("@/components/medicine/SurgerySimulator").then((module) => ({ default: module.SurgerySimulator })));
 const MedicalPathologyLab = lazy(() => import("@/components/medicine/MedicalPathologyLab").then((module) => ({ default: module.MedicalPathologyLab })));
 const HistologyMicroscope = lazy(() => import("@/components/medicine/HistologyMicroscope").then((module) => ({ default: module.HistologyMicroscope })));
+const HraOrganLibrary = lazy(() => import("@/components/medicine/HraOrganLibrary").then((module) => ({ default: module.HraOrganLibrary })));
 const FloraChatPanel = lazy(() => import("@/components/FloraChatPanel").then((module) => ({ default: module.FloraChatPanel })));
 
-type MedicineSection = "home" | "atlas" | "atlas3d" | "histology" | "instruments" | "surgery" | "systems" | "pathology" | "development" | "practice" | "questions" | "review" | "semiology" | "anamnesis" | "clinic" | "plan" | "notebook" | "sources";
+type MedicineSection = "home" | "atlas" | "atlas3d" | "organs" | "histology" | "instruments" | "surgery" | "systems" | "pathology" | "development" | "practice" | "questions" | "review" | "semiology" | "anamnesis" | "clinic" | "plan" | "notebook" | "sources";
 
 type MedicalNotebookContext = {
   section: MedicineSection;
@@ -72,6 +73,7 @@ const NAV: Array<{ id: MedicineSection; label: string; Icon: typeof Activity }> 
   { id: "home", label: "Visão geral", Icon: Activity },
   { id: "atlas", label: "Atlas", Icon: Search },
   { id: "atlas3d", label: "Corpo 3D", Icon: Rotate3D },
+  { id: "organs", label: "Órgãos 3D", Icon: HeartPulse },
   { id: "histology", label: "Histologia e Sentidos", Icon: Microscope },
   { id: "instruments", label: "Instrumentos", Icon: Wrench },
   { id: "surgery", label: "Cirurgia virtual", Icon: Scissors },
@@ -93,6 +95,7 @@ const SECTION_PATHS: Record<MedicineSection, string> = {
   home: "/medicina",
   atlas: "/medicina/anatomia/atlas",
   atlas3d: "/medicina/anatomia/3d",
+  organs: "/medicina/anatomia/orgaos",
   histology: "/medicina/anatomia/histologia-e-sentidos",
   systems: "/medicina/anatomia/sistemas",
   development: "/medicina/anatomia/desenvolvimento",
@@ -130,6 +133,7 @@ const SECTION_IMAGE_WARMUPS: Partial<Record<MedicineSection, string[]>> = {
 function warmMedicineSection(section: MedicineSection) {
   const images = preloadMedicalImages(SECTION_IMAGE_WARMUPS[section] ?? [], "high");
   const module = section === "atlas3d" ? import("@/components/medicine/Anatomy3DStudio")
+    : section === "organs" ? import("@/components/medicine/HraOrganLibrary")
     : section === "histology" ? import("@/components/medicine/HistologyMicroscope")
     : section === "instruments" ? import("@/components/medicine/InstrumentsStudio")
       : section === "surgery" ? import("@/components/medicine/SurgerySimulator")
@@ -142,7 +146,7 @@ function warmMedicineSection(section: MedicineSection) {
 
 const NAV_GROUPS: Array<{ id: string; label: string; Icon: typeof Activity; defaultSection: MedicineSection; items: MedicineSection[] }> = [
   { id: "overview", label: "Visão geral", Icon: Activity, defaultSection: "home", items: ["home"] },
-  { id: "anatomy", label: "Anatomia", Icon: Layers, defaultSection: "atlas", items: ["atlas", "atlas3d", "histology", "systems", "development", "pathology"] },
+  { id: "anatomy", label: "Anatomia", Icon: Layers, defaultSection: "atlas", items: ["atlas", "atlas3d", "organs", "histology", "systems", "development", "pathology"] },
   { id: "practice", label: "Praticar", Icon: Target, defaultSection: "practice", items: ["practice", "questions", "review"] },
   { id: "clinical", label: "Prática clínica", Icon: Stethoscope, defaultSection: "semiology", items: ["semiology", "anamnesis", "clinic"] },
   { id: "procedures", label: "Procedimentos", Icon: Wrench, defaultSection: "instruments", items: ["instruments", "surgery"] },
@@ -543,6 +547,7 @@ export default function Medicine() {
           <Suspense fallback={<div className="med-3d-route-loading"><Sparkles /><strong>Preparando o módulo…</strong><span>Carregando apenas os recursos necessários para esta atividade.</span></div>}>
           {section === "home" && <MedicineHome level={level} progress={progress} competencies={competencyProgress} wrongCount={pendingReviews.length} resumeSection={resumeSection} onGo={go} />}
           {section === "atlas" && <div className="med-section-wrap"><BodyAtlas level={level} activeLayer={activeLayer} onLayerChange={setActiveLayer} selected={selectedStructure} onSelect={setSelectedStructure} onOpen3D={(structureId) => { setInitial3DStructureId(structureId); go("atlas3d"); }} />{selectedStructure && <div className="med-atlas-actions"><button onClick={() => toggleFavorite(selectedStructure.id)}>{favoriteIds.includes(selectedStructure.id) ? <Check /> : <BookOpen />}{favoriteIds.includes(selectedStructure.id) ? "Salva para revisão" : "Salvar para revisão"}</button><button onClick={() => go("questions")}><ListChecks /> Questões relacionadas</button><button onClick={() => go("pathology")}><Microscope /> Comparar alterações</button><button onClick={() => sendToNotebook({ section: "atlas", label: selectedStructure.name, structureId: selectedStructure.id })}><NotebookPen /> Enviar ao Caderno</button><button onClick={() => { const source = medicalSources[selectedStructure.sourceId]; openFlora(`Explique a estrutura anatômica ${selectedStructure.name}${selectedStructure.latin ? ` (${selectedStructure.latin})` : ""}, no nível ${level}. Use como base estes dados revisados do Atlas Flora: região: ${selectedStructure.region}; sistema: ${selectedStructure.system}; descrição: ${selectedStructure.summary}; função: ${selectedStructure.function}; relações: ${selectedStructure.relations}. Fonte indicada: ${source?.organization ?? "fonte científica cadastrada"} — ${source?.title ?? selectedStructure.sourceId}. Se algo não estiver sustentado por esses dados, diga claramente que precisa ser conferido na fonte. Uso exclusivamente educacional; não faça diagnóstico nem prescrição.`); }}><Sparkles /> Explicar com a Flora</button></div>}</div>}
+          {section === "organs" && <Suspense fallback={<div className="med-3d-route-loading"><Rotate3D /><strong>Carregando os órgãos 3D…</strong></div>}><HraOrganLibrary /></Suspense>}
           {section === "atlas3d" && <Suspense fallback={<div className="med-3d-route-loading"><Rotate3D /><strong>Carregando o ambiente tridimensional…</strong><span>Preparando iluminação, câmera e estruturas.</span></div>}><Anatomy3DStudio level={level} initialStructureId={integratedContext?.structure.source3DId ?? initial3DStructureId} journeyContext={integratedContext} journeyVisitedStepIds={integratedVisitedIds} onOpenJourneyStep={openIntegratedStep} /></Suspense>}
           {section === "histology" && <Suspense fallback={<div className="med-3d-route-loading"><Microscope /><strong>Preparando o laboratório visual…</strong><span>Carregando as imagens licenciadas sem reduzir a resolução.</span></div>}><HistologyMicroscope level={level} initialJourney={activeIntegratedStep?.kind === "destination" && activeIntegratedStep.destination === "histology" ? activeIntegratedStep.target.journeyId : undefined} initialDepth={activeIntegratedStep?.kind === "destination" && activeIntegratedStep.destination === "histology" ? activeIntegratedStep.target.depth : undefined} initialSpecimenId={activeIntegratedStep?.kind === "destination" && activeIntegratedStep.destination === "histology" ? activeIntegratedStep.target.specimenId : undefined} onLearningEvent={(event) => recordLearning({ ...event, category: "histologia", competency: "fisiologia", sourceSection: "histology" })} onOpenNotebook={(context) => sendToNotebook({ section: "histology", ...context })} /></Suspense>}
           {section === "instruments" && <InstrumentsStudio level={level} onLearningEvent={(event) => recordLearning({ ...event, category: "instrumentos", competency: "instrumentos", sourceSection: "instruments" })} onOpenSurgery={(instrumentId) => { saveMedicineState("surgery_instrument", instrumentId); go("surgery"); }} />}

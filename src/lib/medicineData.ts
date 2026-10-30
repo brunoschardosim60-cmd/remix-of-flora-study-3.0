@@ -366,6 +366,14 @@ export const medicalSources: Record<string, MedicalSource> = {
     license: "CC BY 4.0",
     attribution: "Kristen Browne. 2021. 3D Reference Organ for Liver, Female v1.1. https://doi.org/10.48539/HBM798.JZZM.649.",
   },
+  hraReferenceLibrary: {
+    title: "HuBMAP CCF 3D Reference Object Library v1.2 (Human Reference Atlas)",
+    organization: "Human Reference Atlas / HuBMAP",
+    url: "https://hubmapconsortium.github.io/ccf/pages/ccf-3d-reference-library.html",
+    reviewedAt: "2026-10-30",
+    license: "CC BY 4.0",
+    attribution: "Browne, K., Schlehlein, H., Herr II, B. W., Quardokus, E., Bueckle, A., Börner, K. 2022. HuBMAP CCF 3D Reference Object Library v1.2. Human Reference Atlas.",
+  },
   nihHraKidney3D: {
     title: "3D Reference Organs for Kidney, Female, Left and Right v1.2",
     organization: "Human Reference Atlas / NIH 3D",
