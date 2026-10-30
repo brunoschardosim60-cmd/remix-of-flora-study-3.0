@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { anatomyStructures, type AnatomyStructure } from "@/lib/medicineData";
+import { anatomyPositionFor, anatomyStructures, type AnatomyStructure } from "@/lib/medicineData";
 import { atlasCanvasStructures, atlasPinLimitForZoom, BodyAtlas } from "./BodyAtlas";
 
 function AtlasHarness() {
@@ -79,6 +79,26 @@ describe("BodyAtlas selection flow", () => {
 
     const anteriorSkeleton = anatomyStructures.filter((structure) => structure.layer === "skeletal" && structure.positions?.anterior);
     expect(atlasCanvasStructures(anteriorSkeleton, 18, false).map((structure) => structure.id)).not.toContain("stapes");
+  });
+
+  it("avoids overlapping markers and always shows the selected structure", () => {
+    const organs = anatomyStructures.filter((structure) => structure.layer === "organs" && structure.positions?.anterior);
+    const options = { view: "anterior" as const, minDistance: 2.8 };
+    const shown = atlasCanvasStructures(organs, 60, false, options);
+
+    for (let i = 0; i < shown.length; i += 1) {
+      for (let j = i + 1; j < shown.length; j += 1) {
+        const a = anatomyPositionFor(shown[i], "anterior")!;
+        const b = anatomyPositionFor(shown[j], "anterior")!;
+        expect(Math.hypot((a.x - b.x) * 0.6, a.y - b.y), `${shown[i].id} × ${shown[j].id}`).toBeGreaterThanOrEqual(options.minDistance);
+      }
+    }
+    expect(shown.length).toBeLessThan(organs.length);
+    expect(shown.map((structure) => structure.id)).toContain("heart");
+
+    const hidden = organs.find((structure) => !shown.some((item) => item.id === structure.id)) as AnatomyStructure;
+    const withPinned = atlasCanvasStructures(organs, 60, false, { ...options, pinnedId: hidden.id });
+    expect(withPinned.map((structure) => structure.id)).toContain(hidden.id);
   });
 
   it("reveals fine structures progressively across the zoom range", () => {

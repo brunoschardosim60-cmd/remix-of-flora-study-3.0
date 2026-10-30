@@ -76,17 +76,54 @@ export function atlasPinLimitForZoom(baseLimit: number, total: number, zoom: num
   return Math.min(total, Math.max(baseLimit, Math.round(baseLimit + (total - baseLimit) * easedProgress)));
 }
 
+export interface AtlasCanvasOptions {
+  view: AtlasView;
+  /** Distância mínima entre dois pins, em % da altura da ilustração. */
+  minDistance: number;
+  /** Estrutura selecionada: sempre ganha pin, mesmo se estiver encoberta. */
+  pinnedId?: string | null;
+}
+
+// A largura da ilustração é ~0,6 da altura; normaliza o eixo X para medir a
+// distância em unidades comparáveis nos dois eixos.
+const ATLAS_PIN_X_ASPECT = 0.6;
+
+function pinsCollide(a: { x: number; y: number }, b: { x: number; y: number }, minDistance: number) {
+  return Math.hypot((a.x - b.x) * ATLAS_PIN_X_ASPECT, a.y - b.y) < minDistance;
+}
+
 export function atlasCanvasStructures(
   structures: AnatomyStructure[],
   pinLimit: number,
   revealAll: boolean,
+  options?: AtlasCanvasOptions,
 ) {
-  if (revealAll || structures.length <= pinLimit) return structures;
-  return structures
+  if (revealAll) return structures;
+  if (!options && structures.length <= pinLimit) return structures;
+  const ranked = structures
     .map((structure, index) => ({ structure, index, priority: atlasStructureDisplayPriority(structure) }))
     .sort((a, b) => a.priority - b.priority || a.index - b.index)
-    .slice(0, Math.max(pinLimit, 1))
     .map(({ structure }) => structure);
+  if (!options) return ranked.slice(0, Math.max(pinLimit, 1));
+
+  // Seleção por prioridade que evita pins sobrepostos: uma estrutura só entra
+  // se não encobrir outra mais importante já escolhida.
+  const limit = Math.max(pinLimit, 1);
+  const chosen: AnatomyStructure[] = [];
+  const chosenPositions: Array<{ x: number; y: number }> = [];
+  for (const structure of ranked) {
+    if (chosen.length >= limit) break;
+    const position = anatomyPositionFor(structure, options.view);
+    if (!position) continue;
+    if (chosenPositions.some((other) => pinsCollide(position, other, options.minDistance))) continue;
+    chosen.push(structure);
+    chosenPositions.push(position);
+  }
+  if (options.pinnedId && !chosen.some((structure) => structure.id === options.pinnedId)) {
+    const pinned = structures.find((structure) => structure.id === options.pinnedId);
+    if (pinned && anatomyPositionFor(pinned, options.view)) chosen.push(pinned);
+  }
+  return chosen;
 }
 
 export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelect, onOpen3D }: BodyAtlasProps) {
@@ -136,6 +173,8 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
   const levelRank = levelOrder.indexOf(level);
   const activeCoverage = atlasCoverageByLayer[activeLayer];
   const canvasPinLimit = [18, 26, 36, 48, 60][Math.max(levelRank, 0)];
+  // Os pins mantêm tamanho fixo na tela; ao ampliar, cabem mais pontos sem sobrepor.
+  const pinMinDistance = 2.8 / zoom;
   const layerStatistics = useMemo(() => new Map(bodyLayers.map((layer) => {
     const catalogued = anatomyStructures.filter((structure) => structure.layer === layer.id && structureMatchesBodyProfile(structure, bodyProfile));
     const inCurrentView = catalogued.filter((structure) => anatomyPositionFor(structure, view));
@@ -145,13 +184,21 @@ export function BodyAtlas({ level, activeLayer, onLayerChange, selected, onSelec
     return [layer.id, {
       catalogued: catalogued.length,
       inCurrentView: inCurrentView.length,
-      displayed: atlasCanvasStructures(candidates, zoomPinLimit, revealAll).length,
+      displayed: atlasCanvasStructures(candidates, zoomPinLimit, revealAll, {
+        view,
+        minDistance: pinMinDistance,
+        pinnedId: layer.id === activeLayer ? selectedInProfile?.id : null,
+      }).length,
     }];
-  })), [activeLayer, bodyProfile, canvasPinLimit, filteredStructures, query, view, zoom]);
+  })), [activeLayer, bodyProfile, canvasPinLimit, filteredStructures, pinMinDistance, query, selectedInProfile?.id, view, zoom]);
   const canvasStructures = useMemo(() => {
     const zoomPinLimit = atlasPinLimitForZoom(canvasPinLimit, filteredStructures.length, zoom);
-    return atlasCanvasStructures(filteredStructures, zoomPinLimit, Boolean(query.trim()));
-  }, [canvasPinLimit, filteredStructures, query, zoom]);
+    return atlasCanvasStructures(filteredStructures, zoomPinLimit, Boolean(query.trim()), {
+      view,
+      minDistance: pinMinDistance,
+      pinnedId: selectedInProfile?.id,
+    });
+  }, [canvasPinLimit, filteredStructures, pinMinDistance, query, selectedInProfile?.id, view, zoom]);
   const pinCounterScale = 1 / zoom;
   const pinVisualScale = Math.max(0.74, 1 - Math.max(0, zoom - 1) * 0.5);
 
