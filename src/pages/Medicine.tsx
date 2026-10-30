@@ -55,6 +55,7 @@ const SurgerySimulator = lazy(() => import("@/components/medicine/SurgerySimulat
 const MedicalPathologyLab = lazy(() => import("@/components/medicine/MedicalPathologyLab").then((module) => ({ default: module.MedicalPathologyLab })));
 const HistologyMicroscope = lazy(() => import("@/components/medicine/HistologyMicroscope").then((module) => ({ default: module.HistologyMicroscope })));
 const AnatomyGuidedTour = lazy(() => import("@/components/medicine/AnatomyGuidedTour").then((module) => ({ default: module.AnatomyGuidedTour })));
+const EmbryoCleavageAnimation = lazy(() => import("@/components/medicine/EmbryoCleavageAnimation").then((module) => ({ default: module.EmbryoCleavageAnimation })));
 const HraOrganLibrary = lazy(() => import("@/components/medicine/HraOrganLibrary").then((module) => ({ default: module.HraOrganLibrary })));
 const FloraChatPanel = lazy(() => import("@/components/FloraChatPanel").then((module) => ({ default: module.FloraChatPanel })));
 
@@ -921,6 +922,8 @@ function DevelopmentSection({ onOpenNotebook, onLearningEvent }: {
 
   return <div className="med-page med-development-page">
     <PageHeading eyebrow="Embriologia e desenvolvimento humano" title="Da fecundação ao envelhecimento" description="Acompanhe cada transformação como uma jornada visual contínua: união dos gametas, divisões celulares, crescimento, nascimento, maturação e envelhecimento." />
+
+    <Suspense fallback={null}><EmbryoCleavageAnimation /></Suspense>
 
     <div className="med-development-safety"><ShieldCheck /><div><strong>Guia educacional com fontes por etapa</strong><span>Faixas etárias são didáticas e o desenvolvimento apresenta variações individuais. As imagens ajudam na orientação visual, mas não são fonte anatômica nem material diagnóstico.</span></div></div>
 
