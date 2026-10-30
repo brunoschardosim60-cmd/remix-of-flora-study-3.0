@@ -26,7 +26,15 @@ export type Subject =
   | "SOI"
   | "IESC"
   | "PIEPE"
-  | "MCM";
+  | "MCM"
+  | "Anatomia"
+  | "Histologia"
+  | "Fisiologia"
+  | "Embriologia"
+  | "Bioquímica"
+  | "Farmacologia"
+  | "Patologia"
+  | "Semiologia";
 
 export const SUBJECT_COLORS: Record<Subject, string> = {
   Matemática: "bg-subject-math",
@@ -53,6 +61,15 @@ export const SUBJECT_COLORS: Record<Subject, string> = {
   IESC: "bg-subject-iesc",
   PIEPE: "bg-subject-piepe",
   MCM: "bg-subject-mcm",
+  // Matérias de Medicina: reutilizam os tokens de cor já existentes do tema.
+  Anatomia: "bg-subject-bio",
+  Histologia: "bg-subject-chem",
+  Fisiologia: "bg-subject-ham",
+  Embriologia: "bg-subject-soi",
+  Bioquímica: "bg-subject-physics",
+  Farmacologia: "bg-subject-iesc",
+  Patologia: "bg-subject-piepe",
+  Semiologia: "bg-subject-mcm",
 };
 
 export const ALL_SUBJECTS: Subject[] = Object.keys(SUBJECT_COLORS) as Subject[];
@@ -71,6 +88,24 @@ export const CONCURSO_SUBJECTS: Subject[] = [
   "Administração Pública",
   "Contabilidade",
   "Redação",
+];
+
+/** Matérias típicas da graduação em Medicina (ciclos básico e clínico) */
+export const MEDICINA_SUBJECTS: Subject[] = [
+  "Anatomia",
+  "Histologia",
+  "Fisiologia",
+  "Embriologia",
+  "Bioquímica",
+  "Farmacologia",
+  "Patologia",
+  "Semiologia",
+  "HAM",
+  "SOI",
+  "IESC",
+  "PIEPE",
+  "MCM",
+  "Simulado",
 ];
 
 /** Matérias típicas de ENEM/vestibular/faculdade */

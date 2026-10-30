@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from "react
 import { useNavigate } from "react-router-dom";
 import { CalendarDays, LayoutGrid } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { createTopic, StudyTopic, WeeklySlot, ALL_SUBJECTS, Subject, CONCURSO_SUBJECTS, ENEM_SUBJECTS } from "@/lib/studyData";
+import { createTopic, StudyTopic, WeeklySlot, ALL_SUBJECTS, Subject, CONCURSO_SUBJECTS, ENEM_SUBJECTS, MEDICINA_SUBJECTS } from "@/lib/studyData";
 import { DashboardHero } from "@/components/DashboardHero";
 import { AddTopicForm } from "@/components/AddTopicForm";
 import { StudyTimer } from "@/components/StudyTimer";
@@ -36,6 +36,7 @@ import { toLocalDateStr } from "@/lib/dateUtils";
 import { countDueFlashcards } from "@/lib/flashcardScheduler";
 import { Sparkles } from "lucide-react";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
+import { MedicineHero } from "@/components/dashboard/MedicineHero";
 import { StudyNowDialog } from "@/components/dashboard/StudyNowDialog";
 import { StudyChoiceDialog } from "@/components/dashboard/StudyChoiceDialog";
 import { FloraButton } from "@/components/dashboard/FloraButton";
@@ -89,8 +90,8 @@ export default function Index() {
   const onboardingChecked = useOnboardingGuard(user, isAdmin);
 
   // Objetivo do aluno → rota/label do "Banco"
-  const { objetivo, isConcurso, bancoRoute, bancoLabel } = useStudentObjetivo(user);
-  const subjectOptions = isConcurso ? CONCURSO_SUBJECTS : ENEM_SUBJECTS;
+  const { objetivo, isConcurso, isMedicina, bancoRoute, bancoLabel } = useStudentObjetivo(user);
+  const subjectOptions = isMedicina ? MEDICINA_SUBJECTS : isConcurso ? CONCURSO_SUBJECTS : ENEM_SUBJECTS;
 
   const {
     topics,
@@ -291,6 +292,8 @@ export default function Index() {
 
         </div>
 
+
+        {user && isMedicina && <MedicineHero />}
 
         {/* Flora: confirmações pendentes */}
         {user && <FloraConfirmationBanner />}

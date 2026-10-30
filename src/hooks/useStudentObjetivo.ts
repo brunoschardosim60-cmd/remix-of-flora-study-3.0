@@ -28,8 +28,9 @@ export function useStudentObjetivo(user: User | null) {
 
   const objetivo = data ?? "";
   const isConcurso = objetivo === "concurso";
+  const isMedicina = objetivo === "medicina";
   const bancoRoute = isConcurso ? "/banco-concurso" : "/banco";
   const bancoLabel = isConcurso ? "Banco Concurso" : "Banco";
 
-  return { objetivo, isConcurso, bancoRoute, bancoLabel };
+  return { objetivo, isConcurso, isMedicina, bancoRoute, bancoLabel };
 }

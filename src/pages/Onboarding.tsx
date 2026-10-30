@@ -8,11 +8,13 @@ import { Loader2, ArrowRight, BookOpen, Trophy, Target, Sparkles, Check } from "
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DiagnosticStep } from "@/components/onboarding/DiagnosticStep";
+import { MEDICINA_SUBJECTS } from "@/lib/studyData";
 
 // ─── Tipos ───────────────────────────────────────────────────────────────────
-type Objetivo = "enem" | "vestibular" | "concurso" | "faculdade" | "aprender";
+type Objetivo = "medicina" | "enem" | "vestibular" | "concurso" | "faculdade" | "aprender";
 
 const OBJECTIVES = [
+  { value: "medicina",   label: "Medicina (graduação)", emoji: "🩺", desc: "Anatomia, clínica, questões e revisão" },
   { value: "enem",       label: "ENEM",              emoji: "📝", desc: "Vestibular nacional" },
   { value: "vestibular", label: "Vestibular",         emoji: "🎓", desc: "FUVEST, UNICAMP..." },
   { value: "concurso",   label: "Concurso público",   emoji: "⚖️",  desc: "Federal, estadual, municipal" },
@@ -56,7 +58,8 @@ export default function Onboarding() {
   const [diagnosticAnswers, setDiagnosticAnswers] = useState<Array<{ area: string; materia: string; correct: boolean }> | null>(null);
 
   const isConcurso = objetivo === "concurso";
-  const subjects = isConcurso ? CONCURSO_SUBJECTS : ENEM_SUBJECTS;
+  const isMedicina = objetivo === "medicina";
+  const subjects = isMedicina ? MEDICINA_SUBJECTS : isConcurso ? CONCURSO_SUBJECTS : ENEM_SUBJECTS;
 
   // Redirect if already completed
   useEffect(() => {
@@ -90,7 +93,7 @@ export default function Onboarding() {
         tempo_disponivel_min: 60,
         materias_dificeis: materiasDificeis,
         rotina: "manha",
-        meta_resultado: metaResultado || `Passar em ${objetivo === "enem" ? "ENEM" : objetivo}`,
+        meta_resultado: metaResultado || (isMedicina ? "Ir bem nas disciplinas da graduação em Medicina" : `Passar em ${objetivo === "enem" ? "ENEM" : objetivo}`),
         completed: true,
       } as any);
       if (error) throw error;
@@ -110,7 +113,7 @@ export default function Onboarding() {
       })();
 
       setDone(true);
-      setTimeout(() => navigate("/"), 2200);
+      setTimeout(() => navigate(isMedicina ? "/medicina" : "/"), 2200);
     } catch (err) {
       console.error(err);
       toast.error("Erro ao salvar. Tente novamente.");
@@ -284,7 +287,9 @@ export default function Onboarding() {
                 <Button
                   className="flex-1 h-12 font-bold gap-2"
                   disabled={!canNext()}
-                  onClick={() => setStep(2)}
+                  onClick={() => {
+                    if (isMedicina) { setDiagnosticAnswers([]); setStep(3); } else { setStep(2); }
+                  }}
                 >
                   Continuar <ArrowRight className="w-4 h-4" />
                 </Button>
@@ -332,6 +337,7 @@ export default function Onboarding() {
 
               <Input
                 placeholder={
+                  isMedicina ? "Ex: Fechar o ciclo básico com média 8 em Anatomia" :
                   objetivo === "enem" ? "Ex: Nota 850 no ENEM e entrar em Medicina" :
                   objetivo === "concurso" ? "Ex: Passar no concurso da Receita Federal" :
                   "Ex: Aprender Cálculo até dezembro"
@@ -357,7 +363,7 @@ export default function Onboarding() {
               </div>
 
               <div className="flex gap-3">
-                <Button variant="outline" className="flex-1 h-12" onClick={() => setStep(2)}>
+                <Button variant="outline" className="flex-1 h-12" onClick={() => setStep(isMedicina ? 1 : 2)}>
                   Voltar
                 </Button>
                 <Button
